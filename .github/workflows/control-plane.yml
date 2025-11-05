@@ -1,14 +1,16 @@
 name: Control Plane CI
 
 on:
-  push:
-    paths:
-      - 'control-plane/**'
-      - '.github/workflows/control-plane.yml'
   pull_request:
     paths:
       - 'control-plane/**'
       - '.github/workflows/control-plane.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'control-plane/**'
+      - '.github/workflows/control-plane.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

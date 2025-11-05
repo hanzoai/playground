@@ -12,6 +12,7 @@ on:
       - 'deployments/docker/**'
       - 'control-plane/**'
       - '.github/workflows/docker.yml'
+  workflow_dispatch:
 
 jobs:
   control-plane-image:

@@ -1,14 +1,16 @@
 name: Go SDK CI
 
 on:
-  push:
-    paths:
-      - 'sdk/go/**'
-      - '.github/workflows/sdk-go.yml'
   pull_request:
     paths:
       - 'sdk/go/**'
       - '.github/workflows/sdk-go.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'sdk/go/**'
+      - '.github/workflows/sdk-go.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -46,4 +48,3 @@ jobs:
       - name: Test
         working-directory: sdk/go
         run: go test ./...
-
