@@ -403,16 +403,16 @@ haxen verify audit.json
 <details>
 <summary>Click to see full infrastructure features</summary>
 
-✅ **Workflow DAGs** - Visual execution graphs, auto-generated
-✅ **Prometheus metrics** - Request rates, latencies, error rates (automatic, no instrumentation)
-✅ **Durable queues** - Lease-based processing, survives crashes
-✅ **Zero-config shared memory** - Global → Actor → Session → Workflow scopes (automatic)
-✅ **Agent notes** - Structured logging from distributed agents
-✅ **Graceful shutdown** - Completes in-flight work before exit
-✅ **Health checks** - `/health/live` and `/health/ready` endpoints
-✅ **Docker/K8s ready** - Deploy like any containerized service
-✅ **Horizontal scaling** - Stateless control plane + independent agent nodes
-✅ **Multi-language support** - REST API works with React, Go, .NET, mobile apps
+- ✅ **Workflow DAGs** - Visual execution graphs, auto-generated
+- ✅ **Prometheus metrics** - Request rates, latencies, error rates (automatic, no instrumentation)
+- ✅ **Durable queues** - Lease-based processing, survives crashes
+- ✅ **Zero-config shared memory** - Global → Actor → Session → Workflow scopes (automatic)
+- ✅ **Agent notes** - Structured logging from distributed agents
+- ✅ **Graceful shutdown** - Completes in-flight work before exit
+- ✅ **Health checks** - `/health/live` and `/health/ready` endpoints
+- ✅ **Docker/K8s ready** - Deploy like any containerized service
+- ✅ **Horizontal scaling** - Stateless control plane + independent agent nodes
+- ✅ **Multi-language support** - REST API works with React, Go, .NET, mobile apps
 
 </details>
 
@@ -479,26 +479,30 @@ kubectl scale deployment my-agent --replicas=10
 
 ### Haxen Solves This
 
-| You Need                                | Traditional Frameworks  | Haxen                       |
-| --------------------------------------- | ----------------------- | --------------------------- |
-| **Chatbot prototype**                   | ✅ Perfect               | Overkill                    |
-| **Learning agent concepts**             | ✅ Great                 | Overkill                    |
-| **Single app, one team**                | ✅ Fine                  | Probably overkill           |
-|                                         |                         |                             |
-| **Production multi-agent system**       | ❌ DIY infrastructure    | ✅ Built-in                  |
-| **Multiple teams, independent deploys** | ❌ Coordination hell     | ✅ Deploy independently      |
-| **Scale agents like microservices**     | ❌ Manual                | ✅ Kubernetes-style          |
-| **Compliance/audit trails**             | ❌ Build yourself        | ✅ Cryptographic proofs      |
-| **Frontend integration (React/mobile)** | ❌ Custom wrappers       | ✅ REST API                  |
-| **Long-running tasks (5+ min)**         | ❌ DIY queues + webhooks | ✅ Built-in async + webhooks |
+| You Need                                | Traditional Frameworks  | Haxen                                         |
+| --------------------------------------- | ----------------------- | --------------------------------------------- |
+| **Chatbot prototype**                   | ✅ Quick start           | ✅ Quick start + production infrastructure    |
+| **Learning agent concepts**             | ✅ Simple                | ✅ Simple + real-world patterns               |
+| **Single app, one team**                | ✅ Lightweight           | ✅ Lightweight setup, enterprise-ready output |
+|                                         |                         |                                               |
+| **Production multi-agent system**       | ❌ DIY infrastructure    | ✅ Built-in                                    |
+| **Multiple teams, independent deploys** | ❌ Coordination hell     | ✅ Deploy independently                        |
+| **Scale agents like microservices**     | ❌ Manual                | ✅ Kubernetes-style                            |
+| **Compliance/audit trails**             | ❌ Build yourself        | ✅ Cryptographic proofs                        |
+| **Frontend integration (React/mobile)** | ❌ Custom wrappers       | ✅ REST API                                    |
+| **Long-running tasks (5+ min)**         | ❌ DIY queues + webhooks | ✅ Built-in async + webhooks                   |
+
+**Same code. Same patterns. Zero migration.**
+
+Traditional frameworks force you to rebuild when you scale. Haxen grows with you.
 
 ### The Bottom Line
 
-**Frameworks = Build agents** (perfect for prototypes)
+**Frameworks = Build agents** (perfect for learning)
 
-**Haxen = Run agents at scale** (perfect for production)
+**Haxen = Run agents at any scale** (perfect from prototype to production)
 
-Use frameworks to learn. Use Haxen when you need production infrastructure.
+Start with Haxen. Skip the migration pain.
 
 ---
 
