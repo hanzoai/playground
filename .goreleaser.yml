@@ -9,7 +9,7 @@ before:
     - npm --prefix control-plane/web/client run build --silent
 
 builds:
-  - id: agentfield
+  - id: agentfield-linux-amd64
     dir: control-plane
     main: ./cmd/af
     binary: agentfield
@@ -17,14 +17,90 @@ builds:
       - CGO_ENABLED=1
     goos:
       - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+    no_unique_dist_dir: true
+
+  - id: agentfield-linux-arm64
+    dir: control-plane
+    main: ./cmd/af
+    binary: agentfield
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+    goos:
+      - linux
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+    no_unique_dist_dir: true
+
+  - id: agentfield-darwin-amd64
+    dir: control-plane
+    main: ./cmd/af
+    binary: agentfield
+    env:
+      - CGO_ENABLED=1
+    goos:
       - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+    no_unique_dist_dir: true
+
+  - id: agentfield-darwin-arm64
+    dir: control-plane
+    main: ./cmd/af
+    binary: agentfield
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+    no_unique_dist_dir: true
+
+  - id: agentfield-windows-amd64
+    dir: control-plane
+    main: ./cmd/af
+    binary: agentfield
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+    goos:
       - windows
     goarch:
       - amd64
-      - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
     ldflags:
       - -s -w
       - -X main.version={{ .Version }}
@@ -38,6 +114,12 @@ builds:
 # Don't create archives - ship raw binaries
 archives:
   - id: default
+    builds:
+      - agentfield-linux-amd64
+      - agentfield-linux-arm64
+      - agentfield-darwin-amd64
+      - agentfield-darwin-arm64
+      - agentfield-windows-amd64
     format: binary
     name_template: "agentfield-{{ .Os }}-{{ .Arch }}"
 

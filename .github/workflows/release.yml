@@ -27,50 +27,25 @@ permissions:
   contents: write
   packages: write
 
+env:
+  GO_VERSION: '1.24.2'
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
-    env:
-      GO_VERSION: '1.23'
-      PYTHON_VERSION: '3.11'
+    outputs:
+      goreleaser_args: ${{ steps.goreleaser.outputs.args }}
+      release_upload: ${{ steps.goreleaser.outputs.release_upload }}
+      tag_name: ${{ steps.goreleaser.outputs.tag_name }}
+      publish_pypi: ${{ steps.flags.outputs.publish_pypi }}
+      publish_docker: ${{ steps.flags.outputs.publish_docker }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-release-go-${{ hashFiles('control-plane/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-release-go-
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: control-plane/web/client/package-lock.json
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Build Web UI
-        working-directory: control-plane/web/client
-        run: |
-          npm ci
-          npm run build
 
       - name: Determine publish flags
         id: flags
@@ -79,6 +54,7 @@ jobs:
           PUBLISH_PYPI_INPUT: ${{ github.event.inputs.publish_pypi }}
           PUBLISH_DOCKER_INPUT: ${{ github.event.inputs.publish_docker }}
         run: |
+          set -euo pipefail
           if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
             if [ "${PUBLISH_PYPI_INPUT}" = "true" ]; then
               echo "publish_pypi=true" >> "$GITHUB_OUTPUT"
@@ -103,16 +79,18 @@ jobs:
           VERSION_INPUT: ${{ github.event.inputs.version }}
           REF_NAME: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
             if [ "${PUBLISH_RELEASE_INPUT}" = "true" ]; then
               if [ -z "${VERSION_INPUT}" ]; then
-                echo "ERROR: version input is required when publish_release is true"
+                echo "ERROR: version input is required when publish_release is true" >&2
                 exit 1
               fi
-              # Create a tag for the release
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
-              git tag -a "${VERSION_INPUT}" -m "Release ${VERSION_INPUT}"
+              if ! git rev-parse "${VERSION_INPUT}" >/dev/null 2>&1; then
+                git tag -a "${VERSION_INPUT}" -m "Release ${VERSION_INPUT}"
+              fi
               echo "args=release --clean" >> "$GITHUB_OUTPUT"
               echo "release_upload=true" >> "$GITHUB_OUTPUT"
               echo "tag_name=${VERSION_INPUT}" >> "$GITHUB_OUTPUT"
@@ -122,17 +100,190 @@ jobs:
               echo "tag_name=" >> "$GITHUB_OUTPUT"
             fi
           else
-            # Tag push - use the pushed tag name
             echo "args=release --clean" >> "$GITHUB_OUTPUT"
             echo "release_upload=true" >> "$GITHUB_OUTPUT"
             echo "tag_name=${REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run GoReleaser
+  build-binaries:
+    needs: prepare
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux
+            goreleaser_ids: '--id agentfield-linux-amd64 --id agentfield-linux-arm64'
+          - os: macos-14
+            label: darwin
+            goreleaser_ids: '--id agentfield-darwin-amd64 --id agentfield-darwin-arm64'
+          - os: windows-2022
+            label: windows
+            goreleaser_ids: '--id agentfield-windows-amd64'
+    runs-on: ${{ matrix.os }}
+    env:
+      GORELEASER_CURRENT_TAG: ${{ needs.prepare.outputs.tag_name }}
+      GORELEASER_CURRENT_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recreate release tag if needed
+        if: needs.prepare.outputs.tag_name != ''
+        shell: bash
+        env:
+          TAG_NAME: ${{ needs.prepare.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install cross-compilers
+        if: matrix.label == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: control-plane/web/client/package-lock.json
+
+      - name: Run GoReleaser build
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: ${{ steps.goreleaser.outputs.args }}
+          args: build --clean --skip=validate ${{ matrix.goreleaser_ids }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rename artifact metadata (POSIX)
+        if: matrix.os != 'windows-2022'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f dist/artifacts.json ]; then mv dist/artifacts.json dist/artifacts-${{ matrix.label }}.json; fi
+          if [ -f dist/metadata.json ]; then mv dist/metadata.json dist/metadata-${{ matrix.label }}.json; fi
+          if [ -f dist/config.yaml ]; then mv dist/config.yaml dist/config-${{ matrix.label }}.yaml; fi
+
+      - name: Rename artifact metadata (Windows)
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        run: |
+          if (Test-Path dist/artifacts.json) { Move-Item dist/artifacts.json dist/artifacts-${{ matrix.label }}.json }
+          if (Test-Path dist/metadata.json) { Move-Item dist/metadata.json dist/metadata-${{ matrix.label }}.json }
+          if (Test-Path dist/config.yaml) { Move-Item dist/config.yaml dist/config-${{ matrix.label }}.yaml }
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.label }}
+          path: dist
+
+  publish:
+    needs:
+      - prepare
+      - build-binaries
+    runs-on: ubuntu-latest
+    env:
+      GORELEASER_CURRENT_TAG: ${{ needs.prepare.outputs.tag_name }}
+      GORELEASER_CURRENT_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recreate release tag if needed
+        if: needs.prepare.outputs.tag_name != ''
+        shell: bash
+        env:
+          TAG_NAME: ${{ needs.prepare.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-linux
+          path: .
+
+      - name: Download darwin artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-darwin
+          path: .
+
+      - name: Download windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-windows
+          path: .
+
+      - name: Merge artifact metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+import glob
+import json
+import os
+import shutil
+
+artifacts = []
+for path in sorted(glob.glob('dist/artifacts-*.json')):
+    with open(path, 'r', encoding='utf-8') as handle:
+        artifacts.extend(json.load(handle))
+if artifacts:
+    with open('dist/artifacts.json', 'w', encoding='utf-8') as handle:
+        json.dump(artifacts, handle)
+
+# Prefer linux metadata/config, fall back to others if needed
+for suffix in ('linux', 'darwin', 'windows'):
+    meta_path = f'dist/metadata-{suffix}.json'
+    if os.path.exists(meta_path):
+        shutil.copy(meta_path, 'dist/metadata.json')
+        break
+for suffix in ('linux', 'darwin', 'windows'):
+    cfg_path = f'dist/config-{suffix}.yaml'
+    if os.path.exists(cfg_path):
+        shutil.copy(cfg_path, 'dist/config.yaml')
+        break
+PY
+
+      - name: Run GoReleaser release
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: ${{ needs.prepare.outputs.goreleaser_args }} --skip=build --skip=before
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -149,15 +300,6 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
 
-      - name: Attach Python artifacts to GitHub release
-        if: steps.goreleaser.outputs.release_upload == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.goreleaser.outputs.tag_name }}
-          files: |
-            sdk/python/dist/*.whl
-            sdk/python/dist/*.tar.gz
-
       - name: Upload Python package artifacts
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
@@ -166,7 +308,7 @@ jobs:
           path: sdk/python/dist
 
       - name: Publish to PyPI
-        if: steps.flags.outputs.publish_pypi == 'true'
+        if: needs.prepare.outputs.publish_pypi == 'true'
         working-directory: sdk/python
         env:
           TWINE_USERNAME: __token__
@@ -176,7 +318,7 @@ jobs:
           twine upload dist/*
 
       - name: Compute Docker metadata
-        if: steps.flags.outputs.publish_docker == 'true'
+        if: needs.prepare.outputs.publish_docker == 'true'
         id: docker_meta
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -184,6 +326,7 @@ jobs:
           SHA: ${{ github.sha }}
           OWNER: ${{ github.repository_owner }}
         run: |
+          set -euo pipefail
           owner="$(echo "${OWNER}" | tr '[:upper:]' '[:lower:]')"
           image="ghcr.io/${owner}/agentfield-control-plane"
           if [ "${EVENT_NAME}" = "push" ]; then
@@ -195,11 +338,11 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
-        if: steps.flags.outputs.publish_docker == 'true'
+        if: needs.prepare.outputs.publish_docker == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        if: steps.flags.outputs.publish_docker == 'true'
+        if: needs.prepare.outputs.publish_docker == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -207,7 +350,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push control plane image
-        if: steps.flags.outputs.publish_docker == 'true'
+        if: needs.prepare.outputs.publish_docker == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -217,3 +360,12 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.image }}:${{ steps.docker_meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Attach Python artifacts to GitHub release
+        if: needs.prepare.outputs.release_upload == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag_name || github.ref_name }}
+          files: |
+            sdk/python/dist/*.whl
+            sdk/python/dist/*.tar.gz
