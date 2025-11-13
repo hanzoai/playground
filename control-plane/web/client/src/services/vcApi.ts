@@ -8,7 +8,8 @@ import type {
   VCExportResponse,
   VCStatusSummary,
   AuditTrailEntry,
-  ComprehensiveVCVerificationResult
+  ComprehensiveVCVerificationResult,
+  WorkflowVCStatusBatchResponse
 } from '../types/did';
 import { normalizeExecutionStatus, isSuccessStatus, isFailureStatus } from '../utils/status';
 
@@ -42,6 +43,46 @@ function normalizeJsonDocument(value: unknown): unknown {
   }
 
   return value;
+}
+
+function createDefaultVCStatusSummary(): VCStatusSummary {
+  return {
+    has_vcs: false,
+    vc_count: 0,
+    verified_count: 0,
+    failed_count: 0,
+    last_vc_created: '',
+    verification_status: 'none'
+  };
+}
+
+function deriveVCStatusFromChain(vcChain: WorkflowVCChainResponse): VCStatusSummary {
+  const vcCount = vcChain.component_vcs.length;
+  const verifiedCount = vcChain.component_vcs.filter(vc => isSuccessStatus(vc.status)).length;
+  const failedCount = vcChain.component_vcs.filter(vc => isFailureStatus(vc.status)).length;
+  const lastVCCreated = vcChain.component_vcs.length > 0
+    ? vcChain.component_vcs[vcChain.component_vcs.length - 1].created_at
+    : '';
+
+  let verificationStatus: 'verified' | 'pending' | 'failed' | 'none' = 'none';
+  if (vcCount === 0) {
+    verificationStatus = 'none';
+  } else if (failedCount > 0) {
+    verificationStatus = 'failed';
+  } else if (verifiedCount === vcCount) {
+    verificationStatus = 'verified';
+  } else {
+    verificationStatus = 'pending';
+  }
+
+  return {
+    has_vcs: vcCount > 0,
+    vc_count: vcCount,
+    verified_count: verifiedCount,
+    failed_count: failedCount,
+    last_vc_created: lastVCCreated,
+    verification_status: verificationStatus
+  };
 }
 
 /**
@@ -104,46 +145,80 @@ export async function exportVCs(filters?: VCFilters): Promise<VCExportResponse> 
   return fetchWrapper<VCExportResponse>(url);
 }
 
+async function fetchWorkflowVCStatusBatch(workflowIds: string[]): Promise<Record<string, VCStatusSummary>> {
+  if (workflowIds.length === 0) {
+    return {};
+  }
+
+  const response = await fetchWrapper<WorkflowVCStatusBatchResponse>(
+    `/workflows/vc-status`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow_ids: workflowIds }),
+    }
+  );
+
+  const summaries: Record<string, VCStatusSummary> = {};
+  response.summaries?.forEach((summary) => {
+    summaries[summary.workflow_id] = {
+      has_vcs: summary.has_vcs,
+      vc_count: summary.vc_count,
+      verified_count: summary.verified_count,
+      failed_count: summary.failed_count ?? 0,
+      last_vc_created: summary.last_vc_created,
+      verification_status: summary.verification_status,
+    };
+  });
+
+  return summaries;
+}
+
 /**
- * Get VC status summary for a workflow (for UI indicators)
+ * Fetch VC status summaries for a batch of workflows, falling back to legacy calls if needed.
+ */
+export async function getWorkflowVCStatuses(workflowIds: string[]): Promise<Record<string, VCStatusSummary>> {
+  if (!workflowIds || workflowIds.length === 0) {
+    return {};
+  }
+
+  try {
+    const summaries = await fetchWorkflowVCStatusBatch(workflowIds);
+    workflowIds.forEach((id) => {
+      if (!summaries[id]) {
+        summaries[id] = createDefaultVCStatusSummary();
+      }
+    });
+    return summaries;
+  } catch (error) {
+    console.warn('Workflow VC status batch endpoint unavailable, falling back to legacy per-workflow fetch', error);
+
+    const entries = await Promise.all(
+      workflowIds.map(async (workflowId) => {
+        try {
+          const vcChain = await getWorkflowVCChain(workflowId);
+          return [workflowId, deriveVCStatusFromChain(vcChain)] as const;
+        } catch (chainError) {
+          console.warn(`Failed to derive VC status for workflow ${workflowId}:`, chainError);
+          return [workflowId, createDefaultVCStatusSummary()] as const;
+        }
+      })
+    );
+
+    return Object.fromEntries(entries);
+  }
+}
+
+/**
+ * Get VC status summary for a single workflow
  */
 export async function getVCStatusSummary(workflowId: string): Promise<VCStatusSummary> {
-  try {
-    const vcChain = await getWorkflowVCChain(workflowId);
-    
-    const vcCount = vcChain.component_vcs.length;
-    const verifiedCount = vcChain.component_vcs.filter(vc => isSuccessStatus(vc.status)).length;
-    const lastVCCreated = vcChain.component_vcs.length > 0 
-      ? vcChain.component_vcs[vcChain.component_vcs.length - 1].created_at 
-      : '';
-    
-    let verificationStatus: 'verified' | 'pending' | 'failed' | 'none' = 'none';
-    if (vcCount === 0) {
-      verificationStatus = 'none';
-    } else if (verifiedCount === vcCount) {
-      verificationStatus = 'verified';
-    } else if (vcChain.component_vcs.some(vc => isFailureStatus(vc.status))) {
-      verificationStatus = 'failed';
-    } else {
-      verificationStatus = 'pending';
-    }
-    
-    return {
-      has_vcs: vcCount > 0,
-      vc_count: vcCount,
-      verified_count: verifiedCount,
-      last_vc_created: lastVCCreated,
-      verification_status: verificationStatus
-    };
-  } catch (error) {
-    return {
-      has_vcs: false,
-      vc_count: 0,
-      verified_count: 0,
-      last_vc_created: '',
-      verification_status: 'none'
-    };
+  if (!workflowId) {
+    return createDefaultVCStatusSummary();
   }
+
+  const summaries = await getWorkflowVCStatuses([workflowId]);
+  return summaries[workflowId] ?? createDefaultVCStatusSummary();
 }
 
 /**

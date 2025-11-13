@@ -325,8 +325,17 @@ export interface VCStatusSummary {
   has_vcs: boolean;
   vc_count: number;
   verified_count: number;
+  failed_count: number;
   last_vc_created: string;
   verification_status: 'verified' | 'pending' | 'failed' | 'none';
+}
+
+export interface WorkflowVCStatusSummaryResponse extends VCStatusSummary {
+  workflow_id: string;
+}
+
+export interface WorkflowVCStatusBatchResponse {
+  summaries: WorkflowVCStatusSummaryResponse[];
 }
 
 export interface AuditTrailEntry {

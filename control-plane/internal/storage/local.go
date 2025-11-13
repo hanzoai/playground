@@ -6510,6 +6510,78 @@ func (ls *LocalStorage) ListExecutionVCs(ctx context.Context, filters types.VCFi
 	return infos, nil
 }
 
+func (ls *LocalStorage) ListWorkflowVCStatusSummaries(ctx context.Context, workflowIDs []string) ([]*types.WorkflowVCStatusAggregation, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("context cancelled during workflow VC status summary query: %w", err)
+	}
+
+	if len(workflowIDs) == 0 {
+		return []*types.WorkflowVCStatusAggregation{}, nil
+	}
+
+	placeholders := make([]string, len(workflowIDs))
+	for i := range workflowIDs {
+		placeholders[i] = "?"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT workflow_id,
+		       COUNT(*) AS vc_count,
+		       SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS verified_count,
+		       SUM(CASE WHEN status = ? OR status = ? THEN 1 ELSE 0 END) AS failed_count,
+		       MAX(created_at) AS last_created_at
+		FROM execution_vcs
+		WHERE workflow_id IN (%s)
+		GROUP BY workflow_id
+	`, strings.Join(placeholders, ","))
+
+	args := []interface{}{
+		string(types.ExecutionStatusSucceeded),
+		string(types.ExecutionStatusFailed),
+		string(types.ExecutionStatusTimeout),
+	}
+	for _, id := range workflowIDs {
+		args = append(args, id)
+	}
+
+	rows, err := ls.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query workflow VC status summaries: %w", err)
+	}
+	defer rows.Close()
+
+	var summaries []*types.WorkflowVCStatusAggregation
+	for rows.Next() {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("context cancelled during workflow VC status iteration: %w", err)
+		}
+
+		var lastCreated sql.NullTime
+		summary := &types.WorkflowVCStatusAggregation{}
+		if err := rows.Scan(
+			&summary.WorkflowID,
+			&summary.VCCount,
+			&summary.VerifiedCount,
+			&summary.FailedCount,
+			&lastCreated,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan workflow VC status summary: %w", err)
+		}
+
+		if lastCreated.Valid {
+			summary.LastCreatedAt = &lastCreated.Time
+		}
+
+		summaries = append(summaries, summary)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("workflow VC status summary rows error: %w", err)
+	}
+
+	return summaries, nil
+}
+
 func (ls *LocalStorage) CountExecutionVCs(ctx context.Context, filters types.VCFilters) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, fmt.Errorf("context cancelled during count execution VCs: %w", err)

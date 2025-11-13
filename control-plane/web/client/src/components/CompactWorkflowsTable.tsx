@@ -3,11 +3,13 @@
 import { useMemo, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { Renew, Security, TrashCan } from "@/components/ui/icon-bridge";
-import { useVCStatus } from "../hooks/useVCVerification";
+import { useWorkflowVCStatuses } from "../hooks/useVCVerification";
 import type { WorkflowSummary } from "../types/workflows";
+import type { VCStatusSummary } from "../types/did";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
+import { Skeleton } from "./ui/skeleton";
 import {
   HoverCard,
   HoverCardContent,
@@ -165,17 +167,34 @@ function WorkflowHoverCard({
   );
 }
 
-function WorkflowVCStatusCell({ workflowId }: { workflowId: string }) {
-  const { status: vcStatus } = useVCStatus(workflowId);
+function WorkflowVCStatusCell({
+  workflowId,
+  summary,
+  loading,
+}: {
+  workflowId: string;
+  summary?: VCStatusSummary | null;
+  loading?: boolean;
+}) {
+  if (loading && !summary) {
+    return <Skeleton className="h-3 w-12 rounded-full bg-muted/20" />;
+  }
 
-  if (!vcStatus) {
-    return <VerifiableCredentialBadge hasVC={false} status="none" />;
+  if (!summary) {
+    return (
+      <VerifiableCredentialBadge
+        hasVC={false}
+        status="none"
+        workflowId={workflowId}
+        variant="table"
+      />
+    );
   }
 
   return (
     <VerifiableCredentialBadge
-      hasVC={vcStatus.has_vcs}
-      status={vcStatus.verification_status}
+      hasVC={summary.has_vcs}
+      status={summary.verification_status}
       workflowId={workflowId}
       variant="table"
     />
@@ -198,6 +217,12 @@ export function CompactWorkflowsTable({
   const [selectedWorkflows, setSelectedWorkflows] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const workflowIds = useMemo(
+    () => workflows.map((workflow) => workflow.workflow_id).filter(Boolean),
+    [workflows]
+  );
+  const { statuses: workflowVCStatuses, loading: workflowVCStatusesLoading } =
+    useWorkflowVCStatuses(workflowIds);
 
   // Define search fields for workflows
   const searchFields = [
@@ -497,7 +522,11 @@ export function CompactWorkflowsTable({
       sortable: false,
       align: "center" as const,
       render: (workflow: WorkflowSummary) => (
-        <WorkflowVCStatusCell workflowId={workflow.workflow_id} />
+        <WorkflowVCStatusCell
+          workflowId={workflow.workflow_id}
+          summary={workflowVCStatuses[workflow.workflow_id]}
+          loading={workflowVCStatusesLoading}
+        />
       ),
     },
     {

@@ -294,6 +294,39 @@ type WorkflowVCChainResponse struct {
 	DIDResolutionBundle map[string]DIDResolutionEntry `json:"did_resolution_bundle,omitempty"`
 }
 
+// WorkflowVCStatusAggregation represents aggregated VC stats per workflow directly from storage.
+type WorkflowVCStatusAggregation struct {
+	WorkflowID    string     `json:"workflow_id"`
+	VCCount       int        `json:"vc_count"`
+	VerifiedCount int        `json:"verified_count"`
+	FailedCount   int        `json:"failed_count"`
+	LastCreatedAt *time.Time `json:"last_created_at,omitempty"`
+}
+
+// WorkflowVCStatusSummary is the UI-facing summary for workflow VC status indicators.
+type WorkflowVCStatusSummary struct {
+	WorkflowID         string `json:"workflow_id"`
+	HasVCs             bool   `json:"has_vcs"`
+	VCCount            int    `json:"vc_count"`
+	VerifiedCount      int    `json:"verified_count"`
+	FailedCount        int    `json:"failed_count"`
+	LastVCCreated      string `json:"last_vc_created"`
+	VerificationStatus string `json:"verification_status"`
+}
+
+// DefaultWorkflowVCStatusSummary creates an empty summary for workflows with no VC data.
+func DefaultWorkflowVCStatusSummary(workflowID string) *WorkflowVCStatusSummary {
+	return &WorkflowVCStatusSummary{
+		WorkflowID:         workflowID,
+		HasVCs:             false,
+		VCCount:            0,
+		VerifiedCount:      0,
+		FailedCount:        0,
+		LastVCCreated:      "",
+		VerificationStatus: "none",
+	}
+}
+
 // DIDResolutionEntry represents a resolved DID with its public key for offline verification.
 type DIDResolutionEntry struct {
 	Method       string          `json:"method"` // "key", "web", etc.

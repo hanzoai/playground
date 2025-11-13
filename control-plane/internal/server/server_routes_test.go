@@ -316,6 +316,9 @@ func (s *stubStorage) GetExecutionVC(ctx context.Context, vcID string) (*types.E
 func (s *stubStorage) ListExecutionVCs(ctx context.Context, filters types.VCFilters) ([]*types.ExecutionVCInfo, error) {
 	return nil, nil
 }
+func (s *stubStorage) ListWorkflowVCStatusSummaries(ctx context.Context, workflowIDs []string) ([]*types.WorkflowVCStatusAggregation, error) {
+	return nil, nil
+}
 
 // Workflow VC operations
 func (s *stubStorage) StoreWorkflowVC(ctx context.Context, workflowVCID, workflowID, sessionID string, componentVCIDs []string, status string, startTime, endTime *time.Time, totalSteps, completedSteps int, storageURI string, documentSizeBytes int64) error {
