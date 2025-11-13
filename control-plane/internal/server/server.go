@@ -772,6 +772,7 @@ func (s *AgentFieldServer) setupRoutes() {
 			{
 				workflows.GET("/:workflowId/dag", handlers.GetWorkflowDAGHandler(s.storage))
 				didHandler := ui.NewDIDHandler(s.storage, s.didService, s.vcService)
+				workflows.POST("/vc-status", didHandler.GetWorkflowVCStatusBatchHandler)
 				workflows.GET("/:workflowId/vc-chain", didHandler.GetWorkflowVCChainHandler)
 				workflows.POST("/:workflowId/verify-vc", didHandler.VerifyWorkflowVCComprehensiveHandler)
 			}

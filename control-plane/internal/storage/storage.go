@@ -167,6 +167,7 @@ type StorageProvider interface {
 	StoreExecutionVC(ctx context.Context, vcID, executionID, workflowID, sessionID, issuerDID, targetDID, callerDID, inputHash, outputHash, status string, vcDocument []byte, signature string, storageURI string, documentSizeBytes int64) error
 	GetExecutionVC(ctx context.Context, vcID string) (*types.ExecutionVCInfo, error)
 	ListExecutionVCs(ctx context.Context, filters types.VCFilters) ([]*types.ExecutionVCInfo, error)
+	ListWorkflowVCStatusSummaries(ctx context.Context, workflowIDs []string) ([]*types.WorkflowVCStatusAggregation, error)
 	CountExecutionVCs(ctx context.Context, filters types.VCFilters) (int, error)
 
 	// Workflow VC operations

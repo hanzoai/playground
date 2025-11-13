@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { 
   VCStatusSummary, 
   WorkflowVCChainResponse, 
@@ -10,7 +10,8 @@ import {
   getWorkflowVCChain, 
   verifyVC, 
   getWorkflowAuditTrail,
-  getExecutionVCStatus 
+  getExecutionVCStatus,
+  getWorkflowVCStatuses
 } from '../services/vcApi';
 
 /**
@@ -60,7 +61,11 @@ export function useVCStatus(workflowId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    if (!workflowId) return;
+    if (!workflowId) {
+      setStatus(null);
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -205,64 +210,47 @@ export function useExecutionVCStatus(executionId: string) {
 /**
  * Hook for managing multiple workflow VC statuses (for workflows list page)
  */
-export function useMultipleVCStatuses(workflowIds: string[]) {
+export function useWorkflowVCStatuses(workflowIds: string[]) {
   const [statuses, setStatuses] = useState<Record<string, VCStatusSummary>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStatuses = useCallback(async () => {
-    if (workflowIds.length === 0) {
+  const uniqueWorkflowIds = useMemo(
+    () => Array.from(new Set((workflowIds || []).filter((id): id is string => Boolean(id)))),
+    [workflowIds]
+  );
+
+  const fetchStatuses = useCallback(async (targetIds?: string[]) => {
+    const idsToFetch = (targetIds && targetIds.length > 0 ? targetIds : uniqueWorkflowIds).filter(Boolean);
+    if (idsToFetch.length === 0) {
       setLoading(false);
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch statuses in parallel
-      const statusPromises = workflowIds.map(async (workflowId) => {
-        try {
-          const status = await getVCStatusSummary(workflowId);
-          return { workflowId, status };
-        } catch (err) {
-          console.warn(`Failed to fetch VC status for workflow ${workflowId}:`, err);
-          return { 
-            workflowId, 
-            status: {
-              has_vcs: false,
-              vc_count: 0,
-              verified_count: 0,
-              last_vc_created: '',
-              verification_status: 'none' as const
-            }
-          };
-        }
-      });
-      
-      const results = await Promise.all(statusPromises);
-      const statusMap = results.reduce((acc, { workflowId, status }) => {
-        acc[workflowId] = status;
-        return acc;
-      }, {} as Record<string, VCStatusSummary>);
-      
-      setStatuses(statusMap);
+      const result = await getWorkflowVCStatuses(idsToFetch);
+      setStatuses((prev) => ({ ...prev, ...result }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch VC statuses');
     } finally {
       setLoading(false);
     }
-  }, [workflowIds]);
+  }, [uniqueWorkflowIds]);
 
   useEffect(() => {
-    fetchStatuses();
-  }, [fetchStatuses]);
+    const missingIds = uniqueWorkflowIds.filter((id) => !statuses[id]);
+    if (missingIds.length > 0) {
+      fetchStatuses(missingIds);
+    }
+  }, [uniqueWorkflowIds, statuses, fetchStatuses]);
 
   return {
     statuses,
     loading,
     error,
-    refetch: fetchStatuses,
+    refetch: () => fetchStatuses(uniqueWorkflowIds),
     getStatus: (workflowId: string) => statuses[workflowId] || null
   };
 }

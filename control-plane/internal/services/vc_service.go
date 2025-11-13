@@ -69,6 +69,71 @@ func (s *VCService) ShouldPersistExecutionVC() bool {
 	return s.config.VCRequirements.PersistExecutionVC
 }
 
+// GetWorkflowVCStatusSummaries returns lightweight VC status summaries for the provided workflows.
+func (s *VCService) GetWorkflowVCStatusSummaries(workflowIDs []string) (map[string]*types.WorkflowVCStatusSummary, error) {
+	summaries := make(map[string]*types.WorkflowVCStatusSummary, len(workflowIDs))
+	uniqueIDs := make([]string, 0, len(workflowIDs))
+	seen := make(map[string]struct{}, len(workflowIDs))
+
+	for _, id := range workflowIDs {
+		if id == "" {
+			continue
+		}
+		if _, exists := summaries[id]; !exists {
+			summaries[id] = types.DefaultWorkflowVCStatusSummary(id)
+		}
+		if _, exists := seen[id]; !exists {
+			seen[id] = struct{}{}
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	if len(uniqueIDs) == 0 {
+		return summaries, nil
+	}
+
+	if s == nil || s.config == nil || !s.config.Enabled || s.vcStorage == nil {
+		return summaries, nil
+	}
+
+	ctx := context.Background()
+	aggregations, err := s.vcStorage.ListWorkflowVCStatusSummaries(ctx, uniqueIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, agg := range aggregations {
+		if agg == nil {
+			continue
+		}
+
+		summary := types.DefaultWorkflowVCStatusSummary(agg.WorkflowID)
+		summary.VCCount = agg.VCCount
+		summary.VerifiedCount = agg.VerifiedCount
+		summary.FailedCount = agg.FailedCount
+		summary.HasVCs = agg.VCCount > 0
+
+		if agg.LastCreatedAt != nil {
+			summary.LastVCCreated = agg.LastCreatedAt.UTC().Format(time.RFC3339)
+		}
+
+		switch {
+		case agg.VCCount == 0:
+			summary.VerificationStatus = "none"
+		case agg.FailedCount > 0:
+			summary.VerificationStatus = "failed"
+		case agg.VerifiedCount == agg.VCCount:
+			summary.VerificationStatus = "verified"
+		default:
+			summary.VerificationStatus = "pending"
+		}
+
+		summaries[agg.WorkflowID] = summary
+	}
+
+	return summaries, nil
+}
+
 // GenerateExecutionVC generates a verifiable credential for an execution.
 func (s *VCService) GenerateExecutionVC(ctx *types.ExecutionContext, inputData, outputData []byte, status string, errorMessage *string, durationMS int) (*types.ExecutionVC, error) {
 

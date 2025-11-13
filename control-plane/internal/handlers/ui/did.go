@@ -316,6 +316,48 @@ func (h *DIDHandler) GetExecutionVCHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, executionVC)
 }
 
+type workflowVCStatusBatchRequest struct {
+	WorkflowIDs []string `json:"workflow_ids"`
+}
+
+// GetWorkflowVCStatusBatchHandler returns VC status summaries for multiple workflows.
+// POST /api/ui/v1/workflows/vc-status
+func (h *DIDHandler) GetWorkflowVCStatusBatchHandler(c *gin.Context) {
+	var req workflowVCStatusBatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.WorkflowIDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "workflow_ids is required"})
+		return
+	}
+
+	result := make([]types.WorkflowVCStatusSummary, 0, len(req.WorkflowIDs))
+
+	if h.vcService == nil {
+		for _, id := range req.WorkflowIDs {
+			result = append(result, *types.DefaultWorkflowVCStatusSummary(id))
+		}
+		c.JSON(http.StatusOK, gin.H{"summaries": result})
+		return
+	}
+
+	summaryMap, err := h.vcService.GetWorkflowVCStatusSummaries(req.WorkflowIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("failed to fetch workflow VC statuses: %v", err),
+		})
+		return
+	}
+
+	for _, id := range req.WorkflowIDs {
+		summary, ok := summaryMap[id]
+		if !ok || summary == nil {
+			summary = types.DefaultWorkflowVCStatusSummary(id)
+		}
+		result = append(result, *summary)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"summaries": result})
+}
+
 // GetWorkflowVCChainHandler handles requests for workflow VC chain information.
 // GET /api/ui/v1/workflows/:workflowId/vc-chain
 func (h *DIDHandler) GetWorkflowVCChainHandler(c *gin.Context) {

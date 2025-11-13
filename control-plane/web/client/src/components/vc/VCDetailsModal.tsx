@@ -53,6 +53,9 @@ export function VCDetailsModal({
   // Determine which VC to show
   const targetVC = executionVC || vcChain?.component_vcs?.[0];
   const showChain = !!workflowId && !executionVC;
+  const normalizedTargetStatus = targetVC
+    ? normalizeExecutionStatus(targetVC.status)
+    : null;
 
   const handleCopyVC = async (vc: ExecutionVC) => {
     try {
@@ -148,12 +151,15 @@ export function VCDetailsModal({
                   has_vcs: true,
                   vc_count: 1,
                   verified_count:
-                    normalizeExecutionStatus(targetVC.status) === "succeeded" ? 1 : 0,
+                    normalizedTargetStatus === "succeeded" ? 1 : 0,
+                  failed_count: normalizedTargetStatus === "failed" ? 1 : 0,
                   last_vc_created: targetVC.created_at,
                   verification_status:
-                    normalizeExecutionStatus(targetVC.status) === "succeeded"
+                    normalizedTargetStatus === "succeeded"
                       ? "verified"
-                      : "pending",
+                      : normalizedTargetStatus === "failed"
+                        ? "failed"
+                        : "pending",
                 }}
                 showDetails={false}
               />

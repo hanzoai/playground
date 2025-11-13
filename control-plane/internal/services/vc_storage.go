@@ -107,6 +107,17 @@ func (s *VCStorage) QueryExecutionVCs(filters *types.VCFilters) ([]types.Executi
 	return s.loadExecutionVCsFromDatabaseWithFilters(applied)
 }
 
+// ListWorkflowVCStatusSummaries returns aggregated VC statistics for the provided workflow IDs.
+func (s *VCStorage) ListWorkflowVCStatusSummaries(ctx context.Context, workflowIDs []string) ([]*types.WorkflowVCStatusAggregation, error) {
+	if s.storageProvider == nil {
+		return nil, fmt.Errorf("no storage provider configured for VC storage")
+	}
+	if len(workflowIDs) == 0 {
+		return []*types.WorkflowVCStatusAggregation{}, nil
+	}
+	return s.storageProvider.ListWorkflowVCStatusSummaries(ctx, workflowIDs)
+}
+
 // StoreWorkflowVC persists workflow-level VC metadata.
 func (s *VCStorage) StoreWorkflowVC(ctx context.Context, vc *types.WorkflowVC) error {
 	if s.storageProvider == nil {
