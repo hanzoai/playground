@@ -313,6 +313,283 @@ func TestBuildLightweightExecutionDAG_EmptyExecutions(t *testing.T) {
 	require.Equal(t, 0, maxDepth)
 }
 
+func TestBuildExecutionDAG_ComplexHierarchy(t *testing.T) {
+	rootID := "exec-root"
+	level1aID := "exec-level1a"
+	level1bID := "exec-level1b"
+	level2aID := "exec-level2a"
+	level2bID := "exec-level2b"
+	level3ID := "exec-level3"
+
+	executions := []*types.Execution{
+		{
+			ExecutionID:       rootID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now(),
+			ParentExecutionID: nil,
+		},
+		{
+			ExecutionID:       level1aID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(1 * time.Second),
+			ParentExecutionID: &rootID,
+		},
+		{
+			ExecutionID:       level1bID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(2 * time.Second),
+			ParentExecutionID: &rootID,
+		},
+		{
+			ExecutionID:       level2aID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(3 * time.Second),
+			ParentExecutionID: &level1aID,
+		},
+		{
+			ExecutionID:       level2bID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(4 * time.Second),
+			ParentExecutionID: &level1aID,
+		},
+		{
+			ExecutionID:       level3ID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(5 * time.Second),
+			ParentExecutionID: &level2aID,
+		},
+	}
+
+	dag, timeline, status, _, _, _, maxDepth := buildExecutionDAG(executions)
+
+	require.NotNil(t, dag)
+	require.Equal(t, rootID, dag.ExecutionID)
+	require.Len(t, dag.Children, 2) // level1a and level1b
+	require.Equal(t, 3, maxDepth)
+
+	// Verify level1a has 2 children (level2a and level2b)
+	level1aNode := dag.Children[0]
+	if level1aNode.ExecutionID == level1aID {
+		require.Len(t, level1aNode.Children, 2)
+		// Verify level2a has 1 child (level3)
+		for _, child := range level1aNode.Children {
+			if child.ExecutionID == level2aID {
+				require.Len(t, child.Children, 1)
+				require.Equal(t, level3ID, child.Children[0].ExecutionID)
+			}
+		}
+	}
+
+	require.Len(t, timeline, 6)
+	require.Equal(t, "succeeded", status)
+}
+
+func TestBuildExecutionDAG_MixedStatuses(t *testing.T) {
+	executions := []*types.Execution{
+		{
+			ExecutionID:       "exec-1",
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now(),
+			ParentExecutionID: nil,
+		},
+		{
+			ExecutionID:       "exec-2",
+			RunID:             "run-1",
+			Status:            "failed",
+			StartedAt:         time.Now().Add(1 * time.Second),
+			ParentExecutionID: nil,
+		},
+		{
+			ExecutionID:       "exec-3",
+			RunID:             "run-1",
+			Status:            "running",
+			StartedAt:         time.Now().Add(2 * time.Second),
+			ParentExecutionID: nil,
+		},
+	}
+
+	_, _, status, _, _, _, _ := buildExecutionDAG(executions)
+
+	// Should return "running" as highest priority status
+	require.Equal(t, "running", status)
+}
+
+func TestBuildExecutionDAG_OrphanedChild(t *testing.T) {
+	// Child with parent that doesn't exist in the list
+	executions := []*types.Execution{
+		{
+			ExecutionID:       "exec-child",
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now(),
+			ParentExecutionID: stringPtr("exec-missing-parent"),
+		},
+	}
+
+	dag, timeline, _, _, _, _, _ := buildExecutionDAG(executions)
+
+	// Should still build DAG with orphaned child as root
+	require.NotNil(t, dag)
+	require.Equal(t, "exec-child", dag.ExecutionID)
+	require.Len(t, timeline, 1)
+}
+
+func TestBuildExecutionDAG_CycleDetection(t *testing.T) {
+	// Note: The current implementation doesn't explicitly detect cycles,
+	// but we test that it doesn't crash with circular references
+	parentID := "exec-parent"
+	childID := "exec-child"
+
+	executions := []*types.Execution{
+		{
+			ExecutionID:       parentID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now(),
+			ParentExecutionID: &childID, // Circular: parent points to child
+		},
+		{
+			ExecutionID:       childID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(1 * time.Second),
+			ParentExecutionID: &parentID, // Circular: child points to parent
+		},
+	}
+
+	// Should not crash, but behavior may be undefined
+	dag, timeline, _, _, _, _, _ := buildExecutionDAG(executions)
+	require.NotNil(t, dag)
+	require.Len(t, timeline, 2)
+}
+
+func TestBuildExecutionDAG_WithSessionAndActor(t *testing.T) {
+	sessionID := "session-123"
+	actorID := "actor-456"
+
+	executions := []*types.Execution{
+		{
+			ExecutionID:       "exec-1",
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now(),
+			ParentExecutionID: nil,
+			SessionID:         &sessionID,
+			ActorID:           &actorID,
+			ReasonerID:        "reasoner-1",
+		},
+	}
+
+	_, _, _, _, sessionIDOut, actorIDOut, _ := buildExecutionDAG(executions)
+
+	require.NotNil(t, sessionIDOut)
+	require.Equal(t, sessionID, *sessionIDOut)
+	require.NotNil(t, actorIDOut)
+	require.Equal(t, actorID, *actorIDOut)
+}
+
+func TestDeriveOverallStatus_PriorityOrder(t *testing.T) {
+	// Test status priority: running > failed > succeeded
+	tests := []struct {
+		name     string
+		statuses []string
+		expected string
+	}{
+		{
+			name:     "running has highest priority",
+			statuses: []string{"succeeded", "running", "failed"},
+			expected: "running",
+		},
+		{
+			name:     "failed has priority over succeeded",
+			statuses: []string{"succeeded", "failed", "succeeded"},
+			expected: "failed",
+		},
+		{
+			name:     "all succeeded",
+			statuses: []string{"succeeded", "succeeded"},
+			expected: "succeeded",
+		},
+		{
+			name:     "mixed with queued",
+			statuses: []string{"succeeded", "queued", "succeeded"},
+			expected: "running",
+		},
+		{
+			name:     "mixed with pending",
+			statuses: []string{"succeeded", "pending", "succeeded"},
+			expected: "running",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executions := make([]*types.Execution, len(tt.statuses))
+			for i, status := range tt.statuses {
+				executions[i] = &types.Execution{
+					Status: status,
+				}
+			}
+			result := deriveOverallStatus(executions)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestBuildLightweightExecutionDAG_ComplexHierarchy(t *testing.T) {
+	rootID := "exec-root"
+	level1ID := "exec-level1"
+	level2ID := "exec-level2"
+
+	executions := []*types.Execution{
+		{
+			ExecutionID:       rootID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now(),
+			ParentExecutionID: nil,
+			ReasonerID:        "reasoner-1",
+		},
+		{
+			ExecutionID:       level1ID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(1 * time.Second),
+			ParentExecutionID: &rootID,
+		},
+		{
+			ExecutionID:       level2ID,
+			RunID:             "run-1",
+			Status:            "succeeded",
+			StartedAt:         time.Now().Add(2 * time.Second),
+			ParentExecutionID: &level1ID,
+		},
+	}
+
+	timeline, status, workflowName, _, _, maxDepth := buildLightweightExecutionDAG(executions)
+
+	require.Len(t, timeline, 3)
+	require.Equal(t, "succeeded", status)
+	require.Equal(t, "reasoner-1", workflowName)
+	require.Equal(t, 2, maxDepth)
+
+	// Verify depth calculation
+	require.Equal(t, 0, timeline[0].WorkflowDepth)
+	require.Equal(t, 1, timeline[1].WorkflowDepth)
+	require.Equal(t, 2, timeline[2].WorkflowDepth)
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
 func TestExecutionToDAGNode(t *testing.T) {
 	now := time.Now()
 	completed := now.Add(1 * time.Hour)
