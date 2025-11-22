@@ -7,7 +7,8 @@ sharing and synchronization across distributed agents.
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional, Sequence, Union
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 from .client import AgentFieldClient
 from .execution_context import ExecutionContext
 from .memory_events import MemoryEventClient, ScopedMemoryEventClient
@@ -458,8 +459,13 @@ class GlobalMemoryClient:
     across all agents and sessions.
     """
 
-    def __init__(self, memory_client: MemoryClient):
+    def __init__(
+        self,
+        memory_client: MemoryClient,
+        event_client: Optional[MemoryEventClient] = None,
+    ):
         self.memory_client = memory_client
+        self.event_client = event_client
 
     async def set(self, key: str, data: Any) -> None:
         """Set a value in global scope."""
@@ -506,6 +512,49 @@ class GlobalMemoryClient:
         return await self.memory_client.similarity_search(
             query_embedding, top_k=top_k, scope="global", filters=filters
         )
+
+    def on_change(self, patterns: Union[str, List[str]]) -> Callable:
+        """
+        Decorator for subscribing to global-scope memory change events.
+
+        Args:
+            patterns: Pattern(s) to match against memory keys
+
+        Returns:
+            Decorator function
+        """
+
+        if not self.event_client:
+            # No event client available (e.g., during unit tests) — return no-op decorator
+            def decorator(func: Callable) -> Callable:
+                return func
+
+            return decorator
+
+        def decorator(func: Callable) -> Callable:
+            @wraps(func)
+            async def wrapper(event):
+                return await func(event)
+
+            self.event_client.subscribe(
+                patterns,
+                wrapper,
+                scope="global",
+                scope_id=None,
+            )
+
+            setattr(wrapper, "_memory_event_listener", True)
+            setattr(
+                wrapper,
+                "_memory_event_patterns",
+                patterns if isinstance(patterns, list) else [patterns],
+            )
+            setattr(wrapper, "_memory_event_scope", "global")
+            setattr(wrapper, "_memory_event_scope_id", None)
+
+            return wrapper
+
+        return decorator
 
 
 class MemoryInterface:
@@ -660,4 +709,4 @@ class MemoryInterface:
         Returns:
             GlobalMemoryClient for global scope access
         """
-        return GlobalMemoryClient(self.memory_client)
+        return GlobalMemoryClient(self.memory_client, self.events)
