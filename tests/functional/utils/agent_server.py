@@ -73,6 +73,15 @@ async def run_agent_server(
         await agent.agentfield_handler.register_with_agentfield_server(port)
         agent.agentfield_server = None
 
+        # Registration runs on the pytest event loop, but reasoners execute on the
+        # uvicorn event loop inside a background thread. Reset the AgentField client
+        # so async HTTP clients are re-created within the uvicorn loop to avoid
+        # "bound to a different event loop" errors when performing memory operations.
+        try:
+            await agent.client.aclose()
+        except AttributeError:
+            pass
+
         await asyncio.sleep(registration_delay)
 
         yield RunningAgent(agent=agent, port=port, base_url=agent.base_url)
