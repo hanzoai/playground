@@ -219,8 +219,7 @@ const result = await response.json();
 *   **[🐦 Twitter/X](https://x.com/agentfield_dev)**
 *   **[📦 Examples](https://github.com/agentfield/agentfield-examples)**
 
-<div align="center">
-**Built by developers who got tired of duct-taping agents together.**
-**[🌐 Website](https://agentfield.ai)**
-
-</div>
+<p align="center">
+  <strong>Built by developers who got tired of duct-taping agents together.</strong><br>
+  <a href="https://agentfield.ai">🌐 Website</a>
+</p>
