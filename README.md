@@ -35,8 +35,8 @@ It is an open-source **Control Plane** that treats AI agents as first-class citi
 Most frameworks help you *prototype* (Day 1). AgentField helps you *operate* (Day 2).
 *   **How do I debug a loop?** (Observability)
 *   **How do I prove what the agent did?** (Verifiable Credentials)
-*   **How do I scale to 10k concurrent runs?** (Stateless Architecture)
-*   **How do I manage tools?** (MCP Support)
+*   **How do I scale to 1M+ concurrent runs?** (Stateless Architecture)
+*   **How do I manage IAM for agents ?** (Identity) 
 
 Write standard Python (or Go). Get a production-grade distributed system automatically.
 
