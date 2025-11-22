@@ -62,12 +62,46 @@ func WithOutputSchema(raw json.RawMessage) ReasonerOption {
 	}
 }
 
+// WithCLI marks this reasoner as CLI-accessible.
+func WithCLI() ReasonerOption {
+	return func(r *Reasoner) {
+		r.CLIEnabled = true
+	}
+}
+
+// WithDefaultCLI marks the reasoner as the default CLI handler.
+func WithDefaultCLI() ReasonerOption {
+	return func(r *Reasoner) {
+		r.CLIEnabled = true
+		r.DefaultCLI = true
+	}
+}
+
+// WithCLIFormatter registers a custom formatter for CLI output.
+func WithCLIFormatter(formatter func(context.Context, any, error)) ReasonerOption {
+	return func(r *Reasoner) {
+		r.CLIFormatter = formatter
+	}
+}
+
+// WithDescription adds a human-readable description for help/list commands.
+func WithDescription(desc string) ReasonerOption {
+	return func(r *Reasoner) {
+		r.Description = desc
+	}
+}
+
 // Reasoner represents a single handler exposed by the agent.
 type Reasoner struct {
 	Name         string
 	Handler      HandlerFunc
 	InputSchema  json.RawMessage
 	OutputSchema json.RawMessage
+
+	CLIEnabled   bool
+	DefaultCLI   bool
+	CLIFormatter func(context.Context, any, error)
+	Description  string
 }
 
 // Config drives Agent behaviour.
@@ -87,6 +121,21 @@ type Config struct {
 	// AIConfig configures LLM/AI capabilities
 	// If nil, AI features will be disabled
 	AIConfig *ai.Config
+
+	// CLIConfig controls CLI-specific behaviour and help text.
+	CLIConfig *CLIConfig
+}
+
+// CLIConfig controls CLI behaviour and presentation.
+type CLIConfig struct {
+	AppName        string
+	AppDescription string
+	DisableColors  bool
+
+	DefaultOutputFormat string
+	HelpPreamble        string
+	HelpEpilog          string
+	EnvironmentVars     []string
 }
 
 // Agent manages registration, lease renewal, and HTTP routing.
@@ -109,6 +158,8 @@ type Agent struct {
 	initMu        sync.Mutex
 	initialized   bool
 	leaseLoopOnce sync.Once
+
+	defaultCLIReasoner string
 }
 
 // New constructs an Agent.
@@ -121,9 +172,6 @@ func New(cfg Config) (*Agent, error) {
 	}
 	if cfg.TeamID == "" {
 		cfg.TeamID = "default"
-	}
-	if cfg.AgentFieldURL == "" {
-		return nil, errors.New("config.AgentFieldURL is required")
 	}
 	if cfg.ListenAddress == "" {
 		cfg.ListenAddress = ":8001"
@@ -142,13 +190,9 @@ func New(cfg Config) (*Agent, error) {
 		Timeout: 15 * time.Second,
 	}
 
-	c, err := client.New(cfg.AgentFieldURL, client.WithHTTPClient(httpClient), client.WithBearerToken(cfg.Token))
-	if err != nil {
-		return nil, err
-	}
-
 	// Initialize AI client if config provided
 	var aiClient *ai.Client
+	var err error
 	if cfg.AIConfig != nil {
 		aiClient, err = ai.NewClient(cfg.AIConfig)
 		if err != nil {
@@ -156,15 +200,24 @@ func New(cfg Config) (*Agent, error) {
 		}
 	}
 
-	return &Agent{
+	a := &Agent{
 		cfg:        cfg,
-		client:     c,
 		httpClient: httpClient,
 		reasoners:  make(map[string]*Reasoner),
 		aiClient:   aiClient,
 		stopLease:  make(chan struct{}),
 		logger:     cfg.Logger,
-	}, nil
+	}
+
+	if strings.TrimSpace(cfg.AgentFieldURL) != "" {
+		c, err := client.New(cfg.AgentFieldURL, client.WithHTTPClient(httpClient), client.WithBearerToken(cfg.Token))
+		if err != nil {
+			return nil, err
+		}
+		a.client = c
+	}
+
+	return a, nil
 }
 
 func contextWithExecution(ctx context.Context, exec ExecutionContext) context.Context {
@@ -212,6 +265,15 @@ func (a *Agent) RegisterReasoner(name string, handler HandlerFunc, opts ...Reaso
 		opt(meta)
 	}
 
+	if meta.DefaultCLI {
+		if a.defaultCLIReasoner != "" && a.defaultCLIReasoner != name {
+			a.logger.Printf("warn: default CLI reasoner already set to %s, ignoring default flag on %s", a.defaultCLIReasoner, name)
+			meta.DefaultCLI = false
+		} else {
+			a.defaultCLIReasoner = name
+		}
+	}
+
 	a.reasoners[name] = meta
 }
 
@@ -222,6 +284,10 @@ func (a *Agent) Initialize(ctx context.Context) error {
 
 	if a.initialized {
 		return nil
+	}
+
+	if a.client == nil {
+		return errors.New("AgentFieldURL is required when running in server mode")
 	}
 
 	if len(a.reasoners) == 0 {
@@ -241,8 +307,22 @@ func (a *Agent) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// Run starts the agent HTTP server, registers with the control plane, and blocks until ctx is cancelled.
+// Run intelligently routes between CLI and server modes.
 func (a *Agent) Run(ctx context.Context) error {
+	args := os.Args[1:]
+	if len(args) == 0 && !a.hasCLIReasoners() {
+		return a.Serve(ctx)
+	}
+
+	if len(args) > 0 && args[0] == "serve" {
+		return a.Serve(ctx)
+	}
+
+	return a.runCLI(ctx, args)
+}
+
+// Serve starts the agent HTTP server, registers with the control plane, and blocks until ctx is cancelled.
+func (a *Agent) Serve(ctx context.Context) error {
 	if err := a.Initialize(ctx); err != nil {
 		return err
 	}
@@ -347,6 +427,18 @@ func (a *Agent) Handler() http.Handler {
 // ServeHTTP implements http.Handler directly.
 func (a *Agent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.Handler().ServeHTTP(w, r)
+}
+
+// Execute runs a specific reasoner by name.
+func (a *Agent) Execute(ctx context.Context, reasonerName string, input map[string]any) (any, error) {
+	reasoner, ok := a.reasoners[reasonerName]
+	if !ok {
+		return nil, fmt.Errorf("unknown reasoner %q", reasonerName)
+	}
+	if input == nil {
+		input = make(map[string]any)
+	}
+	return reasoner.Handler(ctx, input)
 }
 
 func (a *Agent) handler() http.Handler {
@@ -512,6 +604,10 @@ func (a *Agent) postExecutionStatus(ctx context.Context, callbackURL string, pay
 
 // Call invokes another reasoner via the AgentField control plane, preserving execution context.
 func (a *Agent) Call(ctx context.Context, target string, input map[string]any) (map[string]any, error) {
+	if strings.TrimSpace(a.cfg.AgentFieldURL) == "" {
+		return nil, errors.New("AgentFieldURL is required to call other reasoners")
+	}
+
 	if !strings.Contains(target, ".") {
 		target = fmt.Sprintf("%s.%s", a.cfg.NodeID, strings.TrimPrefix(target, "."))
 	}

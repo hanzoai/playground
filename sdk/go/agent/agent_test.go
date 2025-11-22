@@ -61,7 +61,10 @@ func TestNew(t *testing.T) {
 				NodeID:  "node-1",
 				Version: "1.0.0",
 			},
-			wantErr: true,
+			wantErr: false,
+			check: func(t *testing.T, a *Agent) {
+				assert.Nil(t, a.client)
+			},
 		},
 		{
 			name: "defaults applied",
@@ -101,7 +104,7 @@ func TestNew(t *testing.T) {
 				NodeID:        "node-1",
 				Version:       "1.0.0",
 				AgentFieldURL: "https://api.example.com",
-				AIConfig: &ai.Config{
+				AIConfig:      &ai.Config{
 					// Missing required fields
 				},
 			},
@@ -219,11 +222,11 @@ func TestInitialize(t *testing.T) {
 	defer server.Close()
 
 	cfg := Config{
-		NodeID:        "node-1",
-		Version:       "1.0.0",
-		TeamID:        "team-1",
-		AgentFieldURL: server.URL,
-		Logger:        log.New(io.Discard, "", 0),
+		NodeID:           "node-1",
+		Version:          "1.0.0",
+		TeamID:           "team-1",
+		AgentFieldURL:    server.URL,
+		Logger:           log.New(io.Discard, "", 0),
 		DisableLeaseLoop: true, // Disable for testing
 	}
 
@@ -436,10 +439,10 @@ func TestCall(t *testing.T) {
 
 	// Create context with execution context
 	ctx := contextWithExecution(context.Background(), ExecutionContext{
-		RunID:             "run-1",
-		ExecutionID:       "parent-exec",
-		SessionID:         "session-1",
-		ActorID:           "actor-1",
+		RunID:       "run-1",
+		ExecutionID: "parent-exec",
+		SessionID:   "session-1",
+		ActorID:     "actor-1",
 	})
 
 	result, err := agent.Call(ctx, "target.node", map[string]any{"value": 42})
