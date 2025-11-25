@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Agent } from '../src/agent/Agent.js';
 import { AgentRouter } from '../src/router/AgentRouter.js';
 import { z } from 'zod';
@@ -51,7 +52,7 @@ simulationRouter.reasoner<{ scenario: string }, any>('decomposeScenario', async 
 
 const agent = new Agent({
   nodeId: 'simulation-engine',
-  aiConfig: { model: 'gpt-4o', provider: 'openai' },
+  aiConfig: { model: 'gpt-4o', provider: 'openai', apiKey: process.env.OPENAI_API_KEY },
   host: '127.0.0.1',
   devMode: true
 });
