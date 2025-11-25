@@ -59,7 +59,7 @@ export class ReasonerContext<TInput = any> {
     return this.aiClient.generate(prompt, options);
   }
 
-  aiStream(prompt: string, options?: AIRequestOptions): AIStream {
+  aiStream(prompt: string, options?: AIRequestOptions): Promise<AIStream> {
     return this.aiClient.stream(prompt, options);
   }
 

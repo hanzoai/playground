@@ -25,30 +25,31 @@ export class AIClient {
   async generate<T = any>(prompt: string, options: AIRequestOptions = {}): Promise<T | string> {
     const model = this.buildModel(options);
     const response = await generateText({
-      model,
+      // type cast to avoid provider-model signature drift
+      model: model as any,
       prompt,
       system: options.system,
       temperature: options.temperature ?? this.config.temperature,
       maxTokens: options.maxTokens ?? this.config.maxTokens,
       schema: options.schema
-    });
+    } as any);
 
-    if (options.schema) {
-      return response.object as T;
+    if (options.schema && (response as any).object !== undefined) {
+      return (response as any).object as T;
     }
 
-    return response.text;
+    return (response as any).text as string;
   }
 
   async stream(prompt: string, options: AIRequestOptions = {}): Promise<AIStream> {
     const model = this.buildModel(options);
-    const streamResult: StreamTextResult<any, any> = await streamText({
-      model,
+    const streamResult: StreamTextResult<any> = await streamText({
+      model: model as any,
       prompt,
       system: options.system,
       temperature: options.temperature ?? this.config.temperature,
       maxTokens: options.maxTokens ?? this.config.maxTokens
-    });
+    } as any);
 
     return streamResult.textStream;
   }
@@ -62,7 +63,7 @@ export class AIClient {
         apiKey: this.config.apiKey,
         baseURL: this.config.baseUrl
       });
-      return anthropic(modelName);
+      return anthropic(modelName) as any;
     }
 
     // Default to OpenAI / OpenRouter compatible models
@@ -70,6 +71,6 @@ export class AIClient {
       apiKey: this.config.apiKey,
       baseURL: this.config.baseUrl
     });
-    return openai(modelName);
+    return openai(modelName) as any;
   }
 }

@@ -181,10 +181,10 @@ export class Agent {
       res.json(this.skills.all().map((s) => s.name));
     });
 
-    this.app.post('/api/v1/reasoners/*', (req, res) => this.executeReasoner(req, res, req.params[0]));
+    this.app.post('/api/v1/reasoners/*', (req, res) => this.executeReasoner(req, res, (req.params as any)[0]));
     this.app.post('/reasoners/:name', (req, res) => this.executeReasoner(req, res, req.params.name));
 
-    this.app.post('/api/v1/skills/*', (req, res) => this.executeSkill(req, res, req.params[0]));
+    this.app.post('/api/v1/skills/*', (req, res) => this.executeSkill(req, res, (req.params as any)[0]));
     this.app.post('/skills/:name', (req, res) => this.executeSkill(req, res, req.params.name));
   }
 
