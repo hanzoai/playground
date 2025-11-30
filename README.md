@@ -225,6 +225,8 @@ export AGENT_CALLBACK_URL="http://host.docker.internal:8001"
 
 Most frameworks stop at "make the LLM call." But production agents need:
 
+[See the production-ready feature set →](https://agentfield.ai/docs/why-agentfield/production-ready-features)
+
 ### Scale & Reliability
 Agents that run for hours or days. Webhooks with automatic retries. Backpressure handling when downstream services are slow.
 
@@ -268,6 +270,8 @@ Cryptographic identity for every agent. Tamper-proof audit trails for every acti
 
 AgentField isn't a framework you extend. It's infrastructure you deploy on.
 
+[See how AgentField compares to agent frameworks →](https://agentfield.ai/docs/why-agentfield/vs-agent-frameworks)
+
 |                    | Agent Frameworks           | DAG/Workflow Engines    | AgentField                              |
 | ------------------ | -------------------------- | ----------------------- | --------------------------------------- |
 | **Architecture**   | Monolithic scripts         | Predetermined pipelines | Distributed microservices               |
@@ -304,6 +308,7 @@ AgentField isn't a framework you extend. It's infrastructure you deploy on.
 - **Prometheus Metrics**: `/metrics` endpoint out of the box
 - **Policy Enforcement**: "Only agents signed by 'Finance' can access this tool"
 
+[Explore the full feature set →](https://agentfield.ai/docs/features)
 
 
 ## Identity & Trust
@@ -326,6 +331,8 @@ For compliance teams: mathematical proof, not trust. [Full documentation](https:
 <div align="center">
 <img src="assets/arch.png" alt="AgentField Architecture Diagram" width="80%" />
 </div>
+
+[Learn more about the core architecture →](https://agentfield.ai/docs/why-agentfield/core-architecture)
 
 
 
