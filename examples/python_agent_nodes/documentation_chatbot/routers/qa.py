@@ -163,7 +163,7 @@ Then self-assess and set confidence, needs_more, and missing_topics accordingly.
 @qa_router.reasoner()
 async def qa_answer(
     question: str,
-    namespace: str = "documentation",
+    namespace: str = "website-docs",
     top_k: int = 6,
     min_score: float = 0.35,
 ) -> DocAnswer:
@@ -228,7 +228,7 @@ async def qa_answer(
 @qa_router.reasoner()
 async def qa_answer_with_documents(
     question: str,
-    namespace: str = "documentation",
+    namespace: str = "website-docs",
     top_k: int = 6,
     min_score: float = 0.35,
     top_documents: int = 5,

@@ -37,13 +37,13 @@ async def _clear_namespace_via_api(namespace: str) -> dict:
 
     url = f"{base_url}/api/v1/memory/vector/namespace"
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.delete(url, json={"namespace": namespace}, headers=headers)
+        resp = await client.delete(url, json={"namespace": namespace, "scope": "global"}, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
 
 @ingestion_router.skill()
-async def clear_namespace(namespace: str = "documentation") -> dict:
+async def clear_namespace(namespace: str = "website-docs") -> dict:
     """Wipe all vectors for a namespace before re-indexing."""
     result = await _clear_namespace_via_api(namespace)
     deleted = result.get("deleted", 0)
@@ -54,7 +54,7 @@ async def clear_namespace(namespace: str = "documentation") -> dict:
 @ingestion_router.reasoner()
 async def ingest_folder(
     folder_path: str,
-    namespace: str = "documentation",
+    namespace: str = "website-docs",
     glob_pattern: str = "**/*",
     chunk_size: int = 1200,
     chunk_overlap: int = 250,

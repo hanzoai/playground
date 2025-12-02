@@ -79,10 +79,11 @@ func (s *postgresVectorStore) DeleteByPrefix(ctx context.Context, scope, scopeID
 		return 0, err
 	}
 
+	// Use || operator to build the LIKE pattern in PostgreSQL
 	result, err := s.db.ExecContext(ctx, `
 		DELETE FROM memory_vectors
-		WHERE scope = ? AND scope_id = ? AND key LIKE ?
-	`, scope, scopeID, prefix+"%")
+		WHERE scope = ? AND scope_id = ? AND key LIKE ? || '%'
+	`, scope, scopeID, prefix)
 	if err != nil {
 		return 0, err
 	}

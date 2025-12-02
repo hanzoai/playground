@@ -59,7 +59,7 @@ async def _retrieve_for_query(
 @retrieval_router.reasoner()
 async def parallel_retrieve(
     queries: List[str],
-    namespace: str = "documentation",
+    namespace: str = "website-docs",
     top_k: int = 6,
     min_score: float = 0.35,
 ) -> List[RetrievalResult]:
