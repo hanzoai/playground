@@ -70,7 +70,7 @@ deploying and managing distributed multi-agent systems in production (like Kuber
 - **Failure Isolation**: Agent failures don't cascade; control plane handles routing around issues
 
 **CLI Commands:**
-- `af init`: Create new agent (Python or Go)
+- `af init`: Create new agent (Python, Go, or TypeScript)
 - `af server`: Start control plane
 - `af run`: Run agent locally
 - `af dev`: Development mode with hot reload
@@ -85,7 +85,7 @@ deploying and managing distributed multi-agent systems in production (like Kuber
 
 **Getting Started:**
 - Installation and setup (af init, af server)
-- Creating first agent (Python vs Go choice)
+- Creating first agent (Python, Go, or TypeScript choice)
 - Understanding reasoners vs skills
 - Basic agent structure and configuration
 
@@ -126,7 +126,7 @@ The documentation is organized by:
 - **Getting Started**: Quick start, installation, first agent
 - **Core Concepts**: Reasoners, skills, memory, identity, cross-agent communication
 - **Guides**: Deployment, testing, multi-agent patterns, examples
-- **API Reference**: Python SDK, Go SDK, CLI commands, REST APIs
+- **API Reference**: Python SDK, Go SDK, TypeScript SDK, CLI commands, REST APIs
 - **Examples**: Customer support, research assistant, terminal assistant
 
 ## Search Term Relationships
