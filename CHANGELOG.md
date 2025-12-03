@@ -6,6 +6,122 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.14] - 2025-12-03
+
+
+### Added
+
+- Feat: expose api_key at Agent level and fix test lint issues
+
+- Add api_key parameter to Agent class constructor
+- Pass api_key to AgentFieldClient for authentication
+- Document api_key parameter in Agent docstring
+- Fix unused loop variable in ensure_event_loop test fixture
+
+Addresses reviewer feedback that api_key should be exposed at Agent
+level since end users don't interact directly with AgentFieldClient.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (6567bd0)
+
+- Feat: add API key authentication to control plane and SDKs
+
+This adds optional API key authentication to the AgentField control plane
+with support in all SDKs (Python, Go, TypeScript).
+
+## Control Plane Changes
+
+- Add `api_key` config option in agentfield.yaml
+- Add HTTP auth middleware (X-API-Key header, Bearer token, query param)
+- Add gRPC auth interceptor (x-api-key metadata, Bearer token)
+- Skip auth for /api/v1/health, /metrics, and /ui/* paths
+- UI prompts for API key when auth is required and stores in localStorage
+
+## SDK Changes
+
+- Python: Add `api_key` parameter to AgentFieldClient
+- Go: Add `WithAPIKey()` option to client
+- TypeScript: Add `apiKey` option to client config
+
+## Tests
+
+- Add comprehensive HTTP auth middleware tests (14 tests)
+- Add gRPC auth interceptor tests (11 tests)
+- Add Python SDK auth tests (17 tests)
+- Add Go SDK auth tests (10 tests)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (3f8e45c)
+
+
+
+### Fixed
+
+- Fix: resolve flaky SSE decoder test in Go SDK
+
+- Persist accumulated buffer across Decode() calls in SSEDecoder
+- Check for complete messages in buffer before reading more data
+- Add synchronization in test to prevent handler from closing early
+- Update test expectation for multiple chunks (now correctly returns 2)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (32d6d6d)
+
+- Fix: update test helper to accept api_key parameter
+
+Update _FakeAgentFieldClient and _agentfield_client_factory to accept
+the new api_key parameter that was added to AgentFieldClient.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (092f8e0)
+
+- Fix: remove unused import and variable in test_client_auth
+
+- Remove unused `requests` import
+- Remove unused `result` variable assignment
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (8b93711)
+
+- Fix: stop reasoner raw JSON editor from resetting (c604833)
+
+- Fix(ci): add packages:write permission to publish job for GHCR push
+
+The publish job had its own permissions block that overrode the
+workflow-level permissions. Added packages:write to allow Docker
+image push to ghcr.io.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (269ac29)
+
+
+
+### Other
+
+- Updated favcoin (d1712c2)
+
+
+
+### Testing
+
+- Test: add tests for Agent and AgentRouter api_key exposure
+
+- Test Agent stores api_key and passes it to client
+- Test Agent works without api_key
+- Test AgentRouter delegates api_key to attached agent
+- Test AgentRouter delegates client to attached agent
+- Test unattached router raises RuntimeError
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com> (31cd0b1)
+
 ## [0.1.13] - 2025-12-02
 
 
