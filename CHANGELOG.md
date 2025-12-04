@@ -6,6 +6,86 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.20-rc.3] - 2025-12-04
+
+
+### Fixed
+
+- Fix(sdk/typescript): add DID registration to enable VC generation (#60)
+
+* fix(release): skip example requirements for prereleases
+
+Restore the check to skip updating example requirements for prerelease
+versions. Even though prereleases are now published to PyPI, pip install
+excludes them by default per PEP 440. Users running `pip install -r
+requirements.txt` would fail without the `--pre` flag.
+
+Examples should always pin to stable versions so they work out of the box.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix(sdk/typescript): add DID registration to enable VC generation
+
+The TypeScript SDK was not registering with the DID system, causing VC
+generation to fail with "failed to resolve caller DID: DID not found".
+
+This change adds DID registration to match the Python SDK's behavior:
+
+- Add DIDIdentity types and registerAgent() to DidClient
+- Create DidManager class to store identity package after registration
+- Integrate DidManager into Agent.ts to auto-register on startup
+- Update getDidInterface() to resolve DIDs from stored identity package
+
+When didEnabled is true, the agent now:
+1. Registers with /api/v1/nodes/register (existing)
+2. Registers with /api/v1/did/register (new)
+3. Stores identity package for DID resolution
+4. Auto-populates callerDid/targetDid when generating VCs
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* feat(examples): add verifiable credentials TypeScript example
+
+Add a complete VC example demonstrating:
+- Basic text processing with explicit VC generation
+- AI-powered analysis with VC audit trail
+- Data transformation with integrity proof
+- Multi-step workflow with chained VCs
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix(examples): fix linting errors in VC TypeScript example
+
+- Remove invalid `note` property from workflow.progress calls
+- Simplify AI response handling since schema already returns parsed type
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com> (bd097e1)
+
+- Fix(release): skip example requirements for prereleases (#59)
+
+Restore the check to skip updating example requirements for prerelease
+versions. Even though prereleases are now published to PyPI, pip install
+excludes them by default per PEP 440. Users running `pip install -r
+requirements.txt` would fail without the `--pre` flag.
+
+Examples should always pin to stable versions so they work out of the box.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com> (1b7d9b8)
+
 ## [0.1.20-rc.2] - 2025-12-04
 
 
