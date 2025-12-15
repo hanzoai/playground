@@ -6,6 +6,154 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.22-rc.1] - 2025-12-15
+
+
+### Added
+
+- Feat: allow external contributors to run functional tests without API… (#70)
+
+* feat: allow external contributors to run functional tests without API keys
+
+Enable external contributors to run 92% of functional tests (24/26) without
+requiring access to OpenRouter API keys. This makes it easier for the community
+to contribute while maintaining full test coverage for maintainers.
+
+Changes:
+- Detect forked PRs and automatically skip OpenRouter-dependent tests
+- Only 2 tests require OpenRouter (LLM integration tests)
+- 24 tests validate all core infrastructure without LLM calls
+- Update GitHub Actions workflow to conditionally set PYTEST_ARGS
+- Update functional test README with clear documentation
+
+Test coverage for external contributors:
+✅ Control plane health and APIs
+✅ Agent registration and discovery
+✅ Multi-agent communication
+✅ Memory system (all scopes)
+✅ Workflow orchestration
+✅ Go/TypeScript SDK integration
+✅ Serverless agents
+✅ Verifiable credentials
+
+Skipped for external contributors (maintainers still run these):
+⏭️  test_hello_world_with_openrouter
+⏭️  test_readme_quick_start_summarize_flow
+
+This change addresses the challenge of running CI for external contributors
+without exposing repository secrets while maintaining comprehensive test
+coverage for the core AgentField platform functionality.
+
+* fix: handle push events correctly in functional tests workflow
+
+The workflow was failing on push events (to main/testing branches) because
+it relied on github.event.pull_request.head.repo.fork which is null for
+push events. This caused the workflow to incorrectly fall into the else
+branch and fail when OPENROUTER_API_KEY wasn't set.
+
+Changes:
+- Check github.event_name to differentiate between push, pull_request, and workflow_dispatch
+- Explicitly handle push and workflow_dispatch events to run all tests with API key
+- Preserve fork PR detection to skip OpenRouter tests for external contributors
+
+Now properly handles:
+✅ Fork PRs: Skip 2 OpenRouter tests, run 24/26 tests
+✅ Internal PRs: Run all 26 tests with API key
+✅ Push to main/testing: Run all 26 tests with API key
+✅ Manual workflow dispatch: Run all 26 tests with API key
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* fix: remove shell quoting from PYTEST_ARGS to prevent argument parsing errors
+
+The PYTEST_ARGS variable contained single quotes around '-m "not openrouter" -v'
+which would be included in the environment variable value. When passed to pytest
+in the Docker container shell command, this caused the entire string to be treated
+as a single argument instead of being properly split into separate arguments.
+
+Changed from: '-m "not openrouter" -v'
+Changed to:   -m not openrouter -v
+
+This allows the shell's word splitting to correctly parse the arguments when
+pytest $$PYTEST_ARGS is evaluated in the docker-compose command.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* refactor: separate pytest marker expression from general args for proper quoting
+
+The previous approach of embedding -m not openrouter inside PYTEST_ARGS was
+fragile because shell word-splitting doesn't guarantee "not openrouter" stays
+together as a single argument to the -m flag.
+
+This change introduces PYTEST_MARK_EXPR as a dedicated variable for the marker
+expression, which is then properly quoted when passed to pytest:
+  pytest -m "$PYTEST_MARK_EXPR" $PYTEST_ARGS ...
+
+Benefits:
+- Marker expression is guaranteed to be treated as single argument to -m
+- Clear separation between marker selection and general pytest args
+- More maintainable for future marker additions
+- Eliminates shell quoting ambiguity
+
+Changes:
+- workflow: Split PYTEST_ARGS into PYTEST_MARK_EXPR + PYTEST_ARGS
+- docker-compose: Add PYTEST_MARK_EXPR env var and conditional -m flag
+- docker-compose: Only apply -m when PYTEST_MARK_EXPR is non-empty
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* fix: add proper event type checks before accessing pull_request context
+
+Prevent errors when workflow runs on push events by:
+- Check event_name == 'pull_request' before accessing pull_request.head.repo.fork
+- Check event_name == 'workflow_dispatch' before accessing event.inputs
+- Ensures all conditional expressions only access context properties when they exist
+
+This prevents "Error: Cannot read properties of null (reading 'fork')" errors
+on push events.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com> (01668aa)
+
+
+
+### Fixed
+
+- Fix(python-sdk): move conditional imports to module level (#72)
+
+The `serve()` method had `import os` and `import urllib.parse` statements
+inside conditional blocks. When an explicit port was passed, the first
+conditional block was skipped, but Python's scoping still saw the later
+conditional imports, causing an `UnboundLocalError` when trying to use
+`os.getenv()` at line 1140.
+
+Error seen in Docker containers:
+```
+UnboundLocalError: cannot access local variable 'os' where it is not
+associated with a value
+```
+
+This worked locally because `auto_port=True` executed the first code path
+which included `import os`, but failed in Docker when passing an explicit
+port value.
+
+Fix: Move all imports to module level where they belong.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com> (a0d0538)
+
 ## [0.1.21] - 2025-12-14
 
 ## [0.1.21-rc.3] - 2025-12-14
