@@ -354,9 +354,9 @@ curl http://localhost:8080/api/ui/v1/workflows/{workflow_id}/vc-chain
 
 For compliance teams: mathematical proof, not trust.
 
-📖 **[Read: IAM for AI Backends](https://agentfield.ai/blog/iam-ai-backends)** — Why OAuth can't secure autonomous software, and what replaces it.
+📖 **[Read: IAM for AI Backends](https://agentfield.ai/blog/posts/iam-ai-backends)** — Why OAuth can't secure autonomous software, and what replaces it.
 
-[Full documentation →](https://agentfield.ai/blog/posts/iam-ai-backends)
+[Full documentation →](https://agentfield.ai/docs/core-concepts/identity-and-trust)
 
 
 
@@ -395,7 +395,7 @@ If you are **Backend Engineers** shipping AI into production who want standard A
 ## Learn More
 
 - 📖 **[The AI Backend](https://agentfield.ai/blog/ai-backend)** — Why every backend needs a reasoning layer
-- 📖 **[IAM for AI Backends](https://agentfield.ai/blog/iam-ai-backends)** — Why agents need identity, not just API keys
+- 📖 **[IAM for AI Backends](https://agentfield.ai/blog/posts/iam-ai-backends)** — Why agents need identity, not just API keys
 - 📚 **[Documentation](https://agentfield.ai/docs)** — Full technical reference
 - 🚀 **[Examples](https://agentfield.ai/examples)** — Production patterns and use cases
 
