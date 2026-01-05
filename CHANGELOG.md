@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.28-rc.2] - 2026-01-05
+
+
+### Other
+
+- Switch hot-reload dev setup from Docker to native Air (#129)
+
+Removes Docker-based dev setup in favor of running Air directly in the
+host environment. This avoids networking issues between Docker and host
+(especially on WSL2 where host.docker.internal has limitations).
+
+Changes:
+- Remove Dockerfile.dev and docker-compose.dev.yml
+- Update dev.sh to run Air natively (auto-installs if missing)
+- Update README.md with simplified instructions
+
+Usage remains simple: ./dev.sh
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com> (670c0ba)
+
 ## [0.1.28-rc.1] - 2026-01-05
 
 
