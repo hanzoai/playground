@@ -34,7 +34,7 @@ func APIKeyAuth(config AuthConfig) gin.HandlerFunc {
 		}
 
 		// Always allow health and metrics by default
-		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/health") || c.Request.URL.Path == "/metrics" {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/health") || c.Request.URL.Path == "/health" || c.Request.URL.Path == "/metrics" {
 			c.Next()
 			return
 		}

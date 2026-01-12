@@ -664,6 +664,9 @@ func (s *AgentFieldServer) setupRoutes() {
 	// Expose Prometheus metrics
 	s.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
+	// Public health check endpoint for load balancers and container orchestration (e.g., Railway, K8s)
+	s.Router.GET("/health", s.healthCheckHandler)
+
 	// Serve UI files - embedded or filesystem based on availability
 	if s.config.UI.Enabled {
 		// Check if UI is embedded in the binary
