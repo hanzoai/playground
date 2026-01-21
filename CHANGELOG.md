@@ -6,6 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.34-rc.1] - 2026-01-21
+
+
+### Chores
+
+- Chore(init-example): bump SDK to ^0.1.33 (#154)
+
+Update init-example to use SDK 0.1.33 which includes the connection
+pooling fix that prevents socket exhaustion on long-running deployments.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com> (6b8aa38)
+
+
+
+### Fixed
+
+- Fix(sdk): add connection pooling to all HTTP clients (#155)
+
+* fix(sdk): add connection pooling to all HTTP clients
+
+Add shared HTTP agents with connection pooling to MemoryClient,
+DidClient, and MCPClient to prevent socket exhaustion on long-running
+deployments.
+
+This completes the fix started in PR #153 which only addressed
+AgentFieldClient. Without this fix, agents using memory, DID, or MCP
+features would still leak connections.
+
+Bumps SDK to 0.1.34.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: increase memory leak test threshold and update init-example SDK version
+
+- Bump init-example to @agentfield/sdk ^0.1.34 for connection pooling fix
+- Increase memory leak test threshold from 10MB to 12MB to reduce CI flakiness
+  (Node 18 on CI hit 10.37MB due to GC timing variance)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com> (3d8b082)
+
 ## [0.1.33] - 2026-01-21
 
 ## [0.1.33-rc.1] - 2026-01-21
