@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.37-rc.1] - 2026-01-22
+
+
+### Fixed
+
+- Fix(auth): allow root path to redirect to UI without auth (#158)
+
+When auth is enabled, accessing localhost:8080 directly would return
+{"error":"unauthorized"} instead of redirecting to /ui/ where the
+React app prompts for the API key.
+
+The fix adds "/" to the auth middleware's skip list. This is safe
+because the root path only performs a redirect to /ui/ - no data
+is exposed.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com> (e3a0991)
+
 ## [0.1.36] - 2026-01-22
 
 ## [0.1.36-rc.1] - 2026-01-22
