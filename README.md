@@ -16,14 +16,8 @@
 [![Deploy with Docker](https://img.shields.io/badge/deploy-docker-2496ED.svg?style=flat&labelColor=1e1e2e&logo=docker&logoColor=white)](https://docs.docker.com/)
 [![Discord](https://img.shields.io/badge/discord-join%20us-5865F2.svg?style=flat&labelColor=1e1e2e&logo=discord&logoColor=white)](https://discord.gg/aBHaXMkpqh)
 
-**[Docs](https://agentfield.ai/docs)** | **[Quick Start](https://agentfield.ai/docs/quick-start)** | **[Python SDK](https://agentfield.ai/api/python-sdk/overview)** | **[Go SDK](https://agentfield.ai/api/go-sdk/overview)** | **[TypeScript SDK](https://agentfield.ai/api/typescript-sdk/overview)** | **[REST API](https://agentfield.ai/api/rest-api/overview)**
+**[Docs](https://agentfield.ai/docs)** | **[Quick Start](https://agentfield.ai/docs/quick-start)** | **[Python SDK](https://agentfield.ai/api/python-sdk/overview)** | **[Go SDK](https://agentfield.ai/api/go-sdk/overview)** | **[TypeScript SDK](https://agentfield.ai/api/typescript-sdk/overview)** | **[REST API](https://agentfield.ai/api/rest-api/overview)** | **[Discord](https://discord.gg/aBHaXMkpqh)**
 
-</div>
-
-<div align="center">
-<a href="https://github.com/Agent-Field/af-deep-research">
-<img src="assets/deepresearch banner.png" alt="Deep Research API" width="100%" />
-</a>
 </div>
 
 ## What is AgentField?
@@ -254,6 +248,19 @@ export AGENT_PUBLIC_URL="http://host.docker.internal:8001"
 
 ---
 
+## Production Examples
+
+Real-world patterns built on AgentField:
+
+| Example | Description | Links |
+|---------|-------------|-------|
+| **Deep Research API** | Massively parallel research backend. Fans out to 10k+ agents, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/Agent-Field/af-deep-research) • [Docs](https://agentfield.ai/examples) |
+| **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://agentfield.ai/examples/complete-agents/rag-evaluator) |
+
+[See all examples →](https://agentfield.ai/examples)
+
+---
+
 ## The Production Gap
 
 Most frameworks stop at "make the LLM call." But production agents need:
@@ -426,6 +433,14 @@ If you are **Backend Engineers** shipping AI into production who want standard A
 ## Community
 
 **Agents are becoming part of production backends. They need identity, governance, and infrastructure. That's why AgentField exists.**
+
+<div align="center">
+
+[![Discord](https://img.shields.io/badge/Join%20our%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/aBHaXMkpqh)
+
+*Ask questions, share what you're building, get help from the team*
+
+</div>
 
 - **[Documentation](https://agentfield.ai/docs)**
 - **[GitHub Issues](https://github.com/Agent-Field/agentfield/issues)**
