@@ -1,5 +1,5 @@
 # Core dependencies
-agentfield>=0.1.22
+playground>=0.1.22
 pydantic>=2.0.0
 pyyaml>=6.0
 httpx>=0.24.0

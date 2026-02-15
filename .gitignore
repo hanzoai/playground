@@ -10,6 +10,8 @@ test-reports/
 # Go
 bin/
 dist/
+control-plane/playground-server
+control-plane/agentfield-server
 **/dist/
 coverage.out
 *.test
