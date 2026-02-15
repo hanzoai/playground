@@ -112,7 +112,7 @@ export class DidManager {
     return {
       enabled: true,
       agentDid: this.identityPackage.agentDid.did,
-      playgroundServerId: this.identityPackage.hanzo/agentsServerId,
+      playgroundServerId: this.identityPackage.agentsServerId,
       reasonerCount: Object.keys(this.identityPackage.reasonerDids).length,
       skillCount: Object.keys(this.identityPackage.skillDids).length,
       reasonerDids: Object.fromEntries(

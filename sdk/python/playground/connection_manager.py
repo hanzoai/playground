@@ -176,7 +176,7 @@ class ConnectionManager:
                     break
 
                 # Try to send a heartbeat to check connection health
-                success = await self.agent.hanzo/agents_handler.send_enhanced_heartbeat()
+                success = await self.agent.agents_handler.send_enhanced_heartbeat()
 
                 if not success:
                     log_warn("Health check failed - connection lost")
@@ -232,7 +232,7 @@ class ConnectionManager:
         """Handle successful connection"""
         self.state = ConnectionState.CONNECTED
         self.last_successful_connection = time.time()
-        self.agent.hanzo/agents_connected = True
+        self.agent.agents_connected = True
 
         log_info("Connected to Playground server")
 
@@ -245,7 +245,7 @@ class ConnectionManager:
     def _on_connection_failure(self):
         """Handle connection failure"""
         self.state = ConnectionState.DEGRADED
-        self.agent.hanzo/agents_connected = False
+        self.agent.agents_connected = False
 
         log_warn("Playground server unavailable - running in degraded mode")
 

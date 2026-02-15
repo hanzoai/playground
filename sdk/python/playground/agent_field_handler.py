@@ -118,7 +118,7 @@ class PlaygroundHandler:
 
         try:
             log_debug(
-                f"Attempting to register with Playground server at {self.agent.hanzo/agents_server}"
+                f"Attempting to register with Playground server at {self.agent.agents_server}"
             )
             discovery_payload = self.agent._build_callback_discovery_payload()
 
@@ -138,7 +138,7 @@ class PlaygroundHandler:
                 log_success(
                     f"Registered node '{self.agent.node_id}' with Playground server"
                 )
-                self.agent.hanzo/agents_connected = True
+                self.agent.agents_connected = True
 
                 # Attempt DID registration after successful Playground registration
                 if self.agent.did_manager:
@@ -149,15 +149,15 @@ class PlaygroundHandler:
                         )
             else:
                 log_error("Registration failed")
-                self.agent.hanzo/agents_connected = False
+                self.agent.agents_connected = False
 
         except Exception as e:
-            self.agent.hanzo/agents_connected = False
+            self.agent.agents_connected = False
             if self.agent.dev_mode:
                 log_warn(f"Playground server not available: {e}")
                 log_setup("Running in development mode - agent will work standalone")
                 log_info(
-                    f"To connect to Playground server, start it at {self.agent.hanzo/agents_server}"
+                    f"To connect to Playground server, start it at {self.agent.agents_server}"
                 )
             else:
                 log_error(f"Failed to register with Playground server: {e}")
@@ -171,7 +171,7 @@ class PlaygroundHandler:
 
     def send_heartbeat(self):
         """Send heartbeat to Playground server"""
-        if not self.agent.hanzo/agents_connected:
+        if not self.agent.agents_connected:
             return  # Skip heartbeat if not connected to Playground
 
         try:
@@ -179,7 +179,7 @@ class PlaygroundHandler:
             if self.agent.api_key:
                 headers["X-API-Key"] = self.agent.api_key
             response = requests.post(
-                f"{self.agent.hanzo/agents_server}/api/v1/nodes/{self.agent.node_id}/heartbeat",
+                f"{self.agent.agents_server}/api/v1/nodes/{self.agent.node_id}/heartbeat",
                 headers=headers,
                 timeout=5,
             )
@@ -196,7 +196,7 @@ class PlaygroundHandler:
         self, interval: int = 30
     ):  # pragma: no cover - long-running thread loop
         """Background worker that sends periodic heartbeats"""
-        if not self.agent.hanzo/agents_connected:
+        if not self.agent.agents_connected:
             log_heartbeat(
                 "Heartbeat worker skipped - not connected to Playground server"
             )
@@ -209,7 +209,7 @@ class PlaygroundHandler:
 
     def start_heartbeat(self, interval: int = 30):
         """Start the heartbeat background thread"""
-        if not self.agent.hanzo/agents_connected:
+        if not self.agent.agents_connected:
             return  # Skip heartbeat if not connected to Playground
 
         if (
@@ -236,7 +236,7 @@ class PlaygroundHandler:
         Returns:
             True if heartbeat was successful, False otherwise
         """
-        if not self.agent.hanzo/agents_connected:
+        if not self.agent.agents_connected:
             return False
 
         try:
@@ -274,7 +274,7 @@ class PlaygroundHandler:
         Returns:
             True if notification was successful, False otherwise
         """
-        if not self.agent.hanzo/agents_connected:
+        if not self.agent.agents_connected:
             return False
 
         try:
@@ -414,7 +414,7 @@ class PlaygroundHandler:
         try:
             if self.agent.dev_mode:
                 log_info(
-                    f"Fast registration with Playground server at {self.agent.hanzo/agents_server}"
+                    f"Fast registration with Playground server at {self.agent.agents_server}"
                 )
                 log_info(f"Using callback URL: {self.agent.base_url}")
 
@@ -440,7 +440,7 @@ class PlaygroundHandler:
                     log_success(
                         f"Fast registration successful - Status: {AgentStatus.STARTING.value}"
                     )
-                self.agent.hanzo/agents_connected = True
+                self.agent.agents_connected = True
 
                 # Attempt DID registration after successful Playground registration
                 if self.agent.did_manager:
@@ -454,11 +454,11 @@ class PlaygroundHandler:
             else:
                 if self.agent.dev_mode:
                     log_error("Fast registration failed")
-                self.agent.hanzo/agents_connected = False
+                self.agent.agents_connected = False
                 return False
 
         except Exception as e:
-            self.agent.hanzo/agents_connected = False
+            self.agent.agents_connected = False
             if self.agent.dev_mode:
                 log_warn(f"Fast registration error: {e}")
             return False

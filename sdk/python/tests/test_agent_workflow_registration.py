@@ -38,7 +38,7 @@ class DummyClient:
 class DummyAgent:
     def __init__(self):
         self.node_id = "agent-node"
-        self.hanzo/agents_server = "http://playground.local"
+        self.agents_server = "http://playground.local"
         self.client = DummyClient()
         self.dev_mode = False
         self._current_execution_context = None

@@ -10,7 +10,7 @@ from playground.agent_registry import set_current_agent, clear_current_agent
 async def test_call_local_reasoner_argument_mapping():
     agent = object.__new__(Agent)
     agent.node_id = "node"
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
     agent.dev_mode = False
     agent.async_config = SimpleNamespace(
         enable_async_execution=False, fallback_to_sync=False
@@ -49,7 +49,7 @@ async def test_call_local_reasoner_argument_mapping():
 async def test_call_remote_target_uses_generic_arg_names():
     agent = object.__new__(Agent)
     agent.node_id = "node"
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
     agent.dev_mode = False
     agent.async_config = SimpleNamespace(
         enable_async_execution=False, fallback_to_sync=False
@@ -81,7 +81,7 @@ async def test_call_remote_target_uses_generic_arg_names():
 async def test_call_raises_when_playground_disconnected():
     agent = object.__new__(Agent)
     agent.node_id = "node"
-    agent.hanzo/agents_connected = False
+    agent.agents_connected = False
     agent.dev_mode = False
     agent.async_config = SimpleNamespace(
         enable_async_execution=False, fallback_to_sync=False

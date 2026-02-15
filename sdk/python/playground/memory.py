@@ -48,7 +48,7 @@ class MemoryClient:
         execution_context: ExecutionContext,
         agent_node_id: Optional[str] = None,
     ):
-        self.hanzo/agents_client = playground_client
+        self.agents_client = playground_client
         self.execution_context = execution_context
         self.agent_node_id = agent_node_id
 
@@ -76,8 +76,8 @@ class MemoryClient:
 
     async def _async_request(self, method: str, url: str, **kwargs):
         """Internal helper to perform HTTP requests with graceful fallbacks."""
-        if hasattr(self.hanzo/agents_client, "_async_request"):
-            return await self.hanzo/agents_client._async_request(method, url, **kwargs)
+        if hasattr(self.agents_client, "_async_request"):
+            return await self.agents_client._async_request(method, url, **kwargs)
 
         try:
             import httpx
@@ -120,11 +120,11 @@ class MemoryClient:
             raise
 
         # Use synchronous requests to avoid event loop conflicts with Playground SDK
-        url = f"{self.hanzo/agents_client.api_base}/memory/set"
+        url = f"{self.agents_client.api_base}/memory/set"
 
         try:
-            if hasattr(self.hanzo/agents_client, "_async_request"):
-                response = await self.hanzo/agents_client._async_request(
+            if hasattr(self.agents_client, "_async_request"):
+                response = await self.agents_client._async_request(
                     "POST",
                     url,
                     json=payload,
@@ -170,7 +170,7 @@ class MemoryClient:
 
         response = await self._async_request(
             "POST",
-            f"{self.hanzo/agents_client.api_base}/memory/vector/set",
+            f"{self.agents_client.api_base}/memory/vector/set",
             json=payload,
             headers=headers,
             timeout=15.0,
@@ -204,7 +204,7 @@ class MemoryClient:
 
         response = await self._async_request(
             "POST",
-            f"{self.hanzo/agents_client.api_base}/memory/get",
+            f"{self.agents_client.api_base}/memory/get",
             json=payload,
             headers=headers,
             timeout=10.0,
@@ -267,7 +267,7 @@ class MemoryClient:
 
         response = await self._async_request(
             "POST",
-            f"{self.hanzo/agents_client.api_base}/memory/delete",
+            f"{self.agents_client.api_base}/memory/delete",
             json=payload,
             headers=headers,
             timeout=10.0,
@@ -286,7 +286,7 @@ class MemoryClient:
             payload["scope"] = scope
         response = await self._async_request(
             "POST",
-            f"{self.hanzo/agents_client.api_base}/memory/vector/delete",
+            f"{self.agents_client.api_base}/memory/vector/delete",
             json=payload,
             headers=headers,
             timeout=10.0,
@@ -309,7 +309,7 @@ class MemoryClient:
 
         response = await self._async_request(
             "GET",
-            f"{self.hanzo/agents_client.api_base}/memory/list",
+            f"{self.agents_client.api_base}/memory/list",
             params={"scope": scope},
             headers=headers,
             timeout=10.0,
@@ -345,7 +345,7 @@ class MemoryClient:
 
         response = await self._async_request(
             "POST",
-            f"{self.hanzo/agents_client.api_base}/memory/vector/search",
+            f"{self.agents_client.api_base}/memory/vector/search",
             json=payload,
             headers=headers,
             timeout=15.0,

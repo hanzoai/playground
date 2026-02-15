@@ -54,8 +54,8 @@ async def test_agent_registration_and_status_propagation(agents_server, run_agen
 
     runtime = run_agent(agent)
 
-    await agent.hanzo/agents_handler.register_with_agents_server(runtime.port)
-    assert agent.hanzo/agents_connected is True
+    await agent.agents_handler.register_with_agents_server(runtime.port)
+    assert agent.agents_connected is True
 
     async with httpx.AsyncClient(
         base_url=agents_server.base_url, timeout=5.0
@@ -64,7 +64,7 @@ async def test_agent_registration_and_status_propagation(agents_server, run_agen
         assert any(r["id"] == "ping" for r in node.get("reasoners", []))
 
         agent._current_status = AgentStatus.READY
-        await agent.hanzo/agents_handler.send_enhanced_heartbeat()
+        await agent.agents_handler.send_enhanced_heartbeat()
 
         status = await _wait_for_status(client, agent.node_id, expected="ready")
         assert status.get("state") == "active"
@@ -87,9 +87,9 @@ async def test_reasoner_execution_roundtrip(agents_server, run_agent):
 
     runtime = run_agent(agent)
 
-    await agent.hanzo/agents_handler.register_with_agents_server(runtime.port)
+    await agent.agents_handler.register_with_agents_server(runtime.port)
     agent._current_status = AgentStatus.READY
-    await agent.hanzo/agents_handler.send_enhanced_heartbeat()
+    await agent.agents_handler.send_enhanced_heartbeat()
 
     async with httpx.AsyncClient(
         base_url=agents_server.base_url, timeout=5.0
@@ -143,9 +143,9 @@ async def test_app_ctx_available_during_execution(agents_server, run_agent):
 
     runtime = run_agent(agent)
 
-    await agent.hanzo/agents_handler.register_with_agents_server(runtime.port)
+    await agent.agents_handler.register_with_agents_server(runtime.port)
     agent._current_status = AgentStatus.READY
-    await agent.hanzo/agents_handler.send_enhanced_heartbeat()
+    await agent.agents_handler.send_enhanced_heartbeat()
 
     async with httpx.AsyncClient(
         base_url=agents_server.base_url, timeout=5.0

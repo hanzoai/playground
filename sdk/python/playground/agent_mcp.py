@@ -520,7 +520,7 @@ class AgentMCP:
             self.agent._mcp_initialization_complete = True
 
             # Send status update heartbeat
-            await self.agent.hanzo/agents_handler.send_enhanced_heartbeat()
+            await self.agent.agents_handler.send_enhanced_heartbeat()
 
             if self.agent.dev_mode:
                 log_info(
@@ -531,4 +531,4 @@ class AgentMCP:
             if self.agent.dev_mode:
                 log_error(f"Background MCP initialization error: {e}")
             self.agent._current_status = AgentStatus.DEGRADED
-            await self.agent.hanzo/agents_handler.send_enhanced_heartbeat()
+            await self.agent.agents_handler.send_enhanced_heartbeat()

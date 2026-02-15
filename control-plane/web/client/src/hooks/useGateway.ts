@@ -155,8 +155,8 @@ export function useGateway(tenant?: TenantContext) {
         syncedRef.current = true;
 
         const snapshot = gateway.snapshot;
-        if (snapshot?.hanzo/agents && snapshot.hanzo/agents.length > 0) {
-          syncFromSnapshot(snapshot.hanzo/agents);
+        if (snapshot?.agents && snapshot.agents.length > 0) {
+          syncFromSnapshot(snapshot.agents);
         } else {
           syncAgents();
         }

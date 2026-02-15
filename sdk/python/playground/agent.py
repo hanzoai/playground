@@ -480,7 +480,7 @@ class Agent(FastAPI):
         super().__init__(**kwargs)
 
         self.node_id = node_id
-        self.hanzo/agents_server = agents_server
+        self.agents_server = agents_server
         self.version = version
         self.description = description
         self.agent_tags = tags or []
@@ -502,7 +502,7 @@ class Agent(FastAPI):
         self._heartbeat_thread = None
         self._heartbeat_stop_event = threading.Event()
         self.dev_mode = dev_mode
-        self.hanzo/agents_connected = False
+        self.agents_connected = False
         self.auto_register = (
             auto_register  # Auto-register on first invocation (serverless mode)
         )
@@ -570,7 +570,7 @@ class Agent(FastAPI):
         self._cli_handler: Optional[AgentCLI] = None
         # Eager handlers - required for core agent functionality
         self.mcp_handler = AgentMCP(self)
-        self.hanzo/agents_handler = PlaygroundHandler(self)
+        self.agents_handler = PlaygroundHandler(self)
         self.workflow_handler = AgentWorkflow(self)
         self.server_handler = AgentServer(self)
 
@@ -899,18 +899,18 @@ class Agent(FastAPI):
             return self._handle_discovery()
 
         # Auto-register with Playground if needed (for execution requests)
-        if self.auto_register and not self.hanzo/agents_connected:
+        if self.auto_register and not self.agents_connected:
             try:
                 # Attempt registration (non-blocking)
-                self.hanzo/agents_handler._register_agent()
-                self.hanzo/agents_connected = True
+                self.agents_handler._register_agent()
+                self.agents_connected = True
             except Exception as e:
                 if self.dev_mode:
                     log_warn(f"Auto-registration failed: {e}")
 
         # Serverless invocations arrive via the control plane; mark as connected so
         # cross-agent calls can route through the gateway without a lease loop.
-        self.hanzo/agents_connected = True
+        self.agents_connected = True
         # Serverless handlers should avoid async execute polling; force sync path.
         if getattr(self.async_config, "enable_async_execution", True):
             self.async_config.enable_async_execution = False
@@ -1038,11 +1038,11 @@ class Agent(FastAPI):
         try:
             # Initialize DID Manager
             self.did_manager = DIDManager(
-                self.hanzo/agents_server, self.node_id, self.api_key
+                self.agents_server, self.node_id, self.api_key
             )
 
             # Initialize VC Generator
-            self.vc_generator = VCGenerator(self.hanzo/agents_server, self.api_key)
+            self.vc_generator = VCGenerator(self.agents_server, self.api_key)
 
             if self.dev_mode:
                 log_debug("DID system initialized")
@@ -1057,7 +1057,7 @@ class Agent(FastAPI):
         """Scans for methods decorated with @on_change and registers them as listeners."""
         if not self.memory_event_client:
             self.memory_event_client = MemoryEventClient(
-                self.hanzo/agents_server, self._get_current_execution_context(), self.api_key
+                self.agents_server, self._get_current_execution_context(), self.api_key
             )
 
         for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
@@ -1176,7 +1176,7 @@ class Agent(FastAPI):
         )
         if not self.memory_event_client:
             self.memory_event_client = MemoryEventClient(
-                self.hanzo/agents_server, self._get_current_execution_context(), self.api_key
+                self.agents_server, self._get_current_execution_context(), self.api_key
             )
         return MemoryInterface(memory_client, self.memory_event_client)
 
@@ -1583,7 +1583,7 @@ class Agent(FastAPI):
                     )
 
                 execution_id_header = request.headers.get("X-Execution-ID")
-                if execution_id_header and self.hanzo/agents_server:
+                if execution_id_header and self.agents_server:
                     asyncio.create_task(
                         self._execute_async_with_callback(
                             reasoner_coro=run_reasoner,
@@ -1917,10 +1917,10 @@ class Agent(FastAPI):
         log_error(f"Failed to deliver async status for {execution_id} after retries")
 
     def _build_execution_callback_url(self, execution_id: str) -> Optional[str]:
-        if not self.hanzo/agents_server or not execution_id:
+        if not self.agents_server or not execution_id:
             return None
         return (
-            self.hanzo/agents_server.rstrip("/")
+            self.agents_server.rstrip("/")
             + f"/api/v1/executions/{execution_id}/status"
         )
 
@@ -2400,7 +2400,7 @@ class Agent(FastAPI):
 
             def _run_sync_skill(*args, **kwargs):
                 current_context = get_current_context()
-                if not current_context or not self.hanzo/agents_server:
+                if not current_context or not self.agents_server:
                     return original_func(*args, **kwargs)
 
                 child_context = current_context.create_child_context()
@@ -3149,7 +3149,7 @@ class Agent(FastAPI):
         log_debug(f"Cross-agent call to: {target}")
 
         # Check if Playground server is available for cross-agent calls
-        if not self.hanzo/agents_connected:
+        if not self.agents_connected:
             from playground.logger import log_warn
 
             log_warn(
@@ -3205,7 +3205,7 @@ class Agent(FastAPI):
                 # Check if async execution is enabled and available
                 use_async_execution = (
                     self.async_config.enable_async_execution
-                    and self.hanzo/agents_connected
+                    and self.agents_connected
                 )
 
                 if use_async_execution:
@@ -3319,7 +3319,7 @@ class Agent(FastAPI):
         if self._async_execution_manager is None:
             # Create async execution manager with the same base URL as the client
             self._async_execution_manager = AsyncExecutionManager(
-                base_url=self.hanzo/agents_server, config=self.async_config
+                base_url=self.agents_server, config=self.async_config
             )
             # Start the manager
             await self._async_execution_manager.start()
@@ -3667,7 +3667,7 @@ class Agent(FastAPI):
     ) -> None:
         """Best-effort synchronous workflow event emitter for local skill calls."""
 
-        if not self.hanzo/agents_server:
+        if not self.agents_server:
             return
 
         try:
@@ -3700,7 +3700,7 @@ class Agent(FastAPI):
         if duration_ms is not None:
             payload["duration_ms"] = duration_ms
 
-        url = self.hanzo/agents_server.rstrip("/") + "/api/v1/workflow/executions/events"
+        url = self.agents_server.rstrip("/") + "/api/v1/workflow/executions/events"
         try:
             headers = {"Content-Type": "application/json"}
             if self.api_key:

@@ -565,9 +565,9 @@ class AgentServer:
             try:
                 if (
                     hasattr(self.agent, "playground_handler")
-                    and self.agent.hanzo/agents_handler
+                    and self.agent.agents_handler
                 ):
-                    self.agent.hanzo/agents_handler.stop_heartbeat()
+                    self.agent.agents_handler.stop_heartbeat()
                     if self.agent.dev_mode:
                         log_debug("Heartbeat stopped")
             except Exception as e:
@@ -932,7 +932,7 @@ class AgentServer:
                 log_debug(f"Using explicit callback URL: {self.agent.base_url}")
 
         # Start heartbeat worker
-        self.agent.hanzo/agents_handler.start_heartbeat(heartbeat_interval)
+        self.agent.agents_handler.start_heartbeat(heartbeat_interval)
 
         log_info(f"Agent server running at http://{host}:{port}")
         log_info("Available endpoints:")
@@ -944,7 +944,7 @@ class AgentServer:
                         log_debug(f"Endpoint registered: {method} {route.path}")
 
         # Setup fast lifecycle signal handlers
-        self.agent.hanzo/agents_handler.setup_fast_lifecycle_signal_handlers()
+        self.agent.agents_handler.setup_fast_lifecycle_signal_handlers()
 
         # Add startup event handler for resilient lifecycle
         @self.agent.on_event("startup")
@@ -975,7 +975,7 @@ class AgentServer:
                 # Kick a heartbeat immediately so the control plane renews the lease
                 try:
                     asyncio.create_task(
-                        self.agent.hanzo/agents_handler.send_enhanced_heartbeat()
+                        self.agent.agents_handler.send_enhanced_heartbeat()
                     )
                 except RuntimeError:
                     # Event loop not running; the heartbeat worker will recover shortly
@@ -986,7 +986,7 @@ class AgentServer:
                     or self.agent._heartbeat_task.done()
                 ):
                     self.agent._heartbeat_task = asyncio.create_task(
-                        self.agent.hanzo/agents_handler.enhanced_heartbeat_loop(
+                        self.agent.agents_handler.enhanced_heartbeat_loop(
                             heartbeat_interval
                         )
                     )
@@ -1176,7 +1176,7 @@ class AgentServer:
                 log_info("Agent shutdown initiated...")
 
             # Stop heartbeat worker
-            self.agent.hanzo/agents_handler.stop_heartbeat()
+            self.agent.agents_handler.stop_heartbeat()
 
             # Stop all MCP servers
             self.agent.mcp_handler._cleanup_mcp_servers()

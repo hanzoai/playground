@@ -24,7 +24,7 @@ def mock_agent():
     agent._current_status = "ready"
     agent.did_manager = None
     agent.did_enabled = False
-    agent.hanzo/agents_connected = False
+    agent.agents_connected = False
 
     agent._build_callback_discovery_payload = Mock(return_value={"callbacks": []})
     agent._build_vc_metadata = Mock(return_value={"agent_default": True})
@@ -36,8 +36,8 @@ def mock_agent():
     agent.client.register_agent_with_status = AsyncMock(return_value=(False, None))
 
     # Default handler mock - heartbeat succeeds by default
-    agent.hanzo/agents_handler = MagicMock()
-    agent.hanzo/agents_handler.send_enhanced_heartbeat = AsyncMock(return_value=True)
+    agent.agents_handler = MagicMock()
+    agent.agents_handler.send_enhanced_heartbeat = AsyncMock(return_value=True)
 
     return agent
 
@@ -146,7 +146,7 @@ class TestConnectionManagerStart:
         assert manager.state == ConnectionState.CONNECTED
         assert manager._health_check_task is not None
         assert manager._reconnection_task is None
-        assert mock_agent.hanzo/agents_connected is True
+        assert mock_agent.agents_connected is True
         mock_agent._apply_discovery_response.assert_called_once_with({"key": "value"})
 
         await manager.stop()
@@ -163,7 +163,7 @@ class TestConnectionManagerStart:
 
         assert result is False
         assert manager.state in (ConnectionState.DEGRADED, ConnectionState.RECONNECTING)
-        assert mock_agent.hanzo/agents_connected is False
+        assert mock_agent.agents_connected is False
 
         await manager.stop()
 
@@ -397,7 +397,7 @@ class TestHealthCheckLoop:
         mock_agent.client.register_agent_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = AsyncMock(
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
             return_value=True
         )
 
@@ -406,7 +406,7 @@ class TestHealthCheckLoop:
 
         await asyncio.sleep(0.05)
 
-        assert mock_agent.hanzo/agents_handler.send_enhanced_heartbeat.call_count >= 1
+        assert mock_agent.agents_handler.send_enhanced_heartbeat.call_count >= 1
 
         await manager.stop()
 
@@ -418,7 +418,7 @@ class TestHealthCheckLoop:
         mock_agent.client.register_agent_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = AsyncMock(
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
             return_value=False
         )
 
@@ -447,7 +447,7 @@ class TestHealthCheckLoop:
         mock_agent.client.register_agent_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = AsyncMock(
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
             return_value=True
         )
 
@@ -658,7 +658,7 @@ class TestConnectionLifecycle:
         mock_agent.client.register_agent_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = AsyncMock(
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
             return_value=True
         )
 
@@ -667,7 +667,7 @@ class TestConnectionLifecycle:
         result = await manager.start()
         assert result is True
         assert manager.is_connected()
-        assert mock_agent.hanzo/agents_connected is True
+        assert mock_agent.agents_connected is True
 
         await manager.stop()
         assert manager._shutdown_requested is True
@@ -692,7 +692,7 @@ class TestConnectionLifecycle:
         await asyncio.sleep(0.1)
 
         assert manager.is_connected()
-        assert mock_agent.hanzo/agents_connected is True
+        assert mock_agent.agents_connected is True
 
         await manager.stop()
 
@@ -755,7 +755,7 @@ class TestErrorHandling:
                 raise Exception("Heartbeat error")
             return True
 
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = heartbeat_then_fail
+        mock_agent.agents_handler.send_enhanced_heartbeat = heartbeat_then_fail
 
         manager = ConnectionManager(mock_agent, fast_config)
         await manager.start()
@@ -854,7 +854,7 @@ class TestIntegration:
             return (cycle % 2 == 1), None
 
         mock_agent.client.register_agent_with_status = alternate_success
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = AsyncMock(
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
             return_value=True
         )
 
@@ -901,7 +901,7 @@ class TestIntegration:
             call_idx += 1
             return result
 
-        mock_agent.hanzo/agents_handler.send_enhanced_heartbeat = varying_heartbeat
+        mock_agent.agents_handler.send_enhanced_heartbeat = varying_heartbeat
 
         manager = ConnectionManager(mock_agent, fast_config)
         await manager.start()

@@ -11,7 +11,7 @@ from tests.helpers import StubAgent, DummyPlaygroundClient
 async def test_register_with_agents_server_sets_base_url(monkeypatch):
     agent = StubAgent(callback_url="agent.local", base_url=None)
     agent.client = DummyPlaygroundClient()
-    agent.hanzo/agents_connected = False
+    agent.agents_connected = False
 
     monkeypatch.setattr(
         "playground.agent._resolve_callback_url",
@@ -27,7 +27,7 @@ async def test_register_with_agents_server_sets_base_url(monkeypatch):
     await playground.register_with_agents_server(port=8080)
 
     assert agent.base_url == "http://resolved:8080"
-    assert agent.hanzo/agents_connected is True
+    assert agent.agents_connected is True
     assert agent.client.register_calls[0]["base_url"] == "http://resolved:8080"
 
 
@@ -46,10 +46,10 @@ async def test_register_with_agents_server_handles_failure(monkeypatch):
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
 
     await playground.register_with_agents_server(port=9000)
-    assert agent.hanzo/agents_connected is False
+    assert agent.agents_connected is False
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_register_with_agents_server_resolves_when_no_candidates(monkeypat
     await playground.register_with_agents_server(port=7100)
 
     assert agent.base_url == "http://resolved:7100"
-    assert agent.hanzo/agents_connected is True
+    assert agent.agents_connected is True
 
 
 @pytest.mark.asyncio
@@ -159,7 +159,7 @@ async def test_register_with_agents_server_propagates_request_exception(
     playground = PlaygroundHandler(agent)
     with pytest.raises(requests.exceptions.RequestException):
         await playground.register_with_agents_server(port=9001)
-    assert agent.hanzo/agents_connected is False
+    assert agent.agents_connected is False
 
 
 @pytest.mark.asyncio
@@ -181,7 +181,7 @@ async def test_register_with_agents_server_unsuccessful_response(monkeypatch):
 
     playground = PlaygroundHandler(agent)
     await playground.register_with_agents_server(port=5000)
-    assert agent.hanzo/agents_connected is False
+    assert agent.agents_connected is False
 
 
 @pytest.mark.asyncio
@@ -214,7 +214,7 @@ async def test_register_with_playground_applies_discovery_payload(monkeypatch):
     )
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
-    await agent.hanzo/agents_handler.register_with_agents_server(port=9000)
+    await agent.agents_handler.register_with_agents_server(port=9000)
 
     assert agent.base_url == "https://public:9000"
     assert agent.callback_candidates[0] == "https://public:9000"
@@ -243,7 +243,7 @@ def test_send_heartbeat(monkeypatch):
 
 def test_send_heartbeat_warns_on_non_200(monkeypatch):
     agent = StubAgent()
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
     playground = PlaygroundHandler(agent)
 
     class Dummy:
@@ -258,7 +258,7 @@ def test_send_heartbeat_warns_on_non_200(monkeypatch):
 async def test_enhanced_heartbeat_returns_false_when_disconnected():
     agent = StubAgent()
     playground = PlaygroundHandler(agent)
-    agent.hanzo/agents_connected = False
+    agent.agents_connected = False
     assert await playground.send_enhanced_heartbeat() is False
 
 
@@ -307,7 +307,7 @@ async def test_enhanced_heartbeat_failure_returns_false(monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(agent.client, "send_enhanced_heartbeat", boom)
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
     agent.dev_mode = True
     assert await playground.send_enhanced_heartbeat() is False
 
@@ -322,14 +322,14 @@ async def test_notify_shutdown_failure_returns_false(monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(agent.client, "notify_graceful_shutdown", boom)
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
     agent.dev_mode = True
     assert await playground.notify_shutdown() is False
 
 
 def test_send_heartbeat_handles_error(monkeypatch):
     agent = StubAgent()
-    agent.hanzo/agents_connected = True
+    agent.agents_connected = True
     playground = PlaygroundHandler(agent)
 
     def boom(*args, **kwargs):
@@ -341,7 +341,7 @@ def test_send_heartbeat_handles_error(monkeypatch):
 
 def test_start_heartbeat_skips_when_disconnected():
     agent = StubAgent()
-    agent.hanzo/agents_connected = False
+    agent.agents_connected = False
     playground = PlaygroundHandler(agent)
     playground.start_heartbeat()
     assert agent._heartbeat_thread is None

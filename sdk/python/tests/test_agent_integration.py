@@ -18,7 +18,7 @@ async def test_agent_reasoner_routing_and_workflow(monkeypatch):
     # Disable async execution for this test to get synchronous 200 responses
     agent.async_config.enable_async_execution = False
     # Disable agents_server to prevent async callback execution
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     @agent.reasoner()
     async def double(value: int) -> dict:
@@ -43,7 +43,7 @@ async def test_agent_reasoner_routing_and_workflow(monkeypatch):
 
     agent.include_router(router, prefix="/ops")
 
-    await agent.hanzo/agents_handler.register_with_agents_server(port=9100)
+    await agent.agents_handler.register_with_agents_server(port=9100)
     assert playground_client.register_calls
     registration = playground_client.register_calls[-1]
     assert registration["base_url"] == "https://callback.example.com:9100"
@@ -81,7 +81,7 @@ async def test_agent_reasoner_custom_name(monkeypatch):
     # Disable async execution for this test to get synchronous 200 responses
     agent.async_config.enable_async_execution = False
     # Disable agents_server to prevent async callback execution
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     @agent.reasoner(name="reports_generate")
     async def generate_report(report_id: str) -> dict:
@@ -111,7 +111,7 @@ async def test_agent_reasoner_custom_name(monkeypatch):
 async def test_agent_reasoner_without_parentheses(monkeypatch):
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     @agent.reasoner
     async def greet(name: str) -> dict:
@@ -141,7 +141,7 @@ async def test_agent_router_prefix_registration(monkeypatch):
     # Disable async execution for this test to get synchronous 200 responses
     agent.async_config.enable_async_execution = False
     # Disable agents_server to prevent async callback execution
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     quickstart = AgentRouter(prefix="demo")
 
@@ -240,7 +240,7 @@ async def test_router_prefix_translation_examples(
     """Test all documented prefix translation examples and edge cases."""
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     router = AgentRouter(prefix=prefix)
 
@@ -278,7 +278,7 @@ async def test_router_empty_prefix(monkeypatch):
     """Test router with empty prefix - should not add prefix."""
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     router = AgentRouter(prefix="")
 
@@ -301,7 +301,7 @@ async def test_router_include_router_with_additional_prefix(monkeypatch):
     """
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     router = AgentRouter(prefix="users")
 
@@ -336,7 +336,7 @@ async def test_router_nested_paths(monkeypatch):
     """Test router with deeply nested paths."""
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     router = AgentRouter(prefix="api/v1/users/profiles")
 
@@ -355,7 +355,7 @@ async def test_router_special_characters_comprehensive(monkeypatch):
     """Test router prefix with various special characters."""
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     # Test various special character combinations
     test_cases = [
@@ -399,7 +399,7 @@ async def test_router_skill_with_prefix(monkeypatch):
     """Test router skill registration with prefix."""
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     router = AgentRouter(prefix="billing")
 
@@ -431,7 +431,7 @@ async def test_router_skill_with_prefix(monkeypatch):
 async def test_agent_skill_without_parentheses(monkeypatch):
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     @agent.skill
     def shout(text: str) -> dict:
@@ -459,7 +459,7 @@ async def test_agent_skill_without_parentheses(monkeypatch):
 async def test_reasoner_tags_propagate_to_metadata(monkeypatch):
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
-    agent.hanzo/agents_server = None
+    agent.agents_server = None
 
     @agent.reasoner(tags=["ai", "personalization"])
     async def personalize(name: str) -> dict:
@@ -494,7 +494,7 @@ async def test_callback_url_precedence_and_env(monkeypatch):
     explicit_agent, explicit_client = create_test_agent(
         monkeypatch, callback_url="https://explicit.example.com"
     )
-    await explicit_agent.hanzo/agents_handler.register_with_agents_server(port=9200)
+    await explicit_agent.agents_handler.register_with_agents_server(port=9200)
     assert explicit_agent.base_url == "https://explicit.example.com:9200"
     assert (
         explicit_client.register_calls[-1]["base_url"]
@@ -502,6 +502,6 @@ async def test_callback_url_precedence_and_env(monkeypatch):
     )
 
     env_agent, env_client = create_test_agent(monkeypatch)
-    await env_agent.hanzo/agents_handler.register_with_agents_server(port=9300)
+    await env_agent.agents_handler.register_with_agents_server(port=9300)
     assert env_agent.base_url == "https://env.example.com:9300"
     assert env_client.register_calls[-1]["base_url"] == "https://env.example.com:9300"

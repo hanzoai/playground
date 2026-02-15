@@ -72,7 +72,7 @@ class DIDManager:
             agent_node_id: Unique identifier for this agent node
             api_key: Optional API key for authentication
         """
-        self.hanzo/agents_server_url = agents_server_url.rstrip("/")
+        self.agents_server_url = agents_server_url.rstrip("/")
         self.agent_node_id = agent_node_id
         self.api_key = api_key
         self.identity_package: Optional[DIDIdentityPackage] = None
@@ -114,7 +114,7 @@ class DIDManager:
             headers = {"Content-Type": "application/json"}
             headers.update(self._get_auth_headers())
             response = requests.post(
-                f"{self.hanzo/agents_server_url}/api/v1/did/register",
+                f"{self.agents_server_url}/api/v1/did/register",
                 json=registration_data,
                 headers=headers,
                 timeout=30,
@@ -229,7 +229,7 @@ class DIDManager:
         """
         try:
             response = requests.get(
-                f"{self.hanzo/agents_server_url}/api/v1/did/resolve/{did}",
+                f"{self.agents_server_url}/api/v1/did/resolve/{did}",
                 headers=self._get_auth_headers(),
                 timeout=10,
             )
@@ -261,7 +261,7 @@ class DIDManager:
         return {
             "enabled": True,
             "agent_did": self.identity_package.agent_did.did,
-            "agents_server_id": self.identity_package.hanzo/agents_server_id,
+            "agents_server_id": self.identity_package.agents_server_id,
             "reasoner_count": len(self.identity_package.reasoner_dids),
             "skill_count": len(self.identity_package.skill_dids),
             "reasoner_dids": {

@@ -277,7 +277,7 @@ def create_test_agent(
             execution_context: Any,
             agent_node_id: Optional[str] = None,
         ):
-            self.hanzo/agents_client = playground_client
+            self.agents_client = playground_client
             self.execution_context = execution_context
             self.agent_node_id = agent_node_id
 
@@ -399,7 +399,7 @@ def create_test_agent(
 
     class _FakeDIDManager:
         def __init__(self, agents_server: str, node: str, api_key: Optional[str] = None):
-            self.hanzo/agents_server = agents_server
+            self.agents_server = agents_server
             self.node_id = node
             self.api_key = api_key
             self.registered: Dict[str, Any] = {}

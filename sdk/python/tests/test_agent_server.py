@@ -29,7 +29,7 @@ def make_agent_app():
         },
     )()
     app.dev_mode = False
-    app.hanzo/agents_server = "http://playground"
+    app.agents_server = "http://playground"
     return app
 
 

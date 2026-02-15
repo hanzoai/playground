@@ -16,7 +16,7 @@ from playground.execution_context import (
 def make_agent_stub():
     agent = object.__new__(Agent)
     agent.node_id = "node"
-    agent.hanzo/agents_server = "http://playground"
+    agent.agents_server = "http://playground"
     agent.dev_mode = False
     agent.async_config = SimpleNamespace(
         enable_async_execution=True, fallback_to_sync=True
