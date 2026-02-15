@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.6] - 2026-02-15
+
+
+### Fixed
+
+- Fix: rename agentfield files to playground (CI build fix)
+
+Rename files that still had agentfield in their filename:
+- types/agentfield.ts → types/playground.ts (TS build blocker)
+- test_agentfield_end_to_end.py → test_playground_end_to_end.py
+- agentfield-logo/icon SVGs → playground-logo/icon SVGs
+- Remove tracked binary, add to .gitignore (6d02fa7)
+
 ## [0.1.41-rc.5] - 2026-02-15
 
 
