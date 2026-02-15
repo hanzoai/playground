@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.5] - 2026-02-15
+
+
+### Changed
+
+- Refactor: complete rename from agentfield to playground/agents
+
+- Go module: github.com/Agent-Field/agentfield -> github.com/hanzoai/playground
+- Binary: agentfield-server -> playground-server (cmd/ dir renamed)
+- Env prefix: AGENTFIELD_*/HANZO_AGENTS_* -> unified AGENTS_*
+- Config: agentfield.yaml -> agents.yaml, root key agents:
+- Home dir: ~/.agentfield -> ~/.hanzo/agents
+- Docker image: ghcr.io/hanzoai/playground:latest
+- Python SDK: agentfield -> playground
+- DB columns: agentfield_server_id -> agents_server_id
+- Prometheus metrics: agentfield_* -> agents_*
+- HTTP headers: X-AgentField-* -> X-Agents-*
+- DID URIs: did:agentfield: -> did:agents:
+- All Go types/vars/structs renamed consistently
+- go build ./... passes clean (35d6d92)
+
+
+
+### Fixed
+
+- Fix: use agentfield GHCR package name (fork limitation)
+
+GHCR blocks new package creation for forked repos.
+Keep pushing to ghcr.io/hanzoai/agentfield:latest which works. (289e4f2)
+
+
+
+### Other
+
+- Rename to Hanzo Playground - multiplayer agent orchestration
+
+Rename all branding from agentfield/canvas to playground:
+- Helm chart: deployments/helm/playground/
+- Docker image: ghcr.io/hanzoai/playground:latest
+- UI: "Hanzo Playground" branding, playground- prefixes
+- Navigation: Canvas → Playground
+- localStorage: playground scoped keys (96e9af3)
+
 ## [0.1.41-rc.4] - 2026-02-15
 
 
