@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.7] - 2026-02-15
+
+
+### Fixed
+
+- Fix: revert broken .agents property accesses in SDK files
+
+The .agents → .hanzo/agents sed incorrectly replaced JavaScript/Python
+property accesses like self.agents_server → self.hanzo/agents_server.
+Reverts these to .agents while keeping correct path references. (2f5451e)
+
 ## [0.1.41-rc.6] - 2026-02-15
 
 
