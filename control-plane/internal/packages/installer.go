@@ -29,7 +29,7 @@ type UserEnvironmentConfig struct {
 	Optional []UserEnvironmentVar `yaml:"optional"`
 }
 
-// PackageMetadata represents the structure of agentfield-package.yaml
+// PackageMetadata represents the structure of agents-package.yaml
 type PackageMetadata struct {
 	Name            string                 `yaml:"name"`
 	Version         string                 `yaml:"version"`
@@ -96,7 +96,7 @@ type RuntimeInfo struct {
 
 // PackageInstaller handles package installation
 type PackageInstaller struct {
-	AgentFieldHome string
+	AgentsHome string
 	Verbose        bool
 }
 
@@ -210,7 +210,7 @@ func (pi *PackageInstaller) InstallPackage(sourcePath string, force bool) error 
 	}
 
 	// 3. Copy package to global location
-	destPath := filepath.Join(pi.AgentFieldHome, "packages", metadata.Name)
+	destPath := filepath.Join(pi.AgentsHome, "packages", metadata.Name)
 	spinner = pi.newSpinner("Setting up environment")
 	spinner.Start()
 	if err := pi.copyPackage(sourcePath, destPath); err != nil {
@@ -281,7 +281,7 @@ func (pi *PackageInstaller) checkEnvironmentVariables(metadata *PackageMetadata)
 
 // PackageUninstaller handles package uninstallation
 type PackageUninstaller struct {
-	AgentFieldHome string
+	AgentsHome string
 	Force          bool
 }
 
@@ -357,7 +357,7 @@ func (pu *PackageUninstaller) stopAgentNode(agentNode *InstalledPackage) error {
 
 // loadRegistry loads the installation registry
 func (pu *PackageUninstaller) loadRegistry() (*InstallationRegistry, error) {
-	registryPath := filepath.Join(pu.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(pu.AgentsHome, "installed.yaml")
 
 	registry := &InstallationRegistry{
 		Installed: make(map[string]InstalledPackage),
@@ -374,7 +374,7 @@ func (pu *PackageUninstaller) loadRegistry() (*InstallationRegistry, error) {
 
 // saveRegistry saves the installation registry
 func (pu *PackageUninstaller) saveRegistry(registry *InstallationRegistry) error {
-	registryPath := filepath.Join(pu.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(pu.AgentsHome, "installed.yaml")
 
 	data, err := yaml.Marshal(registry)
 	if err != nil {
@@ -390,10 +390,10 @@ func (pu *PackageUninstaller) saveRegistry(registry *InstallationRegistry) error
 
 // validatePackage checks if the package has required files
 func (pi *PackageInstaller) validatePackage(sourcePath string) error {
-	// Check if agentfield-package.yaml exists
-	packageYamlPath := filepath.Join(sourcePath, "agentfield-package.yaml")
+	// Check if agents-package.yaml exists
+	packageYamlPath := filepath.Join(sourcePath, "agents-package.yaml")
 	if _, err := os.Stat(packageYamlPath); os.IsNotExist(err) {
-		return fmt.Errorf("agentfield-package.yaml not found in %s", sourcePath)
+		return fmt.Errorf("agents-package.yaml not found in %s", sourcePath)
 	}
 
 	// Check if main.py exists
@@ -405,26 +405,26 @@ func (pi *PackageInstaller) validatePackage(sourcePath string) error {
 	return nil
 }
 
-// parsePackageMetadata parses the agentfield-package.yaml file
+// parsePackageMetadata parses the agents-package.yaml file
 func (pi *PackageInstaller) parsePackageMetadata(sourcePath string) (*PackageMetadata, error) {
-	packageYamlPath := filepath.Join(sourcePath, "agentfield-package.yaml")
+	packageYamlPath := filepath.Join(sourcePath, "agents-package.yaml")
 
 	data, err := os.ReadFile(packageYamlPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read agentfield-package.yaml: %w", err)
+		return nil, fmt.Errorf("failed to read agents-package.yaml: %w", err)
 	}
 
 	var metadata PackageMetadata
 	if err := yaml.Unmarshal(data, &metadata); err != nil {
-		return nil, fmt.Errorf("failed to parse agentfield-package.yaml: %w", err)
+		return nil, fmt.Errorf("failed to parse agents-package.yaml: %w", err)
 	}
 
 	// Validate required fields
 	if metadata.Name == "" {
-		return nil, fmt.Errorf("package name is required in agentfield-package.yaml")
+		return nil, fmt.Errorf("package name is required in agents-package.yaml")
 	}
 	if metadata.Version == "" {
-		return nil, fmt.Errorf("package version is required in agentfield-package.yaml")
+		return nil, fmt.Errorf("package version is required in agents-package.yaml")
 	}
 	if metadata.Main == "" {
 		metadata.Main = "main.py" // Default
@@ -435,7 +435,7 @@ func (pi *PackageInstaller) parsePackageMetadata(sourcePath string) (*PackageMet
 
 // isPackageInstalled checks if a package is already installed
 func (pi *PackageInstaller) isPackageInstalled(packageName string) bool {
-	registryPath := filepath.Join(pi.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(pi.AgentsHome, "installed.yaml")
 	registry := &InstallationRegistry{
 		Installed: make(map[string]InstalledPackage),
 	}
@@ -541,7 +541,7 @@ func (pi *PackageInstaller) installDependencies(packagePath string, metadata *Pa
 			}
 		}
 
-		// Install dependencies from agentfield-package.yaml
+		// Install dependencies from agents-package.yaml
 		if len(metadata.Dependencies.Python) > 0 {
 			for _, dep := range metadata.Dependencies.Python {
 				cmd = exec.Command(pipPath, "install", dep)
@@ -570,7 +570,7 @@ func (pi *PackageInstaller) hasRequirementsFile(packagePath string) bool {
 
 // updateRegistry updates the installation registry with the new package
 func (pi *PackageInstaller) updateRegistry(metadata *PackageMetadata, sourcePath, destPath string) error {
-	registryPath := filepath.Join(pi.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(pi.AgentsHome, "installed.yaml")
 
 	// Load existing registry or create new one
 	registry := &InstallationRegistry{
@@ -584,7 +584,7 @@ func (pi *PackageInstaller) updateRegistry(metadata *PackageMetadata, sourcePath
 	}
 
 	// Ensure logs directory exists before setting LogFile path
-	logsDir := filepath.Join(pi.AgentFieldHome, "logs")
+	logsDir := filepath.Join(pi.AgentsHome, "logs")
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create logs directory: %w", err)
 	}
@@ -604,7 +604,7 @@ func (pi *PackageInstaller) updateRegistry(metadata *PackageMetadata, sourcePath
 			Port:      nil,
 			PID:       nil,
 			StartedAt: nil,
-			LogFile:   filepath.Join(pi.AgentFieldHome, "logs", metadata.Name+".log"),
+			LogFile:   filepath.Join(pi.AgentsHome, "logs", metadata.Name+".log"),
 		},
 	}
 

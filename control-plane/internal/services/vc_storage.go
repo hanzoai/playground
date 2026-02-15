@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 // VCStorage manages the storage and retrieval of verifiable credentials.

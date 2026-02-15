@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agentfield.agent_ai import AgentAI
+from playground.agent_ai import AgentAI
 from tests.helpers import StubAgent
 
 
@@ -83,7 +83,7 @@ def setup_litellm_stub(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "litellm", module)
     monkeypatch.setitem(sys.modules, "litellm.utils", utils_module)
-    monkeypatch.setattr("agentfield.agent_ai.litellm", module, raising=False)
+    monkeypatch.setattr("playground.agent_ai.litellm", module, raising=False)
     return module
 
 

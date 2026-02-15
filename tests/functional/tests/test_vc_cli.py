@@ -48,7 +48,7 @@ async def _run_vc_verify(vc_file: Path, *, expect_success: bool = True) -> Dict[
         stderr=asyncio.subprocess.PIPE,
         env={
             **os.environ,
-            "AGENTFIELD_HOME": os.environ.get("AGENTFIELD_HOME", "/tmp/agentfield-cli"),
+            "AGENTS_HOME": os.environ.get("AGENTS_HOME", "/tmp/playground-cli"),
         },
     )
     stdout, stderr = await process.communicate()

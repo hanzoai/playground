@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/templates"
+	"github.com/hanzoai/playground/control-plane/internal/templates"
 )
 
 var (
@@ -164,7 +164,7 @@ func (m initModel) View() string {
 	var s strings.Builder
 
 	// Title
-	s.WriteString(titleStyle.Render("🎯 Creating AgentField Agent") + "\n\n")
+	s.WriteString(titleStyle.Render("🎯 Creating Agents Agent") + "\n\n")
 
 	switch m.step {
 	case 0: // Project name
@@ -210,15 +210,15 @@ func NewInitCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "init [project-name]",
-		Short: "Initialize a new AgentField agent project",
-		Long: `Initialize a new AgentField agent project with a predefined
+		Short: "Initialize a new Agents agent project",
+		Long: `Initialize a new Agents agent project with a predefined
 directory structure and essential files.
 
 This command sets up a new project, including:
 - Language-specific project structure (Python, Go, or TypeScript)
 - Basic agent implementation with example reasoner
 - README.md and .gitignore files
-- Configuration for connecting to the AgentField control plane
+- Configuration for connecting to the Agents control plane
 
 Example:
   af init                    # Interactive mode
@@ -397,7 +397,7 @@ Example:
 				fmt.Println("  2. npm install")
 			}
 
-			fmt.Println("  3. af server                    # Start AgentField server")
+			fmt.Println("  3. af server                    # Start Agents server")
 
 			if language == "python" {
 				fmt.Println("  4. python main.py                  # Start your agent")
@@ -432,7 +432,7 @@ Example:
 
 			fmt.Println("  4. Restart your agent")
 			fmt.Println()
-			printInfo("Learn more: https://agentfield.ai/docs")
+			printInfo("Learn more: https://agents.ai/docs")
 			fmt.Println()
 			printSuccess("Happy building! 🎉")
 

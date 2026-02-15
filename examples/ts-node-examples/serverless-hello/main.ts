@@ -1,4 +1,4 @@
-import { Agent } from '@agentfield/sdk';
+import { Agent } from '@playground/sdk';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,12 +7,12 @@ const agent = new Agent({
   nodeId: process.env.AGENT_NODE_ID ?? 'ts-serverless-hello',
   version: '1.0.0',
   deploymentType: 'serverless',
-  agentFieldUrl: process.env.AGENTFIELD_URL ?? 'http://localhost:8080',
+  playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
   devMode: true
 });
 
 agent.reasoner('hello', async (ctx) => ({
-  greeting: `Hello, ${ctx.input.name ?? 'AgentField'}!`,
+  greeting: `Hello, ${ctx.input.name ?? 'Playground'}!`,
   runId: ctx.runId,
   executionId: ctx.executionId
 }));

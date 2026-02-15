@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# AgentField Single Binary Builder
+# Playground Single Binary Builder
 # This script creates a single, portable binary that includes:
 # - Go backend with universal path management
 # - Embedded UI
@@ -142,21 +142,21 @@ package main
 import (
  "fmt"
  "strings"
- "github.com/Agent-Field/agentfield/control-plane/internal/utils"
+ "github.com/hanzoai/playground/control-plane/internal/utils"
 )
 
 func main() {
- dirs, err := utils.GetAgentFieldDataDirectories()
+ dirs, err := utils.GetPlaygroundDataDirectories()
  if err != nil {
   fmt.Printf("ERROR: %v\n", err)
   return
  }
 
- fmt.Printf("AgentField Home: %s\n", dirs.AgentFieldHome)
+ fmt.Printf("Playground Home: %s\n", dirs.PlaygroundHome)
 
- // Verify that AgentField Home points to ~/.agentfield
- if !strings.HasSuffix(dirs.AgentFieldHome, ".agentfield") {
-  fmt.Printf("ERROR: AgentField Home should end with .agentfield, got: %s\n", dirs.AgentFieldHome)
+ // Verify that Playground Home points to ~/.hanzo/agents
+ if !strings.HasSuffix(dirs.PlaygroundHome, ".hanzo/agents") {
+  fmt.Printf("ERROR: Playground Home should end with .hanzo/agents, got: %s\n", dirs.PlaygroundHome)
   return
  }
 
@@ -168,9 +168,9 @@ func main() {
  }
  fmt.Printf("Database Path: %s\n", dbPath)
 
- // Verify database path is in ~/.agentfield/data/
- if !strings.Contains(dbPath, ".agentfield/data/agentfield.db") {
-  fmt.Printf("ERROR: Database path should be in ~/.agentfield/data/, got: %s\n", dbPath)
+ // Verify database path is in ~/.hanzo/agents/data/
+ if !strings.Contains(dbPath, ".hanzo/agents/data/playground.db") {
+  fmt.Printf("ERROR: Database path should be in ~/.hanzo/agents/data/, got: %s\n", dbPath)
   return
  }
 
@@ -181,7 +181,7 @@ func main() {
   return
  }
 
- fmt.Println("SUCCESS: Path management system working correctly - database will be stored in ~/.agentfield/")
+ fmt.Println("SUCCESS: Path management system working correctly - database will be stored in ~/.hanzo/agents/")
 }
 EOF
 
@@ -266,7 +266,7 @@ build_binary() {
         -ldflags "$LDFLAGS" \
         -tags "embedded sqlite_fts5" \
         -o "$OUTPUT_DIR/$output_name" \
-        ./cmd/agentfield-server
+        ./cmd/playground-server
 
     if [ $? -eq 0 ]; then
         # Get file size
@@ -305,10 +305,10 @@ build_all_binaries() {
 
     # Define platforms to build
     declare -a platforms=(
-        # "linux:amd64:agentfield-linux-amd64"
-        # "linux:arm64:agentfield-linux-arm64"
-        # "darwin:amd64:agentfield-darwin-amd64"
-        "darwin:arm64:agentfield-darwin-arm64"
+        # "linux:amd64:playground-linux-amd64"
+        # "linux:arm64:playground-linux-arm64"
+        # "darwin:amd64:playground-darwin-amd64"
+        "darwin:arm64:playground-darwin-arm64"
     )
 
     for platform in "${platforms[@]}"; do
@@ -336,10 +336,10 @@ generate_metadata() {
 
     # Generate SHA256 checksums
     if command_exists sha256sum; then
-        sha256sum agentfield-* > checksums.txt 2>/dev/null || true
+        sha256sum playground-* > checksums.txt 2>/dev/null || true
         print_success "Generated checksums.txt"
     elif command_exists shasum; then
-        shasum -a 256 agentfield-* > checksums.txt 2>/dev/null || true
+        shasum -a 256 playground-* > checksums.txt 2>/dev/null || true
         print_success "Generated checksums.txt"
     else
         print_warning "No checksum utility found, skipping checksum generation"
@@ -347,7 +347,7 @@ generate_metadata() {
 
     # Generate build info
     cat > build-info.txt << EOF
-AgentField Single Binary Build Information
+Playground Single Binary Build Information
 ====================================
 
 Build Version: $VERSION
@@ -358,31 +358,31 @@ Build OS: $(uname -s)
 Build Arch: $(uname -m)
 
 Features:
-- Universal Path Management (stores data in ~/.agentfield/)
+- Universal Path Management (stores data in ~/.hanzo/agents/)
 - Embedded Web UI
 - Cross-platform compatibility
 - Single binary deployment
 
 Usage:
-  ./agentfield-<platform>           # Start AgentField server with UI
-  ./agentfield-<platform> --help    # Show help
-  ./agentfield-<platform> --backend-only  # Start without UI
+  ./playground-<platform>           # Start Playground server with UI
+  ./playground-<platform> --help    # Show help
+  ./playground-<platform> --backend-only  # Start without UI
 
 Data Storage:
-All AgentField data is stored in ~/.agentfield/ directory:
-- ~/.agentfield/data/agentfield.db      # Main database
-- ~/.agentfield/data/agentfield.bolt    # Cache/KV store
-- ~/.agentfield/data/keys/         # DID cryptographic keys
-- ~/.agentfield/data/did_registries/  # DID registries
-- ~/.agentfield/data/vcs/          # Verifiable credentials
-- ~/.agentfield/agents/            # Installed agents
-- ~/.agentfield/logs/              # Application logs
-- ~/.agentfield/config/            # User configurations
+All Playground data is stored in ~/.hanzo/agents/ directory:
+- ~/.hanzo/agents/data/playground.db      # Main database
+- ~/.hanzo/agents/data/playground.bolt    # Cache/KV store
+- ~/.hanzo/agents/data/keys/         # DID cryptographic keys
+- ~/.hanzo/agents/data/did_registries/  # DID registries
+- ~/.hanzo/agents/data/vcs/          # Verifiable credentials
+- ~/.hanzo/agents/agents/            # Installed agents
+- ~/.hanzo/agents/logs/              # Application logs
+- ~/.hanzo/agents/config/            # User configurations
 
 Environment Variables:
-- AGENTFIELD_HOME: Override default ~/.agentfield directory
-- AGENTFIELD_PORT: Override default port (8080)
-- AGENTFIELD_CONFIG_FILE: Override config file location
+- AGENTS_HOME: Override default ~/.hanzo/agents directory
+- AGENTS_PORT: Override default port (8080)
+- AGENTS_CONFIG_FILE: Override config file location
 
 EOF
 
@@ -397,27 +397,27 @@ create_distribution() {
 
     # Create a README for the distribution
     cat > "$OUTPUT_DIR/README.md" << 'EOF'
-# AgentField Single Binary Distribution
+# Playground Single Binary Distribution
 
-This package contains pre-built AgentField binaries for multiple platforms.
+This package contains pre-built Playground binaries for multiple platforms.
 
 ## Quick Start
 
 1. Download the appropriate binary for your platform:
-   - `agentfield-linux-amd64` - Linux (Intel/AMD 64-bit)
-   - `agentfield-linux-arm64` - Linux (ARM 64-bit)
-   - `agentfield-darwin-amd64` - macOS (Intel)
-   - `agentfield-darwin-arm64` - macOS (Apple Silicon)
-   - `agentfield-windows-amd64.exe` - Windows (64-bit)
+   - `playground-linux-amd64` - Linux (Intel/AMD 64-bit)
+   - `playground-linux-arm64` - Linux (ARM 64-bit)
+   - `playground-darwin-amd64` - macOS (Intel)
+   - `playground-darwin-arm64` - macOS (Apple Silicon)
+   - `playground-windows-amd64.exe` - Windows (64-bit)
 
 2. Make the binary executable (Linux/macOS):
    ```bash
-   chmod +x agentfield-*
+   chmod +x playground-*
    ```
 
-3. Run AgentField:
+3. Run Playground:
    ```bash
-   ./agentfield-linux-amd64
+   ./playground-linux-amd64
    ```
 
 4. Open your browser to http://localhost:8080
@@ -425,26 +425,26 @@ This package contains pre-built AgentField binaries for multiple platforms.
 ## Features
 
 - **Single Binary**: Everything bundled in one executable
-- **Universal Storage**: All data stored in `~/.agentfield/` directory
+- **Universal Storage**: All data stored in `~/.hanzo/agents/` directory
 - **Embedded UI**: Web interface included in binary
 - **Cross-Platform**: Works on Linux, macOS, and Windows
 - **Portable**: Run from anywhere, data stays consistent
 
 ## Configuration
 
-AgentField can be configured via:
-- Environment variables (AGENTFIELD_HOME, AGENTFIELD_PORT, etc.)
-- Configuration file (`~/.agentfield/agentfield.yaml`)
+Playground can be configured via:
+- Environment variables (AGENTS_HOME, AGENTS_PORT, etc.)
+- Configuration file (`~/.hanzo/agents/playground.yaml`)
 - Command line flags (`--port`, `--backend-only`, etc.)
 
 ## Data Directory
 
-All AgentField data is stored in `~/.agentfield/`:
+All Playground data is stored in `~/.hanzo/agents/`:
 ```
-~/.agentfield/
+~/.hanzo/agents/
 ├── data/
-│   ├── agentfield.db              # Main database
-│   ├── agentfield.bolt            # Cache
+│   ├── playground.db              # Main database
+│   ├── playground.bolt            # Cache
 │   ├── keys/                 # Cryptographic keys
 │   ├── did_registries/       # DID registries
 │   └── vcs/                  # Verifiable credentials
@@ -455,7 +455,7 @@ All AgentField data is stored in `~/.agentfield/`:
 
 ## Support
 
-For issues and documentation, visit: https://github.com/Agent-Field/agentfield
+For issues and documentation, visit: https://github.com/hanzoai/playground
 EOF
 
     print_success "Created distribution README.md"
@@ -473,7 +473,7 @@ show_summary() {
     if [ -d "$OUTPUT_DIR" ]; then
         print_status "Output directory: $OUTPUT_DIR"
         print_status "Built files:"
-        ls -la "$OUTPUT_DIR" | grep -E "(agentfield-|checksums|build-info|README)"
+        ls -la "$OUTPUT_DIR" | grep -E "(playground-|checksums|build-info|README)"
 
         # Calculate total size
         if command_exists du; then
@@ -487,21 +487,21 @@ show_summary() {
     echo ""
     print_status "To test your binary:"
     echo "  cd $OUTPUT_DIR"
-    echo "  ./agentfield-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/amd64/')"
+    echo "  ./playground-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/amd64/')"
     echo ""
     print_status "The binary includes:"
     echo "  ✅ Go backend with universal path management"
     echo "  ✅ Embedded web UI"
     echo "  ✅ All dependencies bundled"
     echo "  ✅ Cross-platform compatibility"
-    echo "  ✅ Portable deployment (stores data in ~/.agentfield/)"
+    echo "  ✅ Portable deployment (stores data in ~/.hanzo/agents/)"
 }
 
 # Main build function
 main() {
-    print_header "AgentField Single Binary Builder"
+    print_header "Playground Single Binary Builder"
 
-    echo "Building AgentField single binary with:"
+    echo "Building Playground single binary with:"
     echo "  • Universal path management"
     echo "  • Embedded web UI"
     echo "  • Cross-platform support"
@@ -531,7 +531,7 @@ case "${1:-}" in
         test_path_system
         ;;
     "help"|"-h"|"--help")
-        echo "AgentField Single Binary Builder"
+        echo "Playground Single Binary Builder"
         echo ""
         echo "Usage:"
         echo "  $0                Build complete single binary package"

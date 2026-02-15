@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: agentfield-postgres
+  name: playground-postgres
 spec:
-  serviceName: agentfield-postgres
+  serviceName: playground-postgres
   replicas: 1
   selector:
     matchLabels:
@@ -23,17 +23,17 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: agentfield-postgres-auth
+                  name: playground-postgres-auth
                   key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: agentfield-postgres-auth
+                  name: playground-postgres-auth
                   key: password
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: agentfield-postgres-auth
+                  name: playground-postgres-auth
                   key: database
           volumeMounts:
             - name: data

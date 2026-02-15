@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import List
 
-from agentfield import AgentRouter
+from playground import AgentRouter
 
 from schemas import (
     ResearchPlan,
@@ -118,10 +118,10 @@ async def create_research_plan(
             "You are creating two types of tasks:\n"
             "1. **Leaf tasks** (no dependencies) = Specific questions that need web search\n"
             "   - These are atomic research questions answerable via web search\n"
-            "   - Example: 'What is AgentField?' or 'What are AgentField's features?'\n\n"
+            "   - Example: 'What is Playground?' or 'What are Playground's features?'\n\n"
             "2. **Parent tasks** (have dependencies) = Questions answered by synthesizing children\n"
             "   - These combine answers from child tasks\n"
-            "   - Example: 'Summarize AgentField' depends on 'What is AgentField?' and 'What are features?'\n\n"
+            "   - Example: 'Summarize Playground' depends on 'What is Playground?' and 'What are features?'\n\n"
             "## CRITICAL: DISTINCT TASKS\n"
             "Each task must be DISTINCT and NON-OVERLAPPING.\n"
             "- Do NOT create tasks that ask the same question in different words\n"
@@ -376,7 +376,7 @@ async def identify_dependencies(
             "- **Comparison tasks** depend on individual research tasks\n"
             "  Example: 'Compare X and Y' depends on 'What is X?' and 'What is Y?'\n\n"
             "- **Synthesis tasks** depend on all component tasks\n"
-            "  Example: 'Summarize AgentField' depends on 'What is AgentField?' and 'What are features?'\n\n"
+            "  Example: 'Summarize Playground' depends on 'What is Playground?' and 'What are features?'\n\n"
             "- **Analysis tasks** depend on data-gathering tasks\n"
             "  Example: 'Analyze trends' depends on 'What are the trends?'\n\n"
             "## KEY PRINCIPLE\n"

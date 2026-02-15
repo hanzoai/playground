@@ -5,8 +5,8 @@ Tests for vision.py image generation functions.
 import sys
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from agentfield.vision import generate_image_litellm, generate_image_openrouter
-from agentfield.multimodal_response import MultimodalResponse, ImageOutput
+from playground.vision import generate_image_litellm, generate_image_openrouter
+from playground.multimodal_response import MultimodalResponse, ImageOutput
 
 
 @pytest.mark.asyncio
@@ -28,7 +28,7 @@ async def test_generate_image_litellm_success():
 
     with patch.dict(sys.modules, {"litellm": mock_litellm}):
         with patch(
-            "agentfield.multimodal_response.detect_multimodal_response"
+            "playground.multimodal_response.detect_multimodal_response"
         ) as mock_detect:
             mock_detect.return_value = mock_response
 
@@ -59,7 +59,7 @@ async def test_generate_image_litellm_without_style():
 
     with patch.dict(sys.modules, {"litellm": mock_litellm}):
         with patch(
-            "agentfield.multimodal_response.detect_multimodal_response"
+            "playground.multimodal_response.detect_multimodal_response"
         ) as mock_detect:
             mock_detect.return_value = MultimodalResponse(text="", images=[])
 

@@ -2,7 +2,7 @@
 
 Multi-reasoner evaluation system for RAG-generated responses featuring adversarial debate, jury consensus, and hybrid ML+LLM verification.
 
-> **[Full Documentation](https://agentfield.ai/examples/complete-agents/rag-evaluator)** — Detailed architecture diagrams, API examples, and deployment guides.
+> **[Full Documentation](https://playground.ai/examples/complete-agents/rag-evaluator)** — Detailed architecture diagrams, API examples, and deployment guides.
 
 ## Features
 
@@ -94,7 +94,7 @@ The system runs four evaluation metrics in parallel:
 3. **Hallucination** - Hybrid: ML verification (fast) -> LLM escalation (uncertain cases only)
 4. **Constitutional** - Parallel principle checks -> weighted aggregation
 
-See the [documentation](https://agentfield.dev/examples/complete-agents/rag-evaluator) for detailed diagrams and explanations.
+See the [documentation](https://playground.dev/examples/complete-agents/rag-evaluator) for detailed diagrams and explanations.
 
 ## Endpoints
 
@@ -150,7 +150,7 @@ Domain presets available in `config/presets/`:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AGENTFIELD_SERVER` | Control plane URL | `http://localhost:8080` |
+| `AGENTS_SERVER` | Control plane URL | `http://localhost:8080` |
 | `AI_MODEL` | LLM model | `openrouter/deepseek/deepseek-chat-v3-0324` |
 | `OPENROUTER_API_KEY` | OpenRouter API key | - |
 

@@ -32,7 +32,7 @@ Key Innovation: Hallucination Prevention Through Meta-Cognition
 import os
 import asyncio
 from typing import List, Dict
-from agentfield import Agent, AIConfig
+from playground import Agent, AIConfig
 from schemas import (
     SubQuestion,
     SubQuestions,
@@ -75,7 +75,7 @@ from skills import (
 # Initialize agent
 app = Agent(
     node_id="agentic-rag",
-    agentfield_server=os.getenv("AGENTFIELD_SERVER", "http://localhost:8080"),
+    playground_server=os.getenv("AGENTS_SERVER", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("AI_MODEL", "openai/gpt-4.1-mini"), temperature=0.3
     ),
@@ -263,7 +263,7 @@ Example: For "Who is A" with exact precision:
 @app.skill()
 async def lazy_semantic_retrieval(question: str, top_k: int = 10) -> List[RankedChunk]:
     """
-    Semantic retrieval powered by AgentField's unified vector memory.
+    Semantic retrieval powered by Playground's unified vector memory.
     """
     query_embedding = embed_text(question)
     results = await app.memory.similarity_search(query_embedding, top_k=top_k)

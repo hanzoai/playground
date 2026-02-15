@@ -1,7 +1,7 @@
 /**
  * Discovery + vector memory example.
  *
- * Run with a control plane at AGENTFIELD_URL (defaults to http://localhost:8080):
+ * Run with a control plane at AGENTS_URL (defaults to http://localhost:8080):
  *   AGENT_ID=ts-discovery-demo npm run dev:discovery
  * or with ts-node directly:
  *   AGENT_ID=ts-discovery-demo node --loader ts-node/esm discovery-memory/main.ts
@@ -13,7 +13,7 @@
  * - Optional cleanup with ctx.memory.deleteVectors()
  * - Discovering other agents via ctx.discover()
  */
-import { Agent, AgentRouter } from '@agentfield/sdk';
+import { Agent, AgentRouter } from '@playground/sdk';
 
 type DemoInput = {
   text?: string;
@@ -123,7 +123,7 @@ async function main() {
   const agent = new Agent({
     nodeId: process.env.AGENT_ID ?? 'ts-discovery-demo',
     port: Number(process.env.PORT ?? 8004),
-    agentFieldUrl: process.env.AGENTFIELD_URL ?? 'http://localhost:8080',
+    playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
     aiConfig: {
       provider: 'openai',
       model: 'gpt-4o',

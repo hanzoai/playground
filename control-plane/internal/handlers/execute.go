@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
-	"github.com/Agent-Field/agentfield/control-plane/internal/utils"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/utils"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -1375,7 +1375,7 @@ func (c *executionController) buildWorkflowExecutionRecord(ctx context.Context, 
 	workflowExec := &types.WorkflowExecution{
 		WorkflowID:          runID,
 		ExecutionID:         exec.ExecutionID,
-		AgentFieldRequestID: utils.GenerateAgentFieldRequestID(),
+		AgentsRequestID: utils.GenerateAgentsRequestID(),
 		RunID:               &runIDCopy,
 		SessionID:           exec.SessionID,
 		ActorID:             exec.ActorID,
@@ -1598,12 +1598,12 @@ func (p *asyncWorkerPool) submit(job asyncExecutionJob) bool {
 
 func getAsyncWorkerPool() *asyncWorkerPool {
 	asyncPoolOnce.Do(func() {
-		workerCount := resolveIntFromEnv("AGENTFIELD_EXEC_ASYNC_WORKERS", runtime.NumCPU())
+		workerCount := resolveIntFromEnv("AGENTS_EXEC_ASYNC_WORKERS", runtime.NumCPU())
 		if workerCount <= 0 {
 			workerCount = runtime.NumCPU()
 		}
 
-		queueCapacity := resolveIntFromEnv("AGENTFIELD_EXEC_ASYNC_QUEUE_CAPACITY", 1024)
+		queueCapacity := resolveIntFromEnv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", 1024)
 		if queueCapacity <= 0 {
 			queueCapacity = 1024
 		}
@@ -1631,7 +1631,7 @@ func resolveIntFromEnv(key string, fallback int) int {
 
 func ensureCompletionWorker() {
 	completionOnce.Do(func() {
-		size := resolveIntFromEnv("AGENTFIELD_EXEC_COMPLETION_QUEUE", 2048)
+		size := resolveIntFromEnv("AGENTS_EXEC_COMPLETION_QUEUE", 2048)
 		if size <= 0 {
 			size = 2048
 		}

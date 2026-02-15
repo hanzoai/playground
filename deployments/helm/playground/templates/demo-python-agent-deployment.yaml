@@ -42,7 +42,7 @@ spec:
             - name: http
               containerPort: {{ .Values.demoPythonAgent.service.port }}
           env:
-            - name: AGENTFIELD_URL
+            - name: AGENTS_URL
               value: "http://{{ include "playground.controlPlane.fullname" . }}:{{ .Values.controlPlane.service.port }}"
             - name: AGENT_NODE_ID
               value: {{ .Values.demoPythonAgent.nodeId | quote }}
@@ -51,7 +51,7 @@ spec:
             - name: AGENT_CALLBACK_URL
               value: "http://{{ include "playground.fullname" . }}-demo-python-agent:{{ .Values.demoPythonAgent.service.port }}"
             {{- if .Values.apiAuth.enabled }}
-            - name: AGENTFIELD_TOKEN
+            - name: AGENTS_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.apiAuth.secretName" . }}

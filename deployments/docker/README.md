@@ -1,6 +1,6 @@
 # Docker (local)
 
-This folder contains a small Docker Compose setup for evaluating AgentField locally:
+This folder contains a small Docker Compose setup for evaluating Playground locally:
 
 - Control plane (UI + REST API)
 - PostgreSQL (pgvector)
@@ -48,7 +48,7 @@ curl -s http://localhost:8080/api/v1/did/workflow/$run_id/vc-chain | head -c 120
 
 ## Defaults (PostgreSQL)
 
-- User / password / database: `agentfield` / `agentfield` / `agentfield`
+- User / password / database: `playground` / `playground` / `playground`
 
 ## Docker networking note (callback URL)
 

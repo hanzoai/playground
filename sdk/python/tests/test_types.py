@@ -1,4 +1,4 @@
-from agentfield.types import (
+from playground.types import (
     ExecutionHeaders,
     AgentStatus,
     HeartbeatData,

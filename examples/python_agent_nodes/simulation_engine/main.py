@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 from dotenv import load_dotenv
 
-from agentfield import AIConfig, Agent
+from playground import AIConfig, Agent
 
 load_dotenv()
 
@@ -30,7 +30,7 @@ from routers import (
 
 app = Agent(
     node_id="simulation-enginepy",
-    agentfield_server=f"{os.getenv('AGENTFIELD_SERVER', 'http://localhost:8080')}",
+    playground_server=f"{os.getenv('AGENTS_SERVER', 'http://localhost:8080')}",
     dev_mode=True,
     ai_config=AIConfig(
         model="openrouter/deepseek/deepseek-v3.1-terminus",  # LiteLLM auto-detects provider from model name
@@ -52,7 +52,7 @@ for router in (
 if __name__ == "__main__":
     print("🎯 Generalized Multi-Agent Simulation System")
     print("🧠 Node ID: simulation-engine")
-    print(f"🌐 Control Plane: {app.agentfield_server}")
+    print(f"🌐 Control Plane: {app.hanzo/agents_server}")
     print("\n📊 Architecture: Multi-Reasoner Parallel System")
     print("  1. Scenario Analysis → Decompose scenario and build factor graph")
     print(

@@ -1,7 +1,7 @@
 # GoReleaser v2 configuration
 version: 2
 
-project_name: agentfield
+project_name: playground
 
 before:
   hooks:
@@ -9,10 +9,10 @@ before:
     - npm --prefix control-plane/web/client run build --silent
 
 builds:
-  - id: agentfield-linux-amd64
+  - id: playground-linux-amd64
     dir: control-plane
     main: ./cmd/af
-    binary: agentfield-linux-amd64
+    binary: playground-linux-amd64
     env:
       - CGO_ENABLED=1
     goos:
@@ -28,10 +28,10 @@ builds:
       - embedded
       - sqlite_fts5
 
-  - id: agentfield-linux-arm64
+  - id: playground-linux-arm64
     dir: control-plane
     main: ./cmd/af
-    binary: agentfield-linux-arm64
+    binary: playground-linux-arm64
     env:
       - CGO_ENABLED=1
       - CC=aarch64-linux-gnu-gcc
@@ -48,10 +48,10 @@ builds:
       - embedded
       - sqlite_fts5
 
-  - id: agentfield-darwin-amd64
+  - id: playground-darwin-amd64
     dir: control-plane
     main: ./cmd/af
-    binary: agentfield-darwin-amd64
+    binary: playground-darwin-amd64
     env:
       - CGO_ENABLED=1
     goos:
@@ -67,10 +67,10 @@ builds:
       - embedded
       - sqlite_fts5
 
-  - id: agentfield-darwin-arm64
+  - id: playground-darwin-arm64
     dir: control-plane
     main: ./cmd/af
-    binary: agentfield-darwin-arm64
+    binary: playground-darwin-arm64
     env:
       - CGO_ENABLED=1
     goos:
@@ -87,10 +87,10 @@ builds:
       - sqlite_fts5
 
   # Windows build disabled - focus on Linux and macOS for now
-  # - id: agentfield-windows-amd64
+  # - id: playground-windows-amd64
   #   dir: control-plane
   #   main: ./cmd/af
-  #   binary: agentfield
+  #   binary: playground
   #   env:
   #     - CGO_ENABLED=1
   #     - CC=gcc
@@ -112,12 +112,12 @@ builds:
 archives:
   - id: default
     builds:
-      - agentfield-linux-amd64
-      - agentfield-linux-arm64
-      - agentfield-darwin-amd64
-      - agentfield-darwin-arm64
+      - playground-linux-amd64
+      - playground-linux-arm64
+      - playground-darwin-amd64
+      - playground-darwin-arm64
     format: binary
-    name_template: "agentfield-{{ .Os }}-{{ .Arch }}"
+    name_template: "playground-{{ .Os }}-{{ .Arch }}"
 
 checksum:
   name_template: "checksums.txt"
@@ -125,25 +125,25 @@ checksum:
 
 release:
   github:
-    owner: Agent-Field
-    name: agentfield
+    owner: hanzoai
+    name: playground
   draft: false
   prerelease: auto
-  name_template: "AgentField v{{ .Version }}"
+  name_template: "Playground v{{ .Version }}"
   header: |
-    ## AgentField v{{ .Version }}
+    ## Playground v{{ .Version }}
 
     ### Installation
 
     **Installation:**
     ```bash
-    curl -fsSL https://agentfield.ai/install.sh | bash
+    curl -fsSL https://playground.ai/install.sh | bash
     ```
 
     ### Version Pinning
 
     ```bash
-    VERSION={{ .Version }} curl -fsSL https://agentfield.ai/install.sh | bash
+    VERSION={{ .Version }} curl -fsSL https://playground.ai/install.sh | bash
     ```
 
     ### Manual Download
@@ -152,10 +152,10 @@ release:
 
     ### Supported Platforms
 
-    - **macOS Intel:** `agentfield-darwin-amd64`
-    - **macOS Apple Silicon:** `agentfield-darwin-arm64`
-    - **Linux x86_64:** `agentfield-linux-amd64`
-    - **Linux ARM64:** `agentfield-linux-arm64`
+    - **macOS Intel:** `playground-darwin-amd64`
+    - **macOS Apple Silicon:** `playground-darwin-arm64`
+    - **Linux x86_64:** `playground-linux-amd64`
+    - **Linux ARM64:** `playground-linux-arm64`
 
 changelog:
   use: git

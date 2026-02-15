@@ -1,4 +1,4 @@
-# AgentField Scale Benchmark
+# Playground Scale Benchmark
 
 A rigorous, reproducible benchmark measuring agent framework performance at scale.
 
@@ -27,9 +27,9 @@ A rigorous, reproducible benchmark measuring agent framework performance at scal
 
 | Framework | Language | Version | Notes |
 |-----------|----------|---------|-------|
-| AgentField Go SDK | Go 1.21+ | latest | Native Go implementation |
-| AgentField TypeScript SDK | Node.js 20+ | latest | Native TS implementation |
-| AgentField Python SDK | Python 3.12+ | latest | FastAPI-based |
+| Playground Go SDK | Go 1.21+ | latest | Native Go implementation |
+| Playground TypeScript SDK | Node.js 20+ | latest | Native TS implementation |
+| Playground Python SDK | Python 3.12+ | latest | FastAPI-based |
 | LangChain | Python 3.12+ | 0.1.x | StructuredTool-based |
 | CrewAI | Python 3.12+ | latest | @tool decorator-based |
 | Mastra | Node.js 20+ | latest | createTool-based |
@@ -63,9 +63,9 @@ cd mastra-bench && npx tsx benchmark.ts
 
 | Framework | Handlers | Registration | Memory | Memory/Handler | Latency p99 | Throughput |
 |-----------|----------|--------------|--------|----------------|-------------|------------|
-| AgentField Go | 100,000 | 17.3 ms | 26.7 MB | 280 B | 1.0 µs | 8.2M req/s |
-| AgentField TS | 100,000 | 13.5 ms | 13.2 MB | 276 B | 0.25 µs | 4.0M req/s |
-| AgentField Python | 1,000 | 57 ms | 7.2 MB | 7.5 KB | 0.21 µs | 6.7M req/s |
+| Playground Go | 100,000 | 17.3 ms | 26.7 MB | 280 B | 1.0 µs | 8.2M req/s |
+| Playground TS | 100,000 | 13.5 ms | 13.2 MB | 276 B | 0.25 µs | 4.0M req/s |
+| Playground Python | 1,000 | 57 ms | 7.2 MB | 7.5 KB | 0.21 µs | 6.7M req/s |
 | LangChain | 1,000 | 483 ms | 10.3 MB | 10.8 KB | 118 µs | 15K req/s |
 
 **Python SDK Additional Metrics:**
@@ -75,7 +75,7 @@ cd mastra-bench && npx tsx benchmark.ts
 
 ### Normalized Comparison (1000 handlers)
 
-| Metric | AgentField Python | LangChain |
+| Metric | Playground Python | LangChain |
 |--------|-------------------|-----------|
 | Registration | 57 ms | 483 ms |
 | Memory/Handler | 7.5 KB | 10.8 KB |
@@ -88,7 +88,7 @@ cd mastra-bench && npx tsx benchmark.ts
 |-----------|------|
 | Go | 17.3 ms |
 | TypeScript | 13.5 ms |
-| AgentField Python | ~5,700 ms |
+| Playground Python | ~5,700 ms |
 | LangChain | ~48,300 ms |
 
 ### Memory per Handler
@@ -97,7 +97,7 @@ cd mastra-bench && npx tsx benchmark.ts
 |-----------|----------------|
 | Go | 280 bytes |
 | TypeScript | 276 bytes |
-| AgentField Python | 7.5 KB |
+| Playground Python | 7.5 KB |
 | LangChain | 10.8 KB |
 
 ### Throughput (single-threaded theoretical)
@@ -105,7 +105,7 @@ cd mastra-bench && npx tsx benchmark.ts
 | Framework | Requests/sec |
 |-----------|--------------|
 | Go | 8.2M |
-| AgentField Python | 6.7M |
+| Playground Python | 6.7M |
 | TypeScript | 4.0M |
 | LangChain | 15K |
 

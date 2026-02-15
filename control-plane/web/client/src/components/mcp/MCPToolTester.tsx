@@ -18,7 +18,7 @@ import type {
   MCPTool,
   MCPToolTestRequest,
   MCPToolTestResponse,
-} from "@/types/agentfield";
+} from "@/types/playground";
 import {
   CheckmarkFilled,
   Copy,

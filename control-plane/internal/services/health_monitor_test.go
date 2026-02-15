@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

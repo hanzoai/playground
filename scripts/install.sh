@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# AgentField CLI Installer
+# Playground CLI Installer
 # Usage:
-#   Production:  curl -fsSL https://agentfield.ai/install.sh | bash
-#   Staging:     curl -fsSL https://agentfield.ai/install.sh | bash -s -- --staging
-#   Version pin: VERSION=v1.0.0 curl -fsSL https://agentfield.ai/install.sh | bash
+#   Production:  curl -fsSL https://playground.ai/install.sh | bash
+#   Staging:     curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
+#   Version pin: VERSION=v1.0.0 curl -fsSL https://playground.ai/install.sh | bash
 
 set -e
 
 # Configuration
-REPO="Agent-Field/agentfield"
+REPO="hanzoai/playground"
 VERBOSE="${VERBOSE:-0}"
 SKIP_PATH_CONFIG="${SKIP_PATH_CONFIG:-0}"
 
@@ -43,11 +43,11 @@ parse_args() {
         shift
         ;;
       --help|-h)
-        echo "AgentField CLI Installer"
+        echo "Playground CLI Installer"
         echo ""
         echo "Usage:"
-        echo "  curl -fsSL https://agentfield.ai/install.sh | bash"
-        echo "  curl -fsSL https://agentfield.ai/install.sh | bash -s -- --staging"
+        echo "  curl -fsSL https://playground.ai/install.sh | bash"
+        echo "  curl -fsSL https://playground.ai/install.sh | bash -s -- --staging"
         echo ""
         echo "Options:"
         echo "  --staging    Install latest prerelease/staging version"
@@ -59,7 +59,7 @@ parse_args() {
         echo "  STAGING=1            Same as --staging flag"
         echo "  VERBOSE=1            Same as --verbose flag"
         echo "  SKIP_PATH_CONFIG=1   Skip PATH configuration"
-        echo "  AGENTFIELD_INSTALL_DIR  Custom install directory"
+        echo "  AGENTS_INSTALL_DIR  Custom install directory"
         exit 0
         ;;
       *)
@@ -73,10 +73,10 @@ parse_args() {
 # Set install directory based on channel
 set_install_dir() {
   if [[ "$STAGING" == "1" ]]; then
-    INSTALL_DIR="${AGENTFIELD_INSTALL_DIR:-$HOME/.agentfield-staging/bin}"
+    INSTALL_DIR="${AGENTS_INSTALL_DIR:-$HOME/.hanzo/agents-staging/bin}"
     SYMLINK_NAME="af-staging"
   else
-    INSTALL_DIR="${AGENTFIELD_INSTALL_DIR:-$HOME/.agentfield/bin}"
+    INSTALL_DIR="${AGENTS_INSTALL_DIR:-$HOME/.hanzo/agents/bin}"
     SYMLINK_NAME="af"
   fi
 }
@@ -85,10 +85,10 @@ set_install_dir() {
 print_banner() {
   local width=64
   local inner_width=$((width - 2))
-  local title="AgentField CLI Installer"
+  local title="Playground CLI Installer"
 
   if [[ "$STAGING" == "1" ]]; then
-    title="AgentField CLI Installer (STAGING)"
+    title="Playground CLI Installer (STAGING)"
   fi
 
   local horizontal_line
@@ -108,7 +108,7 @@ print_banner() {
     printf "${MAGENTA}╚%s╝${NC}\n" "$horizontal_line"
     printf "\n"
     printf "${YELLOW}WARNING: This installs a STAGING/PRE-RELEASE version.${NC}\n"
-    printf "${YELLOW}For production use: curl -fsSL https://agentfield.ai/install.sh | bash${NC}\n"
+    printf "${YELLOW}For production use: curl -fsSL https://playground.ai/install.sh | bash${NC}\n"
     printf "\n"
   else
     printf "${CYAN}╔%s╗${NC}\n" "$horizontal_line"
@@ -354,14 +354,14 @@ install_binary() {
   mkdir -p "$install_dir"
 
   # Copy binary
-  cp "$binary_path" "$install_dir/agentfield"
-  chmod +x "$install_dir/agentfield"
+  cp "$binary_path" "$install_dir/playground"
+  chmod +x "$install_dir/playground"
 
   # Create symlink for convenience (best effort)
   local symlink_created=0
-  if ln -sf "$install_dir/agentfield" "$install_dir/$SYMLINK_NAME"; then
+  if ln -sf "$install_dir/playground" "$install_dir/$SYMLINK_NAME"; then
     symlink_created=1
-    print_verbose "Created symlink: $SYMLINK_NAME -> agentfield"
+    print_verbose "Created symlink: $SYMLINK_NAME -> playground"
   else
     print_warning "Could not create $SYMLINK_NAME symlink; ensure filesystem supports symlinks"
   fi
@@ -369,17 +369,17 @@ install_binary() {
   # On macOS, remove quarantine attribute
   if [[ "$(detect_os)" == "darwin" ]]; then
     print_verbose "Removing macOS quarantine attribute..."
-    xattr -d com.apple.quarantine "$install_dir/agentfield" 2>/dev/null || true
+    xattr -d com.apple.quarantine "$install_dir/playground" 2>/dev/null || true
     if [[ "$symlink_created" -eq 1 ]]; then
       xattr -d com.apple.quarantine "$install_dir/$SYMLINK_NAME" 2>/dev/null || true
     fi
   fi
 
-  print_success "Binary installed to $install_dir/agentfield"
+  print_success "Binary installed to $install_dir/playground"
   if [[ "$symlink_created" -eq 1 ]]; then
     print_success "Symlink created: $install_dir/$SYMLINK_NAME"
   else
-    print_info "You can create a manual shortcut named '$SYMLINK_NAME' pointing to $install_dir/agentfield if desired."
+    print_info "You can create a manual shortcut named '$SYMLINK_NAME' pointing to $install_dir/playground if desired."
   fi
 }
 
@@ -402,10 +402,10 @@ configure_path() {
 
   local shell_config=""
   local path_line="export PATH=\"$install_dir:\$PATH\""
-  local comment="# AgentField CLI"
+  local comment="# Playground CLI"
 
   if [[ "$STAGING" == "1" ]]; then
-    comment="# AgentField CLI (STAGING)"
+    comment="# Playground CLI (STAGING)"
   fi
 
   case "$shell_name" in
@@ -451,7 +451,7 @@ configure_path() {
 
   # Provide instructions
   printf "\n"
-  print_info "To use agentfield in this terminal session, run:"
+  print_info "To use playground in this terminal session, run:"
   printf "  ${CYAN}source %s${NC}\n" "$shell_config"
   printf "\n"
   print_info "Or open a new terminal window"
@@ -463,20 +463,20 @@ verify_installation() {
 
   print_info "Verifying installation..."
 
-  if [[ -x "$install_dir/agentfield" ]]; then
+  if [[ -x "$install_dir/playground" ]]; then
     print_success "Installation verified"
 
     # Try to get version
-    if "$install_dir/agentfield" --version >/dev/null 2>&1; then
+    if "$install_dir/playground" --version >/dev/null 2>&1; then
       local version_output
-      version_output=$("$install_dir/agentfield" --version 2>&1)
+      version_output=$("$install_dir/playground" --version 2>&1)
       print_verbose "Version output: $version_output"
     fi
 
     return 0
   else
     print_error "Installation verification failed"
-    print_error "Binary not found or not executable: $install_dir/agentfield"
+    print_error "Binary not found or not executable: $install_dir/playground"
     exit 1
   fi
 }
@@ -487,14 +487,14 @@ print_success_message() {
 
   if [[ "$STAGING" == "1" ]]; then
     printf "${YELLOW}╔══════════════════════════════════════════════════════════════╗${NC}\n"
-    printf "${YELLOW}║${NC}  ${BOLD}AgentField CLI (STAGING) installed successfully!${NC}            ${YELLOW}║${NC}\n"
+    printf "${YELLOW}║${NC}  ${BOLD}Playground CLI (STAGING) installed successfully!${NC}            ${YELLOW}║${NC}\n"
     printf "${YELLOW}╚══════════════════════════════════════════════════════════════╝${NC}\n"
     printf "\n"
     printf "${YELLOW}NOTE: This is a STAGING version for testing purposes.${NC}\n"
-    printf "${YELLOW}It is installed separately from production in ~/.agentfield-staging${NC}\n"
+    printf "${YELLOW}It is installed separately from production in ~/.hanzo/agents-staging${NC}\n"
   else
     printf "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}\n"
-    printf "${GREEN}║${NC}  ${BOLD}AgentField CLI installed successfully!${NC}                      ${GREEN}║${NC}\n"
+    printf "${GREEN}║${NC}  ${BOLD}Playground CLI installed successfully!${NC}                      ${GREEN}║${NC}\n"
     printf "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}\n"
   fi
 
@@ -532,18 +532,18 @@ print_success_message() {
   if [[ "$STAGING" == "1" ]]; then
     printf "${BOLD}Testing SDKs:${NC}\n"
     printf "  Python (prerelease):\n"
-    printf "     ${CYAN}pip install --pre agentfield${NC}\n"
+    printf "     ${CYAN}pip install --pre playground${NC}\n"
     printf "\n"
     printf "  TypeScript:\n"
-    printf "     ${CYAN}npm install @agentfield/sdk@next${NC}\n"
+    printf "     ${CYAN}npm install @playground/sdk@next${NC}\n"
   else
     printf "  3. Initialize your first agent:\n"
-    printf "     ${CYAN}agentfield init my-agent${NC}\n"
+    printf "     ${CYAN}playground init my-agent${NC}\n"
   fi
 
   printf "\n"
   printf "${BOLD}Resources:${NC}\n"
-  printf "  Documentation: ${BLUE}https://agentfield.ai/docs${NC}\n"
+  printf "  Documentation: ${BLUE}https://playground.ai/docs${NC}\n"
   printf "  GitHub:        ${BLUE}https://github.com/$REPO${NC}\n"
   printf "  Releases:      ${BLUE}https://github.com/$REPO/releases${NC}\n"
   printf "\n"
@@ -585,9 +585,9 @@ main() {
   fi
 
   # Construct binary name and URL
-  local binary_name="agentfield-$os-$arch"
+  local binary_name="playground-$os-$arch"
   if [[ "$os" == "windows" ]]; then
-    binary_name="agentfield-$os-$arch.exe"
+    binary_name="playground-$os-$arch.exe"
   fi
 
   local download_url="https://github.com/$REPO/releases/download/$VERSION/$binary_name"

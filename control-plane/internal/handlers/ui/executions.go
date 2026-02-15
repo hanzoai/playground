@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -157,7 +157,7 @@ type ExecutionDetailsResponse struct {
 	ID                  int64                          `json:"id"`
 	ExecutionID         string                         `json:"execution_id"`
 	WorkflowID          string                         `json:"workflow_id"`
-	AgentFieldRequestID *string                        `json:"agentfield_request_id,omitempty"`
+	AgentsRequestID *string                        `json:"agents_request_id,omitempty"`
 	SessionID           *string                        `json:"session_id,omitempty"`
 	ActorID             *string                        `json:"actor_id,omitempty"`
 	AgentNodeID         string                         `json:"agent_node_id"`
@@ -705,7 +705,7 @@ func (h *ExecutionHandler) toExecutionDetails(ctx context.Context, exec *types.E
 		ID:                  0,
 		ExecutionID:         exec.ExecutionID,
 		WorkflowID:          exec.RunID,
-		AgentFieldRequestID: nil,
+		AgentsRequestID: nil,
 		SessionID:           exec.SessionID,
 		ActorID:             exec.ActorID,
 		AgentNodeID:         exec.AgentNodeID,

@@ -2,13 +2,13 @@
 
 PRODUCT_CONTEXT = """
 ## Product Overview
-AgentField is a Kubernetes-style control plane with IAM for building next generation of autonomous software. It provides production infrastructure
+Playground is a Kubernetes-style control plane with IAM for building next generation of autonomous software. It provides production infrastructure
 for deploying, orchestrating, and observing multi-agent systems with cryptographic identity and audit trails.
 
 **Architecture**: Distributed control plane + independent agent nodes. Think "Kubernetes for AI agents."
 
-**Positioning**: AgentField is infrastructure, not an application framework. While agent frameworks help you build
-single AI applications, AgentField provides the orchestration layer for
+**Positioning**: Playground is infrastructure, not an application framework. While agent frameworks help you build
+single AI applications, Playground provides the orchestration layer for
 deploying and managing distributed multi-agent systems in production (like Kubernetes orchestrates containers).
 
 ## Design Philosophy
@@ -142,5 +142,5 @@ When users ask about:
 - "Differences" or "comparison" or "vs" → Look for: infrastructure vs framework, control plane vs embedded library, multi-team vs single app, production features
 - "Scale" or "scalability" → Look for: stateless control plane, independent scaling, billions of requests, horizontal scaling
 - "Architecture" → Look for: distributed architecture, control plane, agent nodes, microservices, stateless design
-- "SDK" or "language" or "languages" or "supported" → Look for: Python SDK, Go SDK, TypeScript SDK, npm install @agentfield/sdk, pip install agentfield
+- "SDK" or "language" or "languages" or "supported" → Look for: Python SDK, Go SDK, TypeScript SDK, npm install @playground/sdk, pip install playground
 """

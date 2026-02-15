@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from agentfield import Agent
+from playground import Agent
 
 from agents import AgentSpec
 
@@ -41,7 +41,7 @@ def create_worker_agent(
     agent_kwargs.setdefault("dev_mode", True)
     agent_kwargs.setdefault("callback_url", callback_url or "http://test-agent")
     agent_kwargs.setdefault(
-        "agentfield_server", os.environ.get("AGENTFIELD_SERVER", "http://localhost:8080")
+        "playground_server", os.environ.get("AGENTS_SERVER", "http://localhost:8080")
     )
 
     agent = Agent(node_id=resolved_node_id, **agent_kwargs)
@@ -70,7 +70,7 @@ def create_orchestrator_agent(
     agent_kwargs.setdefault("dev_mode", True)
     agent_kwargs.setdefault("callback_url", callback_url or "http://test-agent")
     agent_kwargs.setdefault(
-        "agentfield_server", os.environ.get("AGENTFIELD_SERVER", "http://localhost:8080")
+        "playground_server", os.environ.get("AGENTS_SERVER", "http://localhost:8080")
     )
 
     agent = Agent(node_id=resolved_node_id, **agent_kwargs)

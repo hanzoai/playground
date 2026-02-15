@@ -19,9 +19,9 @@ func NewVersionCommand(versionInfo VersionInfo) *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
-		Long:  `Display the version, build date, commit hash, and runtime information for AgentField.`,
+		Long:  `Display the version, build date, commit hash, and runtime information for Agents.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("AgentField Control Plane\n")
+			fmt.Printf("Agents Control Plane\n")
 			fmt.Printf("  Version:    %s\n", versionInfo.Version)
 			fmt.Printf("  Commit:     %s\n", versionInfo.Commit)
 			fmt.Printf("  Built:      %s\n", versionInfo.Date)

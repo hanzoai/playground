@@ -1,4 +1,4 @@
-import { AgentRouter } from '@agentfield/sdk';
+import { AgentRouter } from '@playground/sdk';
 import {
   EntityDecisionSchema,
   EntityProfileSchema,

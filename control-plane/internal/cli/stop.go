@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -19,8 +19,8 @@ import (
 func NewStopCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop <agent-node-name>",
-		Short: "Stop a running AgentField agent node",
-		Long: `Stop a running AgentField agent node package.
+		Short: "Stop a running Agents agent node",
+		Long: `Stop a running Agents agent node package.
 
 The agent node process will be terminated gracefully and its status
 will be updated in the registry.
@@ -39,7 +39,7 @@ func runStopCommand(cmd *cobra.Command, args []string) error {
 	agentNodeName := args[0]
 
 	stopper := &AgentNodeStopper{
-		AgentFieldHome: getAgentFieldHomeDir(),
+		AgentsHome: getAgentsHomeDir(),
 	}
 
 	if err := stopper.StopAgentNode(agentNodeName); err != nil {
@@ -51,7 +51,7 @@ func runStopCommand(cmd *cobra.Command, args []string) error {
 
 // AgentNodeStopper handles stopping agent nodes
 type AgentNodeStopper struct {
-	AgentFieldHome string
+	AgentsHome string
 }
 
 // StopAgentNode stops a running agent node
@@ -104,7 +104,7 @@ func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
 			req, err := http.NewRequest("POST", shutdownURL, bytes.NewReader(bodyBytes))
 			if err == nil {
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("User-Agent", "AgentField-CLI/1.0")
+				req.Header.Set("User-Agent", "Agents-CLI/1.0")
 
 				client := &http.Client{Timeout: 10 * time.Second}
 				resp, err := client.Do(req)
@@ -169,7 +169,7 @@ func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
 
 // loadRegistry loads the installation registry
 func (as *AgentNodeStopper) loadRegistry() (*packages.InstallationRegistry, error) {
-	registryPath := filepath.Join(as.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(as.AgentsHome, "installed.yaml")
 
 	registry := &packages.InstallationRegistry{
 		Installed: make(map[string]packages.InstalledPackage),
@@ -186,7 +186,7 @@ func (as *AgentNodeStopper) loadRegistry() (*packages.InstallationRegistry, erro
 
 // saveRegistry saves the installation registry
 func (as *AgentNodeStopper) saveRegistry(registry *packages.InstallationRegistry) error {
-	registryPath := filepath.Join(as.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(as.AgentsHome, "installed.yaml")
 
 	data, err := yaml.Marshal(registry)
 	if err != nil {

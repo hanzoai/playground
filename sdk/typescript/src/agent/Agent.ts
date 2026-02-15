@@ -19,7 +19,7 @@ import { ExecutionContext, type ExecutionMetadata } from '../context/ExecutionCo
 import { ReasonerContext } from '../context/ReasonerContext.js';
 import { SkillContext } from '../context/SkillContext.js';
 import { AIClient } from '../ai/AIClient.js';
-import { AgentFieldClient } from '../client/AgentFieldClient.js';
+import { PlaygroundClient } from '../client/PlaygroundClient.js';
 import { MemoryClient } from '../memory/MemoryClient.js';
 import { MemoryEventClient } from '../memory/MemoryEventClient.js';
 import {
@@ -48,7 +48,7 @@ export class Agent {
   private server?: http.Server;
   private heartbeatTimer?: NodeJS.Timeout;
   private readonly aiClient: AIClient;
-  private readonly agentFieldClient: AgentFieldClient;
+  private readonly playgroundClient: PlaygroundClient;
   private readonly memoryClient: MemoryClient;
   private readonly memoryEventClient: MemoryEventClient;
   private readonly didClient: DidClient;
@@ -67,7 +67,7 @@ export class Agent {
 
     this.config = {
       port: 8001,
-      agentFieldUrl: 'http://localhost:8080',
+      playgroundUrl: 'http://localhost:8080',
       host: '0.0.0.0',
       ...config,
       didEnabled: config.didEnabled ?? true,
@@ -79,10 +79,10 @@ export class Agent {
     this.app.use(express.json());
 
     this.aiClient = new AIClient(this.config.aiConfig);
-    this.agentFieldClient = new AgentFieldClient(this.config);
-    this.memoryClient = new MemoryClient(this.config.agentFieldUrl!, this.config.defaultHeaders);
-    this.memoryEventClient = new MemoryEventClient(this.config.agentFieldUrl!, this.config.defaultHeaders);
-    this.didClient = new DidClient(this.config.agentFieldUrl!, this.config.defaultHeaders);
+    this.playgroundClient = new PlaygroundClient(this.config);
+    this.memoryClient = new MemoryClient(this.config.playgroundUrl!, this.config.defaultHeaders);
+    this.memoryEventClient = new MemoryEventClient(this.config.playgroundUrl!, this.config.defaultHeaders);
+    this.didClient = new DidClient(this.config.playgroundUrl!, this.config.defaultHeaders);
     this.didManager = new DidManager(this.didClient, this.config.nodeId);
     this.memoryEventClient.onEvent((event) => this.dispatchMemoryEvent(event));
 
@@ -144,7 +144,7 @@ export class Agent {
   }
 
   discover(options?: DiscoveryOptions) {
-    return this.agentFieldClient.discoverCapabilities(options);
+    return this.playgroundClient.discoverCapabilities(options);
   }
 
   async registerMcpTools(): Promise<{ registered: MCPToolRegistration[] }> {
@@ -186,7 +186,7 @@ export class Agent {
   }
 
   getWorkflowReporter(metadata: ExecutionMetadata) {
-    return new WorkflowReporter(this.agentFieldClient, {
+    return new WorkflowReporter(this.playgroundClient, {
       executionId: metadata.executionId,
       runId: metadata.runId,
       workflowId: metadata.workflowId,
@@ -226,13 +226,13 @@ export class Agent {
     const execMetadata = metadata ?? execCtx?.metadata;
     if (!execMetadata) return;
 
-    const baseUrl = (this.config.agentFieldUrl ?? 'http://localhost:8080').replace(/\/$/, '');
+    const baseUrl = (this.config.playgroundUrl ?? 'http://localhost:8080').replace(/\/$/, '');
     let uiApiUrl = baseUrl.replace(/\/api\/v1$/, '/api/ui/v1');
     if (!uiApiUrl.includes('/api/ui/v1')) {
       uiApiUrl = `${baseUrl}/api/ui/v1`;
     }
 
-    this.agentFieldClient.sendNote(message, tags, this.config.nodeId, execMetadata, uiApiUrl, this.config.devMode);
+    this.playgroundClient.sendNote(message, tags, this.config.nodeId, execMetadata, uiApiUrl, this.config.devMode);
   }
 
   async serve(): Promise<void> {
@@ -250,7 +250,7 @@ export class Agent {
     const port = this.config.port ?? 8001;
     const host = this.config.host ?? '0.0.0.0';
     // First heartbeat marks the node as starting; subsequent interval sets ready.
-    await this.agentFieldClient.heartbeat('starting');
+    await this.playgroundClient.heartbeat('starting');
     await new Promise<void>((resolve, reject) => {
       this.server = this.app
         .listen(port, host, () => resolve())
@@ -302,7 +302,7 @@ export class Agent {
       const startTime = Date.now();
 
       const emitEvent = async (status: 'running' | 'succeeded' | 'failed', payload: any) => {
-        await this.agentFieldClient.publishWorkflowEvent({
+        await this.playgroundClient.publishWorkflowEvent({
           executionId: execCtx.metadata.executionId,
           runId: execCtx.metadata.runId ?? execCtx.metadata.executionId,
           workflowId: execCtx.metadata.workflowId,
@@ -353,7 +353,7 @@ export class Agent {
     }
 
     const metadata = ExecutionContext.getCurrent()?.metadata;
-    return this.agentFieldClient.execute(target, input, {
+    return this.playgroundClient.execute(target, input, {
       runId: metadata?.runId ?? metadata?.executionId,
       workflowId: metadata?.workflowId ?? metadata?.runId,
       parentExecutionId: metadata?.executionId,
@@ -927,7 +927,7 @@ export class Agent {
       const publicUrl =
         this.config.publicUrl ?? `http://${hostForUrl ?? '127.0.0.1'}:${port}`;
 
-      await this.agentFieldClient.register({
+      await this.playgroundClient.register({
         id: this.config.nodeId,
         version: this.config.version,
         base_url: publicUrl,
@@ -967,7 +967,7 @@ export class Agent {
 
     const tick = async () => {
       try {
-        await this.agentFieldClient.heartbeat('ready');
+        await this.playgroundClient.heartbeat('ready');
       } catch (err) {
         console.warn('Heartbeat failed', err);
       }

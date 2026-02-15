@@ -163,7 +163,7 @@ func (client *MCPProtocolClient) sendInitialize(stdin io.Writer) error {
 				"resources": map[string]interface{}{},
 			},
 			"clientInfo": map[string]interface{}{
-				"name":    "agentfield-mcp-client",
+				"name":    "agents-mcp-client",
 				"version": "1.0.0",
 			},
 		},

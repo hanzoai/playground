@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config" // Ensured this import is correct
-	"github.com/Agent-Field/agentfield/control-plane/internal/mcp"
+	"github.com/hanzoai/playground/control-plane/internal/config" // Ensured this import is correct
+	"github.com/hanzoai/playground/control-plane/internal/mcp"
 
 	"github.com/spf13/cobra"
 )
@@ -16,8 +16,8 @@ import (
 func NewMCPCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mcp",
-		Short: "Manage MCP servers in your AgentField agent project",
-		Long: `Manage Model Context Protocol (MCP) servers in your AgentField agent project.
+		Short: "Manage MCP servers in your Agents agent project",
+		Long: `Manage Model Context Protocol (MCP) servers in your Agents agent project.
 
 MCP servers provide external tools and resources that can be integrated into your agent.`,
 	}
@@ -54,13 +54,13 @@ func runMCPStatusCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -148,13 +148,13 @@ func runMCPStartCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -194,13 +194,13 @@ func runMCPStopCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -273,7 +273,7 @@ func runMCPLogsCommand(cmd *cobra.Command, args []string, follow bool, tail int)
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
@@ -317,7 +317,7 @@ func NewMCPSkillsGenerateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate [alias]",
 		Short: "Generate skill files for MCP servers",
-		Long:  `Generate Python skill files that wrap MCP tools as AgentField skills.`,
+		Long:  `Generate Python skill files that wrap MCP tools as Agents skills.`,
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runMCPSkillsGenerateCommand,
 	}
@@ -333,7 +333,7 @@ func runMCPSkillsGenerateCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
@@ -391,7 +391,7 @@ func runMCPSkillsListCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
@@ -420,7 +420,7 @@ func runMCPSkillsListCommand(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  %s %s\n", Gray("File:"), entry.Name())
 
 		// Try to get server info
-		if cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml")); err == nil {
+		if cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml")); err == nil {
 			discovery := mcp.NewCapabilityDiscovery(cfg, projectDir)
 			if capability, err := discovery.GetServerCapability(alias); err == nil {
 				fmt.Printf("  %s %d tools available\n", Gray("Tools:"), len(capability.Tools))
@@ -456,13 +456,13 @@ func runMCPSkillsRefreshCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -521,13 +521,13 @@ func runMCPRemoveCommand(cmd *cobra.Command, args []string, force bool) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -574,13 +574,13 @@ func runMCPDiscoverCommand(cmd *cobra.Command, args []string, refresh bool) erro
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -677,13 +677,13 @@ func runMCPMigrateCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		cfg, err = config.LoadConfig("agentfield.yaml") // Fallback
+		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}

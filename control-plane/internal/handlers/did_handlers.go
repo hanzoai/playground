@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 // DIDService defines the DID operations required by handlers.
@@ -427,10 +427,10 @@ func (h *DIDHandlers) GetDIDDocument(c *gin.Context) {
 		},
 		"service": []map[string]interface{}{
 			{
-				"id":              did + "#agentfield-service",
-				"type":            "AgentFieldAgentService",
-				"serviceEndpoint": "https://agentfield.example.com/api/v1",
-				"description":     "AgentField Agent Platform Service",
+				"id":              did + "#agents-service",
+				"type":            "AgentsAgentService",
+				"serviceEndpoint": "https://agents.example.com/api/v1",
+				"description":     "Agents Agent Platform Service",
 			},
 		},
 	}

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import axios from 'axios';
 import { MemoryClient } from '../src/memory/MemoryClient.js';
 import { MemoryInterface } from '../src/memory/MemoryInterface.js';
-import { AgentFieldClient } from '../src/client/AgentFieldClient.js';
+import { PlaygroundClient } from '../src/client/PlaygroundClient.js';
 import { WorkflowReporter } from '../src/workflow/WorkflowReporter.js';
 
 vi.mock('axios', () => {
@@ -159,7 +159,7 @@ describe('MemoryClient vector operations', () => {
   });
 });
 
-describe('AgentFieldClient discovery', () => {
+describe('PlaygroundClient discovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -203,7 +203,7 @@ describe('AgentFieldClient discovery', () => {
       ]
     };
 
-    const client = new AgentFieldClient({ nodeId: 'tester' });
+    const client = new PlaygroundClient({ nodeId: 'tester' });
     const http = getCreatedClient();
     http.get = vi.fn().mockResolvedValue({ data: payload });
 
@@ -235,10 +235,10 @@ describe('AgentFieldClient discovery', () => {
 });
 
 describe('WorkflowReporter', () => {
-  it('forwards progress updates to AgentFieldClient', async () => {
+  it('forwards progress updates to PlaygroundClient', async () => {
     const client = {
       updateExecutionStatus: vi.fn().mockResolvedValue({})
-    } as unknown as AgentFieldClient;
+    } as unknown as PlaygroundClient;
 
     const reporter = new WorkflowReporter(client, { executionId: 'exec-1', runId: 'run-1' });
     await reporter.progress(42, { result: { ok: true } });

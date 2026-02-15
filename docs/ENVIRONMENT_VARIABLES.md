@@ -1,64 +1,64 @@
 # Environment Variables
 
-This repo supports running AgentField in multiple modes (local binary, Docker, Kubernetes). Most configuration is loaded via a YAML config file and can be overridden via environment variables.
+This repo supports running Playground in multiple modes (local binary, Docker, Kubernetes). Most configuration is loaded via a YAML config file and can be overridden via environment variables.
 
-AgentField uses Viper with the prefix `AGENTFIELD` and maps nested config keys using `_` (for example `storage.mode` → `AGENTFIELD_STORAGE_MODE`).
+Playground uses Viper with the prefix `AGENTS` and maps nested config keys using `_` (for example `storage.mode` → `AGENTS_STORAGE_MODE`).
 
 ## Control Plane (Server)
 
 ### Core
 
-- `AGENTFIELD_PORT` (optional): HTTP port for the control plane (default: `8080`).
-- `AGENTFIELD_CONFIG_FILE` (optional): Path to `agentfield.yaml` (in containers this is typically `/etc/agentfield/config/agentfield.yaml`).
-- `AGENTFIELD_HOME` (recommended in containers): Base directory where AgentField stores local state (SQLite DB, Bolt DB, keys, logs). In Kubernetes, mount a PVC and set `AGENTFIELD_HOME=/data`.
+- `AGENTS_PORT` (optional): HTTP port for the control plane (default: `8080`).
+- `AGENTS_CONFIG_FILE` (optional): Path to `agents.yaml` (in containers this is typically `/etc/playground/config/agents.yaml`).
+- `AGENTS_HOME` (recommended in containers): Base directory where Playground stores local state (SQLite DB, Bolt DB, keys, logs). In Kubernetes, mount a PVC and set `AGENTS_HOME=/data`.
 
 ### Storage
 
-AgentField supports:
-- **local** (SQLite + BoltDB, stored under `AGENTFIELD_HOME`)
+Playground supports:
+- **local** (SQLite + BoltDB, stored under `AGENTS_HOME`)
 - **postgres** (PostgreSQL + pgvector)
 
 Common:
-- `AGENTFIELD_STORAGE_MODE`: `local` (default) or `postgres`.
+- `AGENTS_STORAGE_MODE`: `local` (default) or `postgres`.
 
-Local storage (usually not needed if `AGENTFIELD_HOME` is set):
-- `AGENTFIELD_STORAGE_LOCAL_DATABASE_PATH`: SQLite path.
-- `AGENTFIELD_STORAGE_LOCAL_KV_STORE_PATH`: BoltDB path.
+Local storage (usually not needed if `AGENTS_HOME` is set):
+- `AGENTS_STORAGE_LOCAL_DATABASE_PATH`: SQLite path.
+- `AGENTS_STORAGE_LOCAL_KV_STORE_PATH`: BoltDB path.
 
 PostgreSQL storage:
-- `AGENTFIELD_POSTGRES_URL` (preferred) or `AGENTFIELD_STORAGE_POSTGRES_URL`: PostgreSQL DSN/URL (examples below).
+- `AGENTS_POSTGRES_URL` (preferred) or `AGENTS_STORAGE_POSTGRES_URL`: PostgreSQL DSN/URL (examples below).
 - Alternatively, individual fields:
-  - `AGENTFIELD_STORAGE_POSTGRES_HOST`
-  - `AGENTFIELD_STORAGE_POSTGRES_PORT`
-  - `AGENTFIELD_STORAGE_POSTGRES_DATABASE`
-  - `AGENTFIELD_STORAGE_POSTGRES_USER`
-  - `AGENTFIELD_STORAGE_POSTGRES_PASSWORD`
-  - `AGENTFIELD_STORAGE_POSTGRES_SSLMODE`
+  - `AGENTS_STORAGE_POSTGRES_HOST`
+  - `AGENTS_STORAGE_POSTGRES_PORT`
+  - `AGENTS_STORAGE_POSTGRES_DATABASE`
+  - `AGENTS_STORAGE_POSTGRES_USER`
+  - `AGENTS_STORAGE_POSTGRES_PASSWORD`
+  - `AGENTS_STORAGE_POSTGRES_SSLMODE`
 
 Example DSNs:
-- `postgres://agentfield:agentfield@postgres:5432/agentfield?sslmode=disable`
-- `postgresql://agentfield:agentfield@postgres:5432/agentfield?sslmode=disable`
+- `postgres://playground:playground@postgres:5432/playground?sslmode=disable`
+- `postgresql://playground:playground@postgres:5432/playground?sslmode=disable`
 
 ### API Authentication (optional)
 
 If set, the control plane requires an API key for most endpoints.
 
-- `AGENTFIELD_API_KEY` or `AGENTFIELD_API_AUTH_API_KEY`: API key checked by the control plane.
+- `AGENTS_API_KEY` or `AGENTS_API_AUTH_API_KEY`: API key checked by the control plane.
 
 ### UI
 
-- `AGENTFIELD_UI_ENABLED` (default: `true`)
-- `AGENTFIELD_UI_MODE` (default: `embedded`)
+- `AGENTS_UI_ENABLED` (default: `true`)
+- `AGENTS_UI_MODE` (default: `embedded`)
 
 ### CORS (HTTP API)
 
 These map to `api.cors.*` in config. When set via env, use comma-separated values.
 
-- `AGENTFIELD_API_CORS_ALLOWED_ORIGINS` (comma-separated)
-- `AGENTFIELD_API_CORS_ALLOWED_METHODS` (comma-separated)
-- `AGENTFIELD_API_CORS_ALLOWED_HEADERS` (comma-separated)
-- `AGENTFIELD_API_CORS_EXPOSED_HEADERS` (comma-separated)
-- `AGENTFIELD_API_CORS_ALLOW_CREDENTIALS` (`true`/`false`)
+- `AGENTS_API_CORS_ALLOWED_ORIGINS` (comma-separated)
+- `AGENTS_API_CORS_ALLOWED_METHODS` (comma-separated)
+- `AGENTS_API_CORS_ALLOWED_HEADERS` (comma-separated)
+- `AGENTS_API_CORS_EXPOSED_HEADERS` (comma-separated)
+- `AGENTS_API_CORS_ALLOW_CREDENTIALS` (`true`/`false`)
 
 ## Agent Nodes
 
@@ -74,15 +74,15 @@ The same concept applies to **Docker**:
 
 ### Go SDK agents (example: `examples/go_agent_nodes`)
 
-- `AGENTFIELD_URL` (optional): Control plane base URL (example: `http://agentfield:8080`).
-- `AGENTFIELD_TOKEN` (optional): Bearer token (use this if you enable `AGENTFIELD_API_KEY` on the control plane).
+- `AGENTS_URL` (optional): Control plane base URL (example: `http://playground:8080`).
+- `AGENTS_TOKEN` (optional): Bearer token (use this if you enable `AGENTS_API_KEY` on the control plane).
 - `AGENT_NODE_ID` (optional): Node id (default varies by example).
 - `AGENT_LISTEN_ADDR` (optional): Listen address (default: `:8001`).
 - `AGENT_PUBLIC_URL` (recommended in Docker/Kubernetes): Public URL the control plane will call back to (example: `http://my-agent:8001`).
 
 ### Python SDK agents
 
-- `AGENTFIELD_URL` (recommended): Control plane base URL.
+- `AGENTS_URL` (recommended): Control plane base URL.
 - `AGENT_NODE_ID` (optional): Node id.
 - `AGENT_CALLBACK_URL` (recommended in Docker/Kubernetes): URL the control plane will call back to (examples: `http://my-agent:8001`, or for host-run agents with Dockerized control plane: `http://host.docker.internal:8001`).
 

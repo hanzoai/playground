@@ -1,6 +1,6 @@
-# AgentField Railway Deployment
+# Playground Railway Deployment
 
-Deploy AgentField control plane with PostgreSQL and agent nodes on Railway using Docker images.
+Deploy Playground control plane with PostgreSQL and agent nodes on Railway using Docker images.
 
 ## Architecture
 
@@ -42,14 +42,14 @@ Go to [railway.app](https://railway.app) and create a new empty project.
 ### 3. Deploy Control Plane
 
 1. Click **New** → **Docker Image**
-2. Enter: `ghcr.io/agent-field/agentfield:latest`
+2. Enter: `ghcr.io/playground/playground:latest`
 3. Add these environment variables:
 
 | Variable | Value | Description |
 |----------|-------|-------------|
-| `AGENTFIELD_STORAGE_MODE` | `postgres` | Use PostgreSQL backend |
-| `AGENTFIELD_STORAGE_POSTGRES_URL` | `${{Postgres.DATABASE_URL}}` | Auto-wired from Railway |
-| `AGENTFIELD_API_KEY` | (generate a secure key) | API key for authentication |
+| `AGENTS_STORAGE_MODE` | `postgres` | Use PostgreSQL backend |
+| `AGENTS_STORAGE_POSTGRES_URL` | `${{Postgres.DATABASE_URL}}` | Auto-wired from Railway |
+| `AGENTS_API_KEY` | (generate a secure key) | API key for authentication |
 
 4. In **Settings** → **Networking**, click **Generate Domain** to get a public URL
 5. Deploy - the control plane will auto-migrate the database on startup
@@ -57,13 +57,13 @@ Go to [railway.app](https://railway.app) and create a new empty project.
 ### 4. Deploy an Agent Node (Optional)
 
 1. Click **New** → **Docker Image**
-2. Enter: `ghcr.io/agent-field/init-example:latest`
+2. Enter: `ghcr.io/playground/init-example:latest`
 3. Add these environment variables:
 
 | Variable | Value | Description |
 |----------|-------|-------------|
-| `AGENTFIELD_URL` | `http://${{control-plane.RAILWAY_PRIVATE_DOMAIN}}:8080` | Internal URL to control plane |
-| `AGENTFIELD_API_KEY` | (same as control plane) | Must match control plane key |
+| `AGENTS_URL` | `http://${{control-plane.RAILWAY_PRIVATE_DOMAIN}}:8080` | Internal URL to control plane |
+| `AGENTS_API_KEY` | (same as control plane) | Must match control plane key |
 | `AGENT_CALLBACK_URL` | `http://${{RAILWAY_PRIVATE_DOMAIN}}:8005` | URL for control plane to reach this agent |
 | `PORT` | `8005` | Agent server port |
 | `OPENAI_API_KEY` | (your key) | Optional - for AI reasoners |
@@ -76,22 +76,22 @@ Go to [railway.app](https://railway.app) and create a new empty project.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AGENTFIELD_STORAGE_MODE` | Yes | Set to `postgres` for PostgreSQL |
-| `AGENTFIELD_STORAGE_POSTGRES_URL` | Yes | PostgreSQL connection string |
-| `AGENTFIELD_API_KEY` | Recommended | API key for authentication |
-| `AGENTFIELD_UI_ENABLED` | No | Enable web UI (default: true) |
+| `AGENTS_STORAGE_MODE` | Yes | Set to `postgres` for PostgreSQL |
+| `AGENTS_STORAGE_POSTGRES_URL` | Yes | PostgreSQL connection string |
+| `AGENTS_API_KEY` | Recommended | API key for authentication |
+| `AGENTS_UI_ENABLED` | No | Enable web UI (default: true) |
 
 ### Agent Node
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AGENTFIELD_URL` | Yes | URL to control plane |
-| `AGENTFIELD_API_KEY` | Yes* | Must match control plane key |
+| `AGENTS_URL` | Yes | URL to control plane |
+| `AGENTS_API_KEY` | Yes* | Must match control plane key |
 | `AGENT_CALLBACK_URL` | Yes | URL for control plane to reach this agent for health checks |
 | `PORT` | No | Agent HTTP port (default: 8005) |
 | `AGENT_ID` | No | Custom agent ID |
 
-*Required if control plane has `AGENTFIELD_API_KEY` set.
+*Required if control plane has `AGENTS_API_KEY` set.
 
 ## Testing Your Deployment
 
@@ -120,20 +120,20 @@ Connect a local agent to your Railway control plane:
 
 ```bash
 # Using the CLI
-curl -sSf https://agentfield.ai/get | sh
+curl -sSf https://playground.ai/get | sh
 af init my-agent
 cd my-agent
 
-export AGENTFIELD_SERVER=https://your-control-plane.up.railway.app
-export AGENTFIELD_API_KEY=your-api-key
+export AGENTS_SERVER=https://your-control-plane.up.railway.app
+export AGENTS_API_KEY=your-api-key
 af run
 
 # Or run an example directly
-git clone https://github.com/Agent-Field/agentfield.git
-cd agentfield/examples/ts-node-examples/init-example
+git clone https://github.com/hanzoai/playground.git
+cd playground/examples/ts-node-examples/init-example
 npm install
-AGENTFIELD_URL=https://your-control-plane.up.railway.app \
-AGENTFIELD_API_KEY=your-api-key \
+AGENTS_URL=https://your-control-plane.up.railway.app \
+AGENTS_API_KEY=your-api-key \
 npm start
 ```
 
@@ -142,14 +142,14 @@ npm start
 For local development with Docker Compose:
 
 ```bash
-git clone https://github.com/Agent-Field/agentfield.git
-cd agentfield/deployments/docker
+git clone https://github.com/hanzoai/playground.git
+cd playground/deployments/docker
 docker compose up
 ```
 
 ## Resources
 
-- [Documentation](https://github.com/Agent-Field/agentfield)
-- [Examples](https://github.com/Agent-Field/agentfield/tree/main/examples)
-- [Python SDK](https://pypi.org/project/agentfield/)
-- [TypeScript SDK](https://www.npmjs.com/package/@agentfield/sdk)
+- [Documentation](https://github.com/hanzoai/playground)
+- [Examples](https://github.com/hanzoai/playground/tree/main/examples)
+- [Python SDK](https://pypi.org/project/playground/)
+- [TypeScript SDK](https://www.npmjs.com/package/@playground/sdk)

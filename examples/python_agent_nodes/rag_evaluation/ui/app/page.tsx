@@ -21,8 +21,8 @@ export default function Home() {
         <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm">
                 <Image
-                  src="/agentfield-icon-dark.svg"
-                  alt="AgentField"
+                  src="/playground-icon-dark.svg"
+                  alt="Playground"
                   width={16}
                   height={16}
                 />

@@ -5,21 +5,21 @@ import (
 	"encoding/hex"
 	"path/filepath"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/cli/framework"
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/services"
-	"github.com/Agent-Field/agentfield/control-plane/internal/infrastructure/process"
-	"github.com/Agent-Field/agentfield/control-plane/internal/infrastructure/storage"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	didServices "github.com/Agent-Field/agentfield/control-plane/internal/services"
-	storageInterface "github.com/Agent-Field/agentfield/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/cli/framework"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/core/services"
+	"github.com/hanzoai/playground/control-plane/internal/infrastructure/process"
+	"github.com/hanzoai/playground/control-plane/internal/infrastructure/storage"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	didServices "github.com/hanzoai/playground/control-plane/internal/services"
+	storageInterface "github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
 // CreateServiceContainer creates and wires up all services for the CLI commands
-func CreateServiceContainer(cfg *config.Config, agentfieldHome string) *framework.ServiceContainer {
+func CreateServiceContainer(cfg *config.Config, agentsHome string) *framework.ServiceContainer {
 	// Create infrastructure components
 	fileSystem := storage.NewFileSystemAdapter()
-	registryPath := filepath.Join(agentfieldHome, "installed.json")
+	registryPath := filepath.Join(agentsHome, "installed.json")
 	registryStorage := storage.NewLocalRegistryStorage(fileSystem, registryPath)
 	processManager := process.NewProcessManager()
 	portManager := process.NewPortManager()
@@ -34,8 +34,8 @@ func CreateServiceContainer(cfg *config.Config, agentfieldHome string) *framewor
 	}
 
 	// Create services
-	packageService := services.NewPackageService(registryStorage, fileSystem, agentfieldHome)
-	agentService := services.NewAgentService(processManager, portManager, registryStorage, nil, agentfieldHome) // nil agentClient for now
+	packageService := services.NewPackageService(registryStorage, fileSystem, agentsHome)
+	agentService := services.NewAgentService(processManager, portManager, registryStorage, nil, agentsHome) // nil agentClient for now
 	devService := services.NewDevService(processManager, portManager, fileSystem)
 
 	// Create DID services if enabled
@@ -71,10 +71,10 @@ func CreateServiceContainer(cfg *config.Config, agentfieldHome string) *framewor
 		if keystoreService != nil && didRegistry != nil {
 			didService = didServices.NewDIDService(&cfg.Features.DID, keystoreService, didRegistry)
 
-			// Generate af server ID based on agentfield home directory
-			// This ensures each agentfield instance has a unique ID while being deterministic
-			agentfieldServerID := generateAgentFieldServerID(agentfieldHome)
-			if err := didService.Initialize(agentfieldServerID); err != nil {
+			// Generate af server ID based on agents home directory
+			// This ensures each agents instance has a unique ID while being deterministic
+			agentsServerID := generateAgentsServerID(agentsHome)
+			if err := didService.Initialize(agentsServerID); err != nil {
 				logger.Logger.Warn().Err(err).Msg("failed to initialize DID service")
 				didService = nil
 			} else {
@@ -106,28 +106,28 @@ func CreateServiceContainer(cfg *config.Config, agentfieldHome string) *framewor
 }
 
 // CreateServiceContainerWithDefaults creates a service container with default configuration
-func CreateServiceContainerWithDefaults(agentfieldHome string) *framework.ServiceContainer {
+func CreateServiceContainerWithDefaults(agentsHome string) *framework.ServiceContainer {
 	// Use default config for now
 	cfg := &config.Config{} // This will be enhanced when config is properly structured
-	return CreateServiceContainer(cfg, agentfieldHome)
+	return CreateServiceContainer(cfg, agentsHome)
 }
 
-// generateAgentFieldServerID creates a deterministic af server ID based on the agentfield home directory.
-// This ensures each agentfield instance has a unique ID while being deterministic for the same installation.
-func generateAgentFieldServerID(agentfieldHome string) string {
-	// Use the absolute path of agentfield home to generate a deterministic ID
-	absPath, err := filepath.Abs(agentfieldHome)
+// generateAgentsServerID creates a deterministic af server ID based on the agents home directory.
+// This ensures each agents instance has a unique ID while being deterministic for the same installation.
+func generateAgentsServerID(agentsHome string) string {
+	// Use the absolute path of agents home to generate a deterministic ID
+	absPath, err := filepath.Abs(agentsHome)
 	if err != nil {
 		// Fallback to the original path if absolute path fails
-		absPath = agentfieldHome
+		absPath = agentsHome
 	}
 
-	// Create a hash of the agentfield home path to generate a unique but deterministic ID
+	// Create a hash of the agents home path to generate a unique but deterministic ID
 	hash := sha256.Sum256([]byte(absPath))
 
 	// Use first 16 characters of the hex hash as the af server ID
 	// This provides uniqueness while keeping the ID manageable
-	agentfieldServerID := hex.EncodeToString(hash[:])[:16]
+	agentsServerID := hex.EncodeToString(hash[:])[:16]
 
-	return agentfieldServerID
+	return agentsServerID
 }

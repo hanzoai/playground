@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,7 +23,7 @@ type GitPackageInfo struct {
 
 // GitInstaller handles Git package installation from any Git repository
 type GitInstaller struct {
-	AgentFieldHome string
+	AgentsHome string
 	Verbose        bool
 }
 
@@ -155,7 +155,7 @@ func (gi *GitInstaller) InstallFromGit(gitURL string, force bool) error {
 
 	// 4. Use existing installer for the rest
 	installer := &PackageInstaller{
-		AgentFieldHome: gi.AgentFieldHome,
+		AgentsHome: gi.AgentsHome,
 		Verbose:        gi.Verbose,
 	}
 
@@ -165,7 +165,7 @@ func (gi *GitInstaller) InstallFromGit(gitURL string, force bool) error {
 	}
 
 	// Install using existing flow
-	destPath := filepath.Join(gi.AgentFieldHome, "packages", metadata.Name)
+	destPath := filepath.Join(gi.AgentsHome, "packages", metadata.Name)
 
 	spinner = gi.newSpinner("Setting up environment")
 	spinner.Start()
@@ -206,7 +206,7 @@ func (gi *GitInstaller) InstallFromGit(gitURL string, force bool) error {
 // cloneRepository clones the Git repository with optimizations
 func (gi *GitInstaller) cloneRepository(info *GitPackageInfo) (string, error) {
 	// Create temporary directory
-	tempDir, err := os.MkdirTemp("", "agentfield-git-install-")
+	tempDir, err := os.MkdirTemp("", "agents-git-install-")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp directory: %w", err)
 	}
@@ -263,7 +263,7 @@ func (gi *GitInstaller) cloneRepository(info *GitPackageInfo) (string, error) {
 	return tempDir, nil
 }
 
-// findPackageRoot finds the root directory containing agentfield-package.yaml
+// findPackageRoot finds the root directory containing agents-package.yaml
 func (gi *GitInstaller) findPackageRoot(cloneDir string) (string, error) {
 	var packageRoot string
 
@@ -272,7 +272,7 @@ func (gi *GitInstaller) findPackageRoot(cloneDir string) (string, error) {
 			return err
 		}
 
-		if info.Name() == "agentfield-package.yaml" {
+		if info.Name() == "agents-package.yaml" {
 			packageRoot = filepath.Dir(path)
 			return filepath.SkipDir // Found it, stop walking
 		}
@@ -285,7 +285,7 @@ func (gi *GitInstaller) findPackageRoot(cloneDir string) (string, error) {
 	}
 
 	if packageRoot == "" {
-		return "", fmt.Errorf("agentfield-package.yaml not found in the repository")
+		return "", fmt.Errorf("agents-package.yaml not found in the repository")
 	}
 
 	// Also check for main.py
@@ -297,10 +297,10 @@ func (gi *GitInstaller) findPackageRoot(cloneDir string) (string, error) {
 	return packageRoot, nil
 }
 
-// parsePackageMetadata parses the agentfield-package.yaml file (reuse from installer.go)
+// parsePackageMetadata parses the agents-package.yaml file (reuse from installer.go)
 func (gi *GitInstaller) parsePackageMetadata(packagePath string) (*PackageMetadata, error) {
 	installer := &PackageInstaller{
-		AgentFieldHome: gi.AgentFieldHome,
+		AgentsHome: gi.AgentsHome,
 		Verbose:        gi.Verbose,
 	}
 	return installer.parsePackageMetadata(packagePath)
@@ -308,7 +308,7 @@ func (gi *GitInstaller) parsePackageMetadata(packagePath string) (*PackageMetada
 
 // updateRegistryWithGit updates the installation registry with Git source info
 func (gi *GitInstaller) updateRegistryWithGit(metadata *PackageMetadata, info *GitPackageInfo, sourcePath, destPath string) error {
-	registryPath := filepath.Join(gi.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(gi.AgentsHome, "installed.yaml")
 
 	// Load existing registry or create new one
 	registry := &InstallationRegistry{
@@ -353,7 +353,7 @@ func (gi *GitInstaller) updateRegistryWithGit(metadata *PackageMetadata, info *G
 			Port:      nil,
 			PID:       nil,
 			StartedAt: nil,
-			LogFile:   filepath.Join(gi.AgentFieldHome, "logs", metadata.Name+".log"),
+			LogFile:   filepath.Join(gi.AgentsHome, "logs", metadata.Name+".log"),
 		},
 	}
 

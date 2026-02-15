@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ```bash
 export OPENAI_API_KEY="your-key"
-export AGENTFIELD_SERVER="http://localhost:8080"
+export AGENTS_SERVER="http://localhost:8080"
 ```
 
 ### 3. Start Agent

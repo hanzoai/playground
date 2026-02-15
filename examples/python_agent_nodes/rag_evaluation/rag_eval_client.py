@@ -1,7 +1,7 @@
 """
 RAG Evaluation Python SDK Client
 
-A lightweight client for the RAG Evaluation AgentField node.
+A lightweight client for the RAG Evaluation Playground node.
 Provides both sync and async interfaces for all evaluation metrics.
 
 Usage:
@@ -91,7 +91,7 @@ class RAGEvaluationResult:
 
 class RAGEvaluator:
     """
-    Python SDK client for RAG Evaluation AgentField node.
+    Python SDK client for RAG Evaluation Playground node.
 
     Provides convenient methods for evaluating RAG responses using
     multi-reasoner architectures including adversarial debate,
@@ -109,7 +109,7 @@ class RAGEvaluator:
 
     def __init__(
         self,
-        agentfield_server: str = "http://localhost:8080",
+        playground_server: str = "http://localhost:8080",
         timeout: float = 60.0,
         agent_id: str = "rag-evaluation"
     ):
@@ -117,11 +117,11 @@ class RAGEvaluator:
         Initialize the RAG Evaluator client.
 
         Args:
-            agentfield_server: URL of the AgentField control plane
+            playground_server: URL of the Playground control plane
             timeout: Request timeout in seconds
             agent_id: ID of the RAG evaluation agent node
         """
-        self.base_url = agentfield_server.rstrip("/")
+        self.base_url = playground_server.rstrip("/")
         self.timeout = timeout
         self.agent_id = agent_id
         self._client = httpx.Client(timeout=timeout)
@@ -488,11 +488,11 @@ class AsyncRAGEvaluator:
 
     def __init__(
         self,
-        agentfield_server: str = "http://localhost:8080",
+        playground_server: str = "http://localhost:8080",
         timeout: float = 60.0,
         agent_id: str = "rag-evaluation"
     ):
-        self.base_url = agentfield_server.rstrip("/")
+        self.base_url = playground_server.rstrip("/")
         self.timeout = timeout
         self.agent_id = agent_id
         self._client = httpx.AsyncClient(timeout=timeout)

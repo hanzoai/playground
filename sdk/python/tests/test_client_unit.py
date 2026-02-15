@@ -3,8 +3,8 @@ import re
 import pytest
 import responses as responses_lib
 
-from agentfield.client import AgentFieldClient
-from agentfield.types import DiscoveryResponse
+from playground.client import PlaygroundClient
+from playground.types import DiscoveryResponse
 
 
 class DummyContext:
@@ -24,7 +24,7 @@ class DummyManager:
 
 
 def test_generate_id_prefix_and_uniqueness():
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     first = client._generate_id("exec")
     second = client._generate_id("exec")
     assert first.startswith("exec_")
@@ -34,7 +34,7 @@ def test_generate_id_prefix_and_uniqueness():
 
 
 def test_get_headers_with_context_merges_workflow_headers():
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     client._current_workflow_context = DummyContext({"X-Workflow-ID": "wf-1"})
 
     combined = client._get_headers_with_context({"Authorization": "Bearer token"})
@@ -44,7 +44,7 @@ def test_get_headers_with_context_merges_workflow_headers():
 
 
 def test_build_event_stream_headers_filters_keys():
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     headers = {
         "Authorization": "Bearer token",
         "X-Custom": "value",
@@ -63,7 +63,7 @@ def test_build_event_stream_headers_filters_keys():
 
 
 def test_maybe_update_event_stream_headers_uses_context_when_enabled():
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     client.async_config.enable_event_stream = True
     client._async_execution_manager = DummyManager()
     client._current_workflow_context = DummyContext({"X-Workflow-ID": "wf-ctx"})
@@ -75,7 +75,7 @@ def test_maybe_update_event_stream_headers_uses_context_when_enabled():
 
 
 def test_maybe_update_event_stream_headers_prefers_source_headers():
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     client.async_config.enable_event_stream = True
     manager = DummyManager()
     client._async_execution_manager = manager
@@ -94,7 +94,7 @@ def test_maybe_update_event_stream_headers_prefers_source_headers():
     ],
 )
 def test_maybe_update_event_stream_headers_without_manager(source_headers, expected):
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     client.async_config.enable_event_stream = True
     client._current_workflow_context = DummyContext({"X-Workflow-ID": "wf-ctx"})
 
@@ -132,7 +132,7 @@ def test_discover_capabilities_json(responses):
         status=200,
     )
 
-    client = AgentFieldClient()
+    client = PlaygroundClient()
     result = client.discover_capabilities(
         agent="agent-1",
         tags=["ml"],
@@ -171,7 +171,7 @@ def test_discover_capabilities_compact_and_xml(responses):
         content_type="application/xml",
     )
 
-    client = AgentFieldClient()
+    client = PlaygroundClient()
 
     compact = client.discover_capabilities(format="compact")
     assert compact.compact is not None

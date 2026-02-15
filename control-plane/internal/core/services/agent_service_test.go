@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -216,14 +216,14 @@ func TestNewAgentService(t *testing.T) {
 	portManager := newMockPortManager()
 	registryStorage := newMockRegistryStorage()
 	agentClient := newMockAgentClient()
-	agentfieldHome := "/tmp/test-agentfield"
+	agentsHome := "/tmp/test-agents"
 
 	service := NewAgentService(
 		processManager,
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	)
 
 	assert.NotNil(t, service)
@@ -233,13 +233,13 @@ func TestNewAgentService(t *testing.T) {
 	assert.Equal(t, portManager, as.portManager)
 	assert.Equal(t, registryStorage, as.registryStorage)
 	assert.Equal(t, agentClient, as.agentClient)
-	assert.Equal(t, agentfieldHome, as.agentfieldHome)
+	assert.Equal(t, agentsHome, as.agentsHome)
 }
 
 func TestRunAgent_Success(t *testing.T) {
 	// Setup
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	// Create test registry with an installed agent
 	registry := &packages.InstallationRegistry{
@@ -258,7 +258,7 @@ func TestRunAgent_Success(t *testing.T) {
 			},
 		},
 	}
-	createTestRegistry(t, agentfieldHome, registry)
+	createTestRegistry(t, agentsHome, registry)
 
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
@@ -270,7 +270,7 @@ func TestRunAgent_Success(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	// Mock port manager to return a free port
@@ -310,7 +310,7 @@ func TestRunAgent_Success(t *testing.T) {
 
 func TestRunAgent_AgentNotInstalled(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
@@ -322,7 +322,7 @@ func TestRunAgent_AgentNotInstalled(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	options := domain.RunOptions{Port: 0}
@@ -334,7 +334,7 @@ func TestRunAgent_AgentNotInstalled(t *testing.T) {
 
 func TestRunAgent_AlreadyRunning(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	port := 8001
 	pid := 12345
@@ -356,7 +356,7 @@ func TestRunAgent_AlreadyRunning(t *testing.T) {
 			},
 		},
 	}
-	createTestRegistry(t, agentfieldHome, registry)
+	createTestRegistry(t, agentsHome, registry)
 
 	processManager := newMockProcessManager()
 	// Mock process manager to report process as running
@@ -378,7 +378,7 @@ func TestRunAgent_AlreadyRunning(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	options := domain.RunOptions{Port: 0}
@@ -413,7 +413,7 @@ func TestRunAgent_AlreadyRunning(t *testing.T) {
 
 func TestStopAgent_Success(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	port := 8001
 	pid := 12345
@@ -435,7 +435,7 @@ func TestStopAgent_Success(t *testing.T) {
 			},
 		},
 	}
-	createTestRegistry(t, agentfieldHome, registry)
+	createTestRegistry(t, agentsHome, registry)
 
 	processManager := newMockProcessManager()
 	processManager.statusFunc = func(pid int) (interfaces.ProcessInfo, error) {
@@ -465,7 +465,7 @@ func TestStopAgent_Success(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	err := service.StopAgent("test-agent")
@@ -483,7 +483,7 @@ func TestStopAgent_Success(t *testing.T) {
 
 func TestStopAgent_NotInstalled(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
@@ -495,7 +495,7 @@ func TestStopAgent_NotInstalled(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	err := service.StopAgent("nonexistent-agent")
@@ -505,7 +505,7 @@ func TestStopAgent_NotInstalled(t *testing.T) {
 
 func TestGetAgentStatus_Success(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	port := 8001
 	pid := 12345
@@ -527,7 +527,7 @@ func TestGetAgentStatus_Success(t *testing.T) {
 			},
 		},
 	}
-	createTestRegistry(t, agentfieldHome, registry)
+	createTestRegistry(t, agentsHome, registry)
 
 	processManager := newMockProcessManager()
 	processManager.statusFunc = func(pid int) (interfaces.ProcessInfo, error) {
@@ -548,7 +548,7 @@ func TestGetAgentStatus_Success(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	status, err := service.GetAgentStatus("test-agent")
@@ -563,7 +563,7 @@ func TestGetAgentStatus_Success(t *testing.T) {
 
 func TestGetAgentStatus_NotInstalled(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
@@ -575,7 +575,7 @@ func TestGetAgentStatus_NotInstalled(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	_, err := service.GetAgentStatus("nonexistent-agent")
@@ -585,7 +585,7 @@ func TestGetAgentStatus_NotInstalled(t *testing.T) {
 
 func TestReconcileProcessState_ProcessNotRunning(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	port := 8001
 	pid := 12345
@@ -619,7 +619,7 @@ func TestReconcileProcessState_ProcessNotRunning(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	actuallyRunning, wasReconciled := service.reconcileProcessState(pkg, "test-agent")
@@ -714,7 +714,7 @@ func TestReconcileProcessState_NoPID(t *testing.T) {
 
 func TestListRunningAgents(t *testing.T) {
 	tmpDir := t.TempDir()
-	agentfieldHome := tmpDir
+	agentsHome := tmpDir
 
 	port1 := 8001
 	pid1 := 12345
@@ -750,7 +750,7 @@ func TestListRunningAgents(t *testing.T) {
 			},
 		},
 	}
-	createTestRegistry(t, agentfieldHome, registry)
+	createTestRegistry(t, agentsHome, registry)
 
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
@@ -762,7 +762,7 @@ func TestListRunningAgents(t *testing.T) {
 		portManager,
 		registryStorage,
 		agentClient,
-		agentfieldHome,
+		agentsHome,
 	).(*DefaultAgentService)
 
 	runningAgents, err := service.ListRunningAgents()
@@ -890,5 +890,5 @@ func TestBuildProcessConfig(t *testing.T) {
 	assert.Equal(t, agentPath, config.WorkDir)
 	assert.Equal(t, "/tmp/test-agent.log", config.LogFile)
 	assert.Contains(t, config.Env, "PORT=8001")
-	assert.Contains(t, config.Env, "AGENTFIELD_SERVER_URL=http://localhost:8080")
+	assert.Contains(t, config.Env, "AGENTS_SERVER_URL=http://localhost:8080")
 }

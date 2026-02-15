@@ -6,8 +6,8 @@ async function loadSdk() {
   const base = process.env.TS_SDK_PATH;
   const candidates = [
     base && path.join(base, 'dist', 'index.js'),
-    '/usr/local/lib/node_modules/@agentfield/sdk/dist/index.js',
-    '/usr/lib/node_modules/@agentfield/sdk/dist/index.js'
+    '/usr/local/lib/node_modules/@playground/sdk/dist/index.js',
+    '/usr/lib/node_modules/@playground/sdk/dist/index.js'
   ].filter(Boolean);
 
   for (const candidate of candidates) {
@@ -18,25 +18,25 @@ async function loadSdk() {
     }
   }
 
-  return await import('@agentfield/sdk');
+  return await import('@playground/sdk');
 }
 
 const { Agent } = await loadSdk();
 
-const agentFieldUrl = process.env.AGENTFIELD_SERVER ?? 'http://localhost:8080';
+const playgroundUrl = process.env.AGENTS_SERVER ?? 'http://localhost:8080';
 const nodeId = process.env.TS_AGENT_ID ?? 'ts-serverless-agent';
 const port = Number(process.env.TS_AGENT_PORT ?? 8097);
 const host = process.env.TS_AGENT_BIND_HOST ?? '0.0.0.0';
 
 const agent = new Agent({
   nodeId,
-  agentFieldUrl,
+  playgroundUrl,
   deploymentType: 'serverless',
   devMode: true
 });
 
 agent.reasoner('hello', async (ctx) => ({
-  greeting: `Hello, ${ctx.input.name ?? 'AgentField'}!`,
+  greeting: `Hello, ${ctx.input.name ?? 'Playground'}!`,
   runId: ctx.runId,
   executionId: ctx.executionId,
   parentExecutionId: ctx.parentExecutionId

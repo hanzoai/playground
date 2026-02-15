@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"github.com/spf13/cobra"
 )
 
@@ -25,8 +25,8 @@ This command will:
 - Clean up any associated logs
 
 Examples:
-  agentfield uninstall my-agent
-  agentfield uninstall sentiment-analyzer --force`,
+  agents uninstall my-agent
+  agents uninstall sentiment-analyzer --force`,
 		Args: cobra.ExactArgs(1),
 		RunE: runUninstallCommand,
 	}
@@ -41,7 +41,7 @@ func runUninstallCommand(cmd *cobra.Command, args []string) error {
 
 	// Create uninstaller
 	uninstaller := &packages.PackageUninstaller{
-		AgentFieldHome: getAgentFieldHomeDir(),
+		AgentsHome: getAgentsHomeDir(),
 		Force:          uninstallForce,
 	}
 

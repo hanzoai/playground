@@ -1,5 +1,5 @@
 """
-Hello World Agent - Minimal Agentfield Example
+Hello World Agent - Minimal Playground Example
 
 Demonstrates:
 - One skill (deterministic function)
@@ -7,15 +7,15 @@ Demonstrates:
 - Call graph: say_hello → get_greeting (skill) + add_emoji (reasoner)
 """
 
-from agentfield import Agent
-from agentfield import AIConfig
+from playground import Agent
+from playground import AIConfig
 from pydantic import BaseModel
 import os
 
 # Initialize agent
 app = Agent(
     node_id="hello-world",
-    agentfield_server=os.getenv("AGENTFIELD_URL", "http://localhost:8080"),
+    playground_server=os.getenv("AGENTS_URL", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("SMALL_MODEL", "openai/gpt-4o-mini"), temperature=0.7
     ),
@@ -27,7 +27,7 @@ app = Agent(
 @app.skill()
 def get_greeting(name: str) -> dict:
     """Returns a greeting template (deterministic - no AI)"""
-    return {"message": f"Hello, {name}! Welcome to Agentfield."}
+    return {"message": f"Hello, {name}! Welcome to Playground."}
 
 
 # ============= REASONERS (AI-POWERED) =============

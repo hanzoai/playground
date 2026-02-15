@@ -25,7 +25,7 @@ from utils import run_agent_server
 QUICK_START_URL = os.environ.get("TEST_QUICK_START_URL")
 README_NODE_ID = "researcher"
 DOCS_NODE_ID = "my-agent"
-DEMO_MESSAGE = "Hello, Agentfield!"
+DEMO_MESSAGE = "Hello, Playground!"
 
 EXAMPLE_DOMAIN_HTML = """<!doctype html>
 <html>

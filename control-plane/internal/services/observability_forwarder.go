@@ -14,9 +14,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/google/uuid"
 )
 
@@ -707,7 +707,7 @@ func (f *observabilityForwarder) doSend(cfg *types.ObservabilityWebhookConfig, b
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "AgentField-Observability/1.0")
+	req.Header.Set("User-Agent", "Agents-Observability/1.0")
 
 	// Custom headers
 	for key, value := range cfg.Headers {
@@ -718,7 +718,7 @@ func (f *observabilityForwarder) doSend(cfg *types.ObservabilityWebhookConfig, b
 
 	// HMAC signature
 	if cfg.Secret != nil && *cfg.Secret != "" {
-		req.Header.Set("X-AgentField-Signature", generateObservabilitySignature(*cfg.Secret, body))
+		req.Header.Set("X-Agents-Signature", generateObservabilitySignature(*cfg.Secret, body))
 	}
 
 	resp, err := f.client.Do(req)

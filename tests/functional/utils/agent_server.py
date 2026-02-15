@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import AsyncIterator
 
 import uvicorn
-from agentfield import Agent
+from playground import Agent
 
 AGENT_BIND_HOST = os.environ.get("TEST_AGENT_BIND_HOST", "127.0.0.1")
 AGENT_CALLBACK_HOST = os.environ.get("TEST_AGENT_CALLBACK_HOST", "127.0.0.1")
@@ -70,11 +70,11 @@ async def run_agent_server(
     await asyncio.sleep(startup_delay)
 
     try:
-        await agent.agentfield_handler.register_with_agentfield_server(port)
-        agent.agentfield_server = None
+        await agent.hanzo/agents_handler.register_with_playground_server(port)
+        agent.hanzo/agents_server = None
 
         # Registration runs on the pytest event loop, but reasoners execute on the
-        # uvicorn event loop inside a background thread. Reset the AgentField client
+        # uvicorn event loop inside a background thread. Reset the Playground client
         # so async HTTP clients are re-created within the uvicorn loop to avoid
         # "bound to a different event loop" errors when performing memory operations.
         try:

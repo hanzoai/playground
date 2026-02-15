@@ -8,7 +8,7 @@ This script shows that the fix enables:
 
 from typing import Optional
 from pydantic import BaseModel
-from agentfield import Agent
+from playground import Agent
 
 
 # Define Pydantic models
@@ -31,7 +31,7 @@ class IngestResult(BaseModel):
 # Create agent
 app = Agent(
     node_id="pydantic-demo",
-    agentfield_server="http://localhost:8080",
+    playground_server="http://localhost:8080",
 )
 
 

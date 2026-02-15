@@ -1,4 +1,4 @@
-from agentfield.types import AIConfig
+from playground.types import AIConfig
 
 
 def test_ai_config_defaults_and_to_dict():

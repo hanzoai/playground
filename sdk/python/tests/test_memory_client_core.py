@@ -9,7 +9,7 @@ import httpx
 import pytest
 import requests
 
-from agentfield.memory import (
+from playground.memory import (
     GlobalMemoryClient,
     MemoryClient,
     MemoryInterface,
@@ -32,14 +32,14 @@ class DummyResponse:
 
 @pytest.fixture(autouse=True)
 def mute_debug_logs(monkeypatch):
-    monkeypatch.setattr("agentfield.logger.log_debug", lambda *args, **kwargs: None)
+    monkeypatch.setattr("playground.logger.log_debug", lambda *args, **kwargs: None)
 
 
 @pytest.fixture
 def memory_client(dummy_headers):
     context = SimpleNamespace(to_headers=lambda: dict(dummy_headers))
-    agentfield_client = SimpleNamespace(api_base="http://agentfield.local/api/v1")
-    return MemoryClient(agentfield_client, context)
+    playground_client = SimpleNamespace(api_base="http://playground.local/api/v1")
+    return MemoryClient(playground_client, context)
 
 
 @pytest.mark.unit
@@ -394,11 +394,11 @@ async def test_set_uses_async_request_when_available(dummy_headers):
         return OkResponse()
 
     context = SimpleNamespace(to_headers=lambda: dict(dummy_headers))
-    agentfield_client = SimpleNamespace(
-        api_base="http://agentfield.local/api/v1",
+    playground_client = SimpleNamespace(
+        api_base="http://playground.local/api/v1",
         _async_request=fake_async_request,
     )
-    client = MemoryClient(agentfield_client, context)
+    client = MemoryClient(playground_client, context)
 
     await client.set("key", {"value": 1})
 

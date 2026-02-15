@@ -121,7 +121,7 @@ async def test_go_sdk_cli_and_control_plane(async_http_client, control_plane_url
     # Start Go agent server pointed at control plane.
     env_server = {
         **os.environ,
-        "AGENTFIELD_URL": control_plane_url,
+        "AGENTS_URL": control_plane_url,
         "AGENT_NODE_ID": node_id,
         "AGENT_LISTEN_ADDR": ":8001",
         # Control plane reaches the agent via docker network name.
@@ -132,7 +132,7 @@ async def test_go_sdk_cli_and_control_plane(async_http_client, control_plane_url
         await _wait_for_agent_health("http://127.0.0.1:8001/health")
 
         # Execute via control plane to build a workflow DAG: demo_echo -> say_hello -> add_emoji.
-        payload = {"input": {"message": "Hello, Agentfield!"}}
+        payload = {"input": {"message": "Hello, Playground!"}}
         resp = await async_http_client.post(
             f"/api/v1/execute/{node_id}.demo_echo", json=payload, timeout=30.0
         )
@@ -145,7 +145,7 @@ async def test_go_sdk_cli_and_control_plane(async_http_client, control_plane_url
         workflow_id = await _resolve_workflow_id_from_execution(async_http_client, execution_id)
         # Validate result shape
         result = body.get("result") or {}
-        assert result.get("name") == "Hello, Agentfield!"
+        assert result.get("name") == "Hello, Playground!"
         assert "greeting" in result
 
         timeline = await _wait_for_workflow_run_completed(
@@ -162,7 +162,7 @@ async def test_go_sdk_cli_and_control_plane(async_http_client, control_plane_url
         assert parent_by_reasoner.get("add_emoji") == id_by_reasoner["say_hello"]
 
         # CLI invocation should still work without control plane.
-        env_cli = {k: v for k, v in os.environ.items() if k not in {"AGENTFIELD_URL", "AGENT_PUBLIC_URL"}}
+        env_cli = {k: v for k, v in os.environ.items() if k not in {"AGENTS_URL", "AGENT_PUBLIC_URL"}}
         env_cli["AGENT_NODE_ID"] = f"{node_id}-cli"
         cli_proc = await asyncio.create_subprocess_exec(
             binary,
@@ -192,7 +192,7 @@ async def test_go_sdk_local_calls_emit_workflow_events(async_http_client, contro
 
     env_server = {
         **os.environ,
-        "AGENTFIELD_URL": control_plane_url,
+        "AGENTS_URL": control_plane_url,
         "AGENT_NODE_ID": node_id,
         "AGENT_LISTEN_ADDR": ":8001",
         "AGENT_PUBLIC_URL": "http://test-runner:8001",

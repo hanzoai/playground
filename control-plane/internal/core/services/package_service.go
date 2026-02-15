@@ -1,4 +1,4 @@
-// agentfield/internal/core/services/package_service.go
+// agents/internal/core/services/package_service.go
 package services
 
 import (
@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
 )
@@ -21,19 +21,19 @@ import (
 type DefaultPackageService struct {
 	registryStorage interfaces.RegistryStorage
 	fileSystem      interfaces.FileSystemAdapter
-	agentfieldHome  string
+	agentsHome  string
 }
 
 // NewPackageService creates a new package service instance
 func NewPackageService(
 	registryStorage interfaces.RegistryStorage,
 	fileSystem interfaces.FileSystemAdapter,
-	agentfieldHome string,
+	agentsHome string,
 ) interfaces.PackageService {
 	return &DefaultPackageService{
 		registryStorage: registryStorage,
 		fileSystem:      fileSystem,
-		agentfieldHome:  agentfieldHome,
+		agentsHome:  agentsHome,
 	}
 }
 
@@ -42,7 +42,7 @@ func (ps *DefaultPackageService) InstallPackage(source string, options domain.In
 	// Check if it's a Git URL (GitHub, GitLab, Bitbucket, etc.)
 	if packages.IsGitURL(source) {
 		installer := &packages.GitInstaller{
-			AgentFieldHome: ps.agentfieldHome,
+			AgentsHome: ps.agentsHome,
 			Verbose:        options.Verbose,
 		}
 		return installer.InstallFromGit(source, options.Force)
@@ -77,7 +77,7 @@ func (ps *DefaultPackageService) installLocalPackage(sourcePath string, force bo
 	}
 
 	// 3. Copy package to global location
-	destPath := filepath.Join(ps.agentfieldHome, "packages", metadata.Name)
+	destPath := filepath.Join(ps.agentsHome, "packages", metadata.Name)
 	spinner = ps.newSpinner("Setting up environment")
 	spinner.Start()
 	if err := ps.copyPackage(sourcePath, destPath); err != nil {
@@ -188,7 +188,7 @@ func (ps *DefaultPackageService) stopAgentNode(agentNode *packages.InstalledPack
 
 // saveRegistry saves the installation registry
 func (ps *DefaultPackageService) saveRegistry(registry *packages.InstallationRegistry) error {
-	registryPath := filepath.Join(ps.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(ps.agentsHome, "installed.yaml")
 
 	data, err := yaml.Marshal(registry)
 	if err != nil {
@@ -239,7 +239,7 @@ func (ps *DefaultPackageService) GetPackageInfo(name string) (*domain.InstalledP
 // loadRegistryDirect loads the registry using direct file system access
 // TODO: Eventually replace with registryStorage interface usage
 func (ps *DefaultPackageService) loadRegistryDirect() (*packages.InstallationRegistry, error) {
-	registryPath := filepath.Join(ps.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(ps.agentsHome, "installed.yaml")
 
 	registry := &packages.InstallationRegistry{
 		Installed: make(map[string]packages.InstalledPackage),
@@ -377,10 +377,10 @@ func (s *Spinner) Error(message string) {
 
 // validatePackage checks if the package has required files
 func (ps *DefaultPackageService) validatePackage(sourcePath string) error {
-	// Check if agentfield-package.yaml exists
-	packageYamlPath := filepath.Join(sourcePath, "agentfield-package.yaml")
+	// Check if agents-package.yaml exists
+	packageYamlPath := filepath.Join(sourcePath, "agents-package.yaml")
 	if _, err := os.Stat(packageYamlPath); os.IsNotExist(err) {
-		return fmt.Errorf("agentfield-package.yaml not found in %s", sourcePath)
+		return fmt.Errorf("agents-package.yaml not found in %s", sourcePath)
 	}
 
 	// Check if main.py exists
@@ -392,26 +392,26 @@ func (ps *DefaultPackageService) validatePackage(sourcePath string) error {
 	return nil
 }
 
-// parsePackageMetadata parses the agentfield-package.yaml file
+// parsePackageMetadata parses the agents-package.yaml file
 func (ps *DefaultPackageService) parsePackageMetadata(sourcePath string) (*packages.PackageMetadata, error) {
-	packageYamlPath := filepath.Join(sourcePath, "agentfield-package.yaml")
+	packageYamlPath := filepath.Join(sourcePath, "agents-package.yaml")
 
 	data, err := os.ReadFile(packageYamlPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read agentfield-package.yaml: %w", err)
+		return nil, fmt.Errorf("failed to read agents-package.yaml: %w", err)
 	}
 
 	var metadata packages.PackageMetadata
 	if err := yaml.Unmarshal(data, &metadata); err != nil {
-		return nil, fmt.Errorf("failed to parse agentfield-package.yaml: %w", err)
+		return nil, fmt.Errorf("failed to parse agents-package.yaml: %w", err)
 	}
 
 	// Validate required fields
 	if metadata.Name == "" {
-		return nil, fmt.Errorf("package name is required in agentfield-package.yaml")
+		return nil, fmt.Errorf("package name is required in agents-package.yaml")
 	}
 	if metadata.Version == "" {
-		return nil, fmt.Errorf("package version is required in agentfield-package.yaml")
+		return nil, fmt.Errorf("package version is required in agents-package.yaml")
 	}
 	if metadata.Main == "" {
 		metadata.Main = "main.py" // Default
@@ -422,7 +422,7 @@ func (ps *DefaultPackageService) parsePackageMetadata(sourcePath string) (*packa
 
 // isPackageInstalled checks if a package is already installed
 func (ps *DefaultPackageService) isPackageInstalled(packageName string) bool {
-	registryPath := filepath.Join(ps.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(ps.agentsHome, "installed.yaml")
 	registry := &packages.InstallationRegistry{
 		Installed: make(map[string]packages.InstalledPackage),
 	}
@@ -528,7 +528,7 @@ func (ps *DefaultPackageService) installDependencies(packagePath string, metadat
 			}
 		}
 
-		// Install dependencies from agentfield-package.yaml
+		// Install dependencies from agents-package.yaml
 		if len(metadata.Dependencies.Python) > 0 {
 			for _, dep := range metadata.Dependencies.Python {
 				cmd = exec.Command(pipPath, "install", dep)
@@ -557,7 +557,7 @@ func (ps *DefaultPackageService) hasRequirementsFile(packagePath string) bool {
 
 // updateRegistry updates the installation registry with the new package
 func (ps *DefaultPackageService) updateRegistry(metadata *packages.PackageMetadata, sourcePath, destPath string) error {
-	registryPath := filepath.Join(ps.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(ps.agentsHome, "installed.yaml")
 
 	// Load existing registry or create new one
 	registry := &packages.InstallationRegistry{
@@ -584,7 +584,7 @@ func (ps *DefaultPackageService) updateRegistry(metadata *packages.PackageMetada
 			Port:      nil,
 			PID:       nil,
 			StartedAt: nil,
-			LogFile:   filepath.Join(ps.agentfieldHome, "logs", metadata.Name+".log"),
+			LogFile:   filepath.Join(ps.agentsHome, "logs", metadata.Name+".log"),
 		},
 	}
 

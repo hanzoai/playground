@@ -42,7 +42,7 @@ A domain-agnostic, schema-flexible simulation system that can model any enterpri
 ### 1. Install Dependencies
 
 ```bash
-pip install agentfield
+pip install playground
 ```
 
 ### 2. Run the Agent
@@ -223,7 +223,7 @@ The same reasoners work for all domains.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AGENTFIELD_SERVER` | Control plane server URL | `http://localhost:8080` |
+| `AGENTS_SERVER` | Control plane server URL | `http://localhost:8080` |
 | `AI_MODEL` | Primary LLM model | `openrouter/openai/gpt-4o-mini` |
 | `PORT` | Agent server port | Auto-assigned |
 

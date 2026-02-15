@@ -3,7 +3,7 @@
 Agent Framework Benchmark Visualization
 
 Creates a single, clean, publication-quality figure comparing frameworks.
-AgentField SDKs shown in blue family (visually grouped), external frameworks in distinct colors.
+Playground SDKs shown in blue family (visually grouped), external frameworks in distinct colors.
 """
 
 import json
@@ -28,12 +28,12 @@ plt.rcParams.update({
     "grid.linewidth": 0.5,
 })
 
-# Color palette: AgentField SDKs in blue gradient, external frameworks in distinct colors
+# Color palette: Playground SDKs in blue gradient, external frameworks in distinct colors
 COLORS = {
-    # AgentField SDKs - Blue family (visually grouped)
-    "AgentField_Go": "#0D2137",         # Deep navy
-    "AgentField_TypeScript": "#1A5276", # Medium blue
-    "AgentField_Python": "#3498DB",     # Bright blue
+    # Playground SDKs - Blue family (visually grouped)
+    "Playground_Go": "#0D2137",         # Deep navy
+    "Playground_TypeScript": "#1A5276", # Medium blue
+    "Playground_Python": "#3498DB",     # Bright blue
     # External frameworks
     "LangChain_Python": "#C0392B",      # Red
     "CrewAI_Python": "#27AE60",         # Green
@@ -41,9 +41,9 @@ COLORS = {
 }
 
 LABELS = {
-    "AgentField_Go": "AgentField (Go)",
-    "AgentField_TypeScript": "AgentField (TS)",
-    "AgentField_Python": "AgentField (Python)",
+    "Playground_Go": "Playground (Go)",
+    "Playground_TypeScript": "Playground (TS)",
+    "Playground_Python": "Playground (Python)",
     "LangChain_Python": "LangChain",
     "CrewAI_Python": "CrewAI",
     "Mastra_TypeScript": "Mastra",
@@ -54,7 +54,7 @@ def load_results(results_dir: Path) -> dict:
     """Load benchmark results from JSON files."""
     results = {}
     for f in results_dir.glob("*.json"):
-        if f.name.startswith(("AgentField", "LangChain", "CrewAI", "Mastra")):
+        if f.name.startswith(("Playground", "LangChain", "CrewAI", "Mastra")):
             with open(f) as fp:
                 data = json.load(fp)
                 key = f"{data.get('framework', 'unknown')}_{data.get('language', 'unknown')}"
@@ -79,11 +79,11 @@ def create_benchmark_figure(results: dict, output_dir: Path):
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Agent Framework Benchmark Comparison", fontsize=16, fontweight="bold", y=0.95)
 
-    # Framework order: AgentField SDKs first (grouped), then external
+    # Framework order: Playground SDKs first (grouped), then external
     frameworks = [
-        "AgentField_Go",
-        "AgentField_TypeScript",
-        "AgentField_Python",
+        "Playground_Go",
+        "Playground_TypeScript",
+        "Playground_Python",
         "LangChain_Python",
         "CrewAI_Python",
         "Mastra_TypeScript",

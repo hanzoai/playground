@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities to: contact@agentfield.ai
+Please report security vulnerabilities to: contact@playground.ai
 
 **Do NOT open public issues for security vulnerabilities.**
 
@@ -18,7 +18,7 @@ We release patches for security vulnerabilities in the following versions:
 
 ## Security Best Practices
 
-When using AgentField:
+When using Playground:
 
 - Keep your control plane and SDKs updated to the latest version
 - Use environment variables for sensitive configuration (API keys, database URLs)

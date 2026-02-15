@@ -1,5 +1,5 @@
 {
-  "name": "@agentfield/ts-node-examples",
+  "name": "@playground/ts-node-examples",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "dev:vc": "tsx verifiable-credentials/main.ts"
   },
   "dependencies": {
-    "@agentfield/sdk": "file:../../sdk/typescript",
+    "@playground/sdk": "file:../../sdk/typescript",
     "dotenv": "^16.4.5",
     "zod": "^3.22.4"
   },

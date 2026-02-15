@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Agent-Field/agentfield/sdk/go/types"
+	"github.com/hanzoai/playground/sdk/go/types"
 )
 
 // DiscoveryOption configures discovery requests.
@@ -136,8 +136,8 @@ func WithOffset(offset int) DiscoveryOption {
 
 // Discover queries the control plane discovery API.
 func (a *Agent) Discover(ctx context.Context, opts ...DiscoveryOption) (*types.DiscoveryResult, error) {
-	if strings.TrimSpace(a.cfg.AgentFieldURL) == "" {
-		return nil, fmt.Errorf("AgentFieldURL is required for discovery")
+	if strings.TrimSpace(a.cfg.PlaygroundURL) == "" {
+		return nil, fmt.Errorf("PlaygroundURL is required for discovery")
 	}
 
 	options := discoveryOptions{format: "json"}
@@ -197,7 +197,7 @@ func (a *Agent) Discover(ctx context.Context, opts ...DiscoveryOption) (*types.D
 	}
 	params.Set("format", options.format)
 
-	endpoint := strings.TrimSuffix(a.cfg.AgentFieldURL, "/") + "/api/v1/discovery/capabilities"
+	endpoint := strings.TrimSuffix(a.cfg.PlaygroundURL, "/") + "/api/v1/discovery/capabilities"
 	requestURL := endpoint
 	if encoded := params.Encode(); encoded != "" {
 		requestURL += "?" + encoded

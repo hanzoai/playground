@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 // EnhancedVCVerifier provides comprehensive VC verification with all integrity checks
@@ -85,7 +85,7 @@ type SecurityAnalysis struct {
 // ComplianceChecks represents compliance and audit verification results
 type ComplianceChecks struct {
 	W3CCompliance                bool                `json:"w3c_compliance"`
-	AgentFieldStandardCompliance bool                `json:"agentfield_standard_compliance"`
+	AgentsStandardCompliance bool                `json:"agents_standard_compliance"`
 	AuditTrailIntegrity          bool                `json:"audit_trail_integrity"`
 	DataIntegrityChecks          bool                `json:"data_integrity_checks"`
 	Issues                       []VerificationIssue `json:"issues"`
@@ -202,7 +202,7 @@ func (v *EnhancedVCVerifier) verifyExecutionVCComprehensive(execVC types.Executi
 		return result
 	}
 
-	// CRITICAL CHECK 7: Status consistency (with AgentField system status mapping)
+	// CRITICAL CHECK 7: Status consistency (with Agents system status mapping)
 	if !v.isStatusConsistent(execVC.Status, vcDoc.CredentialSubject.Execution.Status) {
 		result.Valid = false
 		result.Error = fmt.Sprintf("Status mismatch: metadata=%s, vc_document=%s", execVC.Status, vcDoc.CredentialSubject.Execution.Status)
@@ -428,7 +428,7 @@ func (v *EnhancedVCVerifier) performSecurityAnalysis(chain EnhancedVCChain) Secu
 func (v *EnhancedVCVerifier) performComplianceChecks(chain EnhancedVCChain) ComplianceChecks {
 	result := ComplianceChecks{
 		W3CCompliance:                true,
-		AgentFieldStandardCompliance: true,
+		AgentsStandardCompliance: true,
 		AuditTrailIntegrity:          true,
 		DataIntegrityChecks:          true,
 		Issues:                       []VerificationIssue{},
@@ -621,7 +621,7 @@ func (v *EnhancedVCVerifier) calculateOverallScore(result *ComprehensiveVerifica
 	return score
 }
 
-// isStatusConsistent checks if status values are consistent, accounting for AgentField system status mapping
+// isStatusConsistent checks if status values are consistent, accounting for Agents system status mapping
 func (v *EnhancedVCVerifier) isStatusConsistent(metadataStatus, vcDocStatus string) bool {
 	return types.NormalizeExecutionStatus(metadataStatus) == types.NormalizeExecutionStatus(vcDocStatus)
 }

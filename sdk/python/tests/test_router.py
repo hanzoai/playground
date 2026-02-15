@@ -1,6 +1,6 @@
 import pytest
 
-from agentfield.router import AgentRouter
+from playground.router import AgentRouter
 
 
 class DummyAgent:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# AgentField Release Automation Script
+# Playground Release Automation Script
 # Builds binaries and creates GitHub releases with auto-incrementing versions
 
 set -e
@@ -21,9 +21,9 @@ BUILD_SCRIPT="$PROJECT_ROOT/build-single-binary.sh"
 DIST_DIR="$PROJECT_ROOT/dist/releases"
 
 # GitHub configuration
-GITHUB_REPO="Agent-Field/agentfield"
-GITHUB_OWNER="Agent-Field"
-GITHUB_REPO_NAME="agentfield"
+GITHUB_REPO="hanzoai/playground"
+GITHUB_OWNER="hanzoai"
+GITHUB_REPO_NAME="playground"
 
 print_header() {
     echo -e "${CYAN}================================${NC}"
@@ -187,10 +187,10 @@ build_binaries() {
 
     # Check for expected binaries
     local expected_binaries=(
-        "agentfield-linux-amd64"
-        "agentfield-linux-arm64"
-        "agentfield-darwin-amd64"
-        "agentfield-darwin-arm64"
+        "playground-linux-amd64"
+        "playground-linux-arm64"
+        "playground-darwin-amd64"
+        "playground-darwin-arm64"
     )
 
     local missing_binaries=()
@@ -220,7 +220,7 @@ build_binaries() {
 
     # Show build summary
     print_status "Built files:"
-    ls -la "$DIST_DIR" | grep -E "(agentfield-|checksums|build-info|README)"
+    ls -la "$DIST_DIR" | grep -E "(playground-|checksums|build-info|README)"
 }
 
 # Generate release notes
@@ -236,9 +236,9 @@ generate_release_notes() {
     fi
 
     cat > "$release_notes_file" << EOF
-# AgentField $NEXT_TAG (Pre-release)
+# Playground $NEXT_TAG (Pre-release)
 
-This is a pre-release version of AgentField for testing purposes.
+This is a pre-release version of Playground for testing purposes.
 
 ## 🚀 What's New
 
@@ -252,9 +252,9 @@ EOF
     else
         echo "### Initial Alpha Release" >> "$release_notes_file"
         echo "" >> "$release_notes_file"
-        echo "- Initial release of AgentField Server" >> "$release_notes_file"
+        echo "- Initial release of Playground Server" >> "$release_notes_file"
         echo "- Single binary deployment with embedded UI" >> "$release_notes_file"
-        echo "- Universal path management (stores data in ~/.agentfield/)" >> "$release_notes_file"
+        echo "- Universal path management (stores data in ~/.hanzo/agents/)" >> "$release_notes_file"
         echo "- Cross-platform support (Linux, macOS)" >> "$release_notes_file"
     fi
 
@@ -264,38 +264,38 @@ EOF
 
 ### Quick Install (Recommended)
 ```bash
-    curl -sSL https://raw.githubusercontent.com/Agent-Field/agentfield/main/scripts/install.sh | bash
+    curl -sSL https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh | bash
 ```
 
 ### Manual Download
 1. Download the appropriate binary for your platform from the assets below
-2. Make it executable: `chmod +x agentfield-*`
-3. Run: `./agentfield-linux-amd64` (or your platform's binary)
+2. Make it executable: `chmod +x playground-*`
+3. Run: `./playground-linux-amd64` (or your platform's binary)
 4. Open http://localhost:8080 in your browser
 
 ## 🏗️ Available Binaries
 
-- **agentfield-linux-amd64** - Linux (Intel/AMD 64-bit)
-- **agentfield-linux-arm64** - Linux (ARM 64-bit)
-- **agentfield-darwin-amd64** - macOS (Intel)
-- **agentfield-darwin-arm64** - macOS (Apple Silicon)
+- **playground-linux-amd64** - Linux (Intel/AMD 64-bit)
+- **playground-linux-arm64** - Linux (ARM 64-bit)
+- **playground-darwin-amd64** - macOS (Intel)
+- **playground-darwin-arm64** - macOS (Apple Silicon)
 
 ## 🔧 Features
 
 - **Single Binary**: Everything bundled in one executable
-- **Universal Storage**: All data stored in `~/.agentfield/` directory
+- **Universal Storage**: All data stored in `~/.hanzo/agents/` directory
 - **Embedded UI**: Web interface included in binary
 - **Cross-Platform**: Works on Linux and macOS
 - **Portable**: Run from anywhere, data stays consistent
 
 ## 📁 Data Directory
 
-All AgentField data is stored in `~/.agentfield/`:
+All Playground data is stored in `~/.hanzo/agents/`:
 ```
-~/.agentfield/
+~/.hanzo/agents/
 ├── data/
-│   ├── agentfield.db              # Main database
-│   ├── agentfield.bolt            # Cache
+│   ├── playground.db              # Main database
+│   ├── playground.bolt            # Cache
 │   ├── keys/                 # Cryptographic keys
 │   ├── did_registries/       # DID registries
 │   └── vcs/                  # Verifiable credentials
@@ -310,7 +310,7 @@ This is an alpha pre-release intended for testing and development. Not recommend
 
 ## 🐛 Issues & Support
 
-Report issues at: https://github.com/Agent-Field/agentfield/issues
+Report issues at: https://github.com/hanzoai/playground/issues
 
 EOF
 
@@ -338,7 +338,7 @@ create_github_release() {
     # Create GitHub release
     print_status "Creating GitHub release..."
     gh release create "$NEXT_TAG" \
-        --title "AgentField $NEXT_TAG" \
+        --title "Playground $NEXT_TAG" \
         --notes-file "$release_notes_file" \
         --prerelease \
         --repo "$GITHUB_REPO"
@@ -354,10 +354,10 @@ upload_assets() {
 
     # List of assets to upload
     local assets=(
-        "agentfield-linux-amd64"
-        "agentfield-linux-arm64"
-        "agentfield-darwin-amd64"
-        "agentfield-darwin-arm64"
+        "playground-linux-amd64"
+        "playground-linux-arm64"
+        "playground-darwin-amd64"
+        "playground-darwin-arm64"
         "checksums.txt"
         "build-info.txt"
         "README.md"
@@ -413,7 +413,7 @@ cleanup() {
 
 # Main release function
 main() {
-    print_header "AgentField Server Release Automation"
+    print_header "Playground Server Release Automation"
 
     echo "This script will:"
     echo "  • Check prerequisites and authentication"
@@ -459,7 +459,7 @@ case "${1:-}" in
         print_success "Build completed - no release created"
         ;;
     "help"|"-h"|"--help")
-        echo "AgentField Release Automation Script"
+        echo "Playground Release Automation Script"
         echo ""
         echo "Usage:"
         echo "  $0                Create full release (build + GitHub release)"

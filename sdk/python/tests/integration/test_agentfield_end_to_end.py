@@ -4,8 +4,8 @@ from typing import Any, Dict
 import httpx
 import pytest
 
-from agentfield.agent import Agent
-from agentfield.types import AgentStatus
+from playground.agent import Agent
+from playground.types import AgentStatus
 
 
 async def _wait_for_node(
@@ -18,7 +18,7 @@ async def _wait_for_node(
             if payload.get("id") == node_id:
                 return payload
         await asyncio.sleep(0.5)
-    raise AssertionError(f"Node {node_id} did not appear in AgentField registry")
+    raise AssertionError(f"Node {node_id} did not appear in Playground registry")
 
 
 async def _wait_for_status(
@@ -40,10 +40,10 @@ async def _wait_for_status(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_agent_registration_and_status_propagation(agentfield_server, run_agent):
+async def test_agent_registration_and_status_propagation(agents_server, run_agent):
     agent = Agent(
         node_id="integration-agent-status",
-        agentfield_server=agentfield_server.base_url,
+        agents_server=agents_server.base_url,
         dev_mode=True,
         callback_url="http://127.0.0.1",
     )
@@ -54,17 +54,17 @@ async def test_agent_registration_and_status_propagation(agentfield_server, run_
 
     runtime = run_agent(agent)
 
-    await agent.agentfield_handler.register_with_agentfield_server(runtime.port)
-    assert agent.agentfield_connected is True
+    await agent.hanzo/agents_handler.register_with_agents_server(runtime.port)
+    assert agent.hanzo/agents_connected is True
 
     async with httpx.AsyncClient(
-        base_url=agentfield_server.base_url, timeout=5.0
+        base_url=agents_server.base_url, timeout=5.0
     ) as client:
         node = await _wait_for_node(client, agent.node_id)
         assert any(r["id"] == "ping" for r in node.get("reasoners", []))
 
         agent._current_status = AgentStatus.READY
-        await agent.agentfield_handler.send_enhanced_heartbeat()
+        await agent.hanzo/agents_handler.send_enhanced_heartbeat()
 
         status = await _wait_for_status(client, agent.node_id, expected="ready")
         assert status.get("state") == "active"
@@ -73,10 +73,10 @@ async def test_agent_registration_and_status_propagation(agentfield_server, run_
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_reasoner_execution_roundtrip(agentfield_server, run_agent):
+async def test_reasoner_execution_roundtrip(agents_server, run_agent):
     agent = Agent(
         node_id="integration-agent-reasoner",
-        agentfield_server=agentfield_server.base_url,
+        agents_server=agents_server.base_url,
         dev_mode=True,
         callback_url="http://127.0.0.1",
     )
@@ -87,12 +87,12 @@ async def test_reasoner_execution_roundtrip(agentfield_server, run_agent):
 
     runtime = run_agent(agent)
 
-    await agent.agentfield_handler.register_with_agentfield_server(runtime.port)
+    await agent.hanzo/agents_handler.register_with_agents_server(runtime.port)
     agent._current_status = AgentStatus.READY
-    await agent.agentfield_handler.send_enhanced_heartbeat()
+    await agent.hanzo/agents_handler.send_enhanced_heartbeat()
 
     async with httpx.AsyncClient(
-        base_url=agentfield_server.base_url, timeout=5.0
+        base_url=agents_server.base_url, timeout=5.0
     ) as client:
         await _wait_for_node(client, agent.node_id)
         await _wait_for_status(client, agent.node_id, expected="ready")
@@ -113,11 +113,11 @@ async def test_reasoner_execution_roundtrip(agentfield_server, run_agent):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_app_ctx_available_during_execution(agentfield_server, run_agent):
+async def test_app_ctx_available_during_execution(agents_server, run_agent):
     """Verify that app.ctx is available and populated during reasoner execution."""
     agent = Agent(
         node_id="integration-agent-ctx",
-        agentfield_server=agentfield_server.base_url,
+        agents_server=agents_server.base_url,
         dev_mode=True,
         callback_url="http://127.0.0.1",
     )
@@ -143,12 +143,12 @@ async def test_app_ctx_available_during_execution(agentfield_server, run_agent):
 
     runtime = run_agent(agent)
 
-    await agent.agentfield_handler.register_with_agentfield_server(runtime.port)
+    await agent.hanzo/agents_handler.register_with_agents_server(runtime.port)
     agent._current_status = AgentStatus.READY
-    await agent.agentfield_handler.send_enhanced_heartbeat()
+    await agent.hanzo/agents_handler.send_enhanced_heartbeat()
 
     async with httpx.AsyncClient(
-        base_url=agentfield_server.base_url, timeout=5.0
+        base_url=agents_server.base_url, timeout=5.0
     ) as client:
         await _wait_for_node(client, agent.node_id)
         await _wait_for_status(client, agent.node_id, expected="ready")

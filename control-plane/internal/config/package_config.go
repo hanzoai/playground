@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigurationField represents a single configuration field in agentfield-package.yaml
+// ConfigurationField represents a single configuration field in agents-package.yaml
 type ConfigurationField struct {
 	Name        string   `yaml:"name" json:"name"`
 	Description string   `yaml:"description" json:"description"`
@@ -23,14 +23,14 @@ type ConfigurationField struct {
 	Max         *int     `yaml:"max" json:"max,omitempty"`               // for integer/float
 }
 
-// ConfigurationSchema represents the configuration schema from agentfield-package.yaml
+// ConfigurationSchema represents the configuration schema from agents-package.yaml
 type ConfigurationSchema struct {
 	Required []ConfigurationField `yaml:"required" json:"required"`
 	Optional []ConfigurationField `yaml:"optional" json:"optional"`
 }
 
-// AgentFieldPackageConfig represents the structure of agentfield-package.yaml
-type AgentFieldPackageConfig struct {
+// AgentsPackageConfig represents the structure of agents-package.yaml
+type AgentsPackageConfig struct {
 	Name            string              `yaml:"name"`
 	Version         string              `yaml:"version"`
 	Description     string              `yaml:"description"`
@@ -78,22 +78,22 @@ type MetadataConfig struct {
 	Platform   string `yaml:"platform"`
 }
 
-// LoadAgentFieldPackageConfig loads and parses a agentfield-package.yaml file
-func LoadAgentFieldPackageConfig(packagePath string) (*AgentFieldPackageConfig, error) {
-	configPath := filepath.Join(packagePath, "agentfield-package.yaml")
+// LoadAgentsPackageConfig loads and parses a agents-package.yaml file
+func LoadAgentsPackageConfig(packagePath string) (*AgentsPackageConfig, error) {
+	configPath := filepath.Join(packagePath, "agents-package.yaml")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("agentfield-package.yaml not found at %s", configPath)
+		return nil, fmt.Errorf("agents-package.yaml not found at %s", configPath)
 	}
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read agentfield-package.yaml: %w", err)
+		return nil, fmt.Errorf("failed to read agents-package.yaml: %w", err)
 	}
 
-	var config AgentFieldPackageConfig
+	var config AgentsPackageConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse agentfield-package.yaml: %w", err)
+		return nil, fmt.Errorf("failed to parse agents-package.yaml: %w", err)
 	}
 
 	// Validate the configuration schema

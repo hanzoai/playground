@@ -9,12 +9,12 @@ import (
 
 	"gopkg.in/yaml.v3" // Added for yaml.Unmarshal
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
-// Config holds the entire configuration for the AgentField server.
+// Config holds the entire configuration for the Agents server.
 type Config struct {
-	AgentField AgentFieldConfig `yaml:"agentfield" mapstructure:"agentfield"`
+	Agents AgentsConfig `yaml:"agents" mapstructure:"agents"`
 	Features   FeatureConfig    `yaml:"features" mapstructure:"features"`
 	Storage    StorageConfig    `yaml:"storage" mapstructure:"storage"`
 	UI         UIConfig         `yaml:"ui" mapstructure:"ui"`
@@ -30,8 +30,8 @@ type UIConfig struct {
 	DevPort    int    `yaml:"dev_port" mapstructure:"dev_port"`       // Port for UI dev server
 }
 
-// AgentFieldConfig holds the core AgentField server configuration.
-type AgentFieldConfig struct {
+// AgentsConfig holds the core Agents server configuration.
+type AgentsConfig struct {
 	Port             int                    `yaml:"port"`
 	NodeHealth       NodeHealthConfig       `yaml:"node_health" mapstructure:"node_health"`
 	ExecutionCleanup ExecutionCleanupConfig `yaml:"execution_cleanup" mapstructure:"execution_cleanup"`
@@ -132,7 +132,7 @@ type AuthConfig struct {
 type StorageConfig = storage.StorageConfig
 
 // DefaultConfigPath is the default path for the af configuration file.
-const DefaultConfigPath = "agentfield.yaml" // Or "./agentfield.yaml", "config/agentfield.yaml" depending on convention
+const DefaultConfigPath = "agents.yaml" // Or "./agents.yaml", "config/agents.yaml" depending on convention
 
 // LoadConfig reads the configuration from the given path or default paths.
 func LoadConfig(configPath string) (*Config, error) {
@@ -146,7 +146,7 @@ func LoadConfig(configPath string) (*Config, error) {
 		// This part might need more sophisticated logic depending on project structure
 		// For now, let's assume configPath is either absolute or relative to CWD.
 		// If not found, try a common "config/" subdirectory
-		altPath := filepath.Join("config", "agentfield.yaml")
+		altPath := filepath.Join("config", "agents.yaml")
 		if _, err2 := os.Stat(altPath); err2 == nil {
 			configPath = altPath
 		} else {
@@ -175,38 +175,38 @@ func LoadConfig(configPath string) (*Config, error) {
 // Environment variables take precedence over YAML config values.
 func applyEnvOverrides(cfg *Config) {
 	// API Authentication
-	if apiKey := os.Getenv("AGENTFIELD_API_KEY"); apiKey != "" {
+	if apiKey := os.Getenv("AGENTS_API_KEY"); apiKey != "" {
 		cfg.API.Auth.APIKey = apiKey
 	}
 	// Also support the nested path format for consistency
-	if apiKey := os.Getenv("AGENTFIELD_API_AUTH_API_KEY"); apiKey != "" {
+	if apiKey := os.Getenv("AGENTS_API_AUTH_API_KEY"); apiKey != "" {
 		cfg.API.Auth.APIKey = apiKey
 	}
 
 	// Node health monitoring overrides
-	if val := os.Getenv("AGENTFIELD_HEALTH_CHECK_INTERVAL"); val != "" {
+	if val := os.Getenv("AGENTS_HEALTH_CHECK_INTERVAL"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
-			cfg.AgentField.NodeHealth.CheckInterval = d
+			cfg.Agents.NodeHealth.CheckInterval = d
 		}
 	}
-	if val := os.Getenv("AGENTFIELD_HEALTH_CHECK_TIMEOUT"); val != "" {
+	if val := os.Getenv("AGENTS_HEALTH_CHECK_TIMEOUT"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
-			cfg.AgentField.NodeHealth.CheckTimeout = d
+			cfg.Agents.NodeHealth.CheckTimeout = d
 		}
 	}
-	if val := os.Getenv("AGENTFIELD_HEALTH_CONSECUTIVE_FAILURES"); val != "" {
+	if val := os.Getenv("AGENTS_HEALTH_CONSECUTIVE_FAILURES"); val != "" {
 		if i, err := strconv.Atoi(val); err == nil {
-			cfg.AgentField.NodeHealth.ConsecutiveFailures = i
+			cfg.Agents.NodeHealth.ConsecutiveFailures = i
 		}
 	}
-	if val := os.Getenv("AGENTFIELD_HEALTH_RECOVERY_DEBOUNCE"); val != "" {
+	if val := os.Getenv("AGENTS_HEALTH_RECOVERY_DEBOUNCE"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
-			cfg.AgentField.NodeHealth.RecoveryDebounce = d
+			cfg.Agents.NodeHealth.RecoveryDebounce = d
 		}
 	}
-	if val := os.Getenv("AGENTFIELD_HEARTBEAT_STALE_THRESHOLD"); val != "" {
+	if val := os.Getenv("AGENTS_HEARTBEAT_STALE_THRESHOLD"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
-			cfg.AgentField.NodeHealth.HeartbeatStaleThreshold = d
+			cfg.Agents.NodeHealth.HeartbeatStaleThreshold = d
 		}
 	}
 }

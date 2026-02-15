@@ -1,6 +1,6 @@
 # Verifiable Credentials Example
 
-This example demonstrates how to use **DID (Decentralized Identifiers)** and **Verifiable Credentials (VCs)** in AgentField to create cryptographically verifiable audit trails for agent executions.
+This example demonstrates how to use **DID (Decentralized Identifiers)** and **Verifiable Credentials (VCs)** in Playground to create cryptographically verifiable audit trails for agent executions.
 
 ## What are Verifiable Credentials?
 
@@ -14,7 +14,7 @@ Verifiable Credentials provide:
 
 1. **Control Plane Running** with DID enabled:
    ```yaml
-   # agentfield.yaml
+   # agents.yaml
    features:
      did:
        enabled: true
@@ -31,7 +31,7 @@ Verifiable Credentials provide:
 
 ```bash
 # From the ts-node-examples directory
-cd agentfield/examples/ts-node-examples
+cd playground/examples/ts-node-examples
 
 # Install dependencies
 pnpm install
@@ -138,7 +138,7 @@ curl -X POST http://localhost:8080/api/v1/execute/vc-demo.vc_chain \
 
 ## Verifying Credentials in the UI
 
-1. Open AgentField UI: `http://localhost:8080`
+1. Open Playground UI: `http://localhost:8080`
 2. Navigate to **Workflows**
 3. Find your workflow (filter by "vc-demo" agent)
 4. Look for the **VC badge**:
@@ -209,7 +209,7 @@ Each generated VC follows W3C Verifiable Credentials format:
 {
   "@context": [
     "https://www.w3.org/2018/credentials/v1",
-    "https://agentfield.ai/credentials/v1"
+    "https://playground.ai/credentials/v1"
   ],
   "type": ["VerifiableCredential", "AgentExecutionCredential"],
   "id": "urn:uuid:vc-abc123",

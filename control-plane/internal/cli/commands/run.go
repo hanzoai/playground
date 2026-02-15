@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/cli/framework"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/cli/framework"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +29,7 @@ func (cmd *RunCommand) GetName() string {
 
 // GetDescription returns the command description
 func (cmd *RunCommand) GetDescription() string {
-	return "Run an installed AgentField agent node package"
+	return "Run an installed Agents agent node package"
 }
 
 // BuildCobraCommand builds the Cobra command
@@ -41,10 +41,10 @@ func (cmd *RunCommand) BuildCobraCommand() *cobra.Command {
 	cobraCmd := &cobra.Command{
 		Use:   "run <agent-node-name>",
 		Short: cmd.GetDescription(),
-		Long: `Start an installed AgentField agent node package in the background.
+		Long: `Start an installed Agents agent node package in the background.
 
 The agent node will be assigned an available port and registered with
-the AgentField server if available.
+the Agents server if available.
 
 Examples:
   af run email-helper
@@ -67,7 +67,7 @@ Examples:
 
 // execute performs the actual agent execution
 func (cmd *RunCommand) execute(agentName string, port int, detach, verbose bool) error {
-	cmd.output.PrintHeader("Running AgentField Agent")
+	cmd.output.PrintHeader("Running Agents Agent")
 	cmd.output.PrintInfo(fmt.Sprintf("Agent: %s", agentName))
 
 	if verbose {

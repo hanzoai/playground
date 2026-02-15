@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY control-plane/go.mod control-plane/go.sum ./control-plane/
 RUN cd control-plane && go mod download
 
-# Build the AgentField CLI (af)
+# Build the Playground CLI (af)
 COPY control-plane ./control-plane
 COPY --from=ui-builder /app/web/dist ./control-plane/web/client/dist
 RUN mkdir -p /build/bin && \
@@ -64,9 +64,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
-# Install the AgentField CLI built in the previous stage
+# Install the Playground CLI built in the previous stage
 COPY --from=af-cli-builder /build/bin/af /usr/local/bin/af
-RUN ln -s /usr/local/bin/af /usr/local/bin/agentfield
+RUN ln -s /usr/local/bin/af /usr/local/bin/playground
 
 # Install the packaged TypeScript SDK globally for Node-based agents
 COPY --from=ts-sdk-builder /tmp/ts-sdk.tgz /tmp/ts-sdk.tgz
@@ -75,10 +75,10 @@ ENV NODE_PATH=/usr/local/lib/node_modules
 
 WORKDIR /app
 
-# Copy and install AgentField Python SDK
-COPY sdk/python /tmp/agentfield-sdk
-RUN pip install --no-cache-dir /tmp/agentfield-sdk && \
-    rm -rf /tmp/agentfield-sdk
+# Copy and install Playground Python SDK
+COPY sdk/python /tmp/playground-sdk
+RUN pip install --no-cache-dir /tmp/playground-sdk && \
+    rm -rf /tmp/playground-sdk
 
 # Copy test requirements and install
 COPY tests/functional/requirements.txt /tmp/requirements.txt

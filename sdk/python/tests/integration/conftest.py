@@ -18,7 +18,7 @@ import requests
 import uvicorn
 
 if TYPE_CHECKING:
-    from agentfield.agent import Agent
+    from playground.agent import Agent
 
 
 def _find_free_port() -> int:
@@ -27,11 +27,11 @@ def _find_free_port() -> int:
         return sock.getsockname()[1]
 
 
-def _write_agentfield_config(config_path: Path, db_path: Path, kv_path: Path) -> None:
+def _write_playground_config(config_path: Path, db_path: Path, kv_path: Path) -> None:
     db_uri = db_path.as_posix()
     kv_uri = kv_path.as_posix()
     config_content = f"""
-agentfield:
+playground:
   port: 0
   mode: "local"
   request_timeout: 60s
@@ -59,25 +59,25 @@ agents:
 
 
 @dataclass
-class AgentFieldServerInfo:
+class PlaygroundServerInfo:
     base_url: str
     port: int
-    agentfield_home: Path
+    playground_home: Path
 
 
 @pytest.fixture(scope="session")
-def agentfield_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def playground_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
     repo_root = Path(__file__).resolve().parents[4]
-    agentfield_go_root = repo_root / "apps" / "platform" / "agentfield"
-    if not agentfield_go_root.exists():
-        pytest.skip("AgentField server sources not available in this checkout")
-    build_dir = tmp_path_factory.mktemp("agentfield-server-bin")
+    playground_go_root = repo_root / "apps" / "platform" / "playground"
+    if not playground_go_root.exists():
+        pytest.skip("Playground server sources not available in this checkout")
+    build_dir = tmp_path_factory.mktemp("playground-server-bin")
     binary_name = (
-        "agentfield-test-server.exe" if os.name == "nt" else "agentfield-test-server"
+        "playground-test-server.exe" if os.name == "nt" else "playground-test-server"
     )
     binary_path = build_dir / binary_name
 
-    releases_dir = agentfield_go_root / "dist" / "releases"
+    releases_dir = playground_go_root / "dist" / "releases"
     os_part = sys.platform
     if os_part.startswith("darwin"):
         os_part = "darwin"
@@ -97,11 +97,11 @@ def agentfield_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
     prebuilt_path: Optional[Path] = None
     if os_part:
-        candidate = releases_dir / f"agentfield-{os_part}-{arch_part}"
+        candidate = releases_dir / f"playground-{os_part}-{arch_part}"
         if candidate.exists():
             prebuilt_path = candidate
         elif os_part == "darwin":
-            universal = releases_dir / "agentfield-darwin-arm64"
+            universal = releases_dir / "playground-darwin-arm64"
             if universal.exists():
                 prebuilt_path = universal
 
@@ -110,30 +110,30 @@ def agentfield_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
         binary_path.chmod(0o755)
         return binary_path
 
-    build_cmd = ["go", "build", "-o", str(binary_path), "./cmd/agentfield"]
+    build_cmd = ["go", "build", "-o", str(binary_path), "./cmd/playground"]
     env = os.environ.copy()
     env["GOCACHE"] = str(tmp_path_factory.mktemp("go-cache"))
     env["GOMODCACHE"] = str(tmp_path_factory.mktemp("go-modcache"))
-    subprocess.run(build_cmd, check=True, cwd=agentfield_go_root, env=env)
+    subprocess.run(build_cmd, check=True, cwd=playground_go_root, env=env)
     return binary_path
 
 
 @pytest.fixture
-def agentfield_server(
-    tmp_path_factory: pytest.TempPathFactory, agentfield_binary: Path
-) -> Generator[AgentFieldServerInfo, None, None]:
+def agents_server(
+    tmp_path_factory: pytest.TempPathFactory, playground_binary: Path
+) -> Generator[PlaygroundServerInfo, None, None]:
     repo_root = Path(__file__).resolve().parents[4]
-    agentfield_go_root = repo_root / "apps" / "platform" / "agentfield"
+    playground_go_root = repo_root / "apps" / "platform" / "playground"
 
-    agentfield_home = Path(tmp_path_factory.mktemp("agentfield-home"))
-    data_dir = agentfield_home / "data"
+    playground_home = Path(tmp_path_factory.mktemp("playground-home"))
+    data_dir = playground_home / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    db_path = data_dir / "agentfield.db"
-    kv_path = data_dir / "agentfield.bolt"
-    config_path = agentfield_home / "agentfield.yaml"
+    db_path = data_dir / "playground.db"
+    kv_path = data_dir / "playground.bolt"
+    config_path = playground_home / "agents.yaml"
 
-    _write_agentfield_config(config_path, db_path, kv_path)
+    _write_playground_config(config_path, db_path, kv_path)
 
     port = _find_free_port()
     base_url = f"http://127.0.0.1:{port}"
@@ -141,13 +141,13 @@ def agentfield_server(
     env = os.environ.copy()
     env.update(
         {
-            "AGENTFIELD_HOME": str(agentfield_home),
-            "AGENTFIELD_STORAGE_MODE": "local",
+            "AGENTS_HOME": str(playground_home),
+            "AGENTS_STORAGE_MODE": "local",
         }
     )
 
     cmd = [
-        str(agentfield_binary),
+        str(playground_binary),
         "server",
         "--backend-only",
         "--port",
@@ -157,7 +157,7 @@ def agentfield_server(
         "--no-vc-execution",
     ]
 
-    log_path = agentfield_home / "agentfield.log"
+    log_path = playground_home / "playground.log"
     log_file = log_path.open("w")
 
     process = subprocess.Popen(
@@ -165,7 +165,7 @@ def agentfield_server(
         stdout=log_file,
         stderr=subprocess.STDOUT,
         env=env,
-        cwd=agentfield_go_root,
+        cwd=playground_go_root,
     )
 
     try:
@@ -173,7 +173,7 @@ def agentfield_server(
         deadline = time.time() + 60
         while time.time() < deadline:
             if process.poll() is not None:
-                raise RuntimeError("AgentField server exited before becoming healthy")
+                raise RuntimeError("Playground server exited before becoming healthy")
             try:
                 response = requests.get(health_url, timeout=1.0)
                 if response.status_code == 200:
@@ -182,10 +182,10 @@ def agentfield_server(
                 pass
             time.sleep(0.5)
         else:
-            raise RuntimeError("AgentField server did not become healthy in time")
+            raise RuntimeError("Playground server did not become healthy in time")
 
-        yield AgentFieldServerInfo(
-            base_url=base_url, port=port, agentfield_home=agentfield_home
+        yield PlaygroundServerInfo(
+            base_url=base_url, port=port, playground_home=playground_home
         )
 
     finally:

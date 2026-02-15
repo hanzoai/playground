@@ -1,11 +1,11 @@
-# AgentField Go SDK
+# Playground Go SDK
 
-The AgentField Go SDK provides idiomatic Go bindings for interacting with the AgentField control plane.
+The Playground Go SDK provides idiomatic Go bindings for interacting with the Playground control plane.
 
 ## Installation
 
 ```bash
-go get github.com/Agent-Field/agentfield/sdk/go
+go get github.com/hanzoai/playground/sdk/go
 ```
 
 ## Quick Start
@@ -17,13 +17,13 @@ import (
     "context"
     "log"
 
-    agentfieldagent "github.com/Agent-Field/agentfield/sdk/go/agent"
+    playgroundagent "github.com/hanzoai/playground/sdk/go/agent"
 )
 
 func main() {
-    agent, err := agentfieldagent.New(agentfieldagent.Config{
+    agent, err := playgroundagent.New(playgroundagent.Config{
         NodeID:   "example-agent",
-        AgentFieldURL: "http://localhost:8080",
+        PlaygroundURL: "http://localhost:8080",
     })
     if err != nil {
         log.Fatal(err)
@@ -41,8 +41,8 @@ func main() {
 
 ## Modules
 
-- `agent`: Build AgentField-compatible agents and register reasoners/skills.
-- `client`: Low-level HTTP client for the AgentField control plane.
+- `agent`: Build Playground-compatible agents and register reasoners/skills.
+- `client`: Low-level HTTP client for the Playground control plane.
 - `types`: Shared data structures and contracts.
 - `ai`: Helpers for interacting with AI providers via the control plane.
 

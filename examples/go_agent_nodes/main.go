@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Agent-Field/agentfield/sdk/go/agent"
+	"github.com/hanzoai/playground/sdk/go/agent"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 		nodeID = "my-agent"
 	}
 
-	agentFieldURL := strings.TrimSpace(os.Getenv("AGENTFIELD_URL"))
+	playgroundURL := strings.TrimSpace(os.Getenv("AGENTS_URL"))
 	listenAddr := strings.TrimSpace(os.Getenv("AGENT_LISTEN_ADDR"))
 	if listenAddr == "" {
 		listenAddr = ":8001"
@@ -30,8 +30,8 @@ func main() {
 	cfg := agent.Config{
 		NodeID:        nodeID,
 		Version:       "1.0.0",
-		AgentFieldURL: agentFieldURL, // optional for CLI-only
-		Token:         os.Getenv("AGENTFIELD_TOKEN"),
+		PlaygroundURL: playgroundURL, // optional for CLI-only
+		Token:         os.Getenv("AGENTS_TOKEN"),
 		ListenAddress: listenAddr,
 		PublicURL:     publicURL,
 		CLIConfig: &agent.CLIConfig{
@@ -39,8 +39,8 @@ func main() {
 			AppDescription: "Go SDK hello-world with CLI + control plane",
 			HelpPreamble:   "Pass --set message=YourName to customize the greeting.",
 			EnvironmentVars: []string{
-				"AGENTFIELD_URL (optional) Control plane URL for server mode",
-				"AGENTFIELD_TOKEN (optional) Bearer token",
+				"AGENTS_URL (optional) Control plane URL for server mode",
+				"AGENTS_TOKEN (optional) Bearer token",
 				"AGENT_NODE_ID (optional) Override node id (default: my-agent)",
 			},
 		},
@@ -51,7 +51,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	hasControlPlane := strings.TrimSpace(cfg.AgentFieldURL) != ""
+	hasControlPlane := strings.TrimSpace(cfg.PlaygroundURL) != ""
 
 	addEmojiLocal := func(message string) map[string]any {
 		trimmed := strings.TrimSpace(message)
@@ -104,7 +104,7 @@ func main() {
 	hello.RegisterReasoner("demo_echo", func(ctx context.Context, input map[string]any) (any, error) {
 		message := strings.TrimSpace(fmt.Sprintf("%v", input["message"]))
 		if message == "" || message == "<nil>" {
-			message = "Agentfield"
+			message = "Playground"
 		}
 
 		if hasControlPlane {

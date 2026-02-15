@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 func TestLocalStorageStoreWorkflowExecutionPersistsLifecycleFields(t *testing.T) {
@@ -17,8 +17,8 @@ func TestLocalStorageStoreWorkflowExecutionPersistsLifecycleFields(t *testing.T)
 	cfg := StorageConfig{
 		Mode: "local",
 		Local: LocalStorageConfig{
-			DatabasePath: filepath.Join(tempDir, "agentfield.db"),
-			KVStorePath:  filepath.Join(tempDir, "agentfield.bolt"),
+			DatabasePath: filepath.Join(tempDir, "agents.db"),
+			KVStorePath:  filepath.Join(tempDir, "agents.bolt"),
 		},
 	}
 
@@ -50,14 +50,14 @@ func TestLocalStorageStoreWorkflowExecutionPersistsLifecycleFields(t *testing.T)
 	}
 
 	execID := "exec_test"
-	agentfieldRequestID := "req_test"
+	agentsRequestID := "req_test"
 	agentID := "agent_1"
 	reasonerID := "reasoner.alpha"
 
 	exec := &types.WorkflowExecution{
 		WorkflowID:          workflowID,
 		ExecutionID:         execID,
-		AgentFieldRequestID: agentfieldRequestID,
+		AgentsRequestID: agentsRequestID,
 		RunID:               &runID,
 		AgentNodeID:         agentID,
 		ReasonerID:          reasonerID,

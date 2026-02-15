@@ -1,4 +1,4 @@
-import { AgentRouter } from '@agentfield/sdk';
+import { AgentRouter } from '@playground/sdk';
 import { z } from 'zod';
 
 // Group related reasoners with a router

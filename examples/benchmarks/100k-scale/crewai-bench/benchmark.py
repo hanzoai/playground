@@ -2,7 +2,7 @@
 """
 CrewAI Benchmark
 
-Measures equivalent operations to AgentField for fair comparison.
+Measures equivalent operations to Playground for fair comparison.
 Uses CrewAI's tool registration as the comparable operation.
 """
 

@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agentfield.agent_ai import AgentAI
-from agentfield.media_providers import (
+from playground.agent_ai import AgentAI
+from playground.media_providers import (
     FalProvider,
     LiteLLMProvider,
     OpenRouterProvider,
@@ -23,13 +23,13 @@ from agentfield.media_providers import (
     get_provider,
     register_provider,
 )
-from agentfield.multimodal_response import (
+from playground.multimodal_response import (
     AudioOutput,
     ImageOutput,
     FileOutput,
     MultimodalResponse,
 )
-from agentfield.types import AIConfig
+from playground.types import AIConfig
 
 
 # =============================================================================
@@ -307,7 +307,7 @@ class TestAgentAIProviderRouting:
         assert ai._fal_provider_instance is None
 
         # Access the property to trigger initialization
-        with patch("agentfield.media_providers.FalProvider") as mock_fal:
+        with patch("playground.media_providers.FalProvider") as mock_fal:
             mock_fal.return_value = MagicMock()
             provider = ai._fal_provider
             assert provider is not None
@@ -317,7 +317,7 @@ class TestAgentAIProviderRouting:
         """_fal_provider should be cached after first access."""
         ai = AgentAI(agent_with_ai)
 
-        with patch("agentfield.media_providers.FalProvider") as mock_fal:
+        with patch("playground.media_providers.FalProvider") as mock_fal:
             mock_provider = MagicMock()
             mock_fal.return_value = mock_provider
 

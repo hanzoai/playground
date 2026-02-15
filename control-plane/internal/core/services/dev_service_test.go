@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,7 +88,7 @@ func TestNewDevService(t *testing.T) {
 	assert.Equal(t, fileSystem, ds.fileSystem)
 }
 
-func TestRunInDevMode_NoAgentfieldYaml(t *testing.T) {
+func TestRunInDevMode_NoAgentsYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 	packagePath := filepath.Join(tmpDir, "test-package")
 	require.NoError(t, os.MkdirAll(packagePath, 0755))
@@ -97,7 +97,7 @@ func TestRunInDevMode_NoAgentfieldYaml(t *testing.T) {
 	portManager := newMockPortManager()
 	fileSystem := newMockFileSystemAdapter()
 
-	// Mock file system to report agentfield.yaml doesn't exist
+	// Mock file system to report agents.yaml doesn't exist
 	fileSystem.existsFunc = func(path string) bool {
 		return false
 	}
@@ -113,25 +113,25 @@ func TestRunInDevMode_NoAgentfieldYaml(t *testing.T) {
 
 	err := service.RunInDevMode(packagePath, options)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no agentfield.yaml found")
+	assert.Contains(t, err.Error(), "no agents.yaml found")
 }
 
-func TestRunInDevMode_AgentfieldYamlExists(t *testing.T) {
+func TestRunInDevMode_AgentsYamlExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	packagePath := filepath.Join(tmpDir, "test-package")
 	require.NoError(t, os.MkdirAll(packagePath, 0755))
 
-	agentfieldYamlPath := filepath.Join(packagePath, "agentfield.yaml")
-	agentfieldYamlContent := []byte("name: test-package\nversion: 1.0.0")
-	require.NoError(t, os.WriteFile(agentfieldYamlPath, agentfieldYamlContent, 0644))
+	agentsYamlPath := filepath.Join(packagePath, "agents.yaml")
+	agentsYamlContent := []byte("name: test-package\nversion: 1.0.0")
+	require.NoError(t, os.WriteFile(agentsYamlPath, agentsYamlContent, 0644))
 
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
 	fileSystem := newMockFileSystemAdapter()
 
-	// Mock file system to report agentfield.yaml exists
+	// Mock file system to report agents.yaml exists
 	fileSystem.existsFunc = func(path string) bool {
-		return path == agentfieldYamlPath
+		return path == agentsYamlPath
 	}
 
 	service := NewDevService(processManager, portManager, fileSystem).(*DefaultDevService)
@@ -144,11 +144,11 @@ func TestRunInDevMode_AgentfieldYamlExists(t *testing.T) {
 	}
 
 	// This will fail at startDevProcess or discoverAgentPort since we can't easily mock exec.Cmd
-	// But we verify it gets past the agentfield.yaml check
+	// But we verify it gets past the agents.yaml check
 	err := service.RunInDevMode(packagePath, options)
-	// The error should be about process startup or port discovery, not about agentfield.yaml
+	// The error should be about process startup or port discovery, not about agents.yaml
 	if err != nil {
-		assert.NotContains(t, err.Error(), "no agentfield.yaml found")
+		assert.NotContains(t, err.Error(), "no agents.yaml found")
 	}
 }
 

@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 // StatusManagerConfig holds configuration for the status manager

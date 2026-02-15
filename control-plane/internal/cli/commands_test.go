@@ -280,8 +280,8 @@ func TestRootCommandConfigFile(t *testing.T) {
 	resetCLIStateForTest()
 
 	configDir := t.TempDir()
-	configPath := filepath.Join(configDir, "agentfield.yaml")
-	configContent := `agentfield:
+	configPath := filepath.Join(configDir, "agents.yaml")
+	configContent := `agents:
   port: 7000
   storage:
     mode: local

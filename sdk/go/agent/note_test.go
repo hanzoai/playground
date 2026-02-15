@@ -39,7 +39,7 @@ func TestNote_Basic(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL + "/api/v1", // Will be converted to /api/ui/v1
+		PlaygroundURL: server.URL + "/api/v1", // Will be converted to /api/ui/v1
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -97,7 +97,7 @@ func TestNotef_Formatted(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL + "/api/v1",
+		PlaygroundURL: server.URL + "/api/v1",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -134,7 +134,7 @@ func TestNote_NoTags(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL + "/api/v1",
+		PlaygroundURL: server.URL + "/api/v1",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -158,13 +158,13 @@ func TestNote_NoTags(t *testing.T) {
 	assert.Equal(t, []string{}, receivedPayload.Tags)
 }
 
-func TestNote_NoAgentFieldURL(t *testing.T) {
-	// Agent without AgentFieldURL should not send notes
+func TestNote_NoPlaygroundURL(t *testing.T) {
+	// Agent without PlaygroundURL should not send notes
 	cfg := Config{
 		NodeID:  "test-node",
 		Version: "1.0.0",
 		Logger:  log.New(io.Discard, "", 0),
-		// No AgentFieldURL
+		// No PlaygroundURL
 	}
 
 	agent, err := New(cfg)
@@ -191,7 +191,7 @@ func TestNote_ServerError(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL + "/api/v1",
+		PlaygroundURL: server.URL + "/api/v1",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -222,17 +222,17 @@ func TestNote_URLConversion(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		agentFieldURL  string
+		playgroundURL  string
 		expectedPath   string
 	}{
 		{
 			name:          "Standard /api/v1 URL",
-			agentFieldURL: server.URL + "/api/v1",
+			playgroundURL: server.URL + "/api/v1",
 			expectedPath:  "/api/ui/v1/executions/note",
 		},
 		{
 			name:          "URL without /api/v1",
-			agentFieldURL: server.URL,
+			playgroundURL: server.URL,
 			expectedPath:  "/api/ui/v1/executions/note",
 		},
 	}
@@ -245,7 +245,7 @@ func TestNote_URLConversion(t *testing.T) {
 			cfg := Config{
 				NodeID:        "test-node",
 				Version:       "1.0.0",
-				AgentFieldURL: tt.agentFieldURL,
+				PlaygroundURL: tt.playgroundURL,
 				Logger:        log.New(io.Discard, "", 0),
 			}
 
@@ -282,7 +282,7 @@ func TestNote_WithToken(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL + "/api/v1",
+		PlaygroundURL: server.URL + "/api/v1",
 		Token:         "test-token-123",
 		Logger:        log.New(io.Discard, "", 0),
 	}
@@ -316,7 +316,7 @@ func TestNote_FireAndForget(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: slowServer.URL + "/api/v1",
+		PlaygroundURL: slowServer.URL + "/api/v1",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -350,7 +350,7 @@ func TestNote_MultipleNotes(t *testing.T) {
 	cfg := Config{
 		NodeID:        "test-node",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL + "/api/v1",
+		PlaygroundURL: server.URL + "/api/v1",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 

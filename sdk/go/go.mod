@@ -1,4 +1,4 @@
-module github.com/Agent-Field/agentfield/sdk/go
+module github.com/hanzoai/playground/sdk/go
 
 go 1.21
 

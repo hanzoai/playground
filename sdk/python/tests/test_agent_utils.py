@@ -1,7 +1,7 @@
 import pytest
 from pydantic import BaseModel
 
-from agentfield.agent_utils import AgentUtils
+from playground.agent_utils import AgentUtils
 
 
 def test_detect_input_type_and_helpers(tmp_path):

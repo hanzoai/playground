@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Agent } from '../src/agent/Agent.js';
 
 /**
- * Memory Performance Tests for AgentField TypeScript SDK
+ * Memory Performance Tests for Playground TypeScript SDK
  *
  * These tests validate memory efficiency of SDK components and establish
  * baseline metrics for regression testing.

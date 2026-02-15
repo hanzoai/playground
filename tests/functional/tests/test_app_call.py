@@ -19,7 +19,7 @@ async def test_cross_agent_app_call_workflow(async_http_client):
     )
 
     async with run_agent_server(worker), run_agent_server(orchestrator):
-        payload = {"input": {"text": "AgentField rocks"}}
+        payload = {"input": {"text": "Playground rocks"}}
 
         response = await async_http_client.post(
             f"/api/v1/reasoners/{orchestrator.node_id}.delegate_pipeline",
@@ -31,8 +31,8 @@ async def test_cross_agent_app_call_workflow(async_http_client):
         body = response.json()
         result = body["result"]
 
-        assert result["original"] == "AgentField rocks"
+        assert result["original"] == "Playground rocks"
         delegated = result["delegated"]
-        assert delegated["upper"] == "AGENTFIELD ROCKS"
-        assert delegated["length"] == len("AgentField rocks")
+        assert delegated["upper"] == "AGENTS ROCKS"
+        assert delegated["length"] == len("Playground rocks")
         assert result["tokens"] == 2

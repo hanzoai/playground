@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -68,8 +68,8 @@ func TestLocalStorageCleanupWorkflowByRunID(t *testing.T) {
 	cfg := StorageConfig{
 		Mode: "local",
 		Local: LocalStorageConfig{
-			DatabasePath: filepath.Join(tempDir, "agentfield.db"),
-			KVStorePath:  filepath.Join(tempDir, "agentfield.bolt"),
+			DatabasePath: filepath.Join(tempDir, "agents.db"),
+			KVStorePath:  filepath.Join(tempDir, "agents.bolt"),
 		},
 	}
 
@@ -117,7 +117,7 @@ func TestLocalStorageCleanupWorkflowByRunID(t *testing.T) {
 	exec := &types.WorkflowExecution{
 		WorkflowID:          workflowID,
 		ExecutionID:         "exec_cleanup_test",
-		AgentFieldRequestID: "req_cleanup_test",
+		AgentsRequestID: "req_cleanup_test",
 		RunID:               &runID,
 		AgentNodeID:         "agent_cleanup",
 		ReasonerID:          "reasoner.cleanup",
@@ -254,8 +254,8 @@ func TestLocalStorageCleanupOldExecutions(t *testing.T) {
 	cfg := StorageConfig{
 		Mode: "local",
 		Local: LocalStorageConfig{
-			DatabasePath: filepath.Join(tempDir, "agentfield.db"),
-			KVStorePath:  filepath.Join(tempDir, "agentfield.bolt"),
+			DatabasePath: filepath.Join(tempDir, "agents.db"),
+			KVStorePath:  filepath.Join(tempDir, "agents.bolt"),
 		},
 	}
 
@@ -278,7 +278,7 @@ func TestLocalStorageCleanupOldExecutions(t *testing.T) {
 		exec := &types.WorkflowExecution{
 			WorkflowID:          workflowID,
 			ExecutionID:         executionID,
-			AgentFieldRequestID: executionID + "_req",
+			AgentsRequestID: executionID + "_req",
 			AgentNodeID:         "agent",
 			ReasonerID:          "reasoner",
 			Status:              "completed",

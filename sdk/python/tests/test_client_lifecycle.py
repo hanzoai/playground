@@ -3,8 +3,8 @@ import sys
 import types
 from typing import Any, Dict
 
-from agentfield.client import AgentFieldClient
-from agentfield.types import AgentStatus, HeartbeatData
+from playground.client import PlaygroundClient
+from playground.types import AgentStatus, HeartbeatData
 
 
 class DummyResponse:
@@ -29,11 +29,11 @@ def test_send_enhanced_heartbeat_sync_success_and_failure(monkeypatch):
         sent["calls"] += 1
         return DummyResponse(200)
 
-    import agentfield.client as client_mod
+    import playground.client as client_mod
 
     monkeypatch.setattr(client_mod.requests, "post", ok_post)
 
-    bc = AgentFieldClient(base_url="http://example")
+    bc = PlaygroundClient(base_url="http://example")
     hb = HeartbeatData(status=AgentStatus.READY, mcp_servers=[], timestamp="now")
     assert bc.send_enhanced_heartbeat_sync("node1", hb) is True
 
@@ -45,13 +45,13 @@ def test_send_enhanced_heartbeat_sync_success_and_failure(monkeypatch):
 
 
 def test_notify_graceful_shutdown_sync(monkeypatch):
-    import agentfield.client as client_mod
+    import playground.client as client_mod
 
     def ok_post(url, headers, timeout):
         return DummyResponse(200)
 
     monkeypatch.setattr(client_mod.requests, "post", ok_post)
-    bc = AgentFieldClient(base_url="http://example")
+    bc = PlaygroundClient(base_url="http://example")
     assert bc.notify_graceful_shutdown_sync("node1") is True
 
     def bad_post(url, headers, timeout):
@@ -62,8 +62,8 @@ def test_notify_graceful_shutdown_sync(monkeypatch):
 
 
 def test_register_agent_with_status_async(monkeypatch):
-    # Provide a dummy httpx module that AgentFieldClient will use
-    from agentfield import client as client_mod
+    # Provide a dummy httpx module that PlaygroundClient will use
+    from playground import client as client_mod
 
     captured: Dict[str, Any] = {}
 
@@ -94,7 +94,7 @@ def test_register_agent_with_status_async(monkeypatch):
         raising=False,
     )
 
-    bc = AgentFieldClient(base_url="http://example")
+    bc = PlaygroundClient(base_url="http://example")
 
     async def run():
         return await bc.register_agent_with_status(

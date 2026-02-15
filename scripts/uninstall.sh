@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# AgentField CLI Uninstaller
-# Usage: curl -fsSL https://agentfield.ai/uninstall.sh | bash
+# Playground CLI Uninstaller
+# Usage: curl -fsSL https://playground.ai/uninstall.sh | bash
 # Or: bash scripts/uninstall.sh
 
 set -e
 
 # Configuration
-INSTALL_DIR="${AGENTFIELD_INSTALL_DIR:-$HOME/.agentfield}"
+INSTALL_DIR="${AGENTS_INSTALL_DIR:-$HOME/.hanzo/agents}"
 VERBOSE="${VERBOSE:-0}"
 
 # Color codes
@@ -44,19 +44,19 @@ print_verbose() {
 print_banner() {
   echo ""
   echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${CYAN}║${NC}           ${BOLD}AgentField CLI Uninstaller${NC}                      ${CYAN}║${NC}"
+  echo -e "${CYAN}║${NC}           ${BOLD}Playground CLI Uninstaller${NC}                      ${CYAN}║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
   echo ""
 }
 
-# Remove AgentField directory
-remove_agentfield_dir() {
+# Remove Playground directory
+remove_playground_dir() {
   if [[ -d "$INSTALL_DIR" ]]; then
     print_info "Removing $INSTALL_DIR..."
     rm -rf "$INSTALL_DIR"
-    print_success "AgentField directory removed"
+    print_success "Playground directory removed"
   else
-    print_warning "AgentField directory not found: $INSTALL_DIR"
+    print_warning "Playground directory not found: $INSTALL_DIR"
   fi
 }
 
@@ -87,17 +87,17 @@ remove_path_config() {
     if [[ -f "$config" ]]; then
       print_verbose "Checking $config..."
 
-      # Check if file contains AgentField PATH
-      if grep -q "\.agentfield" "$config" 2>/dev/null; then
-        print_info "Found AgentField PATH in $config"
+      # Check if file contains Playground PATH
+      if grep -q "\.hanzo/agents" "$config" 2>/dev/null; then
+        print_info "Found Playground PATH in $config"
 
         # Create backup
-        cp "$config" "$config.bak.agentfield"
-        print_verbose "Created backup: $config.bak.agentfield"
+        cp "$config" "$config.bak.hanzo/agents"
+        print_verbose "Created backup: $config.bak.hanzo/agents"
 
-        # Remove AgentField PATH entries
-        # This removes lines containing .agentfield and the comment line before it
-        sed -i.tmp '/# AgentField CLI/d; /\.agentfield/d' "$config"
+        # Remove Playground PATH entries
+        # This removes lines containing .hanzo/agents and the comment line before it
+        sed -i.tmp '/# Playground CLI/d; /\.hanzo/agents/d' "$config"
         rm -f "$config.tmp"
 
         print_success "Removed PATH configuration from $config"
@@ -115,9 +115,9 @@ remove_path_config() {
 main() {
   print_banner
 
-  # Check if AgentField is installed
+  # Check if Playground is installed
   if [[ ! -d "$INSTALL_DIR" ]]; then
-    print_warning "AgentField does not appear to be installed at $INSTALL_DIR"
+    print_warning "Playground does not appear to be installed at $INSTALL_DIR"
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -128,10 +128,10 @@ main() {
 
   # Confirm uninstall
   echo -e "${BOLD}This will remove:${NC}"
-  echo "  - AgentField directory: $INSTALL_DIR"
+  echo "  - Playground directory: $INSTALL_DIR"
   echo "  - PATH configuration from shell config files"
   echo ""
-  read -p "Are you sure you want to uninstall AgentField? (y/N) " -n 1 -r
+  read -p "Are you sure you want to uninstall Playground? (y/N) " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     print_info "Uninstall cancelled"
@@ -140,8 +140,8 @@ main() {
 
   echo ""
 
-  # Remove AgentField directory
-  remove_agentfield_dir
+  # Remove Playground directory
+  remove_playground_dir
 
   # Remove PATH configuration
   remove_path_config
@@ -149,7 +149,7 @@ main() {
   # Print success message
   echo ""
   echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${GREEN}║${NC}  ${BOLD}AgentField CLI uninstalled successfully!${NC}                  ${GREEN}║${NC}"
+  echo -e "${GREEN}║${NC}  ${BOLD}Playground CLI uninstalled successfully!${NC}                  ${GREEN}║${NC}"
   echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "${BOLD}Next steps:${NC}"
@@ -157,12 +157,12 @@ main() {
   echo "  1. Restart your terminal or reload your shell configuration"
   echo ""
   echo "  2. If you have backup files, you can restore them:"
-  echo -e "     ${CYAN}ls ~/*.bak.agentfield${NC}"
+  echo -e "     ${CYAN}ls ~/*.bak.hanzo/agents${NC}"
   echo ""
-  echo "  3. To reinstall AgentField:"
-  echo -e "     ${CYAN}curl -fsSL https://agentfield.ai/install.sh | bash${NC}"
+  echo "  3. To reinstall Playground:"
+  echo -e "     ${CYAN}curl -fsSL https://playground.ai/install.sh | bash${NC}"
   echo ""
-  echo "Thank you for using AgentField!"
+  echo "Thank you for using Playground!"
   echo ""
 }
 

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,7 +53,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 	}
 
 	// Get af server ID dynamically
-	agentfieldServerID, err := h.didService.GetAgentFieldServerID()
+	agentsServerID, err := h.didService.GetAgentsServerID()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
@@ -66,7 +66,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 	}
 
 	// Get DID registry for the af server (not the node)
-	registry, err := h.didService.GetRegistry(agentfieldServerID)
+	registry, err := h.didService.GetRegistry(agentsServerID)
 	if err != nil || registry == nil {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
@@ -100,7 +100,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"did":                  agentInfo.DID,
 		"agent_node_id":        nodeID,
-		"agentfield_server_id": registry.AgentFieldServerID,
+		"agents_server_id": registry.AgentsServerID,
 		"public_key_jwk":       agentInfo.PublicKeyJWK,
 		"derivation_path":      agentInfo.DerivationPath,
 		"reasoners":            agentInfo.Reasoners,
@@ -634,7 +634,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 			"component_dids":    []interface{}{},
 			"resolution_metadata": gin.H{
 				"resolved_at": time.Now().Format(time.RFC3339),
-				"resolver":    "agentfield-server",
+				"resolver":    "agents-server",
 				"status":      "inactive",
 			},
 		})
@@ -676,7 +676,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 						{
 							"id":              did + "#agent-service",
 							"type":            "AgentService",
-							"serviceEndpoint": fmt.Sprintf("https://agentfield-server/agents/%s", agentDID.AgentNodeID),
+							"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.AgentNodeID),
 						},
 					},
 				}
@@ -694,7 +694,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 				serviceEndpoints = append(serviceEndpoints, gin.H{
 					"id":              did + "#agent-service",
 					"type":            "AgentService",
-					"serviceEndpoint": fmt.Sprintf("https://agentfield-server/agents/%s", agentDID.AgentNodeID),
+					"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.AgentNodeID),
 				})
 
 				// Add component DIDs (reasoners and skills)
@@ -751,7 +751,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 							{
 								"id":              did + "#component-service",
 								"type":            fmt.Sprintf("%sService", componentDID.ComponentType),
-								"serviceEndpoint": fmt.Sprintf("https://agentfield-server/components/%s", componentDID.ComponentID),
+								"serviceEndpoint": fmt.Sprintf("https://agents-server/components/%s", componentDID.ComponentID),
 							},
 						},
 					}
@@ -760,7 +760,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 					serviceEndpoints = append(serviceEndpoints, gin.H{
 						"id":              did + "#component-service",
 						"type":            fmt.Sprintf("%sService", componentDID.ComponentType),
-						"serviceEndpoint": fmt.Sprintf("https://agentfield-server/components/%s", componentDID.ComponentID),
+						"serviceEndpoint": fmt.Sprintf("https://agents-server/components/%s", componentDID.ComponentID),
 					})
 
 					break
@@ -796,9 +796,9 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 	// Build resolution metadata
 	resolutionMetadata := gin.H{
 		"resolved_at": time.Now().Format(time.RFC3339),
-		"resolver":    "agentfield-server",
+		"resolver":    "agents-server",
 		"status":      resolutionStatus,
-		"method":      "agentfield",
+		"method":      "agents",
 	}
 
 	if resolutionStatus == "resolved" {
@@ -844,8 +844,8 @@ func (h *DIDHandler) DownloadDIDResolutionBundleHandler(c *gin.Context) {
 		"did": did,
 		"resolution_metadata": gin.H{
 			"resolved_at": time.Now().Format(time.RFC3339),
-			"resolver":    "agentfield-server",
-			"method":      "agentfield",
+			"resolver":    "agents-server",
+			"method":      "agents",
 		},
 		"bundle_type":  "did_resolution",
 		"generated_at": time.Now().Format(time.RFC3339),

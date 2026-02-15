@@ -26,10 +26,10 @@ controlPlane:
     postgresUrl: ""
 
   env:
-    AGENTFIELD_HOME: /data
+    AGENTS_HOME: /data
     # Use defaults + env vars (avoids relying on a bundled config file).
     # You can set this to a real path if you mount your own config.
-    AGENTFIELD_CONFIG_FILE: /dev/null
+    AGENTS_CONFIG_FILE: /dev/null
 
   extraEnv: []
 

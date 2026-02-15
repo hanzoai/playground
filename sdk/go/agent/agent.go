@@ -18,14 +18,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Agent-Field/agentfield/sdk/go/ai"
-	"github.com/Agent-Field/agentfield/sdk/go/client"
-	"github.com/Agent-Field/agentfield/sdk/go/types"
+	"github.com/hanzoai/playground/sdk/go/ai"
+	"github.com/hanzoai/playground/sdk/go/client"
+	"github.com/hanzoai/playground/sdk/go/types"
 )
 
 type executionContextKey struct{}
 
-// ExecutionContext captures the headers AgentField sends with each execution request.
+// ExecutionContext captures the headers Playground sends with each execution request.
 type ExecutionContext struct {
 	RunID             string
 	ExecutionID       string
@@ -126,11 +126,11 @@ type Config struct {
 	// Default: "default" (if empty, New() sets it to "default").
 	TeamID string
 
-	// AgentFieldURL is the base URL of the AgentField control plane server.
+	// PlaygroundURL is the base URL of the Playground control plane server.
 	// Optional for local-only or serverless usage, required when registering
 	// with a control plane or making cross-node calls. Default: empty.
-	// Format: a valid HTTP/HTTPS URL, e.g. "https://agentfield.example.com".
-	AgentFieldURL string
+	// Format: a valid HTTP/HTTPS URL, e.g. "https://playground.example.com".
+	PlaygroundURL string
 
 	// ListenAddress is the network address the agent HTTP server binds to.
 	// Optional. Default: ":8001" (if empty, New() sets it to ":8001").
@@ -269,8 +269,8 @@ func New(cfg Config) (*Agent, error) {
 		logger:     cfg.Logger,
 	}
 
-	if strings.TrimSpace(cfg.AgentFieldURL) != "" {
-		c, err := client.New(cfg.AgentFieldURL, client.WithHTTPClient(httpClient), client.WithBearerToken(cfg.Token))
+	if strings.TrimSpace(cfg.PlaygroundURL) != "" {
+		c, err := client.New(cfg.PlaygroundURL, client.WithHTTPClient(httpClient), client.WithBearerToken(cfg.Token))
 		if err != nil {
 			return nil, err
 		}
@@ -398,7 +398,7 @@ func (a *Agent) RegisterReasoner(name string, handler HandlerFunc, opts ...Reaso
 	a.reasoners[name] = meta
 }
 
-// Initialize registers the agent with the AgentField control plane without starting a listener.
+// Initialize registers the agent with the Playground control plane without starting a listener.
 func (a *Agent) Initialize(ctx context.Context) error {
 	a.initMu.Lock()
 	defer a.initMu.Unlock()
@@ -408,7 +408,7 @@ func (a *Agent) Initialize(ctx context.Context) error {
 	}
 
 	if a.client == nil {
-		return errors.New("AgentFieldURL is required when running in server mode")
+		return errors.New("PlaygroundURL is required when running in server mode")
 	}
 
 	if len(a.reasoners) == 0 {
@@ -509,7 +509,7 @@ func (a *Agent) registerNode(ctx context.Context) error {
 		return err
 	}
 
-	a.logger.Printf("node %s registered with AgentField", a.cfg.NodeID)
+	a.logger.Printf("node %s registered with Playground", a.cfg.NodeID)
 	return nil
 }
 
@@ -833,7 +833,7 @@ func (a *Agent) handleReasoner(w http.ResponseWriter, r *http.Request) {
 
 	// In serverless mode we want a synchronous execution so the control plane can return
 	// the result immediately; skip the async path even if an execution ID is present.
-	if a.cfg.DeploymentType != "serverless" && execCtx.ExecutionID != "" && strings.TrimSpace(a.cfg.AgentFieldURL) != "" {
+	if a.cfg.DeploymentType != "serverless" && execCtx.ExecutionID != "" && strings.TrimSpace(a.cfg.PlaygroundURL) != "" {
 		go a.executeReasonerAsync(reasoner, cloneInputMap(input), execCtx)
 		writeJSON(w, http.StatusAccepted, map[string]any{
 			"status":        "processing",
@@ -902,9 +902,9 @@ func (a *Agent) executeReasonerAsync(reasoner *Reasoner, input map[string]any, e
 }
 
 func (a *Agent) sendExecutionStatus(executionID string, payload map[string]any) error {
-	base := strings.TrimSpace(a.cfg.AgentFieldURL)
+	base := strings.TrimSpace(a.cfg.PlaygroundURL)
 	if executionID == "" || base == "" {
-		return fmt.Errorf("missing execution id or AgentField URL")
+		return fmt.Errorf("missing execution id or Playground URL")
 	}
 	callbackURL := strings.TrimSuffix(base, "/") + "/api/v1/executions/" + url.PathEscape(executionID) + "/status"
 	payloadBytes, err := json.Marshal(payload)
@@ -945,10 +945,10 @@ func (a *Agent) postExecutionStatus(ctx context.Context, callbackURL string, pay
 	return lastErr
 }
 
-// Call invokes another reasoner via the AgentField control plane, preserving execution context.
+// Call invokes another reasoner via the Playground control plane, preserving execution context.
 func (a *Agent) Call(ctx context.Context, target string, input map[string]any) (map[string]any, error) {
-	if strings.TrimSpace(a.cfg.AgentFieldURL) == "" {
-		return nil, errors.New("AgentFieldURL is required to call other reasoners")
+	if strings.TrimSpace(a.cfg.PlaygroundURL) == "" {
+		return nil, errors.New("PlaygroundURL is required to call other reasoners")
 	}
 
 	if !strings.Contains(target, ".") {
@@ -967,7 +967,7 @@ func (a *Agent) Call(ctx context.Context, target string, input map[string]any) (
 		return nil, fmt.Errorf("marshal call payload: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/execute/%s", strings.TrimSuffix(a.cfg.AgentFieldURL, "/"), strings.TrimPrefix(target, "/"))
+	url := fmt.Sprintf("%s/api/v1/execute/%s", strings.TrimSuffix(a.cfg.PlaygroundURL, "/"), strings.TrimPrefix(target, "/"))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
@@ -1037,7 +1037,7 @@ func (a *Agent) emitWorkflowEvent(
 	err error,
 	durationMS int64,
 ) {
-	if strings.TrimSpace(a.cfg.AgentFieldURL) == "" {
+	if strings.TrimSpace(a.cfg.PlaygroundURL) == "" {
 		return
 	}
 
@@ -1076,7 +1076,7 @@ func (a *Agent) emitWorkflowEvent(
 }
 
 func (a *Agent) sendWorkflowEvent(event types.WorkflowExecutionEvent) error {
-	url := strings.TrimSuffix(a.cfg.AgentFieldURL, "/") + "/api/v1/workflow/executions/events"
+	url := strings.TrimSuffix(a.cfg.PlaygroundURL, "/") + "/api/v1/workflow/executions/events"
 
 	body, err := json.Marshal(event)
 	if err != nil {

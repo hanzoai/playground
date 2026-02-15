@@ -1,4 +1,4 @@
-// agentfield/internal/core/domain/models.go
+// agents/internal/core/domain/models.go
 package domain
 
 import "time"
@@ -56,8 +56,8 @@ type InstalledPackage struct {
 	InstalledAt time.Time         `json:"installed_at"`
 }
 
-// AgentFieldConfig represents the AgentField configuration
-type AgentFieldConfig struct {
+// AgentsConfig represents the Agents configuration
+type AgentsConfig struct {
 	HomeDir     string            `json:"home_dir"`
 	Environment map[string]string `json:"environment"`
 	MCP         MCPConfig         `json:"mcp"`

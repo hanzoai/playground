@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/cli/framework"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/cli/framework"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ func (cmd *DevCommand) GetName() string {
 }
 
 func (cmd *DevCommand) GetDescription() string {
-	return "Run a AgentField agent package in development mode"
+	return "Run a Agents agent package in development mode"
 }
 
 func (cmd *DevCommand) BuildCobraCommand() *cobra.Command {
@@ -36,10 +36,10 @@ func (cmd *DevCommand) BuildCobraCommand() *cobra.Command {
 	cobraCmd := &cobra.Command{
 		Use:   "dev [path]",
 		Short: cmd.GetDescription(),
-		Long: `Run a AgentField agent package in development mode from the current directory or specified path.
+		Long: `Run a Agents agent package in development mode from the current directory or specified path.
 
 This command is designed for local development and testing. It will:
-- Look for agentfield.yaml in the current directory (or specified path)
+- Look for agents.yaml in the current directory (or specified path)
 - Start the agent without requiring installation
 - Provide verbose logging for development
 - Optionally watch for file changes and auto-restart
@@ -71,7 +71,7 @@ func (cmd *DevCommand) execute(args []string, port int, watch, verbose bool) err
 		packagePath = "."
 	}
 
-	cmd.output.PrintHeader("🚀 AgentField Development Mode")
+	cmd.output.PrintHeader("🚀 Agents Development Mode")
 	cmd.output.PrintInfo(fmt.Sprintf("Package path: %s", packagePath))
 
 	// Create dev options

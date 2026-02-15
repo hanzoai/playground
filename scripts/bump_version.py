@@ -15,8 +15,8 @@ from typing import Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = REPO_ROOT / "VERSION"
 PYPROJECT_FILE = REPO_ROOT / "sdk/python/pyproject.toml"
-PY_INIT_FILE = REPO_ROOT / "sdk/python/agentfield/__init__.py"
-PKG_INFO_FILE = REPO_ROOT / "sdk/python/agentfield.egg-info/PKG-INFO"
+PY_INIT_FILE = REPO_ROOT / "sdk/python/playground/__init__.py"
+PKG_INFO_FILE = REPO_ROOT / "sdk/python/playground.egg-info/PKG-INFO"
 TS_PACKAGE_JSON = REPO_ROOT / "sdk/typescript/package.json"
 GO_TEMPLATE_FILE = REPO_ROOT / "control-plane/internal/templates/go/go.mod.tmpl"
 REQUIREMENT_FILES = [
@@ -155,19 +155,19 @@ def update_requirements(version: SemVer) -> None:
         lines = path.read_text(encoding="utf-8").splitlines()
         replaced = False
         for idx, line in enumerate(lines):
-            if line.strip().startswith("agentfield"):
-                lines[idx] = f"agentfield>={version}"
+            if line.strip().startswith("playground"):
+                lines[idx] = f"playground>={version}"
                 replaced = True
                 break
         if not replaced:
-            raise RuntimeError(f"Failed to update agentfield pin in {path}")
+            raise RuntimeError(f"Failed to update playground pin in {path}")
         write_file(path, "\n".join(lines) + "\n")
 
 
 def update_go_template(version: SemVer) -> None:
     text = GO_TEMPLATE_FILE.read_text(encoding="utf-8")
     new_text, count = re.subn(
-        r"(require\s+github\.com/Agent-Field/agentfield/sdk/go\s+v)[0-9A-Za-z\.-]+",
+        r"(require\s+github\.com/hanzoai/playground/sdk/go\s+v)[0-9A-Za-z\.-]+",
         rf"\g<1>{version}",
         text,
         count=1,

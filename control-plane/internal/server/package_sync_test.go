@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -14,8 +14,8 @@ import (
 func TestSyncPackagesFromRegistryStoresMissingPackages(t *testing.T) {
 	t.Parallel()
 
-	agentfieldHome := t.TempDir()
-	pkgDir := filepath.Join(agentfieldHome, "example-agent")
+	agentsHome := t.TempDir()
+	pkgDir := filepath.Join(agentsHome, "example-agent")
 	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
 
 	installed := `installed:
@@ -27,17 +27,17 @@ func TestSyncPackagesFromRegistryStoresMissingPackages(t *testing.T) {
     source: local
     status: installed
 `
-	require.NoError(t, os.WriteFile(filepath.Join(agentfieldHome, "installed.yaml"), []byte(installed), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(agentsHome, "installed.yaml"), []byte(installed), 0o644))
 
 	packageYAML := `name: Example Agent
 version: 1.0.0
 schema:
   type: object
 `
-	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "agentfield-package.yaml"), []byte(packageYAML), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "agents-package.yaml"), []byte(packageYAML), 0o644))
 
 	storage := newStubPackageStorage()
-	require.NoError(t, SyncPackagesFromRegistry(agentfieldHome, storage))
+	require.NoError(t, SyncPackagesFromRegistry(agentsHome, storage))
 
 	pkg, ok := storage.packages["example-agent"]
 	require.True(t, ok)
@@ -48,20 +48,20 @@ schema:
 func TestSyncPackagesSkipsExistingEntries(t *testing.T) {
 	t.Parallel()
 
-	agentfieldHome := t.TempDir()
+	agentsHome := t.TempDir()
 	installed := `installed:
   existing-agent:
     name: Existing
     version: 0.1.0
     description: already present
-    path: ` + agentfieldHome + `
+    path: ` + agentsHome + `
 `
-	require.NoError(t, os.WriteFile(filepath.Join(agentfieldHome, "installed.yaml"), []byte(installed), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(agentsHome, "installed.yaml"), []byte(installed), 0o644))
 
 	storage := newStubPackageStorage()
 	storage.packages["existing-agent"] = &types.AgentPackage{ID: "existing-agent", Name: "Existing", InstalledAt: time.Now()}
 
-	require.NoError(t, SyncPackagesFromRegistry(agentfieldHome, storage))
+	require.NoError(t, SyncPackagesFromRegistry(agentsHome, storage))
 
 	require.Len(t, storage.packages, 1)
 }

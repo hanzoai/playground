@@ -1,6 +1,6 @@
-# AgentField Functional Tests
+# Playground Functional Tests
 
-Comprehensive Docker-based functional testing framework for AgentField that validates the complete stack: control plane (Go) + Python SDK + real LLM integration via OpenRouter.
+Comprehensive Docker-based functional testing framework for Playground that validates the complete stack: control plane (Go) + Python SDK + real LLM integration via OpenRouter.
 
 ## ⚡ Quick Reference
 
@@ -25,7 +25,7 @@ make test-functional            # Both modes
 
 This test suite runs end-to-end functional tests in an isolated Docker environment, ensuring that:
 
-- The AgentField control plane starts correctly
+- The Playground control plane starts correctly
 - Python agents can register and communicate with the control plane
 - Reasoners execute successfully (with or without LLM calls)
 - Execution metadata (workflow IDs, timing, etc.) is properly tracked
@@ -68,7 +68,7 @@ tests/functional/
 │   ├── docker compose.local.yml      # SQLite mode (fast)
 │   ├── docker compose.postgres.yml   # PostgreSQL mode (production-like)
 │   ├── Dockerfile.test-runner        # Test execution container
-│   ├── agentfield-test.yaml          # Control plane configuration
+│   ├── agents-test.yaml          # Control plane configuration
 │   └── wait-for-services.sh          # Health check script
 ├── tests/
 │   ├── test_hello_world.py           # Hello World functional test
@@ -82,7 +82,7 @@ tests/functional/
 └── README.md                          # This file
 ```
 
-The `agents/` directory stores normal-looking AgentField nodes (complete with `if __name__ == "__main__"` hooks) that tests can import and run. Each module exposes:
+The `agents/` directory stores normal-looking Playground nodes (complete with `if __name__ == "__main__"` hooks) that tests can import and run. Each module exposes:
 
 - `AGENT_SPEC`: metadata about the node (display name, default node ID, reasoners, skills)
 - `create_agent(openrouter_config, **kwargs)`: returns a configured `Agent`
@@ -233,7 +233,7 @@ make test-functional-local
   - `create_agent(openrouter_config, **kwargs)`
   - `create_agent_from_env()` for manual execution
 - Tests import `create_agent`, instantiate the agent (exactly like production code), and run it with `utils.run_agent_server`.
-- Use `utils.unique_node_id(AGENT_SPEC.default_node_id)` whenever you create an agent in a test. This ensures every test instance registers as a distinct AgentField node even when the underlying definition is shared.
+- Use `utils.unique_node_id(AGENT_SPEC.default_node_id)` whenever you create an agent in a test. This ensures every test instance registers as a distinct Playground node even when the underlying definition is shared.
 - Agent modules can also be executed directly (`python -m agents.quick_start_agent`) for smoke testing outside pytest.
 
 ### Basic Structure
@@ -274,7 +274,7 @@ async def test_my_feature(
 
 #### Configuration Fixtures
 
-- `control_plane_url`: AgentField control plane URL
+- `control_plane_url`: Playground control plane URL
 - `openrouter_api_key`: OpenRouter API key from environment
 - `openrouter_model`: OpenRouter model name from `OPENROUTER_MODEL` env var
 - `storage_mode`: Current storage mode being tested
@@ -315,13 +315,13 @@ Required:
 
 Optional:
 - `STORAGE_MODE`: `local` or `postgres` (default: `local`)
-- `AGENTFIELD_PORT`: Control plane port (default: `8080`)
+- `AGENTS_PORT`: Control plane port (default: `8080`)
 - `TEST_TIMEOUT`: Test timeout in seconds (default: `300`)
 - `PYTEST_ARGS`: Additional pytest arguments
 
 ### Control Plane Configuration
 
-Edit `docker/agentfield-test.yaml` to customize:
+Edit `docker/agents-test.yaml` to customize:
 - Request timeouts
 - Worker counts
 - Queue settings
@@ -511,7 +511,7 @@ This ensures:
 
 ## 📚 Additional Resources
 
-- [AgentField Documentation](https://github.com/Agent-Field/agentfield)
+- [Playground Documentation](https://github.com/hanzoai/playground)
 - [OpenRouter Documentation](https://openrouter.ai/docs)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Pytest Documentation](https://docs.pytest.org/)
@@ -540,7 +540,7 @@ docker compose -f docker/docker compose.local.yml logs control-plane
 ```
 
 Common issues:
-- Port 8080 already in use (change `AGENTFIELD_PORT`)
+- Port 8080 already in use (change `AGENTS_PORT`)
 - Build failures (ensure Go is installed for binary build)
 
 ### Tests timing out
@@ -567,4 +567,4 @@ sudo usermod -aG docker $USER
 
 ## 📝 License
 
-Same as AgentField project (Apache 2.0)
+Same as Playground project (Apache 2.0)

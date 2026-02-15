@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -26,17 +26,17 @@ func TestExecuteAsyncHandler_QueueSaturation(t *testing.T) {
 	// Note: This only works if the pool hasn't been initialized yet
 	// In a real scenario, the pool is initialized once, so this test
 	// verifies the queue saturation logic when the queue is actually full
-	originalCapacity := os.Getenv("AGENTFIELD_EXEC_ASYNC_QUEUE_CAPACITY")
+	originalCapacity := os.Getenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY")
 	defer func() {
 		if originalCapacity != "" {
-			os.Setenv("AGENTFIELD_EXEC_ASYNC_QUEUE_CAPACITY", originalCapacity)
+			os.Setenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", originalCapacity)
 		} else {
-			os.Unsetenv("AGENTFIELD_EXEC_ASYNC_QUEUE_CAPACITY")
+			os.Unsetenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY")
 		}
 	}()
 
 	// Set a very small capacity to make saturation easier to test
-	os.Setenv("AGENTFIELD_EXEC_ASYNC_QUEUE_CAPACITY", "2")
+	os.Setenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", "2")
 
 	agent := &types.AgentNode{
 		ID:        "node-1",

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -436,7 +436,7 @@ func TestObservabilityForwarder_WebhookDelivery(t *testing.T) {
 
 		// Verify headers
 		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		require.Equal(t, "AgentField-Observability/1.0", r.Header.Get("User-Agent"))
+		require.Equal(t, "Agents-Observability/1.0", r.Header.Get("User-Agent"))
 
 		// Read and parse body
 		body, err := io.ReadAll(r.Body)
@@ -516,7 +516,7 @@ func TestObservabilityForwarder_WebhookWithSignature(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
-		receivedSignature = r.Header.Get("X-AgentField-Signature")
+		receivedSignature = r.Header.Get("X-Agents-Signature")
 		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))

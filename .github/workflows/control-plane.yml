@@ -114,7 +114,7 @@ jobs:
         working-directory: control-plane
         run: |
           echo "Building for ${GOOS}/${GOARCH}"
-          go build -o /tmp/agentfield-server-${GOOS}-${GOARCH} ./cmd/agentfield-server
+          go build -o /tmp/playground-server-${GOOS}-${GOARCH} ./cmd/playground-server
 
   # Summary job that depends on all critical checks
   required-checks:

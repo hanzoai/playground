@@ -31,7 +31,7 @@ python examples/python_agent_nodes/deep_research/main.py
 curl -X POST http://localhost:8080/reasoners/planning_execute_deep_research \
   -H "Content-Type: application/json" \
   -d '{
-    "research_question": "What is AgentField.ai?",
+    "research_question": "What is Playground.ai?",
     "max_depth": 3,
     "max_tasks_per_level": 5
   }'
@@ -74,5 +74,5 @@ curl -X POST http://localhost:8080/reasoners/planning_execute_deep_research \
 | Variable            | Description               | Default                                      |
 | ------------------- | ------------------------- | -------------------------------------------- |
 | `TAVILY_API_KEY`    | Tavily API key (required) | -                                            |
-| `AGENTFIELD_SERVER` | Control plane URL         | `http://localhost:8080`                      |
+| `AGENTS_SERVER` | Control plane URL         | `http://localhost:8080`                      |
 | `AI_MODEL`          | LLM model                 | `openrouter/deepseek/deepseek-v3.1-terminus` |

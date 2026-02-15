@@ -43,7 +43,7 @@ func TestDiscoverJSON(t *testing.T) {
 	a, err := New(Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL,
+		PlaygroundURL: server.URL,
 	})
 	require.NoError(t, err)
 
@@ -79,7 +79,7 @@ func TestDiscoverCompactAndXML(t *testing.T) {
 	aCompact, err := New(Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: compactServer.URL,
+		PlaygroundURL: compactServer.URL,
 	})
 	require.NoError(t, err)
 
@@ -92,7 +92,7 @@ func TestDiscoverCompactAndXML(t *testing.T) {
 	aXML, err := New(Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: xmlServer.URL,
+		PlaygroundURL: xmlServer.URL,
 	})
 	require.NoError(t, err)
 
@@ -108,7 +108,7 @@ func TestDiscoverRejectsInvalidFormat(t *testing.T) {
 	a, err := New(Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "http://localhost:8080",
+		PlaygroundURL: "http://localhost:8080",
 	})
 	require.NoError(t, err)
 

@@ -1,8 +1,8 @@
 import pytest
 
-from agentfield.agent_workflow import AgentWorkflow
-from agentfield.execution_context import ExecutionContext
-from agentfield.agent_registry import set_current_agent, clear_current_agent
+from playground.agent_workflow import AgentWorkflow
+from playground.execution_context import ExecutionContext
+from playground.agent_registry import set_current_agent, clear_current_agent
 from tests.helpers import StubAgent
 
 

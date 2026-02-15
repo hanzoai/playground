@@ -1,5 +1,5 @@
 {
-  "name": "agentfield-ts-benchmark",
+  "name": "playground-ts-benchmark",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -7,7 +7,7 @@
     "benchmark:json": "tsx benchmark.ts --json"
   },
   "dependencies": {
-    "@agent-field/sdk": "file:../../../../sdk/typescript"
+    "@playground/sdk": "file:../../../../sdk/typescript"
   },
   "devDependencies": {
     "tsx": "^4.7.0",

@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Ask a question about using AgentField
+about: Ask a question about using Playground
 labels: question
 ---
 

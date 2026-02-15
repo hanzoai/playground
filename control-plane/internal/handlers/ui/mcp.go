@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/services"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,10 +1,10 @@
 /**
- * AgentField TypeScript SDK Benchmark
+ * Playground TypeScript SDK Benchmark
  *
  * Measures: registration time, memory footprint, cold start, request latency
  */
 
-import { Agent } from '@agent-field/sdk';
+import { Agent } from '@playground/sdk';
 
 interface BenchmarkResult {
   metric: string;
@@ -88,7 +88,7 @@ async function benchmarkRegistration(
       nodeId: `bench-${i}`,
       version: '1.0.0',
       port: 0, // Random port
-      agentFieldUrl: 'http://localhost:8080',
+      playgroundUrl: 'http://localhost:8080',
     });
 
     for (let j = 0; j < numHandlers; j++) {
@@ -133,7 +133,7 @@ async function benchmarkMemory(
       nodeId: `mem-bench-${i}`,
       version: '1.0.0',
       port: 0,
-      agentFieldUrl: 'http://localhost:8080',
+      playgroundUrl: 'http://localhost:8080',
     });
 
     for (let j = 0; j < numHandlers; j++) {
@@ -180,7 +180,7 @@ async function benchmarkColdStart(
       nodeId: `cold-${i}`,
       version: '1.0.0',
       port: 0,
-      agentFieldUrl: 'http://localhost:8080',
+      playgroundUrl: 'http://localhost:8080',
     });
 
     // Register one handler to be "ready"
@@ -254,7 +254,7 @@ async function main() {
   const verbose = !jsonOutput;
 
   const suite: BenchmarkSuite = {
-    framework: 'AgentField',
+    framework: 'Playground',
     language: 'TypeScript',
     nodeVersion: process.version,
     timestamp: new Date().toISOString(),
@@ -267,7 +267,7 @@ async function main() {
   };
 
   if (verbose) {
-    console.log('AgentField TypeScript SDK Benchmark');
+    console.log('Playground TypeScript SDK Benchmark');
     console.log('====================================');
     console.log(`Handlers: ${numHandlers} | Iterations: ${iterations} | Warmup: ${warmup}\n`);
   }

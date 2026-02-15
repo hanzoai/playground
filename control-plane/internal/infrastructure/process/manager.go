@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
 )
 
 // DefaultProcessManager provides a default implementation for managing system processes.

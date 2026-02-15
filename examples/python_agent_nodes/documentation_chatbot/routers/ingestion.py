@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from agentfield import AgentRouter
-from agentfield.logger import log_info
+from playground import AgentRouter
+from playground.logger import log_info
 
 from chunking import chunk_markdown_text, is_supported_file, read_text
 from embedding import embed_texts
@@ -25,12 +25,12 @@ async def _clear_namespace_via_api(namespace: str) -> dict:
     if httpx is None:
         raise RuntimeError("httpx is required for clear_namespace")
 
-    base_url = os.getenv("CONTROL_PLANE_URL") or os.getenv("AGENTFIELD_SERVER") or ""
+    base_url = os.getenv("CONTROL_PLANE_URL") or os.getenv("AGENTS_SERVER") or ""
     base_url = base_url.rstrip("/")
     if not base_url:
-        raise ValueError("CONTROL_PLANE_URL (or AGENTFIELD_SERVER) is required to clear namespace")
+        raise ValueError("CONTROL_PLANE_URL (or AGENTS_SERVER) is required to clear namespace")
 
-    api_key = os.getenv("CONTROL_PLANE_API_KEY") or os.getenv("AGENTFIELD_API_KEY")
+    api_key = os.getenv("CONTROL_PLANE_API_KEY") or os.getenv("AGENTS_API_KEY")
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"

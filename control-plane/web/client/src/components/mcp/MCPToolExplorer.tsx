@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMode } from "@/contexts/ModeContext";
 import { cn } from "@/lib/utils";
-import type { MCPTool } from "@/types/agentfield";
+import type { MCPTool } from "@/types/playground";
 import {
   ChevronDown,
   ChevronUp,

@@ -4,7 +4,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
-from agentfield.dynamic_skills import DynamicMCPSkillManager
+from playground.dynamic_skills import DynamicMCPSkillManager
 
 
 class StubMCPClient:

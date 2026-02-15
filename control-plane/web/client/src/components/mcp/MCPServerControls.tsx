@@ -12,7 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useMode } from "@/contexts/ModeContext";
 import { cn } from "@/lib/utils";
-import type { MCPServerAction, MCPServerHealthForUI } from "@/types/agentfield";
+import type { MCPServerAction, MCPServerHealthForUI } from "@/types/playground";
 import {
   CheckmarkFilled,
   ErrorFilled,

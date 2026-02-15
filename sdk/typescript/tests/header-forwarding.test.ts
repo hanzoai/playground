@@ -20,7 +20,7 @@ vi.mock('axios', () => ({
   create: createMock
 }));
 
-import { AgentFieldClient } from '../src/client/AgentFieldClient.js';
+import { PlaygroundClient } from '../src/client/PlaygroundClient.js';
 import { MemoryClient } from '../src/memory/MemoryClient.js';
 
 describe('header forwarding', () => {
@@ -30,9 +30,9 @@ describe('header forwarding', () => {
   });
 
   it('merges default headers with execution metadata', async () => {
-    const client = new AgentFieldClient({
+    const client = new PlaygroundClient({
       nodeId: 'node-1',
-      agentFieldUrl: 'http://example.com',
+      playgroundUrl: 'http://example.com',
       defaultHeaders: { Authorization: 'Bearer tenant-token' }
     });
     const axiosInstance = createdInstances.at(-1)!;
@@ -53,9 +53,9 @@ describe('header forwarding', () => {
   });
 
   it('applies default headers to discovery with per-call headers', async () => {
-    const client = new AgentFieldClient({
+    const client = new PlaygroundClient({
       nodeId: 'node-1',
-      agentFieldUrl: 'http://example.com',
+      playgroundUrl: 'http://example.com',
       defaultHeaders: { Authorization: 'Bearer tenant-token' }
     });
     const axiosInstance = createdInstances.at(-1)!;

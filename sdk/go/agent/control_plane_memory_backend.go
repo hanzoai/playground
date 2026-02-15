@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// ControlPlaneMemoryBackend implements MemoryBackend by delegating to the Agentfield control plane
+// ControlPlaneMemoryBackend implements MemoryBackend by delegating to the Playground control plane
 // distributed memory endpoints under `/api/v1/memory/*`.
 //
 // It preserves the SDK Memory API surface while making storage distributed and scope-aware.
@@ -23,9 +23,9 @@ type ControlPlaneMemoryBackend struct {
 }
 
 // NewControlPlaneMemoryBackend creates a distributed memory backend that uses the control plane.
-// agentFieldURL should be the control plane base URL (e.g. http://localhost:8080).
-func NewControlPlaneMemoryBackend(agentFieldURL, token, agentNodeID string) *ControlPlaneMemoryBackend {
-	base := strings.TrimRight(strings.TrimSpace(agentFieldURL), "/")
+// playgroundURL should be the control plane base URL (e.g. http://localhost:8080).
+func NewControlPlaneMemoryBackend(playgroundURL, token, agentNodeID string) *ControlPlaneMemoryBackend {
+	base := strings.TrimRight(strings.TrimSpace(playgroundURL), "/")
 	return &ControlPlaneMemoryBackend{
 		baseURL:     base,
 		token:       strings.TrimSpace(token),

@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
 // ExecutionCleanupService manages the background cleanup of old executions

@@ -2,7 +2,7 @@ import asyncio
 import pytest
 import httpx
 import time
-from agentfield.agent import Agent
+from playground.agent import Agent
 
 
 # Mock the client to avoid network calls
@@ -27,12 +27,12 @@ def mock_client(monkeypatch):
         async def aclose(self):
             pass
 
-    monkeypatch.setattr("agentfield.agent.AgentFieldClient", MockClient)
-    monkeypatch.setattr("agentfield.client.AgentFieldClient", MockClient)
+    monkeypatch.setattr("playground.agent.PlaygroundClient", MockClient)
+    monkeypatch.setattr("playground.client.PlaygroundClient", MockClient)
 
     # Also mock AgentUtils.is_port_available to avoid binding issues
     monkeypatch.setattr(
-        "agentfield.agent_utils.AgentUtils.is_port_available", lambda p: True
+        "playground.agent_utils.AgentUtils.is_port_available", lambda p: True
     )
 
 
@@ -40,7 +40,7 @@ def mock_client(monkeypatch):
 def resilient_agent(mock_client):
     agent = Agent(
         node_id="resilient-agent",
-        agentfield_server="http://mock-control-plane",
+        agents_server="http://mock-control-plane",
         auto_register=False,
         dev_mode=True,
         async_config=None,  # Use defaults

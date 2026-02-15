@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Agent-Field/agentfield/sdk/go/agent"
+	"github.com/hanzoai/playground/sdk/go/agent"
 )
 
 func main() {
@@ -17,8 +17,8 @@ func main() {
 	cfg := agent.Config{
 		NodeID:               nodeID,
 		Version:              "1.0.0",
-		AgentFieldURL:        strings.TrimSpace(os.Getenv("AGENTFIELD_URL")),
-		Token:                os.Getenv("AGENTFIELD_TOKEN"),
+		PlaygroundURL:        strings.TrimSpace(os.Getenv("AGENTS_URL")),
+		Token:                os.Getenv("AGENTS_TOKEN"),
 		ListenAddress:        ":" + port,
 		DeploymentType:       "serverless",
 		DisableLeaseLoop:     true,
@@ -32,7 +32,7 @@ func main() {
 
 	srv.RegisterReasoner("hello", func(ctx context.Context, input map[string]any) (any, error) {
 		exec := agent.ExecutionContextFrom(ctx)
-		name := strings.TrimSpace(defaultString(asString(input["name"]), "AgentField"))
+		name := strings.TrimSpace(defaultString(asString(input["name"]), "Playground"))
 		return map[string]any{
 			"greeting":            "Hello, " + name + "!",
 			"run_id":              exec.WorkflowID,

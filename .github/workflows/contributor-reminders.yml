@@ -188,7 +188,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issueNumber,
-                    body: `Hi ${assigneeMentions},\n\nIt's been ${daysSinceActivity} days since the last update on this issue. To keep the project moving, we've unassigned this issue so other contributors can pick it up.\n\n**No worries at all!** Life happens, and we totally understand. If you'd like to continue working on this, just comment here and we'll reassign it to you.\n\nThis issue is now available for anyone who'd like to contribute. Check out our contribution guidelines if you're interested!\n\nThanks for your interest in AgentField! :heart:`
+                    body: `Hi ${assigneeMentions},\n\nIt's been ${daysSinceActivity} days since the last update on this issue. To keep the project moving, we've unassigned this issue so other contributors can pick it up.\n\n**No worries at all!** Life happens, and we totally understand. If you'd like to continue working on this, just comment here and we'll reassign it to you.\n\nThis issue is now available for anyone who'd like to contribute. Check out our contribution guidelines if you're interested!\n\nThanks for your interest in Playground! :heart:`
                   });
                 }
                 summary.unassigned++;
@@ -233,7 +233,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issueNumber,
-                    body: `Hey ${assigneeMentions}! :wave:\n\nJust a friendly reminder that you're assigned to this issue. It's been about a week since assignment.\n\n**How's it going?** We'd love to hear:\n- Any progress updates?\n- Running into any blockers we can help with?\n- Need more time? (Totally fine!)\n\nA quick comment helps us know you're still interested. If your plans have changed, no worries at all - just let us know and we can find another contributor.\n\nThanks for contributing to AgentField! :rocket:`
+                    body: `Hey ${assigneeMentions}! :wave:\n\nJust a friendly reminder that you're assigned to this issue. It's been about a week since assignment.\n\n**How's it going?** We'd love to hear:\n- Any progress updates?\n- Running into any blockers we can help with?\n- Need more time? (Totally fine!)\n\nA quick comment helps us know you're still interested. If your plans have changed, no worries at all - just let us know and we can find another contributor.\n\nThanks for contributing to Playground! :rocket:`
                   });
                 }
                 summary.reminded++;

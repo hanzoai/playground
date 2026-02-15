@@ -8,7 +8,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/config"
 )
 
 // SkillGenerator handles the generation of Python skill files from MCP tools
@@ -41,10 +41,10 @@ func (sg *SkillGenerator) GenerateSkillsForServer(serverAlias string) (*SkillGen
 
 	// Discover server capabilities using the new simplified architecture
 	// Load config for capability discovery
-	cfg, err := config.LoadConfig(filepath.Join(sg.projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(sg.projectDir, "agents.yaml"))
 	if err != nil {
 		// Fallback to current directory
-		cfg, err = config.LoadConfig("agentfield.yaml")
+		cfg, err = config.LoadConfig("agents.yaml")
 		if err != nil {
 			return nil, fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -161,10 +161,10 @@ func getMapKeys(m map[string]interface{}) []string {
 // GenerateSkillsForAllServers generates skill files for all installed MCP servers
 func (sg *SkillGenerator) GenerateSkillsForAllServers() error {
 	// Load config for capability discovery
-	cfg, err := config.LoadConfig(filepath.Join(sg.projectDir, "agentfield.yaml"))
+	cfg, err := config.LoadConfig(filepath.Join(sg.projectDir, "agents.yaml"))
 	if err != nil {
 		// Fallback to current directory
-		cfg, err = config.LoadConfig("agentfield.yaml")
+		cfg, err = config.LoadConfig("agents.yaml")
 		if err != nil {
 			return fmt.Errorf("failed to load af configuration: %w", err)
 		}
@@ -476,7 +476,7 @@ func (sg *SkillGenerator) generateDocString(tool MCPTool, parameters []SkillPara
 	}
 
 	docString.WriteString(`
-        execution_context (ExecutionContext, optional): AgentField execution context for workflow tracking
+        execution_context (ExecutionContext, optional): Agents execution context for workflow tracking
 
     Returns:
         Any: The result from the MCP tool execution
@@ -499,13 +499,13 @@ Do not modify this file manually - it will be regenerated when the MCP server is
 """
 
 from typing import Any, Dict, List, Optional
-from agentfield import app
-from agentfield.execution_context import ExecutionContext
-from agentfield.mcp.client import MCPClient
-from agentfield.mcp.exceptions import (
+from playground import app
+from playground.execution_context import ExecutionContext
+from playground.mcp.client import MCPClient
+from playground.mcp.exceptions import (
     MCPError, MCPConnectionError, MCPToolError, MCPTimeoutError
 )
-from agentfield.agent import Agent
+from playground.agent import Agent
 
 # MCP server configuration
 MCP_ALIAS = "{{.ServerAlias}}"

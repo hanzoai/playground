@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -393,8 +393,8 @@ func TestWebhookDispatcher_DispatchWebhook_Success(t *testing.T) {
 		require.Equal(t, "/webhook", r.URL.Path)
 
 		// Check for signature header if secret is provided
-		if r.Header.Get("X-AgentField-Signature") != "" {
-			require.NotEmpty(t, r.Header.Get("X-AgentField-Signature"))
+		if r.Header.Get("X-Agents-Signature") != "" {
+			require.NotEmpty(t, r.Header.Get("X-Agents-Signature"))
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -454,7 +454,7 @@ func TestWebhookDispatcher_DispatchWebhook_WithSecret(t *testing.T) {
 	// Create a test HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "POST", r.Method)
-		signature := r.Header.Get("X-AgentField-Signature")
+		signature := r.Header.Get("X-Agents-Signature")
 		require.NotEmpty(t, signature)
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -777,7 +777,7 @@ func TestWebhookDispatcher_CustomHeaders(t *testing.T) {
 	if receivedHeaders != nil {
 		require.Equal(t, "custom-value", receivedHeaders.Get("X-Custom-Header"))
 		require.Equal(t, "Bearer token123", receivedHeaders.Get("Authorization"))
-		require.NotEmpty(t, receivedHeaders.Get("X-AgentField-Signature"))
+		require.NotEmpty(t, receivedHeaders.Get("X-Agents-Signature"))
 	}
 }
 

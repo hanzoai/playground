@@ -18,13 +18,13 @@ export interface ExecutionStatusUpdate {
   progress?: number;
 }
 
-export class AgentFieldClient {
+export class PlaygroundClient {
   private readonly http: AxiosInstance;
   private readonly config: AgentConfig;
   private readonly defaultHeaders: Record<string, string>;
 
   constructor(config: AgentConfig) {
-    const baseURL = (config.agentFieldUrl ?? 'http://localhost:8080').replace(/\/$/, '');
+    const baseURL = (config.playgroundUrl ?? 'http://localhost:8080').replace(/\/$/, '');
 this.http = axios.create({
       baseURL,
       timeout: 30000,

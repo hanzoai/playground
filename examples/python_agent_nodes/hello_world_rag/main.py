@@ -2,7 +2,7 @@
 Hello World RAG - Minimal vector-backed retrieval example
 
 Demonstrates:
-- Using AgentField memory vectors without any extra services
+- Using Playground memory vectors without any extra services
 - One skill to ingest documents (path or raw text)
 - One reasoner to answer questions using similarity search + LLM synthesis
 """
@@ -13,15 +13,15 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from agentfield import Agent, AIConfig
-from agentfield.logger import log_info
+from playground import Agent, AIConfig
+from playground.logger import log_info
 from fastembed import TextEmbedding
 from pydantic import BaseModel
 
 # Initialize agent
 app = Agent(
     node_id="hello-world-rag",
-    agentfield_server=os.getenv("AGENTFIELD_SERVER", "http://localhost:8080"),
+    playground_server=os.getenv("AGENTS_SERVER", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("SMALL_MODEL", "openrouter/meta-llama/llama-4-maverick")
     ),
@@ -101,7 +101,7 @@ async def ingest_document(
     document_id: str, path: Optional[str] = None, text: Optional[str] = None
 ) -> IngestResult:
     """
-    Store a document's chunks + embeddings into AgentField memory vectors.
+    Store a document's chunks + embeddings into Playground memory vectors.
     """
     body = _load_source_text(path, text)
     chunks = _chunk_text(body)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
     print("🚀 Hello World RAG Agent")
     print("📍 Node: hello-world-rag")
-    print(f"🌐 Control Plane: {app.agentfield_server}")
+    print(f"🌐 Control Plane: {app.hanzo/agents_server}")
     print("Skills:")
     print("  • ingest_document(document_id, path|text)")
     print("Reasoners:")

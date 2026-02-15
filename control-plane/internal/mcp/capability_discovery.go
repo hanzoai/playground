@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/config"
 )
 
 // MCPCapability represents a discovered MCP server capability
@@ -629,7 +629,7 @@ func (cd *CapabilityDiscovery) performDiscoveryWithPipes(ctx context.Context, st
 				},
 			},
 			ClientInfo: ClientInfo{
-				Name:    "agentfield-mcp-client",
+				Name:    "agents-mcp-client",
 				Version: "1.0.0",
 			},
 		},

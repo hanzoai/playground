@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agentfield.async_config import AsyncConfig
-from agentfield.async_execution_manager import AsyncExecutionManager
-from agentfield.execution_state import ExecutionPriority, ExecutionStatus
+from playground.async_config import AsyncConfig
+from playground.async_execution_manager import AsyncExecutionManager
+from playground.execution_state import ExecutionPriority, ExecutionStatus
 
 
 @pytest.fixture

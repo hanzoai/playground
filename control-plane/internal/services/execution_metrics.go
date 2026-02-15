@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -12,33 +12,33 @@ import (
 
 var (
 	queueDepthGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "agentfield_gateway_queue_depth",
+		Name: "agents_gateway_queue_depth",
 		Help: "Number of workflow steps currently queued or in-flight for execution.",
 	})
 
 	workerInflightGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{ //nolint:unused // Reserved for future use
-		Name: "agentfield_worker_inflight",
+		Name: "agents_worker_inflight",
 		Help: "Number of active worker executions grouped by agent node.",
 	}, []string{"agent"})
 
 	stepDurationHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{ //nolint:unused // Reserved for future use
-		Name:    "agentfield_step_duration_seconds",
+		Name:    "agents_step_duration_seconds",
 		Help:    "Duration of workflow step executions split by terminal status.",
 		Buckets: prometheus.DefBuckets,
 	}, []string{"status"})
 
 	stepRetriesCounter = promauto.NewCounterVec(prometheus.CounterOpts{ //nolint:unused // Reserved for future use
-		Name: "agentfield_step_retries_total",
+		Name: "agents_step_retries_total",
 		Help: "Total number of workflow step retry attempts grouped by agent node.",
 	}, []string{"agent"})
 
 	waiterInflightGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "agentfield_waiters_inflight",
+		Name: "agents_waiters_inflight",
 		Help: "Number of synchronous waiter channels currently registered.",
 	})
 
 	backpressureCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "agentfield_gateway_backpressure_total",
+		Name: "agents_gateway_backpressure_total",
 		Help: "Count of backpressure events emitted by the execution gateway grouped by reason.",
 	}, []string{"reason"})
 )

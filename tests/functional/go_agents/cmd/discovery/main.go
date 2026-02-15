@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Agent-Field/agentfield/sdk/go/agent"
+	"github.com/hanzoai/playground/sdk/go/agent"
 )
 
 func main() {
 	log.SetFlags(0)
 
-	baseURL := strings.TrimSpace(os.Getenv("AGENTFIELD_URL"))
+	baseURL := strings.TrimSpace(os.Getenv("AGENTS_URL"))
 	if baseURL == "" {
-		log.Fatal("AGENTFIELD_URL is required")
+		log.Fatal("AGENTS_URL is required")
 	}
 
 	nodeID := strings.TrimSpace(os.Getenv("AGENT_NODE_ID"))
@@ -27,8 +27,8 @@ func main() {
 	cfg := agent.Config{
 		NodeID:        nodeID,
 		Version:       "1.0.0",
-		AgentFieldURL: baseURL,
-		Token:         os.Getenv("AGENTFIELD_TOKEN"),
+		PlaygroundURL: baseURL,
+		Token:         os.Getenv("AGENTS_TOKEN"),
 	}
 
 	client, err := agent.New(cfg)

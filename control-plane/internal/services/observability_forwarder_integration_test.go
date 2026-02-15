@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,8 +35,8 @@ func setupIntegrationTest(t *testing.T) (*storage.LocalStorage, context.Context)
 	cfg := storage.StorageConfig{
 		Mode: "local",
 		Local: storage.LocalStorageConfig{
-			DatabasePath: filepath.Join(tempDir, "agentfield.db"),
-			KVStorePath:  filepath.Join(tempDir, "agentfield.bolt"),
+			DatabasePath: filepath.Join(tempDir, "agents.db"),
+			KVStorePath:  filepath.Join(tempDir, "agents.bolt"),
 		},
 	}
 
@@ -354,7 +354,7 @@ func TestIntegration_SignatureVerification(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
-		receivedSig = r.Header.Get("X-AgentField-Signature")
+		receivedSig = r.Header.Get("X-Agents-Signature")
 		receivedBody, _ = io.ReadAll(r.Body)
 		mu.Unlock()
 		w.WriteHeader(http.StatusOK)

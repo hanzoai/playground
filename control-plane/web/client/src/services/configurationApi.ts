@@ -1,4 +1,4 @@
-import type { ConfigurationSchema, AgentConfiguration, AgentPackage, AgentLifecycleInfo } from '../types/agentfield';
+import type { ConfigurationSchema, AgentConfiguration, AgentPackage, AgentLifecycleInfo } from '../types/playground';
 import { getGlobalApiKey } from './api';
 
 const API_BASE = '/api/ui/v1';

@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to AgentField! This guide outlines how to propose changes, report issues, and participate in the community.
+Thank you for your interest in contributing to Playground! This guide outlines how to propose changes, report issues, and participate in the community.
 
 ## Ground Rules
 
@@ -145,7 +145,7 @@ Add tests for the retry handler. Include:
 - [ ] Tests are independent and can run in any order
 - [ ] Test names clearly describe what is being tested
 
-### Tips for Using AI with AgentField
+### Tips for Using AI with Playground
 
 - Point your AI to `CLAUDE.md` for project context
 - Share relevant file paths from the issue description

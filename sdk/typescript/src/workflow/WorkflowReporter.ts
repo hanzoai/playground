@@ -1,4 +1,4 @@
-import type { AgentFieldClient } from '../client/AgentFieldClient.js';
+import type { PlaygroundClient } from '../client/PlaygroundClient.js';
 
 export interface WorkflowMetadata {
   executionId: string;
@@ -16,10 +16,10 @@ export interface WorkflowProgressOptions {
 }
 
 export class WorkflowReporter {
-  private readonly client: AgentFieldClient;
+  private readonly client: PlaygroundClient;
   private readonly metadata: WorkflowMetadata;
 
-  constructor(client: AgentFieldClient, metadata: WorkflowMetadata) {
+  constructor(client: PlaygroundClient, metadata: WorkflowMetadata) {
     if (!metadata.executionId) {
       throw new Error('WorkflowReporter requires an executionId');
     }

@@ -1,29 +1,29 @@
-# AgentField Python SDK
+# Playground Python SDK
 
-The AgentField SDK provides a production-ready Python interface for registering agents, executing workflows, and integrating with the AgentField control plane.
+The Playground SDK provides a production-ready Python interface for registering agents, executing workflows, and integrating with the Playground control plane.
 
 ## Installation
 
 ```bash
-pip install agentfield
+pip install playground
 ```
 
 To work on the SDK locally:
 
 ```bash
-git clone https://github.com/Agent-Field/agentfield.git
-cd agentfield/sdk/python
+git clone https://github.com/hanzoai/playground.git
+cd playground/sdk/python
 python -m pip install -e .[dev]
 ```
 
 ## Quick Start
 
 ```python
-from agentfield import Agent
+from playground import Agent
 
 agent = Agent(
     node_id="example-agent",
-    agentfield_server="http://localhost:8080",
+    playground_server="http://localhost:8080",
     dev_mode=True,
 )
 
@@ -50,7 +50,7 @@ pytest
 To run coverage locally:
 
 ```bash
-pytest --cov=agentfield --cov-report=term-missing
+pytest --cov=playground --cov-report=term-missing
 ```
 
 ## License

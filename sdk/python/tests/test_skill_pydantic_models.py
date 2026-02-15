@@ -8,8 +8,8 @@ providing the same developer experience as reasoners.
 import pytest
 from typing import Optional
 from pydantic import BaseModel
-from agentfield import Agent
-from agentfield.pydantic_utils import should_convert_args, convert_function_args
+from playground import Agent
+from playground.pydantic_utils import should_convert_args, convert_function_args
 
 
 # Test models
@@ -89,7 +89,7 @@ class TestSkillPydanticModels:
 
         app = Agent(
             node_id="test-pydantic-skill",
-            agentfield_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
         )
 
         @app.skill()
@@ -107,7 +107,7 @@ class TestSkillPydanticModels:
 
         app = Agent(
             node_id="test-plain-skill",
-            agentfield_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
         )
 
         @app.skill()

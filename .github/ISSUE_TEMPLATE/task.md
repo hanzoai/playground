@@ -52,4 +52,4 @@ labels: help wanted
 
 ---
 
-> **Using AI to solve this issue?** See our [AI-Assisted Contributions guide](https://github.com/Agent-Field/agentfield/blob/main/docs/CONTRIBUTING.md#ai-assisted-contributions) for testing requirements, prompt strategies, and common pitfalls to avoid.
+> **Using AI to solve this issue?** See our [AI-Assisted Contributions guide](https://github.com/hanzoai/playground/blob/main/docs/CONTRIBUTING.md#ai-assisted-contributions) for testing requirements, prompt strategies, and common pitfalls to avoid.

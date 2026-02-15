@@ -160,7 +160,7 @@ export const BracketsCurly = BracketsCurlyIcon;
 export const CornersIn = CornersInIcon;
 export const Copy = CopySimpleIcon;
 export const CopySimple = CopySimpleIcon;
-// Phosphor does not expose a dedicated AgentField glyph; reuse the Brain icon asset.
+// Phosphor does not expose a dedicated Playground glyph; reuse the Brain icon asset.
 export const Cognitive = CognitivePhosphorIcon;
 export const DataBase = DatabaseIcon;
 export const Database = DatabaseIcon;

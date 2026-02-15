@@ -1,4 +1,4 @@
-// Package logger provides a global zerolog logger for the AgentField CLI.
+// Package logger provides a global zerolog logger for the Agents CLI.
 package logger
 
 import (

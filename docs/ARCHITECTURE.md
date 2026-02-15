@@ -1,6 +1,6 @@
-# AgentField Architecture
+# Playground Architecture
 
-AgentField provides a modular platform for orchestrating AI agents. The system is composed of a Go-based control plane, SDKs for client languages, and optional runtime services.
+Playground provides a modular platform for orchestrating AI agents. The system is composed of a Go-based control plane, SDKs for client languages, and optional runtime services.
 
 ## High-Level Overview
 

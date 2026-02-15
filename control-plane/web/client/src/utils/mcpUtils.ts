@@ -5,7 +5,7 @@ import type {
   MCPServerStatus,
   MCPHealthEvent,
   AppMode
-} from '../types/agentfield';
+} from '../types/playground';
 
 /**
  * Status color mapping for MCP servers

@@ -1,9 +1,9 @@
 import pytest
 
-from agentfield.agent_workflow import AgentWorkflow
-from agentfield.agent_registry import set_current_agent, clear_current_agent
-from agentfield.decorators import _execute_with_tracking
-from agentfield.execution_context import (
+from playground.agent_workflow import AgentWorkflow
+from playground.agent_registry import set_current_agent, clear_current_agent
+from playground.decorators import _execute_with_tracking
+from playground.execution_context import (
     ExecutionContext,
     set_execution_context,
     reset_execution_context,
@@ -38,7 +38,7 @@ class DummyClient:
 class DummyAgent:
     def __init__(self):
         self.node_id = "agent-node"
-        self.agentfield_server = "http://agentfield.local"
+        self.hanzo/agents_server = "http://playground.local"
         self.client = DummyClient()
         self.dev_mode = False
         self._current_execution_context = None

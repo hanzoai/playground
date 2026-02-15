@@ -5,7 +5,7 @@ import sys
 from types import SimpleNamespace
 from fastapi import FastAPI
 
-from agentfield.agent_server import AgentServer
+from playground.agent_server import AgentServer
 
 
 def make_agent_app():
@@ -29,15 +29,15 @@ def make_agent_app():
         },
     )()
     app.dev_mode = False
-    app.agentfield_server = "http://agentfield"
+    app.hanzo/agents_server = "http://playground"
     return app
 
 
 @pytest.mark.asyncio
-async def test_setup_agentfield_routes_health_endpoint():
+async def test_setup_playground_routes_health_endpoint():
     app = make_agent_app()
     server = AgentServer(app)
-    server.setup_agentfield_routes()
+    server.setup_playground_routes()
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -64,7 +64,7 @@ async def test_shutdown_endpoint_triggers_flags():
     app = make_agent_app()
     app.dev_mode = True
     server = AgentServer(app)
-    server.setup_agentfield_routes()
+    server.setup_playground_routes()
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -99,7 +99,7 @@ async def test_status_endpoint_reports_psutil(monkeypatch):
     dummy_psutil = SimpleNamespace(Process=lambda: DummyProcess())
     monkeypatch.setitem(sys.modules, "psutil", dummy_psutil)
 
-    server.setup_agentfield_routes()
+    server.setup_playground_routes()
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -116,7 +116,7 @@ async def test_status_endpoint_reports_psutil(monkeypatch):
 async def test_shutdown_immediate_path(monkeypatch):
     app = make_agent_app()
     server = AgentServer(app)
-    server.setup_agentfield_routes()
+    server.setup_playground_routes()
 
     triggered = {}
 
@@ -162,7 +162,7 @@ async def test_mcp_start_stop_routes(monkeypatch):
     manager = StubMCPManager()
     app.mcp_manager = manager
     server = AgentServer(app)
-    server.setup_agentfield_routes()
+    server.setup_playground_routes()
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

@@ -25,7 +25,7 @@ import type {
   AgentConfiguration,
   AgentPackage,
   ConfigurationSchema,
-} from "../types/agentfield";
+} from "../types/playground";
 
 const PackagesPageContent: React.FC = () => {
   const [selectedPackage, setSelectedPackage] = useState<AgentPackage | null>(

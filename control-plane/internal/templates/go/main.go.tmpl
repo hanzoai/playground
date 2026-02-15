@@ -5,15 +5,15 @@ import (
 	"log"
 	"os"
 
-	"github.com/Agent-Field/agentfield/sdk/go/agent"
-	"github.com/Agent-Field/agentfield/sdk/go/ai"
+	"github.com/hanzoai/playground/sdk/go/agent"
+	"github.com/hanzoai/playground/sdk/go/ai"
 )
 
 func main() {
 	cfg := agent.Config{
 		NodeID:        "{{.NodeID}}",
 		Version:       "1.0.0",
-		AgentFieldURL:      "http://localhost:8080",
+		PlaygroundURL:      "http://localhost:8080",
 		ListenAddress: ":0", // Auto-discover available port
 
 		// 🔧 Uncomment to enable AI features:

@@ -3,7 +3,7 @@
 import json
 from typing import List
 
-from agentfield import AgentRouter
+from playground import AgentRouter
 from pydantic import BaseModel, Field
 
 from schemas import EntityProfile, FactorGraph, ScenarioAnalysis

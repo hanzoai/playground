@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -203,7 +203,7 @@ func TestStorageParity_StoreWorkflowExecution(t *testing.T) {
 	exec := &types.WorkflowExecution{
 		WorkflowID:          workflowID,
 		ExecutionID:         executionID,
-		AgentFieldRequestID: "req-1",
+		AgentsRequestID: "req-1",
 		RunID:               &runID,
 		AgentNodeID:         "agent-1",
 		ReasonerID:          "reasoner-1",

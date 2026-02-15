@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/github hero.png" alt="AgentField - Kubernetes, for AI Agents" width="100%" />
+<img src="assets/github hero.png" alt="Playground - Kubernetes, for AI Agents" width="100%" />
 
 # Kubernetes for AI Agents
 
@@ -9,24 +9,24 @@
 *When AI moves from chatbots into backends, making decisions, not just answering questions, it needs infrastructure, not frameworks.*
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-7c3aed.svg?style=flat&labelColor=1e1e2e)](LICENSE)
-[![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsantoshkumarradha%2Fd98e2ad73502b4075f6a5f0ae4f5cae5%2Fraw%2Fbadge.json&style=flat&logo=download&logoColor=white&labelColor=1e1e2e&cacheSeconds=3600)](https://github.com/Agent-Field/agentfield)
-[![Last Commit](https://img.shields.io/github/last-commit/Agent-Field/agentfield?style=flat&logo=git&logoColor=white&color=7c3aed&labelColor=1e1e2e)](https://github.com/Agent-Field/agentfield/commits/main)
+[![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsantoshkumarradha%2Fd98e2ad73502b4075f6a5f0ae4f5cae5%2Fraw%2Fbadge.json&style=flat&logo=download&logoColor=white&labelColor=1e1e2e&cacheSeconds=3600)](https://github.com/hanzoai/playground)
+[![Last Commit](https://img.shields.io/github/last-commit/hanzoai/playground?style=flat&logo=git&logoColor=white&color=7c3aed&labelColor=1e1e2e)](https://github.com/hanzoai/playground/commits/main)
 [![Go](https://img.shields.io/badge/go-1.21+-00ADD8.svg?style=flat&labelColor=1e1e2e&logo=go&logoColor=white)](https://go.dev/)
 [![Python](https://img.shields.io/badge/python-3.9+-3776AB.svg?style=flat&labelColor=1e1e2e&logo=python&logoColor=white)](https://www.python.org/)
 [![Deploy with Docker](https://img.shields.io/badge/deploy-docker-2496ED.svg?style=flat&labelColor=1e1e2e&logo=docker&logoColor=white)](https://docs.docker.com/)
 [![Discord](https://img.shields.io/badge/discord-join%20us-5865F2.svg?style=flat&labelColor=1e1e2e&logo=discord&logoColor=white)](https://discord.gg/aBHaXMkpqh)
 
-**[Docs](https://agentfield.ai/docs)** | **[Quick Start](https://agentfield.ai/docs/quick-start)** | **[Python SDK](https://agentfield.ai/api/python-sdk/overview)** | **[Go SDK](https://agentfield.ai/api/go-sdk/overview)** | **[TypeScript SDK](https://agentfield.ai/api/typescript-sdk/overview)** | **[REST API](https://agentfield.ai/api/rest-api/overview)** | **[Discord](https://discord.gg/aBHaXMkpqh)**
+**[Docs](https://playground.ai/docs)** | **[Quick Start](https://playground.ai/docs/quick-start)** | **[Python SDK](https://playground.ai/api/python-sdk/overview)** | **[Go SDK](https://playground.ai/api/go-sdk/overview)** | **[TypeScript SDK](https://playground.ai/api/typescript-sdk/overview)** | **[REST API](https://playground.ai/api/rest-api/overview)** | **[Discord](https://discord.gg/aBHaXMkpqh)**
 
 </div>
 
-## What is AgentField?
+## What is Playground?
 
-**AgentField is the backend infrastructure layer for autonomous AI.**
+**Playground is the backend infrastructure layer for autonomous AI.**
 
 AI has outgrown frameworks and is moving from chatbots into backends—making decisions about refunds, coordinating supply chains, managing portfolios. These agents need infrastructure, not prompt wrappers.
 
-AgentField is an open-source **control plane** that treats AI agents as first-class backend services and makes agents production-ready.
+Playground is an open-source **control plane** that treats AI agents as first-class backend services and makes agents production-ready.
 
 **Scale Infrastructure** *(think: Kubernetes)*
 - **Routing & Discovery**: Agents find and call each other through standard REST APIs
@@ -39,7 +39,7 @@ AgentField is an open-source **control plane** that treats AI agents as first-cl
 - **Verifiable Credentials**: Tamper-proof audit trails for every action
 - **Policy Enforcement**: Boundaries enforced by infrastructure, not prompts
 
-Write [Python](https://agentfield.ai/api/python-sdk/overview), [Go](https://agentfield.ai/api/go-sdk/overview), [TypeScript](https://agentfield.ai/api/typescript-sdk/overview), or call via [REST](https://agentfield.ai/api/rest-api/overview). Get production infrastructure automatically.
+Write [Python](https://playground.ai/api/python-sdk/overview), [Go](https://playground.ai/api/go-sdk/overview), [TypeScript](https://playground.ai/api/typescript-sdk/overview), or call via [REST](https://playground.ai/api/rest-api/overview). Get production infrastructure automatically.
 
 ---
 
@@ -51,14 +51,14 @@ We call this the AI Backend. Not a chatbot, not a copilot—infrastructure for s
 
 **Guided autonomy:** Agents that reason freely within boundaries you define. Predictable enough to trust. Flexible enough to be useful.
 
-📖 **[Read: The AI Backend](https://agentfield.ai/blog/posts/ai-backend/?utm_source=github-readme)** — Our thesis on why every serious backend will need a reasoning layer.
+📖 **[Read: The AI Backend](https://playground.ai/blog/posts/ai-backend/?utm_source=github-readme)** — Our thesis on why every serious backend will need a reasoning layer.
 
 ---
 
 ## See It In Action
 
 <div align="center">
-<img src="assets/UI.png" alt="AgentField Dashboard" width="100%" />
+<img src="assets/UI.png" alt="Playground Dashboard" width="100%" />
 <br/>
 <i>Real-time Observability • Execution Flow • Audit Trails</i>
 </div>
@@ -71,7 +71,7 @@ We call this the AI Backend. Not a chatbot, not a copilot—infrastructure for s
 <summary><strong>Python</strong></summary>
 
 ```python
-from agentfield import Agent, AIConfig
+from playground import Agent, AIConfig
 
 app = Agent(node_id="researcher", ai_config=AIConfig(model="gpt-4o"))
 
@@ -87,16 +87,16 @@ async def summarize(url: str) -> dict:
 app.run()  # → POST /api/v1/execute/researcher.summarize
 ```
 
-[Full Python SDK Documentation →](https://agentfield.ai/api/python-sdk/overview)
+[Full Python SDK Documentation →](https://playground.ai/api/python-sdk/overview)
 </details>
 
 <details>
 <summary><strong>Go</strong></summary>
 
 ```go
-agent, _ := agentfieldagent.New(agentfieldagent.Config{
+agent, _ := playgroundagent.New(playgroundagent.Config{
     NodeID:        "researcher",
-    AgentFieldURL: "http://localhost:8080",
+    PlaygroundURL: "http://localhost:8080",
 })
 
 agent.RegisterSkill("summarize", func(ctx context.Context, input map[string]any) (any, error) {
@@ -108,18 +108,18 @@ agent.RegisterSkill("summarize", func(ctx context.Context, input map[string]any)
 agent.Run(context.Background())
 ```
 
-[Full Go SDK Documentation →](https://agentfield.ai/api/go-sdk/overview)
+[Full Go SDK Documentation →](https://playground.ai/api/go-sdk/overview)
 </details>
 
 <details>
 <summary><strong>TypeScript</strong></summary>
 
 ```typescript
-import { Agent } from '@agentfield/sdk';
+import { Agent } from '@playground/sdk';
 
 const agent = new Agent({
   nodeId: 'researcher',
-  agentFieldUrl: 'http://localhost:8080',
+  playgroundUrl: 'http://localhost:8080',
 });
 
 agent.reasoner('summarize', async (ctx, input: { url: string }) => {
@@ -130,7 +130,7 @@ agent.reasoner('summarize', async (ctx, input: { url: string }) => {
 agent.run();  // → POST /api/v1/execute/researcher.summarize
 ```
 
-[Full TypeScript SDK Documentation →](https://agentfield.ai/api/typescript-sdk/overview)
+[Full TypeScript SDK Documentation →](https://playground.ai/api/typescript-sdk/overview)
 </details>
 
 <details>
@@ -152,7 +152,7 @@ const result = await fetch("http://localhost:8080/api/v1/execute/researcher.summ
 }).then(r => r.json());
 ```
 
-[REST API Reference →](https://agentfield.ai/api/rest-api/overview)
+[REST API Reference →](https://playground.ai/api/rest-api/overview)
 </details>
 
 ---
@@ -162,7 +162,7 @@ const result = await fetch("http://localhost:8080/api/v1/execute/researcher.summ
 ### 1. Install
 
 ```bash
-curl -fsSL https://agentfield.ai/install.sh | bash
+curl -fsSL https://playground.ai/install.sh | bash
 ```
 
 ### 2. Create Your Agent
@@ -174,7 +174,7 @@ cd my-agent && pip install -r requirements.txt
 
 ### 3. Start (Two Terminals Required)
 
-AgentField uses a **control plane + agent node** architecture. You'll need two terminal windows:
+Playground uses a **control plane + agent node** architecture. You'll need two terminal windows:
 
 **Terminal 1 – Start the Control Plane:**
 ```bash
@@ -226,15 +226,15 @@ If running the **control plane in Docker** and your **agent node runs outside th
 
 **Option A (agent on your host, control plane in Docker):**
 ```bash
-docker run -p 8080:8080 agentfield/control-plane:latest
+docker run -p 8080:8080 playground/control-plane:latest
 
 # Python agents (recommended)
-export AGENTFIELD_URL="http://localhost:8080"
+export AGENTS_URL="http://localhost:8080"
 export AGENT_CALLBACK_URL="http://host.docker.internal:8001"
 python main.py
 
 # Go agents
-export AGENTFIELD_URL="http://localhost:8080"
+export AGENTS_URL="http://localhost:8080"
 export AGENT_PUBLIC_URL="http://host.docker.internal:8001"
 ```
 
@@ -244,20 +244,20 @@ export AGENT_PUBLIC_URL="http://host.docker.internal:8001"
 **Linux note:** `host.docker.internal` may require `--add-host=host.docker.internal:host-gateway` or using a Compose setup where both containers share a network.
 </details>
 
-**Next Steps:** [Build Your First Agent](https://agentfield.ai/guides/getting-started/build-your-first-agent) | [Deploy to Production](https://agentfield.ai/guides/deployment/overview) | [Examples](https://agentfield.ai/examples)
+**Next Steps:** [Build Your First Agent](https://playground.ai/guides/getting-started/build-your-first-agent) | [Deploy to Production](https://playground.ai/guides/deployment/overview) | [Examples](https://playground.ai/examples)
 
 ---
 
 ## Production Examples
 
-Real-world patterns built on AgentField:
+Real-world patterns built on Playground:
 
 | Example | Description | Links |
 |---------|-------------|-------|
-| **Deep Research API** | Massively parallel research backend. Fans out to 10k+ agents, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/Agent-Field/af-deep-research) • [Docs](https://agentfield.ai/examples) |
-| **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://agentfield.ai/examples/complete-agents/rag-evaluator) |
+| **Deep Research API** | Massively parallel research backend. Fans out to 10k+ agents, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/hanzoai/af-deep-research) • [Docs](https://playground.ai/examples) |
+| **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://playground.ai/examples/complete-agents/rag-evaluator) |
 
-[See all examples →](https://agentfield.ai/examples)
+[See all examples →](https://playground.ai/examples)
 
 ---
 
@@ -265,7 +265,7 @@ Real-world patterns built on AgentField:
 
 Most frameworks stop at "make the LLM call." But production agents need:
 
-[See the production-ready feature set →](https://agentfield.ai/docs/why-agentfield/production-ready-features)
+[See the production-ready feature set →](https://playground.ai/docs/why-playground/production-ready-features)
 
 ### Scale & Reliability
 Agents that run for hours or days. Webhooks with automatic retries. Backpressure handling when downstream services are slow.
@@ -302,17 +302,17 @@ curl -X POST http://localhost:8080/api/v1/execute/researcher.summarize \
 ```
 
 ### Enterprise Ready
-Cryptographic identity for every agent. Tamper-proof audit trails for every action. [Learn more about Identity & Trust](https://agentfield.ai/docs/core-concepts/identity-and-trust).
+Cryptographic identity for every agent. Tamper-proof audit trails for every action. [Learn more about Identity & Trust](https://playground.ai/docs/core-concepts/identity-and-trust).
 
 ---
 
 ## A New Backend Paradigm
 
-AgentField isn't a framework you extend. It's infrastructure you deploy on.
+Playground isn't a framework you extend. It's infrastructure you deploy on.
 
-[See how AgentField compares to agent frameworks →](https://agentfield.ai/docs/why-agentfield/vs-agent-frameworks)
+[See how Playground compares to agent frameworks →](https://playground.ai/docs/why-playground/vs-agent-frameworks)
 
-|                    | Agent Frameworks           | DAG/Workflow Engines    | AgentField                              |
+|                    | Agent Frameworks           | DAG/Workflow Engines    | Playground                              |
 | ------------------ | -------------------------- | ----------------------- | --------------------------------------- |
 | **Architecture**   | Monolithic scripts         | Predetermined pipelines | Distributed microservices               |
 | **Execution**      | Synchronous, blocking      | Scheduled, batch        | Async-native (webhooks, SSE, WebSocket) |
@@ -324,7 +324,7 @@ AgentField isn't a framework you extend. It's infrastructure you deploy on.
 
 ### Performance
 
-**AgentField SDKs at Scale** (100,000 handlers)
+**Playground SDKs at Scale** (100,000 handlers)
 
 | | Go | TypeScript | Python |
 |---|---:|---:|---:|
@@ -334,7 +334,7 @@ AgentField isn't a framework you extend. It's infrastructure you deploy on.
 
 **vs Other Frameworks** (1,000 handlers, same language)
 
-| | AgentField | LangChain | CrewAI | Mastra |
+| | Playground | LangChain | CrewAI | Mastra |
 |---|---:|---:|---:|---:|
 | Registration | 57 ms (py) / 14 ms (ts) | 483 ms | 200 ms | 365 ms |
 | Memory/Handler | 7.5 KB (py) / 276 B (ts) | 10.8 KB | 14.3 KB | 1.8 KB |
@@ -343,7 +343,7 @@ AgentField isn't a framework you extend. It's infrastructure you deploy on.
 
 **Not a DAG builder.** Agents decide what to do next—dynamically. The control plane tracks the execution graph automatically.
 
-**Not tool attachment.** You don't just give an LLM a bag of MCP tools and hope. You define **Reasoners** (AI logic) and **Skills** (deterministic code) with explicit boundaries. [Learn more](https://agentfield.ai/docs/core-concepts/reasoners-and-skills).
+**Not tool attachment.** You don't just give an LLM a bag of MCP tools and hope. You define **Reasoners** (AI logic) and **Skills** (deterministic code) with explicit boundaries. [Learn more](https://playground.ai/docs/core-concepts/reasoners-and-skills).
 
 ---
 
@@ -367,14 +367,14 @@ AgentField isn't a framework you extend. It's infrastructure you deploy on.
 - **Prometheus Metrics**: `/metrics` endpoint out of the box
 - **Policy Enforcement**: "Only agents signed by 'Finance' can access this tool"
 
-[Explore the full feature set →](https://agentfield.ai/docs/features)
+[Explore the full feature set →](https://playground.ai/docs/features)
 
 
 ## Identity & Trust
 
 When agents move from answering questions to making decisions, approving refunds, coordinating supply chains, moving money, "check the logs" isn't enough.
 
-AgentField gives every agent a [W3C Decentralized Identifier (DID)](https://www.w3.org/TR/did-core/)—a cryptographic identity. Every execution produces a Verifiable Credential: a tamper-proof receipt showing exactly what happened, who authorized it, and the full delegation chain.
+Playground gives every agent a [W3C Decentralized Identifier (DID)](https://www.w3.org/TR/did-core/)—a cryptographic identity. Every execution produces a Verifiable Credential: a tamper-proof receipt showing exactly what happened, who authorized it, and the full delegation chain.
 
 ```bash
 # Export audit trail for any workflow
@@ -383,23 +383,23 @@ curl http://localhost:8080/api/ui/v1/workflows/{workflow_id}/vc-chain
 
 For compliance teams: mathematical proof, not trust.
 
-📖 **[Read: IAM for AI Backends](https://agentfield.ai/blog/posts/iam-ai-backends)** — Why OAuth can't secure autonomous software, and what replaces it.
+📖 **[Read: IAM for AI Backends](https://playground.ai/blog/posts/iam-ai-backends)** — Why OAuth can't secure autonomous software, and what replaces it.
 
-[Full documentation →](https://agentfield.ai/docs/core-concepts/identity-and-trust)
+[Full documentation →](https://playground.ai/docs/core-concepts/identity-and-trust)
 
 
 
 ## Architecture
 
 <div align="center">
-<img src="assets/arch.png" alt="AgentField Architecture Diagram" width="80%" />
+<img src="assets/arch.png" alt="Playground Architecture Diagram" width="80%" />
 </div>
 
-[Learn more about the core architecture →](https://agentfield.ai/docs/why-agentfield/core-architecture)
+[Learn more about the core architecture →](https://playground.ai/docs/why-playground/core-architecture)
 
 
 
-## Is AgentField for you?
+## Is Playground for you?
 
 ### Yes if:
 - You're building an **AI backend** - agents that make decisions, not just answer questions
@@ -417,22 +417,22 @@ For compliance teams: mathematical proof, not trust.
 
 ---
 
-If you are **Backend Engineers** shipping AI into production who want standard APIs, not magic or **Platform Teams** who don't want to build another homegrown orchestrator or **Enterprise Teams** in regulated industries (Finance, Health) needing audit trails or **Frontend Developers** who just want to `fetch()` an agent without Python headaches, AgentField is built for you.
+If you are **Backend Engineers** shipping AI into production who want standard APIs, not magic or **Platform Teams** who don't want to build another homegrown orchestrator or **Enterprise Teams** in regulated industries (Finance, Health) needing audit trails or **Frontend Developers** who just want to `fetch()` an agent without Python headaches, Playground is built for you.
 
 ---
 
 ## Learn More
 
-- 📖 **[The AI Backend](https://agentfield.ai/blog/posts/ai-backend)** — Why every backend needs a reasoning layer
-- 📖 **[IAM for AI Backends](https://agentfield.ai/blog/posts/iam-ai-backends)** — Why agents need identity, not just API keys
-- 📚 **[Documentation](https://agentfield.ai/docs)** — Full technical reference
-- 🚀 **[Examples](https://agentfield.ai/examples)** — Production patterns and use cases
+- 📖 **[The AI Backend](https://playground.ai/blog/posts/ai-backend)** — Why every backend needs a reasoning layer
+- 📖 **[IAM for AI Backends](https://playground.ai/blog/posts/iam-ai-backends)** — Why agents need identity, not just API keys
+- 📚 **[Documentation](https://playground.ai/docs)** — Full technical reference
+- 🚀 **[Examples](https://playground.ai/examples)** — Production patterns and use cases
 
 ---
 
 ## Community
 
-**Agents are becoming part of production backends. They need identity, governance, and infrastructure. That's why AgentField exists.**
+**Agents are becoming part of production backends. They need identity, governance, and infrastructure. That's why Playground exists.**
 
 <div align="center">
 
@@ -442,12 +442,12 @@ If you are **Backend Engineers** shipping AI into production who want standard A
 
 </div>
 
-- **[Documentation](https://agentfield.ai/docs)**
-- **[GitHub Issues](https://github.com/Agent-Field/agentfield/issues)**
-- **[Twitter/X](https://x.com/agentfield_ai)**
-- **[Examples](https://agentfield.ai/examples)**
+- **[Documentation](https://playground.ai/docs)**
+- **[GitHub Issues](https://github.com/hanzoai/playground/issues)**
+- **[Twitter/X](https://x.com/playground_ai)**
+- **[Examples](https://playground.ai/examples)**
 
 <p align="center">
   <strong>Built by developers who got tired of duct-taping agents together.</strong><br>
-  <a href="https://agentfield.ai">agentfield.ai</a>
+  <a href="https://playground.ai">playground.ai</a>
 </p>

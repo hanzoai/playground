@@ -17,7 +17,7 @@ import (
 
 // AgentNodeRunner handles running agent nodes
 type AgentNodeRunner struct {
-	AgentFieldHome string
+	AgentsHome string
 	Port           int
 	Detach         bool
 }
@@ -69,7 +69,7 @@ func (ar *AgentNodeRunner) RunAgentNode(agentNodeName string) error {
 		return fmt.Errorf("agent node failed to start: %w", err)
 	}
 
-	fmt.Printf("🧠 Agent node registered with AgentField Server\n")
+	fmt.Printf("🧠 Agent node registered with Agents Server\n")
 
 	// 6. Update registry with runtime info
 	if err := ar.updateRuntimeInfo(agentNodeName, port, cmd.Process.Pid); err != nil {
@@ -113,7 +113,7 @@ func (ar *AgentNodeRunner) startAgentNodeProcess(agentNode InstalledPackage, por
 	// Prepare environment variables
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("PORT=%d", port))
-	env = append(env, "AGENTFIELD_SERVER_URL=http://localhost:8080")
+	env = append(env, "AGENTS_SERVER_URL=http://localhost:8080")
 
 	// Load environment variables from package .env file
 	if envVars, err := ar.loadPackageEnvFile(agentNode.Path); err == nil {
@@ -245,7 +245,7 @@ func (ar *AgentNodeRunner) displayCapabilities(agentNode InstalledPackage, port 
 
 // updateRuntimeInfo updates the registry with runtime information
 func (ar *AgentNodeRunner) updateRuntimeInfo(agentNodeName string, port, pid int) error {
-	registryPath := filepath.Join(ar.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(ar.AgentsHome, "installed.yaml")
 
 	// Load registry
 	registry := &InstallationRegistry{}
@@ -276,7 +276,7 @@ func (ar *AgentNodeRunner) updateRuntimeInfo(agentNodeName string, port, pid int
 
 // loadRegistry loads the installation registry
 func (ar *AgentNodeRunner) loadRegistry() (*InstallationRegistry, error) {
-	registryPath := filepath.Join(ar.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(ar.AgentsHome, "installed.yaml")
 
 	registry := &InstallationRegistry{
 		Installed: make(map[string]InstalledPackage),

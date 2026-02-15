@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -279,19 +279,19 @@ func (s *stubStorage) ListDIDs(ctx context.Context) ([]*types.DIDRegistryEntry, 
 	return nil, nil
 }
 
-// AgentField Server DID operations
-func (s *stubStorage) StoreAgentFieldServerDID(ctx context.Context, agentfieldServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
+// Agents Server DID operations
+func (s *stubStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
 	return nil
 }
-func (s *stubStorage) GetAgentFieldServerDID(ctx context.Context, agentfieldServerID string) (*types.AgentFieldServerDIDInfo, error) {
+func (s *stubStorage) GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error) {
 	return nil, nil
 }
-func (s *stubStorage) ListAgentFieldServerDIDs(ctx context.Context) ([]*types.AgentFieldServerDIDInfo, error) {
+func (s *stubStorage) ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error) {
 	return nil, nil
 }
 
 // Agent DID operations
-func (s *stubStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, agentfieldServerDID, publicKeyJWK string, derivationIndex int) error {
+func (s *stubStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
 	return nil
 }
 func (s *stubStorage) GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error) {
@@ -313,7 +313,7 @@ func (s *stubStorage) ListComponentDIDs(ctx context.Context, agentDID string) ([
 }
 
 // Multi-step DID operations
-func (s *stubStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentfieldServerDID, publicKeyJWK string, derivationIndex int, components []storage.ComponentDIDRequest) error {
+func (s *stubStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []storage.ComponentDIDRequest) error {
 	return nil
 }
 
@@ -399,7 +399,7 @@ func TestSetupRoutesRegistersMetricsAndUI(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	srv := &AgentFieldServer{
+	srv := &AgentsServer{
 		Router:            gin.New(),
 		storage:           newStubStorage(),
 		payloadStore:      &stubPayloadStore{},
@@ -435,7 +435,7 @@ func TestSetupRoutesRegistersWorkflowCleanupUIRoute(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	srv := &AgentFieldServer{
+	srv := &AgentsServer{
 		Router:            gin.New(),
 		storage:           newStubStorage(),
 		payloadStore:      &stubPayloadStore{},
@@ -463,7 +463,7 @@ func TestSetupRoutesRegistersHealthEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("health endpoint returns healthy status", func(t *testing.T) {
-		srv := &AgentFieldServer{
+		srv := &AgentsServer{
 			Router:            gin.New(),
 			storage:           newStubStorage(),
 			payloadStore:      &stubPayloadStore{},
@@ -486,7 +486,7 @@ func TestSetupRoutesRegistersHealthEndpoint(t *testing.T) {
 	})
 
 	t.Run("health endpoint accessible without API key", func(t *testing.T) {
-		srv := &AgentFieldServer{
+		srv := &AgentsServer{
 			Router:            gin.New(),
 			storage:           newStubStorage(),
 			payloadStore:      &stubPayloadStore{},
@@ -513,7 +513,7 @@ func TestSetupRoutesRegistersHealthEndpoint(t *testing.T) {
 	})
 
 	t.Run("health endpoint returns CORS headers", func(t *testing.T) {
-		srv := &AgentFieldServer{
+		srv := &AgentsServer{
 			Router:            gin.New(),
 			storage:           newStubStorage(),
 			payloadStore:      &stubPayloadStore{},
@@ -547,7 +547,7 @@ func TestUnregisterAgentFromMonitoringResponses(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	srv := &AgentFieldServer{}
+	srv := &AgentsServer{}
 
 	t.Run("missing node id returns 400", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodDelete, "/internal/nodes//monitor", nil)

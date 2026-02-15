@@ -1,5 +1,5 @@
 """
-Pytest configuration and fixtures for AgentField functional tests.
+Pytest configuration and fixtures for Playground functional tests.
 
 These fixtures provide integration with the Docker-based test environment,
 allowing tests to interact with the control plane and create test agents.
@@ -14,7 +14,7 @@ from typing import AsyncGenerator, Callable, Dict, Optional
 
 import httpx
 import pytest
-from agentfield import Agent, AIConfig
+from playground import Agent, AIConfig
 
 from utils import FunctionalTestLogger, InstrumentedAsyncClient
 
@@ -83,8 +83,8 @@ def _get_session_logger() -> FunctionalTestLogger:
 
 @pytest.fixture(scope="session")
 def control_plane_url() -> str:
-    """Get the AgentField control plane URL from environment."""
-    url = os.environ.get("AGENTFIELD_SERVER", "http://localhost:8080")
+    """Get the Playground control plane URL from environment."""
+    url = os.environ.get("AGENTS_SERVER", "http://localhost:8080")
     return url.rstrip("/")
 
 
@@ -263,7 +263,7 @@ def make_test_agent(control_plane_url: str) -> Callable[..., Agent]:
             node_id = f"test-agent-{uuid.uuid4().hex[:8]}"
         
         # Set sensible defaults for testing
-        kwargs.setdefault("agentfield_server", control_plane_url)
+        kwargs.setdefault("playground_server", control_plane_url)
         kwargs.setdefault("dev_mode", True)
         kwargs.setdefault("callback_url", "http://test-agent")
         
@@ -333,8 +333,8 @@ async def registered_agent(
     
     # Register with control plane
     try:
-        await agent.agentfield_handler.register_with_agentfield_server(port)
-        agent.agentfield_server = None
+        await agent.hanzo/agents_handler.register_with_playground_server(port)
+        agent.hanzo/agents_server = None
         
         # Wait for registration to complete
         await asyncio.sleep(1)

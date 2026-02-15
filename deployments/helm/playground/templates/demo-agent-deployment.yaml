@@ -36,7 +36,7 @@ spec:
             - name: http
               containerPort: {{ .Values.demoAgent.service.port }}
           env:
-            - name: AGENTFIELD_URL
+            - name: AGENTS_URL
               value: "http://{{ include "playground.controlPlane.fullname" . }}:{{ .Values.controlPlane.service.port }}"
             - name: AGENT_NODE_ID
               value: {{ .Values.demoAgent.nodeId | quote }}
@@ -45,7 +45,7 @@ spec:
             - name: AGENT_PUBLIC_URL
               value: "http://{{ include "playground.demoAgent.fullname" . }}:{{ .Values.demoAgent.service.port }}"
             {{- if .Values.apiAuth.enabled }}
-            - name: AGENTFIELD_TOKEN
+            - name: AGENTS_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.apiAuth.secretName" . }}

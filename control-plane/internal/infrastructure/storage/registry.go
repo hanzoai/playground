@@ -1,4 +1,4 @@
-// agentfield/internal/infrastructure/storage/registry.go
+// agents/internal/infrastructure/storage/registry.go
 package storage
 
 import (
@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
 )
 
 type LocalRegistryStorage struct {

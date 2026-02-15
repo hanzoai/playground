@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useMode } from '@/contexts/ModeContext';
 import { MCPHealthIndicator } from './MCPHealthIndicator';
-import type { MCPServerHealthForUI, MCPServerAction } from '@/types/agentfield';
+import type { MCPServerHealthForUI, MCPServerAction } from '@/types/playground';
 
 interface MCPServerCardProps {
   server: MCPServerHealthForUI;

@@ -6,17 +6,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	storagecfg "github.com/Agent-Field/agentfield/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	storagecfg "github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
 func TestCreateServiceContainerWithoutDID(t *testing.T) {
 	t.Parallel()
 
-	agentfieldHome := t.TempDir()
+	agentsHome := t.TempDir()
 	cfg := &config.Config{}
 
-	container := CreateServiceContainer(cfg, agentfieldHome)
+	container := CreateServiceContainer(cfg, agentsHome)
 
 	if container.PackageService == nil || container.AgentService == nil || container.DevService == nil {
 		t.Fatalf("expected core services to be initialised")
@@ -29,13 +29,13 @@ func TestCreateServiceContainerWithoutDID(t *testing.T) {
 func TestCreateServiceContainerDIDWithoutStorageFallback(t *testing.T) {
 	t.Parallel()
 
-	agentfieldHome := t.TempDir()
+	agentsHome := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Features.DID.Enabled = true
-	cfg.Features.DID.Keystore.Path = filepath.Join(agentfieldHome, "keys")
+	cfg.Features.DID.Keystore.Path = filepath.Join(agentsHome, "keys")
 	cfg.Storage.Mode = "invalid"
 
-	container := CreateServiceContainer(cfg, agentfieldHome)
+	container := CreateServiceContainer(cfg, agentsHome)
 
 	if container.DIDService != nil || container.VCService != nil {
 		t.Fatalf("expected DID services to remain nil when storage initialisation fails")
@@ -45,15 +45,15 @@ func TestCreateServiceContainerDIDWithoutStorageFallback(t *testing.T) {
 func TestCreateServiceContainerWithLocalDID(t *testing.T) {
 	t.Parallel()
 
-	agentfieldHome := t.TempDir()
+	agentsHome := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Storage.Mode = "local"
 	cfg.Storage.Local = storagecfg.LocalStorageConfig{
-		DatabasePath: filepath.Join(agentfieldHome, "agentfield.db"),
-		KVStorePath:  filepath.Join(agentfieldHome, "agentfield.bolt"),
+		DatabasePath: filepath.Join(agentsHome, "agents.db"),
+		KVStorePath:  filepath.Join(agentsHome, "agents.bolt"),
 	}
 	cfg.Features.DID.Enabled = true
-	cfg.Features.DID.Keystore.Path = filepath.Join(agentfieldHome, "keys")
+	cfg.Features.DID.Keystore.Path = filepath.Join(agentsHome, "keys")
 
 	ctx := context.Background()
 	probe := storagecfg.NewLocalStorage(storagecfg.LocalStorageConfig{})
@@ -71,7 +71,7 @@ func TestCreateServiceContainerWithLocalDID(t *testing.T) {
 		t.Fatalf("failed to close probe storage: %v", err)
 	}
 
-	container := CreateServiceContainer(cfg, agentfieldHome)
+	container := CreateServiceContainer(cfg, agentsHome)
 
 	if container.DIDService == nil {
 		t.Fatalf("expected DID service to be initialised when configuration is valid")

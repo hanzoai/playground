@@ -1,7 +1,7 @@
 """
 Docker/Kubernetes-friendly Hello World (Python)
 
-This example is designed to validate the full AgentField execution path:
+This example is designed to validate the full Playground execution path:
 
 client -> control plane (/api/v1/execute) -> agent callback URL -> response
 
@@ -10,18 +10,18 @@ It is intentionally deterministic (no LLM credentials required).
 
 import os
 
-from agentfield import Agent
+from playground import Agent
 
 
 app = Agent(
     node_id=os.getenv("AGENT_NODE_ID", "demo-python-agent"),
-    agentfield_server=os.getenv("AGENTFIELD_URL", "http://localhost:8080"),
+    playground_server=os.getenv("AGENTS_URL", "http://localhost:8080"),
     dev_mode=True,
 )
 
 
 @app.reasoner()
-async def hello(name: str = "AgentField") -> dict:
+async def hello(name: str = "Playground") -> dict:
     return {"greeting": f"Hello, {name}!", "node_id": app.node_id}
 
 

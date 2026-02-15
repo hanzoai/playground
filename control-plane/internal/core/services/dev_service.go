@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
 )
 
 type DefaultDevService struct {
@@ -44,10 +44,10 @@ func (ds *DefaultDevService) RunInDevMode(path string, options domain.DevOptions
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Check if agentfield.yaml exists
-	agentfieldYamlPath := filepath.Join(absPath, "agentfield.yaml")
-	if !ds.fileSystem.Exists(agentfieldYamlPath) {
-		return fmt.Errorf("no agentfield.yaml found in %s", absPath)
+	// Check if agents.yaml exists
+	agentsYamlPath := filepath.Join(absPath, "agents.yaml")
+	if !ds.fileSystem.Exists(agentsYamlPath) {
+		return fmt.Errorf("no agents.yaml found in %s", absPath)
 	}
 
 	return ds.runDev(absPath, options)
@@ -200,8 +200,8 @@ func (ds *DefaultDevService) startDevProcess(packagePath string, port int, optio
 	if port > 0 {
 		env = append(env, fmt.Sprintf("PORT=%d", port))
 	}
-	env = append(env, "AGENTFIELD_SERVER_URL=http://localhost:8080")
-	env = append(env, "AGENTFIELD_DEV_MODE=true")
+	env = append(env, "AGENTS_SERVER_URL=http://localhost:8080")
+	env = append(env, "AGENTS_DEV_MODE=true")
 
 	// Load environment variables from package .env file
 	if envVars, err := ds.loadDevEnvFile(packagePath); err == nil {

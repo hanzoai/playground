@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,8 +21,8 @@ func setupObservabilityTestStorage(t *testing.T) (*LocalStorage, context.Context
 	cfg := StorageConfig{
 		Mode: "local",
 		Local: LocalStorageConfig{
-			DatabasePath: filepath.Join(tempDir, "agentfield.db"),
-			KVStorePath:  filepath.Join(tempDir, "agentfield.bolt"),
+			DatabasePath: filepath.Join(tempDir, "agents.db"),
+			KVStorePath:  filepath.Join(tempDir, "agents.bolt"),
 		},
 	}
 

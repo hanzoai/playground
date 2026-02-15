@@ -8,7 +8,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/stretchr/testify/require"
 )
 

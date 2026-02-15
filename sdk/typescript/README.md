@@ -1,10 +1,10 @@
-# AgentField TypeScript SDK
+# Playground TypeScript SDK
 
-The TypeScript SDK provides an idiomatic Node.js interface for building and running AgentField agents. It mirrors the Python SDK APIs, including AI, memory, discovery, and MCP tooling.
+The TypeScript SDK provides an idiomatic Node.js interface for building and running Playground agents. It mirrors the Python SDK APIs, including AI, memory, discovery, and MCP tooling.
 
 ## Installing
 ```bash
-npm install @agentfield/sdk
+npm install @playground/sdk
 ```
 
 ## Rate limiting
@@ -12,7 +12,7 @@ AI calls are wrapped with a stateless rate limiter that matches the Python SDK: 
 
 Configure per-agent via `aiConfig`:
 ```ts
-import { Agent } from '@agentfield/sdk';
+import { Agent } from '@playground/sdk';
 
 const agent = new Agent({
   nodeId: 'demo',
@@ -33,7 +33,7 @@ To disable retries, set `enableRateLimitRetry: false`.
 
 You can also use the limiter directly:
 ```ts
-import { StatelessRateLimiter } from '@agentfield/sdk';
+import { StatelessRateLimiter } from '@playground/sdk';
 
 const limiter = new StatelessRateLimiter({ maxRetries: 3, baseDelay: 0.5 });
 const result = await limiter.executeWithRetry(() => makeAiCall());
@@ -41,7 +41,7 @@ const result = await limiter.executeWithRetry(() => makeAiCall());
 
 ## Execution Notes
 
-Log execution progress with `ctx.note(message: string, tags?: string[])` for fire-and-forget debugging in the AgentField UI.
+Log execution progress with `ctx.note(message: string, tags?: string[])` for fire-and-forget debugging in the Playground UI.
 
 ```ts
 agent.reasoner('process', async (ctx) => {
@@ -52,4 +52,4 @@ agent.reasoner('process', async (ctx) => {
 });
 ```
 
-**Use `note()` for AgentField UI tracking, `console.log()` for local debugging.**
+**Use `note()` for Playground UI tracking, `console.log()` for local debugging.**

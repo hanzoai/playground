@@ -1,6 +1,6 @@
 # Image Generation Hello World
 
-A simple AgentField example demonstrating AI-powered image generation with **unified support for multiple providers**.
+A simple Playground example demonstrating AI-powered image generation with **unified support for multiple providers**.
 
 ## What This Example Demonstrates
 
@@ -42,7 +42,7 @@ generate_artwork (entry point)
 
 ## Prerequisites
 
-1. **AgentField Control Plane** running at `http://localhost:8080`
+1. **Playground Control Plane** running at `http://localhost:8080`
    ```bash
    cd control-plane
    go run ./cmd/af dev
@@ -362,7 +362,7 @@ pip install -r requirements.txt
 ### Rate Limiting
 DALL-E has rate limits. If you hit them:
 - Wait a few seconds between requests
-- AgentField automatically retries with exponential backoff
+- Playground automatically retries with exponential backoff
 - Check your OpenAI account tier and limits
 
 ## Next Steps
@@ -379,6 +379,6 @@ DALL-E has rate limits. If you hit them:
 
 ## Learn More
 
-- [AgentField Documentation](https://agentfield.ai/docs)
+- [Playground Documentation](https://playground.ai/docs)
 - [DALL-E API Reference](https://platform.openai.com/docs/guides/images)
 - [LiteLLM Documentation](https://docs.litellm.ai)

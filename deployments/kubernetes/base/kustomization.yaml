@@ -8,5 +8,5 @@ resources:
 
 labels:
   - pairs:
-      app.kubernetes.io/name: agentfield
+      app.kubernetes.io/name: playground
     includeSelectors: true

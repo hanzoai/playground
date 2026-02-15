@@ -195,10 +195,10 @@ jobs:
         include:
           - os: ubuntu-latest
             label: linux
-            goreleaser_ids: '--id agentfield-linux-amd64 --id agentfield-linux-arm64'
+            goreleaser_ids: '--id playground-linux-amd64 --id playground-linux-arm64'
           - os: macos-14
             label: darwin
-            goreleaser_ids: '--id agentfield-darwin-amd64 --id agentfield-darwin-arm64'
+            goreleaser_ids: '--id playground-darwin-amd64 --id playground-darwin-arm64'
     runs-on: ${{ matrix.os }}
     env:
       GORELEASER_CURRENT_TAG: ${{ needs.prepare.outputs.tag_name }}
@@ -255,14 +255,14 @@ jobs:
           ls -lah dist/
 
           # Move binaries from subdirectories to dist root
-          find dist/ -type f -name "agentfield-*" -exec mv {} dist/ \; 2>/dev/null || true
+          find dist/ -type f -name "playground-*" -exec mv {} dist/ \; 2>/dev/null || true
 
           # Remove empty subdirectories
           find dist/ -mindepth 1 -type d -empty -delete 2>/dev/null || true
 
           echo ""
           echo "=== Flattened dist/ directory ==="
-          ls -lah dist/agentfield-* 2>/dev/null || echo "No binaries found"
+          ls -lah dist/playground-* 2>/dev/null || echo "No binaries found"
 
       - name: Rename artifact metadata
         shell: bash
@@ -341,7 +341,7 @@ jobs:
           ls -lah dist/
 
           cd dist
-          sha256sum agentfield-* > checksums.txt
+          sha256sum playground-* > checksums.txt
           cat checksums.txt
           cd ..
 
@@ -355,27 +355,27 @@ jobs:
           body: |
             ${{ needs.prepare.outputs.environment == 'staging' && '> ⚠️ **This is a staging/pre-release version for testing. Not recommended for production use.**' || '' }}
 
-            ## AgentField ${{ needs.prepare.outputs.version }}
+            ## Playground ${{ needs.prepare.outputs.version }}
 
             ### Installation
 
             ${{ needs.prepare.outputs.environment == 'staging' && '```bash
             # Staging binary (use --staging flag)
-            curl -fsSL https://agentfield.ai/install.sh | bash -s -- --staging
+            curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
 
             # Python SDK (prerelease - requires --pre flag)
-            pip install --pre agentfield
+            pip install --pre playground
 
             # TypeScript SDK
-            npm install @agentfield/sdk@next
+            npm install @playground/sdk@next
             ```' || '```bash
-            curl -fsSL https://agentfield.ai/install.sh | bash
+            curl -fsSL https://playground.ai/install.sh | bash
             ```' }}
 
             ### Version Pinning
 
             ```bash
-            VERSION=${{ needs.prepare.outputs.tag_name }} curl -fsSL https://agentfield.ai/install.sh | bash
+            VERSION=${{ needs.prepare.outputs.tag_name }} curl -fsSL https://playground.ai/install.sh | bash
             ```
 
             ### Manual Download
@@ -384,12 +384,12 @@ jobs:
 
             ### Supported Platforms
 
-            - **macOS Intel:** `agentfield-darwin-amd64`
-            - **macOS Apple Silicon:** `agentfield-darwin-arm64`
-            - **Linux x86_64:** `agentfield-linux-amd64`
-            - **Linux ARM64:** `agentfield-linux-arm64`
+            - **macOS Intel:** `playground-darwin-amd64`
+            - **macOS Apple Silicon:** `playground-darwin-arm64`
+            - **Linux x86_64:** `playground-linux-amd64`
+            - **Linux ARM64:** `playground-linux-arm64`
           files: |
-            dist/agentfield-*
+            dist/playground-*
             dist/checksums.txt
 
       - name: Upload binary artifacts
@@ -465,7 +465,7 @@ jobs:
           ENVIRONMENT: ${{ needs.prepare.outputs.environment }}
         run: |
           set -euo pipefail
-          image="agentfield/control-plane"
+          image="playground/control-plane"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
 
           if [ "${ENVIRONMENT}" = "staging" ]; then

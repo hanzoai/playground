@@ -5,7 +5,7 @@ Tests for MCP Client
 import pytest
 from unittest.mock import AsyncMock, patch
 from aiohttp import ClientSession
-from agentfield.mcp_client import MCPClient
+from playground.mcp_client import MCPClient
 
 
 class TestMCPClientInitialization:

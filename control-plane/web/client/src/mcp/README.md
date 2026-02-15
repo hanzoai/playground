@@ -20,22 +20,22 @@ The MCP UI system is built with a modular architecture consisting of:
 
 ```
 MCP UI System
-├── Components (agentfield/web/client/src/components/mcp/)
+├── Components (playground/web/client/src/components/mcp/)
 │   ├── MCPHealthIndicator - Status indicators and health displays
 │   ├── MCPServerCard - Individual server information cards
 │   ├── MCPServerList - List of all MCP servers
 │   ├── MCPToolExplorer - Tool discovery and exploration
 │   ├── MCPToolTester - Interactive tool testing interface
 │   └── MCPServerControls - Bulk server management controls
-├── Hooks (agentfield/web/client/src/hooks/)
+├── Hooks (playground/web/client/src/hooks/)
 │   ├── useMCPHealth - Health monitoring and real-time updates
 │   ├── useMCPServers - Server management operations
 │   ├── useMCPTools - Tool discovery and execution
 │   ├── useMCPMetrics - Performance metrics monitoring
 │   └── useSSE - Server-Sent Events for real-time updates
-├── Utilities (agentfield/web/client/src/utils/)
+├── Utilities (playground/web/client/src/utils/)
 │   └── mcpUtils - Formatting, validation, and helper functions
-└── Integration (agentfield/web/client/src/mcp/)
+└── Integration (playground/web/client/src/mcp/)
     └── index.ts - Centralized exports and integration patterns
 ```
 
@@ -345,19 +345,19 @@ if (process.env.NODE_ENV === 'development') {
 
 ### Adding New Components
 
-1. Create component in `agentfield/web/client/src/components/mcp/`
+1. Create component in `playground/web/client/src/components/mcp/`
 2. Add proper TypeScript types
 3. Include accessibility features
 4. Add error boundary support
-5. Export from `agentfield/web/client/src/components/mcp/index.ts`
+5. Export from `playground/web/client/src/components/mcp/index.ts`
 
 ### Adding New Hooks
 
-1. Create hook in `agentfield/web/client/src/hooks/`
+1. Create hook in `playground/web/client/src/hooks/`
 2. Follow existing patterns for state management
 3. Include proper cleanup and error handling
 4. Add TypeScript documentation
-5. Export from `agentfield/web/client/src/mcp/index.ts`
+5. Export from `playground/web/client/src/mcp/index.ts`
 
 ## API Reference
 

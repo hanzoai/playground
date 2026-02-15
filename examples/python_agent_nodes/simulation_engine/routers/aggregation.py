@@ -5,7 +5,7 @@ import random
 from collections import defaultdict
 from typing import List
 
-from agentfield import AgentRouter
+from playground import AgentRouter
 
 from schemas import (
     EntityDecision,

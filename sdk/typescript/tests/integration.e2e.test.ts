@@ -4,7 +4,7 @@ import axios from 'axios';
 import { WebSocketServer } from 'ws';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { Agent } from '../src/agent/Agent.js';
-import { AgentFieldClient } from '../src/client/AgentFieldClient.js';
+import { PlaygroundClient } from '../src/client/PlaygroundClient.js';
 
 type MemoryEntry = { key: string; value: any; scope: string; scopeId?: string };
 type VectorEntry = { key: string; embedding: number[]; scope: string; scopeId?: string };
@@ -285,7 +285,7 @@ async function createControlPlaneStub() {
 describe('TypeScript SDK integration', () => {
   let control: Awaited<ReturnType<typeof createControlPlaneStub>>;
   let agent: Agent;
-  let client: AgentFieldClient;
+  let client: PlaygroundClient;
   let agentPort: number;
 
   beforeAll(async () => {
@@ -296,7 +296,7 @@ describe('TypeScript SDK integration', () => {
       nodeId: 'ts-e2e-agent',
       port: agentPort,
       host: '127.0.0.1',
-      agentFieldUrl: control.url,
+      playgroundUrl: control.url,
       heartbeatIntervalMs: 20,
       devMode: false
     });
@@ -315,7 +315,7 @@ describe('TypeScript SDK integration', () => {
     agent.skill('greet', (ctx) => ({ greeting: `hello ${ctx.input.name}` }));
 
     await agent.serve();
-    client = new AgentFieldClient({ nodeId: 'ts-e2e-client', agentFieldUrl: control.url });
+    client = new PlaygroundClient({ nodeId: 'ts-e2e-client', playgroundUrl: control.url });
   }, 20000);
 
   afterAll(async () => {

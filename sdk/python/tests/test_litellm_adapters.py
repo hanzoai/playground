@@ -2,7 +2,7 @@
 Tests for litellm_adapters.py provider-specific patches.
 """
 
-from agentfield.litellm_adapters import (
+from playground.litellm_adapters import (
     get_provider_from_model,
     apply_openai_patches,
     apply_provider_patches,

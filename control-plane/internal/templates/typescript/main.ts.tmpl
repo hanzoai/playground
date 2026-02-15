@@ -1,11 +1,11 @@
 import 'dotenv/config';
-import { Agent } from '@agentfield/sdk';
+import { Agent } from '@playground/sdk';
 import { reasonersRouter } from './reasoners.js';
 
 async function main() {
   const agent = new Agent({
     nodeId: process.env.AGENT_ID ?? "{{.NodeID}}",
-    agentFieldUrl: process.env.AGENTFIELD_URL ?? 'http://localhost:8080',
+    playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
     port: Number(process.env.PORT ?? 8001),
     version: '1.0.0',
     devMode: true,

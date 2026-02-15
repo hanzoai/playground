@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time" // Added for time.Now()
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/internal/utils" // Added for ID generation
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"      // Added for new types
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/utils" // Added for ID generation
+	"github.com/hanzoai/playground/control-plane/pkg/types"      // Added for new types
 
 	"github.com/gin-gonic/gin"
 )
@@ -47,8 +47,8 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		ctx := c.Request.Context()
 		startTime := time.Now()
 
-		// Generate AgentField Request ID
-		agentfieldRequestID := utils.GenerateAgentFieldRequestID()
+		// Generate Agents Request ID
+		agentsRequestID := utils.GenerateAgentsRequestID()
 
 		// Extract headers
 		workflowID := c.GetHeader("X-Workflow-ID")
@@ -132,7 +132,7 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		workflowExecution := &types.WorkflowExecution{
 			WorkflowID:          workflowID,
 			ExecutionID:         executionID,
-			AgentFieldRequestID: agentfieldRequestID,
+			AgentsRequestID: agentsRequestID,
 			AgentNodeID:         nodeID,
 			ReasonerID:          reasonerName,
 			Status:              "running",
@@ -256,7 +256,7 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		agentReq.Header.Set("Content-Type", "application/json")
 		agentReq.Header.Set("X-Workflow-ID", workflowID)
 		agentReq.Header.Set("X-Execution-ID", executionID)
-		agentReq.Header.Set("X-AgentField-Request-ID", agentfieldRequestID)
+		agentReq.Header.Set("X-Agents-Request-ID", agentsRequestID)
 		if targetNode.DeploymentType == "serverless" {
 			agentReq.Header.Set("X-Run-ID", workflowID)
 		}
@@ -376,7 +376,7 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		// Set response headers
 		c.Header("X-Workflow-ID", workflowID)
 		c.Header("X-Execution-ID", executionID)
-		c.Header("X-AgentField-Request-ID", agentfieldRequestID)
+		c.Header("X-Agents-Request-ID", agentsRequestID)
 		c.Header("X-Agent-Node-ID", nodeID)
 		c.Header("X-Duration-MS", fmt.Sprintf("%d", duration))
 
@@ -390,14 +390,14 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 	}
 }
 
-// ExecuteSkillHandler handles execution of skills via AgentField server
+// ExecuteSkillHandler handles execution of skills via Agents server
 func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		startTime := time.Now()
 
-		// Generate AgentField Request ID
-		agentfieldRequestID := utils.GenerateAgentFieldRequestID()
+		// Generate Agents Request ID
+		agentsRequestID := utils.GenerateAgentsRequestID()
 
 		// Extract headers
 		workflowID := c.GetHeader("X-Workflow-ID")
@@ -481,7 +481,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		workflowExecution := &types.WorkflowExecution{
 			WorkflowID:          workflowID,
 			ExecutionID:         executionID,
-			AgentFieldRequestID: agentfieldRequestID,
+			AgentsRequestID: agentsRequestID,
 			AgentNodeID:         nodeID,
 			ReasonerID:          skillName, // For skills, ReasonerID will store skillName
 			Status:              "running",
@@ -548,7 +548,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		agentReq.Header.Set("Content-Type", "application/json")
 		agentReq.Header.Set("X-Workflow-ID", workflowID)
 		agentReq.Header.Set("X-Execution-ID", executionID)
-		agentReq.Header.Set("X-AgentField-Request-ID", agentfieldRequestID)
+		agentReq.Header.Set("X-Agents-Request-ID", agentsRequestID)
 		if parentWorkflowID != "" {
 			agentReq.Header.Set("X-Parent-Workflow-ID", parentWorkflowID)
 		}
@@ -659,7 +659,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		// Set response headers
 		c.Header("X-Workflow-ID", workflowID)
 		c.Header("X-Execution-ID", executionID)
-		c.Header("X-AgentField-Request-ID", agentfieldRequestID)
+		c.Header("X-Agents-Request-ID", agentsRequestID)
 		c.Header("X-Agent-Node-ID", nodeID)
 		c.Header("X-Duration-MS", fmt.Sprintf("%d", duration))
 

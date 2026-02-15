@@ -22,8 +22,8 @@ from typing import AsyncIterator, Optional, Tuple
 
 import pytest
 import uvicorn
-from agentfield import Agent
-from agentfield.async_config import AsyncConfig
+from playground import Agent
+from playground.async_config import AsyncConfig
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -80,9 +80,9 @@ async def _register_serverless(_async_http_client, invocation_url: str, *, retri
 
 
 async def _register_serverless_via_cli(invocation_url: str):
-    bin_override = os.environ.get("AF_BIN") or os.environ.get("AGENTFIELD_CLI")
+    bin_override = os.environ.get("AF_BIN") or os.environ.get("AGENTS_CLI")
     candidates = [bin_override] if bin_override else []
-    candidates.extend(["af", "agentfield"])
+    candidates.extend(["af", "playground"])
 
     af_bin: Optional[str] = None
     for candidate in candidates:
@@ -97,8 +97,8 @@ async def _register_serverless_via_cli(invocation_url: str):
         return {"ok": False, "error": "missing-cli", "candidates": candidates}
 
     env = os.environ.copy()
-    env.setdefault("AGENTFIELD_SERVER", env.get("CONTROL_PLANE_URL", "http://localhost:8080"))
-    token = env.get("AGENTFIELD_TOKEN")
+    env.setdefault("AGENTS_SERVER", env.get("CONTROL_PLANE_URL", "http://localhost:8080"))
+    token = env.get("AGENTS_TOKEN")
 
     cmd = [af_bin, "nodes", "register-serverless", "--url", invocation_url, "--json"]
     if token:
@@ -140,14 +140,14 @@ async def run_python_serverless_agent(node_id: str, control_plane_url: str) -> A
     """
     app = Agent(
         node_id=node_id,
-        agentfield_server=control_plane_url,
+        playground_server=control_plane_url,
         auto_register=False,
         dev_mode=True,
         async_config=AsyncConfig(enable_async_execution=False, fallback_to_sync=True),
     )
 
     @app.reasoner()
-    async def hello(name: str = "AgentField") -> dict:  # type: ignore[return-type]
+    async def hello(name: str = "Playground") -> dict:  # type: ignore[return-type]
         ctx = app.ctx
         return {
             "greeting": f"Hello, {name}!",
@@ -220,7 +220,7 @@ async def run_ts_serverless_agent(node_id: str, control_plane_url: str) -> Async
             "TS_AGENT_ID": node_id,
             "TS_AGENT_PORT": str(port),
             "TS_AGENT_BIND_HOST": TEST_BIND_HOST,
-            "AGENTFIELD_SERVER": control_plane_url,
+            "AGENTS_SERVER": control_plane_url,
         }
     )
     env.setdefault("NODE_PATH", "/usr/local/lib/node_modules:/usr/lib/node_modules")
@@ -253,9 +253,9 @@ async def run_go_serverless_agent(node_id: str, control_plane_url: str) -> Async
     env = {
         **os.environ,
         "AGENT_NODE_ID": node_id,
-        "AGENTFIELD_URL": control_plane_url,
+        "AGENTS_URL": control_plane_url,
         "PORT": str(port),
-        "AGENTFIELD_TOKEN": os.environ.get("AGENTFIELD_TOKEN", ""),
+        "AGENTS_TOKEN": os.environ.get("AGENTS_TOKEN", ""),
     }
 
     async with run_go_agent("serverless", env=env) as proc:

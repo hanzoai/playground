@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// notePayload represents the JSON payload sent to the AgentField server.
+// notePayload represents the JSON payload sent to the Playground server.
 type notePayload struct {
 	Message     string   `json:"message"`
 	Tags        []string `json:"tags"`
@@ -18,9 +18,9 @@ type notePayload struct {
 	AgentNodeID string   `json:"agent_node_id"`
 }
 
-// Note sends a progress/status message to the AgentField server.
+// Note sends a progress/status message to the Playground server.
 // This is useful for debugging and tracking agent execution progress
-// in the AgentField UI.
+// in the Playground UI.
 //
 // Notes are sent asynchronously (fire-and-forget) and will not block
 // the handler or raise errors that interrupt the workflow.
@@ -39,7 +39,7 @@ func (a *Agent) Note(ctx context.Context, message string, tags ...string) {
 	go a.sendNote(ctx, message, tags)
 }
 
-// Notef sends a formatted progress/status message to the AgentField server.
+// Notef sends a formatted progress/status message to the Playground server.
 // This is a convenience method that formats the message using fmt.Sprintf.
 //
 // Example usage:
@@ -51,8 +51,8 @@ func (a *Agent) Notef(ctx context.Context, format string, args ...any) {
 
 // sendNote performs the actual HTTP request to send the note.
 func (a *Agent) sendNote(ctx context.Context, message string, tags []string) {
-	// Check if AgentField URL is configured
-	baseURL := strings.TrimSpace(a.cfg.AgentFieldURL)
+	// Check if Playground URL is configured
+	baseURL := strings.TrimSpace(a.cfg.PlaygroundURL)
 	if baseURL == "" {
 		// No server configured, silently skip
 		return

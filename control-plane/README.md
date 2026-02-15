@@ -1,6 +1,6 @@
-# AgentField Control Plane
+# Playground Control Plane
 
-The AgentField control plane orchestrates agent workflows, manages verifiable credentials, serves the admin UI, and exposes REST/gRPC APIs consumed by the SDKs.
+The Playground control plane orchestrates agent workflows, manages verifiable credentials, serves the admin UI, and exposes REST/gRPC APIs consumed by the SDKs.
 
 ## Requirements
 
@@ -19,11 +19,11 @@ npm install
 npm run build
 cd ../..
 
-# Run database migrations (requires AGENTFIELD_DATABASE_URL)
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" up
+# Run database migrations (requires AGENTS_DATABASE_URL)
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
 
 # Start the control plane
-AGENTFIELD_DATABASE_URL=postgres://agentfield:agentfield@localhost:5432/agentfield?sslmode=disable \
+AGENTS_DATABASE_URL=postgres://playground:playground@localhost:5432/playground?sslmode=disable \
 go run ./cmd/server
 ```
 
@@ -36,7 +36,7 @@ For development with hot-reload, use the `dev.sh` script. This automatically reb
 ```bash
 cd control-plane
 ./dev.sh            # SQLite mode (default, no dependencies)
-./dev.sh postgres   # PostgreSQL mode (set AGENTFIELD_DATABASE_URL first)
+./dev.sh postgres   # PostgreSQL mode (set AGENTS_DATABASE_URL first)
 ```
 
 The server runs at `http://localhost:8080` and will automatically reload when you modify `.go`, `.yaml`, or `.yml` files.
@@ -47,11 +47,11 @@ The server runs at `http://localhost:8080` and will automatically reload when yo
 
 ## Configuration
 
-Environment variables override `config/agentfield.yaml`. Common options:
+Environment variables override `config/agents.yaml`. Common options:
 
-- `AGENTFIELD_DATABASE_URL` – PostgreSQL DSN
-- `AGENTFIELD_HTTP_ADDR` – HTTP listen address (`0.0.0.0:8080` by default)
-- `AGENTFIELD_LOG_LEVEL` – log verbosity (`info`, `debug`, etc.)
+- `AGENTS_DATABASE_URL` – PostgreSQL DSN
+- `AGENTS_HTTP_ADDR` – HTTP listen address (`0.0.0.0:8080` by default)
+- `AGENTS_LOG_LEVEL` – log verbosity (`info`, `debug`, etc.)
 
 Sample config files live in `config/`.
 
@@ -73,8 +73,8 @@ Run the Go server alongside the UI so API calls resolve locally. During producti
 Migrations use [Goose](https://github.com/pressly/goose):
 
 ```bash
-AGENTFIELD_DATABASE_URL=postgres://agentfield:agentfield@localhost:5432/agentfield?sslmode=disable \
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" status
+AGENTS_DATABASE_URL=postgres://playground:playground@localhost:5432/playground?sslmode=disable \
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" status
 ```
 
 ## Testing

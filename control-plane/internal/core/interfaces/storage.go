@@ -1,7 +1,7 @@
-// agentfield/internal/core/interfaces/storage.go
+// agents/internal/core/interfaces/storage.go
 package interfaces
 
-import "github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
+import "github.com/hanzoai/playground/control-plane/internal/core/domain"
 
 type FileSystemAdapter interface {
 	ReadFile(path string) ([]byte, error)
@@ -19,6 +19,6 @@ type RegistryStorage interface {
 }
 
 type ConfigStorage interface {
-	LoadAgentFieldConfig(path string) (*domain.AgentFieldConfig, error)
-	SaveAgentFieldConfig(path string, config *domain.AgentFieldConfig) error
+	LoadAgentsConfig(path string) (*domain.AgentsConfig, error)
+	SaveAgentsConfig(path string, config *domain.AgentsConfig) error
 }

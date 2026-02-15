@@ -5,7 +5,7 @@ import httpx
 import pytest
 import requests
 
-from agentfield.memory import (
+from playground.memory import (
     GlobalMemoryClient,
     MemoryClient,
     MemoryInterface,
@@ -92,11 +92,11 @@ async def test_memory_round_trip(monkeypatch, dummy_headers):
 
     monkeypatch.setattr(requests, "post", fake_post)
     monkeypatch.setattr(httpx, "AsyncClient", lambda *args, **kwargs: AsyncClientStub())
-    monkeypatch.setattr("agentfield.logger.log_debug", lambda *args, **kwargs: None)
+    monkeypatch.setattr("playground.logger.log_debug", lambda *args, **kwargs: None)
 
     context = SimpleNamespace(to_headers=lambda: dict(dummy_headers))
-    agentfield_client = SimpleNamespace(api_base="http://agentfield.local/api/v1")
-    memory_client = MemoryClient(agentfield_client, context)
+    playground_client = SimpleNamespace(api_base="http://playground.local/api/v1")
+    memory_client = MemoryClient(playground_client, context)
     interface = MemoryInterface(memory_client, SimpleNamespace())  # type: ignore[arg-type]
 
     # Default scope round-trip
@@ -120,11 +120,11 @@ async def test_memory_round_trip(monkeypatch, dummy_headers):
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_memory_client_uses_agentfield_async_request(dummy_headers):
+async def test_memory_client_uses_playground_async_request(dummy_headers):
     calls: list[tuple[str, str, dict]] = []
 
-    class DummyAgentFieldClient:
-        api_base = "http://agentfield.local/api/v1"
+    class DummyPlaygroundClient:
+        api_base = "http://playground.local/api/v1"
 
         async def _async_request(self, method, url, **kwargs):
             calls.append((method, url, kwargs))
@@ -133,7 +133,7 @@ async def test_memory_client_uses_agentfield_async_request(dummy_headers):
             return DummyAsyncResponse(200, {"ok": True})
 
     context = SimpleNamespace(to_headers=lambda: dict(dummy_headers))
-    memory_client = MemoryClient(DummyAgentFieldClient(), context)
+    memory_client = MemoryClient(DummyPlaygroundClient(), context)
 
     await memory_client.set("answer", 42)
     value = await memory_client.get("answer")

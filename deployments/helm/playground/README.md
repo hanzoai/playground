@@ -91,5 +91,5 @@ curl -H "X-API-Key: change-me" http://localhost:8080/api/v1/nodes
 
 ## Notes
 
-- The chart defaults `AGENTFIELD_CONFIG_FILE=/dev/null` so the control plane uses built-in defaults + environment variables.
-- Admin gRPC listens on `(AGENTFIELD_PORT + 100)` and is exposed via the Service port named `grpc`.
+- The chart defaults `AGENTS_CONFIG_FILE=/dev/null` so the control plane uses built-in defaults + environment variables.
+- Admin gRPC listens on `(AGENTS_PORT + 100)` and is exposed via the Service port named `grpc`.

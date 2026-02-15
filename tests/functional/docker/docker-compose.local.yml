@@ -3,28 +3,28 @@ services:
     build:
       context: ../../..
       dockerfile: deployments/docker/Dockerfile.control-plane
-    container_name: agentfield-control-plane-local
+    container_name: playground-control-plane-local
     environment:
-      AGENTFIELD_STORAGE_MODE: local
-      AGENTFIELD_PORT: 8080
-      AGENTFIELD_CONFIG_FILE: /etc/agentfield/agentfield-test.yaml
-      AGENTFIELD_HOME: /data/agentfield
+      AGENTS_STORAGE_MODE: local
+      AGENTS_PORT: 8080
+      AGENTS_CONFIG_FILE: /etc/playground/agents-test.yaml
+      AGENTS_HOME: /data/playground
     ports:
       - "8080:8080"
     volumes:
       - control-plane-data:/data
-      - ../docker/agentfield-test.yaml:/etc/agentfield/agentfield-test.yaml:ro
+      - ../docker/agents-test.yaml:/etc/playground/agents-test.yaml:ro
     networks:
-      - agentfield-test
-    command: ["server", "--port", "8080", "--config", "/etc/agentfield/agentfield-test.yaml", "--vc-execution"]
+      - playground-test
+    command: ["server", "--port", "8080", "--config", "/etc/playground/agents-test.yaml", "--vc-execution"]
 
   test-runner:
     build:
       context: ../../..
       dockerfile: tests/functional/docker/Dockerfile.test-runner
-    container_name: agentfield-test-runner-local
+    container_name: playground-test-runner-local
     environment:
-      AGENTFIELD_SERVER: http://control-plane:8080
+      AGENTS_SERVER: http://control-plane:8080
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/google/gemini-2.5-flash-lite}
       STORAGE_MODE: local
@@ -34,13 +34,13 @@ services:
       TEST_AGENT_BIND_HOST: ${TEST_AGENT_BIND_HOST:-0.0.0.0}
       TEST_AGENT_CALLBACK_HOST: ${TEST_AGENT_CALLBACK_HOST:-test-runner}
       FUNCTIONAL_LOG_FILE: /tests/functional/logs/functional-tests.log
-      AGENTFIELD_HOME: /tmp/agentfield-cli
+      AGENTS_HOME: /tmp/playground-cli
     volumes:
       - ../:/tests
     depends_on:
       - control-plane
     networks:
-      - agentfield-test
+      - playground-test
     working_dir: /tests
     command: >
       sh -c "
@@ -54,7 +54,7 @@ services:
       "
 
 networks:
-  agentfield-test:
+  playground-test:
     driver: bridge
 
 volumes:

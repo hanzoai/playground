@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
 )
 
 // marshalDataWithLogging marshals data to JSON with proper error handling and logging

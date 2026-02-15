@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -27,14 +27,14 @@ func setupDIDTestEnvironment(t *testing.T) (*DIDService, *DIDRegistry, storage.S
 
 	service := NewDIDService(cfg, ks, registry)
 
-	agentfieldID := "agentfield-test"
-	require.NoError(t, service.Initialize(agentfieldID))
+	agentsID := "agents-test"
+	require.NoError(t, service.Initialize(agentsID))
 
-	return service, registry, provider, ctx, agentfieldID
+	return service, registry, provider, ctx, agentsID
 }
 
 func TestDIDServiceRegisterAgentAndResolve(t *testing.T) {
-	service, registry, provider, ctx, agentfieldID := setupDIDTestEnvironment(t)
+	service, registry, provider, ctx, agentsID := setupDIDTestEnvironment(t)
 
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-alpha",
@@ -49,7 +49,7 @@ func TestDIDServiceRegisterAgentAndResolve(t *testing.T) {
 	require.Contains(t, resp.IdentityPackage.ReasonerDIDs, "reasoner.fn")
 	require.Contains(t, resp.IdentityPackage.SkillDIDs, "skill.fn")
 
-	storedRegistry, err := registry.GetRegistry(agentfieldID)
+	storedRegistry, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
 	require.NotNil(t, storedRegistry)
 	require.Contains(t, storedRegistry.AgentNodes, "agent-alpha")
@@ -86,14 +86,14 @@ func TestDIDServiceValidateRegistryFailure(t *testing.T) {
 	cfg := &config.DIDConfig{Enabled: true, Keystore: config.KeystoreConfig{Path: keystoreDir, Type: "local"}}
 	service := NewDIDService(cfg, ks, registry)
 
-	err = service.validateAgentFieldServerRegistry()
+	err = service.validateAgentsServerRegistry()
 	require.Error(t, err)
 
-	agentfieldID := "agentfield-validate"
-	require.NoError(t, service.Initialize(agentfieldID))
-	require.NoError(t, service.validateAgentFieldServerRegistry())
+	agentsID := "agents-validate"
+	require.NoError(t, service.Initialize(agentsID))
+	require.NoError(t, service.validateAgentsServerRegistry())
 
-	stored, err := registry.GetRegistry(agentfieldID)
+	stored, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
 	require.NotNil(t, stored)
 	require.False(t, stored.CreatedAt.IsZero())
@@ -102,10 +102,10 @@ func TestDIDServiceValidateRegistryFailure(t *testing.T) {
 }
 
 func TestDIDService_ResolveDID_RootDID(t *testing.T) {
-	service, registry, _, _, agentfieldID := setupDIDTestEnvironment(t)
+	service, registry, _, _, agentsID := setupDIDTestEnvironment(t)
 
 	// Get the root DID from registry
-	storedRegistry, err := registry.GetRegistry(agentfieldID)
+	storedRegistry, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
 	require.NotNil(t, storedRegistry)
 	require.NotEmpty(t, storedRegistry.RootDID)
@@ -115,7 +115,7 @@ func TestDIDService_ResolveDID_RootDID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resolved)
 	require.Equal(t, storedRegistry.RootDID, resolved.DID)
-	require.Equal(t, "agentfield_server", resolved.ComponentType)
+	require.Equal(t, "agents_server", resolved.ComponentType)
 	require.Equal(t, "m/44'/0'", resolved.DerivationPath)
 	require.NotEmpty(t, resolved.PrivateKeyJWK)
 	require.NotEmpty(t, resolved.PublicKeyJWK)
@@ -557,15 +557,15 @@ func TestDIDService_RegisterAgent_DisabledSystem(t *testing.T) {
 	_ = ctx
 }
 
-func TestDIDService_GetAgentFieldServerID(t *testing.T) {
-	service, _, _, _, agentfieldID := setupDIDTestEnvironment(t)
+func TestDIDService_GetAgentsServerID(t *testing.T) {
+	service, _, _, _, agentsID := setupDIDTestEnvironment(t)
 
-	serverID, err := service.GetAgentFieldServerID()
+	serverID, err := service.GetAgentsServerID()
 	require.NoError(t, err)
-	require.Equal(t, agentfieldID, serverID)
+	require.Equal(t, agentsID, serverID)
 }
 
-func TestDIDService_GetAgentFieldServerID_NotInitialized(t *testing.T) {
+func TestDIDService_GetAgentsServerID_NotInitialized(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -577,7 +577,7 @@ func TestDIDService_GetAgentFieldServerID_NotInitialized(t *testing.T) {
 	cfg := &config.DIDConfig{Enabled: true, Keystore: config.KeystoreConfig{Path: keystoreDir, Type: "local"}}
 	service := NewDIDService(cfg, ks, registry)
 
-	serverID, err := service.GetAgentFieldServerID()
+	serverID, err := service.GetAgentsServerID()
 	require.Error(t, err)
 	require.Empty(t, serverID)
 	require.Contains(t, err.Error(), "not initialized")

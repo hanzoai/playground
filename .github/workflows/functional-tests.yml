@@ -125,7 +125,7 @@ jobs:
           fi
           # Extract JUnit XML from container
           cd tests/functional
-          CONTAINER_NAME="agentfield-test-runner-${{ matrix.storage_mode }}"
+          CONTAINER_NAME="playground-test-runner-${{ matrix.storage_mode }}"
           docker cp ${CONTAINER_NAME}:/reports/junit-${{ matrix.storage_mode }}.xml ../../test-reports/ 2>/dev/null || echo "No JUnit report found in container"
       
       - name: Upload test reports

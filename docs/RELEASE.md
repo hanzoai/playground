@@ -1,10 +1,10 @@
 # Release Process
 
-This document describes how to create releases for AgentField using the **two-tier release system**.
+This document describes how to create releases for Playground using the **two-tier release system**.
 
 ## Overview
 
-AgentField uses a two-tier release model that separates **staging** (prerelease) from **production** releases:
+Playground uses a two-tier release model that separates **staging** (prerelease) from **production** releases:
 
 | Environment | Version Format | Python Registry | npm Tag | Docker Tag | GitHub Release | Trigger |
 |-------------|----------------|-----------------|---------|------------|----------------|---------|
@@ -80,15 +80,15 @@ Staging releases are **automatically triggered** when code is pushed to `main`. 
 5. Creates GitHub pre-release
 
 **Artifacts published to:**
-- Python: PyPI as prerelease (`pip install --pre agentfield`)
+- Python: PyPI as prerelease (`pip install --pre playground`)
 - TypeScript: npm with `@next` tag
-- Docker: `agentfield/control-plane:staging-X.Y.Z-rc.N`
+- Docker: `playground/control-plane:staging-X.Y.Z-rc.N`
 - Binaries: GitHub Pre-release
 
 **Manual staging release (optional):**
 
 If you need to manually trigger a staging release (e.g., with different options):
-1. Go to Actions -> [Release workflow](https://github.com/Agent-Field/agentfield/actions/workflows/release.yml)
+1. Go to Actions -> [Release workflow](https://github.com/hanzoai/playground/actions/workflows/release.yml)
 2. Click "Run workflow"
 3. Select `release_environment: staging`
 4. Optionally change `release_component` for minor/major bumps
@@ -98,19 +98,19 @@ If you need to manually trigger a staging release (e.g., with different options)
 
 ```bash
 # Binary (using --staging flag)
-curl -fsSL https://agentfield.ai/install.sh | bash -s -- --staging
+curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
 
 # Or directly from GitHub
-curl -fsSL https://raw.githubusercontent.com/Agent-Field/agentfield/main/scripts/install.sh | bash -s -- --staging
+curl -fsSL https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh | bash -s -- --staging
 
 # Python (prerelease - requires --pre flag)
-pip install --pre agentfield
+pip install --pre playground
 
 # TypeScript
-npm install @agentfield/sdk@next
+npm install @playground/sdk@next
 
 # Docker
-docker pull agentfield/control-plane:staging-0.1.28-rc.4
+docker pull playground/control-plane:staging-0.1.28-rc.4
 ```
 
 ### Production Release - MANUAL
@@ -124,7 +124,7 @@ Production releases are **manually triggered** via GitHub Actions workflow dispa
 
 **Steps:**
 1. Ensure staging release(s) have been tested
-2. Go to Actions -> [Release workflow](https://github.com/Agent-Field/agentfield/actions/workflows/release.yml)
+2. Go to Actions -> [Release workflow](https://github.com/hanzoai/playground/actions/workflows/release.yml)
 3. Click "Run workflow"
 4. Fill in the form:
    - **release_environment:** `production` (default for manual triggers)
@@ -144,23 +144,23 @@ Production releases are **manually triggered** via GitHub Actions workflow dispa
 **Artifacts published to:**
 - Python: PyPI (https://pypi.org)
 - TypeScript: npm with `@latest` tag
-- Docker: `agentfield/control-plane:vX.Y.Z` + `:latest`
+- Docker: `playground/control-plane:vX.Y.Z` + `:latest`
 - Binaries: GitHub Release (public)
 
 **Installing production releases:**
 
 ```bash
 # Binary (recommended)
-curl -fsSL https://agentfield.ai/install.sh | bash
+curl -fsSL https://playground.ai/install.sh | bash
 
 # Python
-pip install agentfield
+pip install playground
 
 # TypeScript
-npm install @agentfield/sdk
+npm install @playground/sdk
 
 # Docker
-docker pull agentfield/control-plane:latest
+docker pull playground/control-plane:latest
 ```
 
 ---
@@ -169,22 +169,22 @@ docker pull agentfield/control-plane:latest
 
 ### GitHub Release Assets
 ```
-agentfield-darwin-amd64          # macOS Intel binary
-agentfield-darwin-arm64          # macOS Apple Silicon binary
-agentfield-linux-amd64           # Linux x86_64 binary
-agentfield-linux-arm64           # Linux ARM64 binary
+playground-darwin-amd64          # macOS Intel binary
+playground-darwin-arm64          # macOS Apple Silicon binary
+playground-linux-amd64           # Linux x86_64 binary
+playground-linux-arm64           # Linux ARM64 binary
 checksums.txt                    # SHA256 checksums for all binaries
-agentfield-X.Y.Z-py3-none-any.whl   # Python wheel
-agentfield-X.Y.Z.tar.gz             # Python source distribution
+playground-X.Y.Z-py3-none-any.whl   # Python wheel
+playground-X.Y.Z.tar.gz             # Python source distribution
 ```
 
 ### Registry Packages
 
 | Registry | Staging | Production |
 |----------|---------|------------|
-| PyPI | `pip install --pre agentfield` | `pip install agentfield` |
-| npm | `@agentfield/sdk@next` | `@agentfield/sdk@latest` |
-| Docker | `agentfield/control-plane:staging-*` | `agentfield/control-plane:v*` |
+| PyPI | `pip install --pre playground` | `pip install playground` |
+| npm | `@playground/sdk@next` | `@playground/sdk@latest` |
+| Docker | `playground/control-plane:staging-*` | `playground/control-plane:v*` |
 
 ---
 
@@ -194,27 +194,27 @@ agentfield-X.Y.Z.tar.gz             # Python source distribution
 
 ```bash
 # Latest stable version
-curl -fsSL https://agentfield.ai/install.sh | bash
+curl -fsSL https://playground.ai/install.sh | bash
 
 # Specific version
-VERSION=v0.1.28 curl -fsSL https://agentfield.ai/install.sh | bash
+VERSION=v0.1.28 curl -fsSL https://playground.ai/install.sh | bash
 ```
 
 ### Staging Install
 
 ```bash
 # Latest prerelease version (using --staging flag)
-curl -fsSL https://agentfield.ai/install.sh | bash -s -- --staging
+curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
 
 # Or using environment variable
-STAGING=1 curl -fsSL https://agentfield.ai/install.sh | bash
+STAGING=1 curl -fsSL https://playground.ai/install.sh | bash
 
 # Specific prerelease version
-VERSION=v0.1.28-rc.4 curl -fsSL https://agentfield.ai/install.sh | bash -s -- --staging
+VERSION=v0.1.28-rc.4 curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
 ```
 
 **Key differences when using `--staging`:**
-- Installs to `~/.agentfield-staging/bin` (separate from production)
+- Installs to `~/.hanzo/agents-staging/bin` (separate from production)
 - Creates `af-staging` symlink instead of `af`
 - Fetches the latest prerelease from GitHub API
 
@@ -244,18 +244,18 @@ Examples:
 
 After merging a PR or pushing to `main`:
 
-1. Check the [Actions tab](https://github.com/Agent-Field/agentfield/actions/workflows/release.yml) for the automatic run
+1. Check the [Actions tab](https://github.com/hanzoai/playground/actions/workflows/release.yml) for the automatic run
 2. Verify:
    - [ ] Workflow triggered automatically
    - [ ] Version bumped to `X.Y.Z-rc.N` (e.g., `0.1.19-rc.1`)
    - [ ] Python prerelease package appears on PyPI
-   - [ ] `npm install @agentfield/sdk@next` installs new version
+   - [ ] `npm install @playground/sdk@next` installs new version
    - [ ] GitHub release marked as "Pre-release"
    - [ ] Docker image tagged `staging-X.Y.Z-rc.N`
 3. Test staging install:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/Agent-Field/agentfield/main/scripts/install.sh | bash -s -- --staging
-   ~/.agentfield-staging/bin/agentfield --version
+   curl -fsSL https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh | bash -s -- --staging
+   ~/.hanzo/agents-staging/bin/playground --version
    ```
 
 ### Multiple Staging Releases
@@ -274,13 +274,13 @@ All previous staging artifacts remain available.
 2. Verify:
    - [ ] Version finalizes to `X.Y.Z` (e.g., `0.1.19`, no `-rc.N` suffix)
    - [ ] Python package appears on PyPI
-   - [ ] `npm install @agentfield/sdk` gets new version
+   - [ ] `npm install @playground/sdk` gets new version
    - [ ] GitHub release NOT marked as "Pre-release"
    - [ ] Docker image tagged `vX.Y.Z` and `latest`
 3. Test `install.sh`:
    ```bash
-   curl -fsSL https://agentfield.ai/install.sh | bash
-   ~/.agentfield/bin/agentfield --version
+   curl -fsSL https://playground.ai/install.sh | bash
+   ~/.hanzo/agents/bin/playground --version
    ```
 
 ---
@@ -292,7 +292,7 @@ All previous staging artifacts remain available.
 | Component | Procedure |
 |-----------|-----------|
 | PyPI prerelease | Cannot re-upload same version; must yank + bump rc number |
-| npm @next | `npm unpublish @agentfield/sdk@X.Y.Z-rc.N` (within 72 hours) or publish new rc |
+| npm @next | `npm unpublish @playground/sdk@X.Y.Z-rc.N` (within 72 hours) or publish new rc |
 | Docker staging | Delete image tag from Docker Hub via web UI or CLI |
 | GitHub | Delete the prerelease from Releases page |
 
@@ -337,14 +337,14 @@ git push origin :refs/tags/v0.1.19
 ## Hosting Install Scripts
 
 The install scripts need to be accessible at:
-- `https://agentfield.ai/install.sh` (handles both production and staging via `--staging` flag)
-- `https://agentfield.ai/uninstall.sh`
+- `https://playground.ai/install.sh` (handles both production and staging via `--staging` flag)
+- `https://playground.ai/uninstall.sh`
 
 **Options:**
 
 1. **GitHub Raw URLs (Temporary):**
    ```
-   https://raw.githubusercontent.com/Agent-Field/agentfield/main/scripts/install.sh
+   https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh
    ```
 
 2. **Website Rewrites (Recommended):**
@@ -369,7 +369,7 @@ The install scripts need to be accessible at:
 1. Re-download `checksums.txt` from the release
 2. Verify it matches the binary hash:
    ```bash
-   sha256sum agentfield-linux-amd64
+   sha256sum playground-linux-amd64
    ```
 3. If mismatched, delete the release and re-run the workflow
 
@@ -386,4 +386,4 @@ The install scripts need to be accessible at:
 ## Support
 
 For release issues, contact:
-- GitHub Issues: https://github.com/Agent-Field/agentfield/issues
+- GitHub Issues: https://github.com/hanzoai/playground/issues

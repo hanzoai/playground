@@ -1,7 +1,7 @@
 {
-  "name": "@agentfield/sdk",
+  "name": "@playground/sdk",
   "version": "0.1.41-rc.4",
-  "description": "AgentField TypeScript SDK",
+  "description": "Playground TypeScript SDK",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -53,20 +53,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Agent-Field/agentfield.git",
+    "url": "https://github.com/hanzoai/playground.git",
     "directory": "sdk/typescript"
   },
-  "homepage": "https://github.com/Agent-Field/agentfield/tree/main/sdk/typescript",
+  "homepage": "https://github.com/hanzoai/playground/tree/main/sdk/typescript",
   "bugs": {
-    "url": "https://github.com/Agent-Field/agentfield/issues"
+    "url": "https://github.com/hanzoai/playground/issues"
   },
   "license": "Apache-2.0",
   "keywords": [
-    "agentfield",
+    "playground",
     "ai-agents",
     "llm",
     "multi-agent",
     "orchestration"
   ],
-  "author": "AgentField Team"
+  "author": "Playground Team"
 }

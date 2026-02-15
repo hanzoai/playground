@@ -1,5 +1,5 @@
 {
-  "framework": "AgentField",
+  "framework": "Playground",
   "language": "Go",
   "go_version": "go1.25.4",
   "timestamp": "2026-01-10T02:23:26Z",

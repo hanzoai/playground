@@ -35,7 +35,7 @@ async def test_go_sdk_discovery_flow(async_http_client, control_plane_url):
     node_id = unique_node_id("go-discovery-agent")
     env_server = {
         **os.environ,
-        "AGENTFIELD_URL": control_plane_url,
+        "AGENTS_URL": control_plane_url,
         "AGENT_NODE_ID": node_id,
         "AGENT_LISTEN_ADDR": ":8101",
         "AGENT_PUBLIC_URL": "http://test-runner:8101",
@@ -48,11 +48,11 @@ async def test_go_sdk_discovery_flow(async_http_client, control_plane_url):
         base_env = {
             k: v
             for k, v in os.environ.items()
-            if k not in {"AGENTFIELD_URL", "AGENT_PUBLIC_URL"}
+            if k not in {"AGENTS_URL", "AGENT_PUBLIC_URL"}
         }
         base_env.update(
             {
-                "AGENTFIELD_URL": control_plane_url,
+                "AGENTS_URL": control_plane_url,
                 "AGENT_NODE_ID": unique_node_id("go-discovery-client"),
             }
         )

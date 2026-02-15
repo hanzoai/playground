@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: agentfield-demo-python-agent
+  name: playground-demo-python-agent
 spec:
   replicas: 1
   selector:
@@ -19,7 +19,7 @@ spec:
             - sh
             - -c
             - >
-              until curl -sf "http://agentfield-control-plane:8080/api/v1/health" >/dev/null;
+              until curl -sf "http://playground-control-plane:8080/api/v1/health" >/dev/null;
               do echo "waiting for control plane"; sleep 2; done
       containers:
         - name: demo-python-agent
@@ -29,20 +29,20 @@ spec:
             - -c
             - >
               python -m pip install --no-cache-dir --upgrade pip &&
-              python -m pip install --no-cache-dir agentfield &&
+              python -m pip install --no-cache-dir playground &&
               python /app/main.py
           ports:
             - name: http
               containerPort: 8001
           env:
-            - name: AGENTFIELD_URL
-              value: http://agentfield-control-plane:8080
+            - name: AGENTS_URL
+              value: http://playground-control-plane:8080
             - name: AGENT_NODE_ID
               value: demo-python-agent
             - name: PORT
               value: "8001"
             - name: AGENT_CALLBACK_URL
-              value: http://agentfield-demo-python-agent:8001
+              value: http://playground-demo-python-agent:8001
           volumeMounts:
             - name: app
               mountPath: /app
@@ -61,5 +61,5 @@ spec:
       volumes:
         - name: app
           configMap:
-            name: agentfield-demo-python-agent
+            name: playground-demo-python-agent
 

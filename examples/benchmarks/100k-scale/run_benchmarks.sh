@@ -7,7 +7,7 @@ RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
 
 echo "=============================================="
-echo "AgentField Scale Benchmark Suite"
+echo "Playground Scale Benchmark Suite"
 echo "=============================================="
 echo ""
 
@@ -30,10 +30,10 @@ go build -o benchmark .
 
 # Run with different scales
 echo "Testing scale: 100,000 handlers"
-./benchmark --handlers=100000 --iterations=10 --warmup=2 --json > "$RESULTS_DIR/AgentField_Go.json"
+./benchmark --handlers=100000 --iterations=10 --warmup=2 --json > "$RESULTS_DIR/Playground_Go.json"
 
 echo "Go benchmark complete."
-cat "$RESULTS_DIR/AgentField_Go.json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"  Registration: {[r['value'] for r in d['results'] if r['metric']=='registration_time_mean_ms'][0]:.2f}ms\")"
+cat "$RESULTS_DIR/Playground_Go.json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"  Registration: {[r['value'] for r in d['results'] if r['metric']=='registration_time_mean_ms'][0]:.2f}ms\")"
 
 # Python Benchmark
 echo ""
@@ -42,10 +42,10 @@ echo "Running Python SDK Benchmark..."
 echo "----------------------------------------------"
 cd "$SCRIPT_DIR/python-bench"
 
-python3 benchmark.py --handlers=5000 --iterations=10 --warmup=2 --json > "$RESULTS_DIR/AgentField_Python.json"
+python3 benchmark.py --handlers=5000 --iterations=10 --warmup=2 --json > "$RESULTS_DIR/Playground_Python.json"
 
 echo "Python benchmark complete."
-cat "$RESULTS_DIR/AgentField_Python.json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"  Registration: {[r['value'] for r in d['results'] if r['metric']=='registration_time_mean_ms'][0]:.2f}ms\")"
+cat "$RESULTS_DIR/Playground_Python.json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"  Registration: {[r['value'] for r in d['results'] if r['metric']=='registration_time_mean_ms'][0]:.2f}ms\")"
 
 # LangChain Benchmark
 echo ""

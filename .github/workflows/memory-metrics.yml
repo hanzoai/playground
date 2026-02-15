@@ -74,13 +74,13 @@ jobs:
           import gc
           import tracemalloc
 
-          from agentfield import Agent
+          from playground import Agent
 
           # Memory benchmark
           gc.collect()
           tracemalloc.start()
 
-          agent = Agent('bench', agentfield_server='http://localhost:8080', auto_register=False, enable_mcp=False)
+          agent = Agent('bench', playground_server='http://localhost:8080', auto_register=False, enable_mcp=False)
 
           for i in range(1000):
               idx = i
@@ -211,7 +211,7 @@ jobs:
           // Create agent (one-time overhead, not counted per-handler)
           const agent = new Agent({
             nodeId: 'bench',
-            agentFieldUrl: 'http://localhost:8080',
+            playgroundUrl: 'http://localhost:8080',
             port: 9999,
             didEnabled: false
           });

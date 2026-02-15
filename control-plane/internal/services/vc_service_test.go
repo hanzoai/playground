@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -36,8 +36,8 @@ func setupVCTestEnvironment(t *testing.T) (*VCService, *DIDService, storage.Stor
 	}
 
 	didService := NewDIDService(didCfg, ks, registry)
-	agentfieldID := "agentfield-vc-test"
-	require.NoError(t, didService.Initialize(agentfieldID))
+	agentsID := "agents-vc-test"
+	require.NoError(t, didService.Initialize(agentsID))
 
 	vcService := NewVCService(didCfg, didService, provider)
 	require.NoError(t, vcService.Initialize())
@@ -925,7 +925,7 @@ func TestVCService_VerifyExecutionVCComprehensive_Success(t *testing.T) {
 	require.True(t, result.SecurityAnalysis.KeyValidation)
 	require.True(t, result.SecurityAnalysis.DIDAuthenticity)
 	require.True(t, result.ComplianceChecks.W3CCompliance)
-	require.True(t, result.ComplianceChecks.AgentFieldStandardCompliance)
+	require.True(t, result.ComplianceChecks.AgentsStandardCompliance)
 }
 
 func TestVCService_VerifyExecutionVCComprehensive_NotFound(t *testing.T) {

@@ -19,7 +19,7 @@ export interface DIDIdentityPackage {
   agentDid: DIDIdentity;
   reasonerDids: Record<string, DIDIdentity>;
   skillDids: Record<string, DIDIdentity>;
-  agentfieldServerId: string;
+  playgroundServerId: string;
 }
 
 export interface DIDRegistrationRequest {
@@ -183,7 +183,7 @@ export class DidClient {
       agentDid: parseIdentity(pkg?.agent_did),
       reasonerDids,
       skillDids,
-      agentfieldServerId: pkg?.agentfield_server_id ?? ''
+      playgroundServerId: pkg?.hanzo/agents_server_id ?? ''
     };
   }
 

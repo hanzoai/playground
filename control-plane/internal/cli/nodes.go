@@ -33,8 +33,8 @@ type registerServerlessOptions struct {
 
 func newRegisterServerlessCommand() *cobra.Command {
 	opts := &registerServerlessOptions{
-		serverURL: os.Getenv("AGENTFIELD_SERVER"),
-		token:     os.Getenv("AGENTFIELD_TOKEN"),
+		serverURL: os.Getenv("AGENTS_SERVER"),
+		token:     os.Getenv("AGENTS_TOKEN"),
 		timeout:   15 * time.Second,
 	}
 
@@ -109,8 +109,8 @@ func newRegisterServerlessCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opts.invocationURL, "url", "", "Invocation URL for the serverless function (required)")
-	cmd.Flags().StringVar(&opts.serverURL, "server", opts.serverURL, "Control plane URL (default: http://localhost:8080 or $AGENTFIELD_SERVER)")
-	cmd.Flags().StringVar(&opts.token, "token", opts.token, "Bearer token for the control plane (default: $AGENTFIELD_TOKEN)")
+	cmd.Flags().StringVar(&opts.serverURL, "server", opts.serverURL, "Control plane URL (default: http://localhost:8080 or $AGENTS_SERVER)")
+	cmd.Flags().StringVar(&opts.token, "token", opts.token, "Bearer token for the control plane (default: $AGENTS_TOKEN)")
 	cmd.Flags().DurationVar(&opts.timeout, "timeout", opts.timeout, "HTTP timeout for discovery/registration")
 	cmd.Flags().BoolVar(&opts.jsonOutput, "json", false, "Print raw JSON response")
 

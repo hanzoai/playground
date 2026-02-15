@@ -1,12 +1,12 @@
 import 'dotenv/config';
-import { Agent } from '@agentfield/sdk';
+import { Agent } from '@playground/sdk';
 import { reasonersRouter } from './reasoners.js';
 
 /**
  * Verifiable Credentials Example
  *
  * This example demonstrates how to use DID (Decentralized Identifiers) and
- * Verifiable Credentials (VCs) in AgentField to create cryptographically
+ * Verifiable Credentials (VCs) in Playground to create cryptographically
  * verifiable audit trails for agent executions.
  *
  * Each reasoner in this example generates a VC that:
@@ -31,7 +31,7 @@ import { reasonersRouter } from './reasoners.js';
 async function main() {
   const agent = new Agent({
     nodeId: process.env.AGENT_ID ?? 'vc-demo',
-    agentFieldUrl: process.env.AGENTFIELD_URL ?? 'http://localhost:8080',
+    playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
     port: Number(process.env.PORT ?? 8006),
     version: '1.0.0',
     devMode: true,

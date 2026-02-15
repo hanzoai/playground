@@ -10,11 +10,11 @@ import (
 	"github.com/fatih/color"
 )
 
-// getAgentFieldHomeDir returns the AgentField home directory (~/.agentfield) and ensures it exists
-func getAgentFieldHomeDir() string {
-	if customHome := os.Getenv("AGENTFIELD_HOME"); customHome != "" {
+// getAgentsHomeDir returns the Agents home directory (~/.hanzo/agents) and ensures it exists
+func getAgentsHomeDir() string {
+	if customHome := os.Getenv("AGENTS_HOME"); customHome != "" {
 		if err := os.MkdirAll(customHome, 0755); err != nil {
-			PrintError(fmt.Sprintf("Failed to create AGENTFIELD_HOME directory: %v", err))
+			PrintError(fmt.Sprintf("Failed to create AGENTS_HOME directory: %v", err))
 			os.Exit(1)
 		}
 		ensureSubdirs(customHome)
@@ -27,23 +27,23 @@ func getAgentFieldHomeDir() string {
 		os.Exit(1)
 	}
 
-	agentfieldHome := filepath.Join(homeDir, ".agentfield")
+	agentsHome := filepath.Join(homeDir, ".hanzo/agents")
 
-	// Ensure .agentfield directory exists
-	if err := os.MkdirAll(agentfieldHome, 0755); err != nil {
-		PrintError(fmt.Sprintf("Failed to create .agentfield directory: %v", err))
+	// Ensure .agents directory exists
+	if err := os.MkdirAll(agentsHome, 0755); err != nil {
+		PrintError(fmt.Sprintf("Failed to create .agents directory: %v", err))
 		os.Exit(1)
 	}
 
-	ensureSubdirs(agentfieldHome)
+	ensureSubdirs(agentsHome)
 
-	return agentfieldHome
+	return agentsHome
 }
 
-func ensureSubdirs(agentfieldHome string) {
+func ensureSubdirs(agentsHome string) {
 	subdirs := []string{"packages", "logs", "config"}
 	for _, subdir := range subdirs {
-		if err := os.MkdirAll(filepath.Join(agentfieldHome, subdir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(agentsHome, subdir), 0755); err != nil {
 			PrintError(fmt.Sprintf("Failed to create %s directory: %v", subdir, err))
 			os.Exit(1)
 		}

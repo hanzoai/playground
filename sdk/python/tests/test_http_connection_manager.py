@@ -5,7 +5,7 @@ Tests for http_connection_manager.py async connection pooling.
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, patch
-from agentfield.http_connection_manager import (
+from playground.http_connection_manager import (
     ConnectionManager,
     ConnectionMetrics,
     ConnectionHealth,

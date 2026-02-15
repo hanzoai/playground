@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Seed the local AgentField SQLite store with realistic deep-research workflows.
+Seed the local Playground SQLite store with realistic deep-research workflows.
 
 The script generates configurable DAGs of workflow executions, associated runs,
 steps, and timeline events so they show up inside the control-plane UI
@@ -79,7 +79,7 @@ class NodeRecord:
 
 # --- Constants ------------------------------------------------------------
 
-DEFAULT_DB_PATH = Path("~/.agentfield/data/agentfield.db").expanduser()
+DEFAULT_DB_PATH = Path("~/.hanzo/agents/data/playground.db").expanduser()
 
 AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
     AgentNodeDefinition(
@@ -376,7 +376,7 @@ DELIVERABLES = (
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Seed the AgentField SQLite workflow tables with realistic data.",
+        description="Seed the Playground SQLite workflow tables with realistic data.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent(
             """
@@ -920,7 +920,7 @@ def insert_workflow(
     conn.executemany(
         f"""
         INSERT INTO workflow_executions (
-            workflow_id, execution_id, agentfield_request_id, run_id, session_id,
+            workflow_id, execution_id, agents_request_id, run_id, session_id,
             actor_id, agent_node_id, parent_workflow_id, parent_execution_id,
             root_workflow_id, workflow_depth, reasoner_id, input_data, output_data,
             input_size, output_size, workflow_name, workflow_tags, status,

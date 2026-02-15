@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 from typing import List
 
-from agentfield import AgentRouter
-from agentfield.logger import log_info
+from playground import AgentRouter
+from playground.logger import log_info
 
 from embedding import embed_query
 from pipeline_utils import deduplicate_results, filter_hits

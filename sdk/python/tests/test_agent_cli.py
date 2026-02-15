@@ -4,7 +4,7 @@ Tests for agent_cli.py CLI functionality.
 
 import pytest
 from unittest.mock import MagicMock, patch, Mock
-from agentfield.agent_cli import AgentCLI
+from playground.agent_cli import AgentCLI
 
 
 @pytest.fixture
@@ -179,7 +179,7 @@ def test_call_function_not_found(mock_agent):
     cli = AgentCLI(mock_agent)
 
     with patch.object(cli, "_get_function", return_value=None):
-        with patch("agentfield.agent_cli.log_error") as mock_log_error:
+        with patch("playground.agent_cli.log_error") as mock_log_error:
             with patch("sys.exit") as mock_exit:
                 try:
                     cli._call_function("nonexistent", [])

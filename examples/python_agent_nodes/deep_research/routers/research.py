@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import List
 
-from agentfield import AgentRouter
+from playground import AgentRouter
 
 from schemas import Citation, ResearchFindings, SearchQueries, TaskResult
 

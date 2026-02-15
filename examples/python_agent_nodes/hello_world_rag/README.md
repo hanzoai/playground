@@ -1,6 +1,6 @@
 # Hello World RAG
 
-Minimal Retrieval-Augmented agent that demonstrates the new AgentField memory vector APIs without any external services.
+Minimal Retrieval-Augmented agent that demonstrates the new Playground memory vector APIs without any external services.
 
 ## What It Does
 
@@ -17,15 +17,15 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Once the agent is registered with the control plane, you can call it via the AgentField CLI or direct HTTP:
+Once the agent is registered with the control plane, you can call it via the Playground CLI or direct HTTP:
 
 ```bash
 # Ingest a document (either provide text or a path)
-agentfield call hello-world-rag ingest_document \
+playground call hello-world-rag ingest_document \
   --json '{"document_id": "guide", "path": "docs/README.md"}'
 
 # Ask a question
-agentfield call hello-world-rag answer_question \
+playground call hello-world-rag answer_question \
   --json '{"question": "What does the README say about deployment?"}'
 ```
 

@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./dev.sh           # Start with hot-reload (SQLite mode)
-#   ./dev.sh postgres  # Start with PostgreSQL (set AGENTFIELD_DATABASE_URL first)
+#   ./dev.sh postgres  # Start with PostgreSQL (set AGENTS_DATABASE_URL first)
 #
 # Prerequisites:
 #   go install github.com/air-verse/air@v1.61.7
@@ -20,12 +20,12 @@ fi
 case "${1:-}" in
   postgres|pg)
     echo "Starting control plane with PostgreSQL (hot-reload)..."
-    export AGENTFIELD_STORAGE_MODE=postgresql
+    export AGENTS_STORAGE_MODE=postgresql
     air -c .air.toml
     ;;
   *)
     echo "Starting control plane with SQLite (hot-reload)..."
-    export AGENTFIELD_STORAGE_MODE=local
+    export AGENTS_STORAGE_MODE=local
     air -c .air.toml
     ;;
 esac

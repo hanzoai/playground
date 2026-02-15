@@ -523,7 +523,7 @@ func (a *Agent) printHelp(reasonerName string, useColor bool) {
 }
 
 func (a *Agent) printVersion() {
-	fmt.Printf("AgentField SDK: v%s\n", sdkVersion)
+	fmt.Printf("Playground SDK: v%s\n", sdkVersion)
 	fmt.Printf("Agent: %s v%s\n", a.cfg.NodeID, a.cfg.Version)
 	fmt.Printf("Go: %s\n", runtime.Version())
 }

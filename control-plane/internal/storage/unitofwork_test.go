@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	_ "modernc.org/sqlite"
 )
@@ -123,7 +123,7 @@ func TestWorkflowUnitOfWork_AtomicWorkflowExecution(t *testing.T) {
 	execution := &types.WorkflowExecution{
 		WorkflowID:          "test-workflow-001",
 		ExecutionID:         "test-execution-001",
-		AgentFieldRequestID: "test-request-001",
+		AgentsRequestID: "test-request-001",
 		SessionID:           ptrString("test-session-001"),
 		ActorID:             ptrString("test-actor-001"),
 		AgentNodeID:         "test-agent-001",
@@ -241,7 +241,7 @@ func TestWorkflowUnitOfWork_UpdateWorkflowStatus(t *testing.T) {
 	execution := &types.WorkflowExecution{
 		WorkflowID:          "test-workflow-002",
 		ExecutionID:         "test-execution-002",
-		AgentFieldRequestID: "test-request-002",
+		AgentsRequestID: "test-request-002",
 		AgentNodeID:         "test-agent-002",
 		ReasonerID:          "test-reasoner",
 		InputData:           json.RawMessage(`{"test": "input"}`),

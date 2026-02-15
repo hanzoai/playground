@@ -1,4 +1,4 @@
-module github.com/Agent-Field/agentfield/control-plane
+module github.com/hanzoai/playground/control-plane
 
 go 1.24.0
 

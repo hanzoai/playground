@@ -2,9 +2,9 @@ import asyncio
 
 import pytest
 
-from agentfield.decorators import reasoner, _execute_with_tracking
-from agentfield.execution_context import ExecutionContext
-from agentfield.agent_registry import set_current_agent, clear_current_agent
+from playground.decorators import reasoner, _execute_with_tracking
+from playground.execution_context import ExecutionContext
+from playground.agent_registry import set_current_agent, clear_current_agent
 from tests.helpers import StubAgent
 
 
@@ -48,9 +48,9 @@ async def test_execute_with_tracking_success(monkeypatch):
     async def record_complete(agent, ctx, result, duration_ms, payload):
         captured.setdefault("complete", []).append((ctx, result))
 
-    monkeypatch.setattr("agentfield.decorators._send_workflow_start", record_start)
+    monkeypatch.setattr("playground.decorators._send_workflow_start", record_start)
     monkeypatch.setattr(
-        "agentfield.decorators._send_workflow_completion", record_complete
+        "playground.decorators._send_workflow_completion", record_complete
     )
 
     agent = StubAgent()
@@ -92,9 +92,9 @@ async def test_execute_with_tracking_error(monkeypatch):
         calls.setdefault("error", []).append((ctx, message))
 
     monkeypatch.setattr(
-        "agentfield.decorators._send_workflow_start", lambda *a, **k: asyncio.sleep(0)
+        "playground.decorators._send_workflow_start", lambda *a, **k: asyncio.sleep(0)
     )
-    monkeypatch.setattr("agentfield.decorators._send_workflow_error", record_error)
+    monkeypatch.setattr("playground.decorators._send_workflow_error", record_error)
 
     agent = StubAgent()
     set_current_agent(agent)

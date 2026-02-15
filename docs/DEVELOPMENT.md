@@ -1,6 +1,6 @@
 # Development Guide
 
-This document provides instructions for working on the AgentField monorepo locally.
+This document provides instructions for working on the Playground monorepo locally.
 
 ## Prerequisites
 
@@ -12,8 +12,8 @@ This document provides instructions for working on the AgentField monorepo local
 ## Initial Setup
 
 ```bash
-git clone https://github.com/Agent-Field/agentfield.git
-cd agentfield
+git clone https://github.com/hanzoai/playground.git
+cd playground
 ./scripts/install.sh
 ```
 
@@ -47,15 +47,15 @@ The install script performs:
 
 Copy `control-plane/config/.env.example` to `.env` (if available) and adjust:
 
-- `AGENTFIELD_DATABASE_URL` — PostgreSQL connection string.
-- `AGENTFIELD_JWT_SECRET` — Authentication secret (development only).
+- `AGENTS_DATABASE_URL` — PostgreSQL connection string.
+- `AGENTS_JWT_SECRET` — Authentication secret (development only).
 
 ## Database Migrations
 
 ```bash
 cd control-plane
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" status
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" up
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" status
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
 ```
 
 ## Frontend Development

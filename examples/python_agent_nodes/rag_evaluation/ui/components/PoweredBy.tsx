@@ -6,15 +6,15 @@ export function PoweredBy({ className }: { className?: string }) {
   return (
     <div className={className}>
       <a
-        href="https://github.com/Agent-Field/agentfield"
+        href="https://github.com/hanzoai/playground"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <span>Powered by</span>
         <Image
-          src="/agentfield-logo-dark.svg"
-          alt="AgentField"
+          src="/playground-logo-dark.svg"
+          alt="Playground"
           width={80}
           height={16}
           className="opacity-80 hover:opacity-100 transition-opacity"

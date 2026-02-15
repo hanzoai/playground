@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	agent "github.com/Agent-Field/agentfield/sdk/go/agent"
+	agent "github.com/hanzoai/playground/sdk/go/agent"
 )
 
 // BenchmarkResult holds results from a single benchmark run
@@ -105,7 +105,7 @@ func main() {
 	flag.Parse()
 
 	suite := BenchmarkSuite{
-		Framework: "AgentField",
+		Framework: "Playground",
 		Language:  "Go",
 		GoVersion: runtime.Version(),
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
@@ -119,7 +119,7 @@ func main() {
 	}
 
 	if !*jsonOutput {
-		fmt.Printf("AgentField Go SDK Benchmark\n")
+		fmt.Printf("Playground Go SDK Benchmark\n")
 		fmt.Printf("===========================\n")
 		fmt.Printf("Handlers: %d | Iterations: %d | Warmup: %d\n\n", *numHandlers, *iterations, *warmup)
 	}

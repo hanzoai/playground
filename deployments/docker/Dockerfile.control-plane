@@ -28,15 +28,15 @@ COPY --from=ui-builder /app/web/dist ./control-plane/web/client/dist
 
 RUN cd control-plane && \
     if [ "${TARGETARCH}" = "arm64" ]; then export CC=aarch64-linux-gnu-gcc; else export CC=gcc; fi && \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -tags "embedded sqlite_fts5" -o /app/bin/agentfield-server ./cmd/agentfield-server
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -tags "embedded sqlite_fts5" -o /app/bin/playground-server ./cmd/playground-server
 
 # Pre-create writable data directory for distroless runtime. The nonroot user
 # has UID/GID 65532 in the base image, so match that here.
 RUN mkdir -p /tmp/playground-data && chown 65532:65532 /tmp/playground-data
 
 FROM gcr.io/distroless/base-debian12
-COPY --from=go-builder /app/bin/agentfield-server /usr/local/bin/agentfield-server
+COPY --from=go-builder /app/bin/playground-server /usr/local/bin/playground-server
 COPY --from=go-builder /app/control-plane/config /etc/playground/config
 COPY --from=go-builder --chown=nonroot:nonroot /tmp/playground-data /data
 USER nonroot:nonroot
-ENTRYPOINT ["/usr/local/bin/agentfield-server"]
+ENTRYPOINT ["/usr/local/bin/playground-server"]

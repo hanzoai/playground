@@ -30,8 +30,8 @@ jobs:
             let page = 1;
             while (true) {
               const releases = await github.rest.repos.listReleases({
-                owner: 'Agent-Field',
-                repo: 'agentfield',
+                owner: 'hanzoai',
+                repo: 'playground',
                 per_page: 100,
                 page: page
               });
@@ -49,7 +49,7 @@ jobs:
             console.log('GitHub downloads:', githubDownloads);
 
             // Fetch PyPI stats from pepy.tech
-            const pepyRes = await fetch('https://api.pepy.tech/api/v2/projects/agentfield', {
+            const pepyRes = await fetch('https://api.pepy.tech/api/v2/projects/playground', {
               headers: { 'X-API-Key': process.env.PEPY_API_KEY }
             });
             if (!pepyRes.ok) {
@@ -62,7 +62,7 @@ jobs:
             // Fetch NPM stats (lifetime from 2020)
             const today = new Date().toISOString().split('T')[0];
             const npmRes = await fetch(
-              `https://api.npmjs.org/downloads/point/2020-01-01:${today}/@agentfield/sdk`
+              `https://api.npmjs.org/downloads/point/2020-01-01:${today}/@playground/sdk`
             );
             if (!npmRes.ok) {
               console.error('NPM API error:', npmRes.status);

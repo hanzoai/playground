@@ -1,4 +1,4 @@
-from agentfield.agent import _resolve_callback_url, _build_callback_candidates
+from playground.agent import _resolve_callback_url, _build_callback_candidates
 
 
 def test_resolve_callback_url_prefers_explicit_url():
@@ -23,9 +23,9 @@ def test_resolve_callback_url_handles_container_overrides(monkeypatch):
     monkeypatch.setenv("RAILWAY_SERVICE_NAME", "my-service")
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", "prod")
 
-    monkeypatch.setattr("agentfield.agent._is_running_in_container", lambda: True)
-    monkeypatch.setattr("agentfield.agent._detect_container_ip", lambda: None)
-    monkeypatch.setattr("agentfield.agent._detect_local_ip", lambda: "10.0.0.5")
+    monkeypatch.setattr("playground.agent._is_running_in_container", lambda: True)
+    monkeypatch.setattr("playground.agent._detect_container_ip", lambda: None)
+    monkeypatch.setattr("playground.agent._detect_local_ip", lambda: "10.0.0.5")
 
     url = _resolve_callback_url(None, port=4500)
     assert url == "http://my-service.railway.internal:4500"
@@ -36,14 +36,14 @@ def test_resolve_callback_url_fallback_to_detected_ips(monkeypatch):
     monkeypatch.delenv("RAILWAY_SERVICE_NAME", raising=False)
     monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
 
-    monkeypatch.setattr("agentfield.agent._is_running_in_container", lambda: True)
-    monkeypatch.setattr("agentfield.agent._detect_container_ip", lambda: "203.0.113.10")
+    monkeypatch.setattr("playground.agent._is_running_in_container", lambda: True)
+    monkeypatch.setattr("playground.agent._detect_container_ip", lambda: "203.0.113.10")
 
     url = _resolve_callback_url(None, port=3200)
     assert url == "http://203.0.113.10:3200"
 
-    monkeypatch.setattr("agentfield.agent._detect_container_ip", lambda: None)
-    monkeypatch.setattr("agentfield.agent._detect_local_ip", lambda: "192.168.1.2")
+    monkeypatch.setattr("playground.agent._detect_container_ip", lambda: None)
+    monkeypatch.setattr("playground.agent._detect_local_ip", lambda: "192.168.1.2")
 
     url = _resolve_callback_url(None, port=3201)
     assert url == "http://192.168.1.2:3201"
@@ -51,18 +51,18 @@ def test_resolve_callback_url_fallback_to_detected_ips(monkeypatch):
 
 def test_resolve_callback_url_final_fallback(monkeypatch):
     monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
-    monkeypatch.setattr("agentfield.agent._is_running_in_container", lambda: False)
-    monkeypatch.setattr("agentfield.agent._detect_local_ip", lambda: None)
-    monkeypatch.setattr("agentfield.agent.socket.gethostname", lambda: "")
+    monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
+    monkeypatch.setattr("playground.agent._detect_local_ip", lambda: None)
+    monkeypatch.setattr("playground.agent.socket.gethostname", lambda: "")
 
     url = _resolve_callback_url(None, port=8080)
     assert url in {"http://localhost:8080", "http://host.docker.internal:8080"}
 
 
 def test_build_callback_candidates_includes_defaults(monkeypatch):
-    monkeypatch.setattr("agentfield.agent._is_running_in_container", lambda: False)
-    monkeypatch.setattr("agentfield.agent._detect_local_ip", lambda: "192.168.1.50")
-    monkeypatch.setattr("agentfield.agent.socket.gethostname", lambda: "my-host")
+    monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
+    monkeypatch.setattr("playground.agent._detect_local_ip", lambda: "192.168.1.50")
+    monkeypatch.setattr("playground.agent.socket.gethostname", lambda: "my-host")
 
     candidates = _build_callback_candidates(None, 9000)
 

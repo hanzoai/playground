@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/sdk/go/ai"
-	"github.com/Agent-Field/agentfield/sdk/go/types"
+	"github.com/hanzoai/playground/sdk/go/ai"
+	"github.com/hanzoai/playground/sdk/go/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 			cfg: Config{
 				NodeID:        "node-1",
 				Version:       "1.0.0",
-				AgentFieldURL: "https://api.example.com",
+				PlaygroundURL: "https://api.example.com",
 			},
 			wantErr: false,
 			check: func(t *testing.T, a *Agent) {
@@ -43,7 +43,7 @@ func TestNew(t *testing.T) {
 			name: "missing NodeID",
 			cfg: Config{
 				Version:       "1.0.0",
-				AgentFieldURL: "https://api.example.com",
+				PlaygroundURL: "https://api.example.com",
 			},
 			wantErr: true,
 		},
@@ -51,12 +51,12 @@ func TestNew(t *testing.T) {
 			name: "missing Version",
 			cfg: Config{
 				NodeID:        "node-1",
-				AgentFieldURL: "https://api.example.com",
+				PlaygroundURL: "https://api.example.com",
 			},
 			wantErr: true,
 		},
 		{
-			name: "missing AgentFieldURL",
+			name: "missing PlaygroundURL",
 			cfg: Config{
 				NodeID:  "node-1",
 				Version: "1.0.0",
@@ -71,7 +71,7 @@ func TestNew(t *testing.T) {
 			cfg: Config{
 				NodeID:        "node-1",
 				Version:       "1.0.0",
-				AgentFieldURL: "https://api.example.com",
+				PlaygroundURL: "https://api.example.com",
 			},
 			wantErr: false,
 			check: func(t *testing.T, a *Agent) {
@@ -86,7 +86,7 @@ func TestNew(t *testing.T) {
 			cfg: Config{
 				NodeID:        "node-1",
 				Version:       "1.0.0",
-				AgentFieldURL: "https://api.example.com",
+				PlaygroundURL: "https://api.example.com",
 				AIConfig: &ai.Config{
 					APIKey:  "test-key",
 					BaseURL: "https://api.openai.com/v1",
@@ -103,7 +103,7 @@ func TestNew(t *testing.T) {
 			cfg: Config{
 				NodeID:        "node-1",
 				Version:       "1.0.0",
-				AgentFieldURL: "https://api.example.com",
+				PlaygroundURL: "https://api.example.com",
 				AIConfig:      &ai.Config{
 					// Missing required fields
 				},
@@ -133,7 +133,7 @@ func TestRegisterReasoner(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -157,7 +157,7 @@ func TestRegisterReasoner_WithOptions(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -184,7 +184,7 @@ func TestRegisterReasoner_NilHandler(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -225,7 +225,7 @@ func TestInitialize(t *testing.T) {
 		NodeID:           "node-1",
 		Version:          "1.0.0",
 		TeamID:           "team-1",
-		AgentFieldURL:    server.URL,
+		PlaygroundURL:    server.URL,
 		Logger:           log.New(io.Discard, "", 0),
 		DisableLeaseLoop: true, // Disable for testing
 	}
@@ -246,7 +246,7 @@ func TestInitialize_NoReasoners(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -262,7 +262,7 @@ func TestHandler(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -291,7 +291,7 @@ func TestHandleReasoner_Sync(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -325,7 +325,7 @@ func TestHandleReasoner_NotFound(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -349,7 +349,7 @@ func TestHandleReasoner_WrongMethod(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -373,7 +373,7 @@ func TestHandleReasoner_Error(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -430,7 +430,7 @@ func TestCall(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: server.URL,
+		PlaygroundURL: server.URL,
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -487,7 +487,7 @@ func TestCall_ErrorHandling(t *testing.T) {
 			cfg := Config{
 				NodeID:        "node-1",
 				Version:       "1.0.0",
-				AgentFieldURL: server.URL,
+				PlaygroundURL: server.URL,
 				Logger:        log.New(io.Discard, "", 0),
 			}
 
@@ -525,7 +525,7 @@ func TestAI(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 		AIConfig: &ai.Config{
 			APIKey:  "test-key",
@@ -547,7 +547,7 @@ func TestAI_NotConfigured(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 		// No AIConfig
 	}
@@ -584,7 +584,7 @@ func TestAIStream(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 		AIConfig: &ai.Config{
 			APIKey:  "test-key",
@@ -629,7 +629,7 @@ func TestAIStream_NotConfigured(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "https://api.example.com",
+		PlaygroundURL: "https://api.example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -691,7 +691,7 @@ func TestHandleReasonerAsyncPostsStatus(t *testing.T) {
 		NodeID:        "node-1",
 		Version:       "1.0.0",
 		TeamID:        "team",
-		AgentFieldURL: callbackServer.URL,
+		PlaygroundURL: callbackServer.URL,
 		ListenAddress: ":0",
 		PublicURL:     "http://localhost:0",
 		Logger:        log.New(io.Discard, "[test] ", 0),
@@ -772,7 +772,7 @@ func TestBuildChildContext(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: "http://example.com",
+		PlaygroundURL: "http://example.com",
 		Logger:        log.New(io.Discard, "", 0),
 	}
 
@@ -838,7 +838,7 @@ func TestCallLocalEmitsEvents(t *testing.T) {
 	cfg := Config{
 		NodeID:        "node-1",
 		Version:       "1.0.0",
-		AgentFieldURL: eventServer.URL,
+		PlaygroundURL: eventServer.URL,
 		Logger:        log.New(io.Discard, "", 0),
 	}
 

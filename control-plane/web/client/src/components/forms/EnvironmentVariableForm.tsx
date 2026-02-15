@@ -18,7 +18,7 @@ import {
 import type {
   ConfigField,
   ConfigSchemaResponse
-} from '../../types/agentfield';
+} from '../../types/playground';
 
 interface EnvironmentVariableFormProps {
   agentId: string;

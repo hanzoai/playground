@@ -7,8 +7,8 @@ import (
 	"os/exec" // Added missing import
 	"path/filepath"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -22,8 +22,8 @@ var (
 func NewLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs <agent-node-name>",
-		Short: "View logs for a AgentField agent node",
-		Long: `Display logs for an installed AgentField agent node package.
+		Short: "View logs for a Agents agent node",
+		Long: `Display logs for an installed Agents agent node package.
 
 Shows the most recent log entries from the agent node's log file.
 
@@ -44,7 +44,7 @@ func runLogsCommand(cmd *cobra.Command, args []string) error {
 	agentNodeName := args[0]
 
 	logViewer := &LogViewer{
-		AgentFieldHome: getAgentFieldHomeDir(),
+		AgentsHome: getAgentsHomeDir(),
 		Follow:         logsFollow,
 		Tail:           logsTail,
 	}
@@ -59,7 +59,7 @@ func runLogsCommand(cmd *cobra.Command, args []string) error {
 
 // LogViewer handles viewing agent node logs
 type LogViewer struct {
-	AgentFieldHome string
+	AgentsHome string
 	Follow         bool
 	Tail           int
 }
@@ -67,7 +67,7 @@ type LogViewer struct {
 // ViewLogs displays logs for an agent node
 func (lv *LogViewer) ViewLogs(agentNodeName string) error {
 	// Load registry to get log file path
-	registryPath := filepath.Join(lv.AgentFieldHome, "installed.yaml")
+	registryPath := filepath.Join(lv.AgentsHome, "installed.yaml")
 	registry := &packages.InstallationRegistry{
 		Installed: make(map[string]packages.InstalledPackage),
 	}

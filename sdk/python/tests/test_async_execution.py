@@ -2,14 +2,14 @@ import asyncio
 import httpx
 import pytest
 
-from agentfield.agent import Agent
-from agentfield.client import AgentFieldClient
+from playground.agent import Agent
+from playground.client import PlaygroundClient
 
 
 @pytest.mark.asyncio
 async def test_reasoner_async_mode_sends_status(monkeypatch):
     agent = Agent(
-        node_id="test-agent", agentfield_server="http://control", auto_register=False
+        node_id="test-agent", agents_server="http://control", auto_register=False
     )
 
     @agent.reasoner()
@@ -30,7 +30,7 @@ async def test_reasoner_async_mode_sends_status(monkeypatch):
         recorded.append({"method": method, "url": url, "json": kwargs.get("json")})
         return DummyResponse(200)
 
-    monkeypatch.setattr(AgentFieldClient, "_async_request", fake_request)
+    monkeypatch.setattr(PlaygroundClient, "_async_request", fake_request)
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=agent), base_url="http://agent"
@@ -54,7 +54,7 @@ async def test_reasoner_async_mode_sends_status(monkeypatch):
 @pytest.mark.asyncio
 async def test_post_execution_status_retries(monkeypatch):
     agent = Agent(
-        node_id="test-agent", agentfield_server="http://control", auto_register=False
+        node_id="test-agent", agents_server="http://control", auto_register=False
     )
 
     attempts = {"count": 0}
@@ -69,7 +69,7 @@ async def test_post_execution_status_retries(monkeypatch):
             raise RuntimeError("transient error")
         return DummyResponse(200)
 
-    monkeypatch.setattr(AgentFieldClient, "_async_request", fake_request)
+    monkeypatch.setattr(PlaygroundClient, "_async_request", fake_request)
 
     sleeps = []
 

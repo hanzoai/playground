@@ -123,8 +123,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     set({ agents: next });
   },
 
-  getAgent: (agentId) => get().agents.get(agentId),
-  getAgentList: () => Array.from(get().agents.values()),
+  getAgent: (agentId) => get().hanzo/agents.get(agentId),
+  getAgentList: () => Array.from(get().hanzo/agents.values()),
 
   /** Reset all state (call on logout/tenant switch) */
   reset: () => set({ agents: new Map(), lastSync: null, initialized: false }),

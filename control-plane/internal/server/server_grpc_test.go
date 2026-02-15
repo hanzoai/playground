@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/adminpb"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/adminpb"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -23,8 +23,8 @@ func TestListReasonersAggregatesNodes(t *testing.T) {
 	cfg := storage.StorageConfig{
 		Mode: "local",
 		Local: storage.LocalStorageConfig{
-			DatabasePath: filepath.Join(tempDir, "agentfield.db"),
-			KVStorePath:  filepath.Join(tempDir, "agentfield.bolt"),
+			DatabasePath: filepath.Join(tempDir, "agents.db"),
+			KVStorePath:  filepath.Join(tempDir, "agents.bolt"),
 		},
 	}
 
@@ -37,7 +37,7 @@ func TestListReasonersAggregatesNodes(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = localStore.Close(ctx) })
 
-	srv := &AgentFieldServer{storage: localStore}
+	srv := &AgentsServer{storage: localStore}
 
 	schema := json.RawMessage("{}")
 	node := &types.AgentNode{

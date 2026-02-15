@@ -180,7 +180,7 @@ type AgentNode struct {
 	Metadata AgentMetadata `json:"metadata" db:"metadata"`
 }
 
-// CallbackDiscoveryInfo captures how the AgentField server resolved an agent callback URL.
+// CallbackDiscoveryInfo captures how the Agents server resolved an agent callback URL.
 type CallbackDiscoveryInfo struct {
 	Mode        string               `json:"mode,omitempty"`
 	Preferred   string               `json:"preferred,omitempty"`
@@ -627,7 +627,7 @@ type WorkflowExecution struct {
 	// Core IDs
 	WorkflowID          string  `json:"workflow_id" db:"workflow_id"`
 	ExecutionID         string  `json:"execution_id" db:"execution_id"`
-	AgentFieldRequestID string  `json:"agentfield_request_id" db:"agentfield_request_id"`
+	AgentsRequestID string  `json:"agents_request_id" db:"agents_request_id"`
 	RunID               *string `json:"run_id,omitempty" db:"run_id"`
 	SessionID           *string `json:"session_id,omitempty" db:"session_id"`
 	ActorID             *string `json:"actor_id,omitempty" db:"actor_id"`

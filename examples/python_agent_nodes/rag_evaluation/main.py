@@ -19,7 +19,7 @@ try:
 except ImportError:
     pass  # python-dotenv not installed, use environment variables directly
 
-from agentfield import Agent, AIConfig
+from playground import Agent, AIConfig
 from reasoners import router
 
 
@@ -28,7 +28,7 @@ app = Agent(
     node_id="rag-evaluation",
     version="1.0.0",
     description="Multi-reasoner RAG evaluation with adversarial debate, jury consensus, and hybrid ML+LLM verification",
-    agentfield_server=os.getenv("AGENTFIELD_SERVER", "http://localhost:8080"),
+    playground_server=os.getenv("AGENTS_SERVER", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("AI_MODEL", "openrouter/deepseek/deepseek-chat-v3-0324"),
     ),

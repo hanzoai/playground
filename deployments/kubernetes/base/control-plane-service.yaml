@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: agentfield-control-plane
+  name: playground-control-plane
 spec:
   type: ClusterIP
   selector:

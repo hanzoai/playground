@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Dict, Iterable, List, Sequence
 
-from agentfield.logger import log_info
+from playground.logger import log_info
 
 from schemas import Citation, DocumentContext, RetrievalResult
 

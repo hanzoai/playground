@@ -3,7 +3,7 @@
 import asyncio
 from typing import List
 
-from agentfield import AgentRouter
+from playground import AgentRouter
 
 from schemas import EntityDecision, EntityProfile, ScenarioAnalysis
 

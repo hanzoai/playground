@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -15,8 +15,8 @@ import (
 func NewListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List installed AgentField agent node packages",
-		Long: `Display all installed AgentField agent node packages with their status.
+		Short: "List installed Agents agent node packages",
+		Long: `Display all installed Agents agent node packages with their status.
 
 Shows package name, version, status (running/stopped), and port if running.
 
@@ -29,8 +29,8 @@ Examples:
 }
 
 func runListCommand(cmd *cobra.Command, args []string) {
-	agentfieldHome := getAgentFieldHomeDir()
-	registryPath := filepath.Join(agentfieldHome, "installed.yaml")
+	agentsHome := getAgentsHomeDir()
+	registryPath := filepath.Join(agentsHome, "installed.yaml")
 
 	// Load registry
 	registry := &packages.InstallationRegistry{
@@ -49,7 +49,7 @@ func runListCommand(cmd *cobra.Command, args []string) {
 
 	if len(registry.Installed) == 0 {
 		fmt.Println("📦 No agent node packages installed")
-		fmt.Println("💡 Install packages with: agentfield install <package-path>")
+		fmt.Println("💡 Install packages with: agents install <package-path>")
 		return
 	}
 

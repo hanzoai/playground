@@ -20,8 +20,8 @@ from urllib.parse import urlparse
 from urllib.request import Request
 from urllib.request import urlopen
 
-from agentfield import AIConfig
-from agentfield import Agent
+from playground import AIConfig
+from playground import Agent
 from pydantic import BaseModel
 
 EXAMPLE_DIR = Path(__file__).resolve().parent
@@ -43,7 +43,7 @@ API_KEY, API_BASE = _api_settings()
 
 app = Agent(
     node_id="image-generator",
-    agentfield_server="http://localhost:8080",
+    playground_server="http://localhost:8080",
     ai_config=AIConfig(
         model=os.getenv("SMALL_MODEL", "openai/gpt-4o-mini"),
         temperature=0.8,
@@ -153,7 +153,7 @@ def _save_image(image_url: str, destination: Path) -> Path:
         destination.write_bytes(base64.b64decode(b64_data))
         return destination
 
-    request = Request(image_url, headers={"User-Agent": "agentfield-image-runner"})
+    request = Request(image_url, headers={"User-Agent": "playground-image-runner"})
     with urlopen(request) as response, destination.open("wb") as f:  # nosec
         f.write(response.read())
     return destination

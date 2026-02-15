@@ -8,7 +8,7 @@ Multi-reasoner architectures for comprehensive RAG evaluation:
 - Constitutional: Configurable principles-based evaluation
 """
 
-from agentfield import AgentRouter
+from playground import AgentRouter
 
 # Create the main router
 router = AgentRouter(tags=["rag-evaluation"])

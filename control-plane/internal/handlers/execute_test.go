@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -225,16 +225,16 @@ func (m *MockStorageProvider) GetDID(ctx context.Context, did string) (*types.DI
 func (m *MockStorageProvider) ListDIDs(ctx context.Context) ([]*types.DIDRegistryEntry, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentFieldServerDID(ctx context.Context, agentfieldServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
+func (m *MockStorageProvider) StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
 	return nil
 }
-func (m *MockStorageProvider) GetAgentFieldServerDID(ctx context.Context, agentfieldServerID string) (*types.AgentFieldServerDIDInfo, error) {
+func (m *MockStorageProvider) GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) ListAgentFieldServerDIDs(ctx context.Context) ([]*types.AgentFieldServerDIDInfo, error) {
+func (m *MockStorageProvider) ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentDID(ctx context.Context, agentID, agentDID, agentfieldServerDID, publicKeyJWK string, derivationIndex int) error {
+func (m *MockStorageProvider) StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
 	return nil
 }
 func (m *MockStorageProvider) GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error) {
@@ -252,7 +252,7 @@ func (m *MockStorageProvider) GetComponentDID(ctx context.Context, componentID s
 func (m *MockStorageProvider) ListComponentDIDs(ctx context.Context, agentDID string) ([]*types.ComponentDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentfieldServerDID, publicKeyJWK string, derivationIndex int, components []interface{}) error {
+func (m *MockStorageProvider) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []interface{}) error {
 	return nil
 }
 func (m *MockStorageProvider) StoreExecutionVC(ctx context.Context, vcID, executionID, workflowID, sessionID, issuerDID, targetDID, callerDID, inputHash, outputHash, status string, vcDocument []byte, signature string, storageURI string, documentSizeBytes int64) error {

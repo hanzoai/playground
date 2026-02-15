@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 type WebhookStore interface {
@@ -316,7 +316,7 @@ func (d *webhookDispatcher) process(job webhookJob) {
 		req.Header.Set(trimmedKey, value)
 	}
 	if webhook.Secret != nil {
-		req.Header.Set("X-AgentField-Signature", generateWebhookSignature(*webhook.Secret, body))
+		req.Header.Set("X-Agents-Signature", generateWebhookSignature(*webhook.Secret, body))
 	}
 
 	var (

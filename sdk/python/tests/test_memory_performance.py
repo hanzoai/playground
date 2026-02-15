@@ -1,5 +1,5 @@
 """
-Memory Performance Tests for AgentField Python SDK.
+Memory Performance Tests for Playground Python SDK.
 
 These tests validate memory efficiency of SDK components and establish
 baseline metrics for regression testing.
@@ -15,10 +15,10 @@ from typing import Any, Dict, List
 
 import pytest
 
-from agentfield.async_config import AsyncConfig
-from agentfield.execution_state import ExecutionState, ExecutionStatus
-from agentfield.result_cache import ResultCache
-from agentfield.client import AgentFieldClient
+from playground.async_config import AsyncConfig
+from playground.execution_state import ExecutionState, ExecutionStatus
+from playground.result_cache import ResultCache
+from playground.client import PlaygroundClient
 
 
 @dataclass
@@ -213,40 +213,40 @@ class TestResultCacheMemory:
 
 
 class TestClientSessionReuse:
-    """Test HTTP session reuse in AgentFieldClient."""
+    """Test HTTP session reuse in PlaygroundClient."""
 
     def test_shared_session_is_created(self):
         """Shared sync session should be created."""
         # Reset shared session
-        AgentFieldClient._shared_sync_session = None
+        PlaygroundClient._shared_sync_session = None
 
-        AgentFieldClient(base_url="http://localhost:8080")  # Creates shared session
+        PlaygroundClient(base_url="http://localhost:8080")  # Creates shared session
 
-        assert AgentFieldClient._shared_sync_session is not None, \
+        assert PlaygroundClient._shared_sync_session is not None, \
             "Shared session should be created"
 
     def test_multiple_clients_share_session(self):
         """Multiple clients should share the same sync session."""
         # Reset shared session
-        AgentFieldClient._shared_sync_session = None
+        PlaygroundClient._shared_sync_session = None
 
-        AgentFieldClient(base_url="http://localhost:8080")  # First client
-        session1 = AgentFieldClient._shared_sync_session
+        PlaygroundClient(base_url="http://localhost:8080")  # First client
+        session1 = PlaygroundClient._shared_sync_session
 
-        AgentFieldClient(base_url="http://localhost:8081")  # Second client
-        session2 = AgentFieldClient._shared_sync_session
+        PlaygroundClient(base_url="http://localhost:8081")  # Second client
+        session2 = PlaygroundClient._shared_sync_session
 
         assert session1 is session2, "Clients should share session"
 
     def test_client_creation_memory_is_low(self):
         """Creating multiple clients should use minimal memory."""
         # Reset shared session
-        AgentFieldClient._shared_sync_session = None
+        PlaygroundClient._shared_sync_session = None
 
         def benchmark(iterations: int):
             clients = []
             for i in range(iterations):
-                client = AgentFieldClient(base_url=f"http://localhost:808{i % 10}")
+                client = PlaygroundClient(base_url=f"http://localhost:808{i % 10}")
                 clients.append(client)
             return clients
 
@@ -407,16 +407,16 @@ class TestMemoryPerformanceReport:
         memory_report.append(m2)
 
         # Test 3: Client session reuse
-        AgentFieldClient._shared_sync_session = None
+        PlaygroundClient._shared_sync_session = None
 
         def client_benchmark(n):
             clients = []
             for i in range(n):
-                clients.append(AgentFieldClient(base_url=f"http://localhost:808{i%10}"))
+                clients.append(PlaygroundClient(base_url=f"http://localhost:808{i%10}"))
             return clients
 
         m3 = measure_memory(client_benchmark, 100)
-        m3.name = "AgentFieldClient (shared session)"
+        m3.name = "PlaygroundClient (shared session)"
         memory_report.append(m3)
 
         # Assertions

@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import sys
 
-from agentfield import AIConfig, Agent
+from playground import AIConfig, Agent
 
 if __package__ in (None, ""):
     current_dir = Path(__file__).resolve().parent
@@ -17,7 +17,7 @@ from routers import planning_router, research_router
 
 app = Agent(
     node_id="deep-research",
-    agentfield_server=f"{os.getenv('AGENTFIELD_SERVER', 'http://localhost:8080')}",
+    playground_server=f"{os.getenv('AGENTS_SERVER', 'http://localhost:8080')}",
     ai_config=AIConfig(
         model=os.getenv("AI_MODEL", "openrouter/deepseek/deepseek-v3.1-terminus"),
     ),
@@ -30,7 +30,7 @@ app.include_router(research_router)
 if __name__ == "__main__":
     print("🔬 Deep Research Agent")
     print("🧠 Node ID: deep-research")
-    print(f"🌐 Control Plane: {app.agentfield_server}")
+    print(f"🌐 Control Plane: {app.hanzo/agents_server}")
     print("\n🎯 Architecture: Recursive Planning + Research Execution")
     print("  1. Recursive Task Decomposition → Breaks research into subtasks")
     print("  2. Topological Graph → Identifies dependencies and parallelization")
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print("  - Parallel execution planning")
     print("  - Web search integration (Tavily)")
     print("  - Citation tracking and structured findings")
-    print("  - Elegant and simple AgentField primitives")
+    print("  - Elegant and simple Playground primitives")
 
     port_env = os.getenv("PORT")
     if port_env is None:

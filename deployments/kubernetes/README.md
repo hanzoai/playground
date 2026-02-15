@@ -1,8 +1,8 @@
 # Kubernetes (Kustomize)
 
-Plain Kubernetes manifests for evaluating AgentField without Helm.
+Plain Kubernetes manifests for evaluating Playground without Helm.
 
-If you want a values-driven install, use `deployments/helm/agentfield`.
+If you want a values-driven install, use `deployments/helm/playground`.
 
 ## Choose an overlay
 
@@ -13,8 +13,8 @@ If you want a values-driven install, use `deployments/helm/agentfield`.
 If you use `local-demo` or `postgres-demo`, build and load the Go demo agent image first (example for Minikube):
 
 ```bash
-docker build -t agentfield-demo-go-agent:local -f deployments/docker/Dockerfile.demo-go-agent .
-minikube image load agentfield-demo-go-agent:local
+docker build -t playground-demo-go-agent:local -f deployments/docker/Dockerfile.demo-go-agent .
+minikube image load playground-demo-go-agent:local
 ```
 
 ## Quick start
@@ -22,8 +22,8 @@ minikube image load agentfield-demo-go-agent:local
 ### 1) Namespace
 
 ```bash
-kubectl create namespace agentfield --dry-run=client -o yaml | kubectl apply -f -
-kubectl config set-context --current --namespace=agentfield
+kubectl create namespace playground --dry-run=client -o yaml | kubectl apply -f -
+kubectl config set-context --current --namespace=playground
 ```
 
 ### 2) Apply (recommended)
@@ -35,14 +35,14 @@ kubectl apply -k deployments/kubernetes/overlays/python-demo
 Wait for the control plane and demo agent to start (first run installs Python deps):
 
 ```bash
-kubectl -n agentfield wait --for=condition=Ready pod -l app.kubernetes.io/component=control-plane --timeout=300s
-kubectl -n agentfield wait --for=condition=Ready pod -l app.kubernetes.io/component=demo-python-agent --timeout=600s
+kubectl -n playground wait --for=condition=Ready pod -l app.kubernetes.io/component=control-plane --timeout=300s
+kubectl -n playground wait --for=condition=Ready pod -l app.kubernetes.io/component=demo-python-agent --timeout=600s
 ```
 
 ### 3) Port-forward UI/API
 
 ```bash
-kubectl port-forward svc/agentfield-control-plane 8080:8080
+kubectl port-forward svc/playground-control-plane 8080:8080
 ```
 
 Open:

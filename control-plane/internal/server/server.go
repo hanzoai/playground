@@ -14,23 +14,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	coreservices "github.com/Agent-Field/agentfield/control-plane/internal/core/services" // Core services
-	"github.com/Agent-Field/agentfield/control-plane/internal/events"                     // Event system
-	"github.com/Agent-Field/agentfield/control-plane/internal/handlers"                   // Agent handlers
-	"github.com/Agent-Field/agentfield/control-plane/internal/handlers/ui"                // UI handlers
-	"github.com/Agent-Field/agentfield/control-plane/internal/infrastructure/communication"
-	"github.com/Agent-Field/agentfield/control-plane/internal/infrastructure/process"
-	infrastorage "github.com/Agent-Field/agentfield/control-plane/internal/infrastructure/storage"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/server/middleware"
-	"github.com/Agent-Field/agentfield/control-plane/internal/services" // Services
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/internal/utils"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/adminpb"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
-	client "github.com/Agent-Field/agentfield/control-plane/web/client"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	coreservices "github.com/hanzoai/playground/control-plane/internal/core/services" // Core services
+	"github.com/hanzoai/playground/control-plane/internal/events"                     // Event system
+	"github.com/hanzoai/playground/control-plane/internal/handlers"                   // Agent handlers
+	"github.com/hanzoai/playground/control-plane/internal/handlers/ui"                // UI handlers
+	"github.com/hanzoai/playground/control-plane/internal/infrastructure/communication"
+	"github.com/hanzoai/playground/control-plane/internal/infrastructure/process"
+	infrastorage "github.com/hanzoai/playground/control-plane/internal/infrastructure/storage"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
+	"github.com/hanzoai/playground/control-plane/internal/services" // Services
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/utils"
+	"github.com/hanzoai/playground/control-plane/pkg/adminpb"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
+	client "github.com/hanzoai/playground/control-plane/web/client"
 
 	"github.com/gin-contrib/cors" // CORS middleware
 	"github.com/gin-gonic/gin"
@@ -40,8 +40,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// AgentFieldServer represents the core AgentField orchestration service.
-type AgentFieldServer struct {
+// AgentsServer represents the core Agents orchestration service.
+type AgentsServer struct {
 	adminpb.UnimplementedAdminReasonerServiceServer
 	storage               storage.StorageProvider
 	cache                 storage.CacheProvider
@@ -61,7 +61,7 @@ type AgentFieldServer struct {
 	didService      *services.DIDService
 	vcService       *services.VCService
 	didRegistry     *services.DIDRegistry
-	agentfieldHome  string
+	agentsHome  string
 	// Cleanup service
 	cleanupService        *handlers.ExecutionCleanupService
 	payloadStore          services.PayloadStore
@@ -73,16 +73,16 @@ type AgentFieldServer struct {
 	observabilityForwarder   services.ObservabilityForwarder
 }
 
-// NewAgentFieldServer creates a new instance of the AgentFieldServer.
-func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
-	// Define agentfieldHome at the very top
-	agentfieldHome := os.Getenv("AGENTFIELD_HOME")
-	if agentfieldHome == "" {
+// NewAgentsServer creates a new instance of the AgentsServer.
+func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
+	// Define agentsHome at the very top
+	agentsHome := os.Getenv("AGENTS_HOME")
+	if agentsHome == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return nil, err
 		}
-		agentfieldHome = filepath.Join(homeDir, ".agentfield")
+		agentsHome = filepath.Join(homeDir, ".hanzo/agents")
 	}
 
 	dirs, err := utils.EnsureDataDirectories()
@@ -99,27 +99,27 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 	Router := gin.Default()
 
 	// Sync installed.yaml to database for package visibility
-	_ = SyncPackagesFromRegistry(agentfieldHome, storageProvider)
+	_ = SyncPackagesFromRegistry(agentsHome, storageProvider)
 
 	// Initialize agent client for communication with agent nodes
 	agentClient := communication.NewHTTPAgentClient(storageProvider, 5*time.Second)
 
 	// Create infrastructure components for AgentService
 	fileSystem := infrastorage.NewFileSystemAdapter()
-	registryPath := filepath.Join(agentfieldHome, "installed.json")
+	registryPath := filepath.Join(agentsHome, "installed.json")
 	registryStorage := infrastorage.NewLocalRegistryStorage(fileSystem, registryPath)
 	processManager := process.NewProcessManager()
 	portManager := process.NewPortManager()
 
 	// Create AgentService
-	agentService := coreservices.NewAgentService(processManager, portManager, registryStorage, agentClient, agentfieldHome)
+	agentService := coreservices.NewAgentService(processManager, portManager, registryStorage, agentClient, agentsHome)
 
 	// Initialize StatusManager for unified status management
 	statusManagerConfig := services.StatusManagerConfig{
 		ReconcileInterval:       30 * time.Second,
 		StatusCacheTTL:          5 * time.Minute,
 		MaxTransitionTime:       2 * time.Minute,
-		HeartbeatStaleThreshold: cfg.AgentField.NodeHealth.HeartbeatStaleThreshold,
+		HeartbeatStaleThreshold: cfg.Agents.NodeHealth.HeartbeatStaleThreshold,
 	}
 
 	// Create UIService first (without StatusManager)
@@ -143,10 +143,10 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 
 	// Initialize health monitor with configurable settings
 	healthMonitorConfig := services.HealthMonitorConfig{
-		CheckInterval:       cfg.AgentField.NodeHealth.CheckInterval,
-		CheckTimeout:        cfg.AgentField.NodeHealth.CheckTimeout,
-		ConsecutiveFailures: cfg.AgentField.NodeHealth.ConsecutiveFailures,
-		RecoveryDebounce:    cfg.AgentField.NodeHealth.RecoveryDebounce,
+		CheckInterval:       cfg.Agents.NodeHealth.CheckInterval,
+		CheckTimeout:        cfg.Agents.NodeHealth.CheckTimeout,
+		ConsecutiveFailures: cfg.Agents.NodeHealth.ConsecutiveFailures,
+		RecoveryDebounce:    cfg.Agents.NodeHealth.RecoveryDebounce,
 	}
 	healthMonitor := services.NewHealthMonitor(storageProvider, healthMonitorConfig, uiService, agentClient, statusManager, presenceManager)
 	presenceManager.SetExpireCallback(healthMonitor.UnregisterAgent)
@@ -198,17 +198,17 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 			return nil, fmt.Errorf("failed to initialize VC service: %w", err)
 		}
 
-		// Generate af server ID based on agentfield home directory
-		agentfieldServerID := generateAgentFieldServerID(agentfieldHome)
+		// Generate af server ID based on agents home directory
+		agentsServerID := generateAgentsServerID(agentsHome)
 
 		// Initialize af server DID with dynamic ID
-		fmt.Printf("🧠 Initializing af server DID (ID: %s)...\n", agentfieldServerID)
-		if err := didService.Initialize(agentfieldServerID); err != nil {
+		fmt.Printf("🧠 Initializing af server DID (ID: %s)...\n", agentsServerID)
+		if err := didService.Initialize(agentsServerID); err != nil {
 			return nil, fmt.Errorf("failed to initialize af server DID: %w", err)
 		}
 
 		// Validate that af server DID was successfully created
-		registry, err := didService.GetRegistry(agentfieldServerID)
+		registry, err := didService.GetRegistry(agentsServerID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate af server DID creation: %w", err)
 		}
@@ -216,7 +216,7 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 			return nil, fmt.Errorf("af server DID validation failed: registry or root DID is empty")
 		}
 
-		fmt.Printf("✅ AgentField server DID created successfully: %s\n", registry.RootDID)
+		fmt.Printf("✅ Agents server DID created successfully: %s\n", registry.RootDID)
 
 		// Backfill existing nodes with DIDs
 		fmt.Println("🔄 Starting DID backfill for existing nodes...")
@@ -233,10 +233,10 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 	payloadStore := services.NewFilePayloadStore(dirs.PayloadsDir)
 
 	webhookDispatcher := services.NewWebhookDispatcher(storageProvider, services.WebhookDispatcherConfig{
-		Timeout:         cfg.AgentField.ExecutionQueue.WebhookTimeout,
-		MaxAttempts:     cfg.AgentField.ExecutionQueue.WebhookMaxAttempts,
-		RetryBackoff:    cfg.AgentField.ExecutionQueue.WebhookRetryBackoff,
-		MaxRetryBackoff: cfg.AgentField.ExecutionQueue.WebhookMaxRetryBackoff,
+		Timeout:         cfg.Agents.ExecutionQueue.WebhookTimeout,
+		MaxAttempts:     cfg.Agents.ExecutionQueue.WebhookMaxAttempts,
+		RetryBackoff:    cfg.Agents.ExecutionQueue.WebhookRetryBackoff,
+		MaxRetryBackoff: cfg.Agents.ExecutionQueue.WebhookMaxRetryBackoff,
 	})
 	if err := webhookDispatcher.Start(context.Background()); err != nil {
 		logger.Logger.Warn().Err(err).Msg("failed to start webhook dispatcher")
@@ -258,18 +258,18 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 	}
 
 	// Initialize execution cleanup service
-	cleanupService := handlers.NewExecutionCleanupService(storageProvider, cfg.AgentField.ExecutionCleanup)
+	cleanupService := handlers.NewExecutionCleanupService(storageProvider, cfg.Agents.ExecutionCleanup)
 
-	adminPort := cfg.AgentField.Port + 100
-	if envPort := os.Getenv("AGENTFIELD_ADMIN_GRPC_PORT"); envPort != "" {
+	adminPort := cfg.Agents.Port + 100
+	if envPort := os.Getenv("AGENTS_ADMIN_GRPC_PORT"); envPort != "" {
 		if parsedPort, parseErr := strconv.Atoi(envPort); parseErr == nil {
 			adminPort = parsedPort
 		} else {
-			logger.Logger.Warn().Err(parseErr).Str("value", envPort).Msg("invalid AGENTFIELD_ADMIN_GRPC_PORT, using default offset")
+			logger.Logger.Warn().Err(parseErr).Str("value", envPort).Msg("invalid AGENTS_ADMIN_GRPC_PORT, using default offset")
 		}
 	}
 
-	return &AgentFieldServer{
+	return &AgentsServer{
 		storage:               storageProvider,
 		cache:                 cacheProvider,
 		Router:                Router,
@@ -285,7 +285,7 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 		didService:            didService,
 		vcService:             vcService,
 		didRegistry:           didRegistry,
-		agentfieldHome:        agentfieldHome,
+		agentsHome:        agentsHome,
 		cleanupService:        cleanupService,
 		payloadStore:          payloadStore,
 		webhookDispatcher:        webhookDispatcher,
@@ -295,8 +295,8 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 	}, nil
 }
 
-// Start initializes and starts the AgentFieldServer.
-func (s *AgentFieldServer) Start() error {
+// Start initializes and starts the AgentsServer.
+func (s *AgentsServer) Start() error {
 	// Setup routes
 	s.setupRoutes()
 
@@ -340,7 +340,7 @@ func (s *AgentFieldServer) Start() error {
 	events.StartNodeHeartbeat(30 * time.Second)
 
 	if s.registryWatcherCancel == nil {
-		cancel, err := StartPackageRegistryWatcher(context.Background(), s.agentfieldHome, s.storage)
+		cancel, err := StartPackageRegistryWatcher(context.Background(), s.agentsHome, s.storage)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("failed to start package registry watcher")
 		} else {
@@ -354,10 +354,10 @@ func (s *AgentFieldServer) Start() error {
 
 	// TODO: Implement WebSocket, gRPC
 	// Start HTTP server
-	return s.Router.Run(":" + strconv.Itoa(s.config.AgentField.Port))
+	return s.Router.Run(":" + strconv.Itoa(s.config.Agents.Port))
 }
 
-func (s *AgentFieldServer) startAdminGRPCServer() error {
+func (s *AgentsServer) startAdminGRPCServer() error {
 	if s.adminGRPCServer != nil {
 		return nil
 	}
@@ -388,7 +388,7 @@ func (s *AgentFieldServer) startAdminGRPCServer() error {
 }
 
 // ListReasoners implements the admin gRPC surface for listing registered reasoners.
-func (s *AgentFieldServer) ListReasoners(ctx context.Context, _ *adminpb.ListReasonersRequest) (*adminpb.ListReasonersResponse, error) {
+func (s *AgentsServer) ListReasoners(ctx context.Context, _ *adminpb.ListReasonersRequest) (*adminpb.ListReasonersResponse, error) {
 	nodes, err := s.storage.ListAgents(ctx, types.AgentFilters{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list agent nodes: %v", err)
@@ -415,8 +415,8 @@ func (s *AgentFieldServer) ListReasoners(ctx context.Context, _ *adminpb.ListRea
 	return resp, nil
 }
 
-// Stop gracefully shuts down the AgentFieldServer.
-func (s *AgentFieldServer) Stop() error {
+// Stop gracefully shuts down the AgentsServer.
+func (s *AgentsServer) Stop() error {
 	if s.adminGRPCServer != nil {
 		s.adminGRPCServer.GracefulStop()
 	}
@@ -467,7 +467,7 @@ func (s *AgentFieldServer) Stop() error {
 }
 
 // unregisterAgentFromMonitoring removes an agent from health monitoring
-func (s *AgentFieldServer) unregisterAgentFromMonitoring(c *gin.Context) {
+func (s *AgentsServer) unregisterAgentFromMonitoring(c *gin.Context) {
 	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "node_id is required"})
@@ -486,7 +486,7 @@ func (s *AgentFieldServer) unregisterAgentFromMonitoring(c *gin.Context) {
 }
 
 // healthCheckHandler provides comprehensive health check for container orchestration
-func (s *AgentFieldServer) healthCheckHandler(c *gin.Context) {
+func (s *AgentsServer) healthCheckHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
@@ -540,7 +540,7 @@ func (s *AgentFieldServer) healthCheckHandler(c *gin.Context) {
 }
 
 // checkStorageHealth performs storage-specific health checks
-func (s *AgentFieldServer) checkStorageHealth(ctx context.Context) gin.H {
+func (s *AgentsServer) checkStorageHealth(ctx context.Context) gin.H {
 	if s.storageHealthOverride != nil {
 		return s.storageHealthOverride(ctx)
 	}
@@ -563,7 +563,7 @@ func (s *AgentFieldServer) checkStorageHealth(ctx context.Context) gin.H {
 }
 
 // checkCacheHealth performs cache-specific health checks
-func (s *AgentFieldServer) checkCacheHealth(ctx context.Context) gin.H {
+func (s *AgentsServer) checkCacheHealth(ctx context.Context) gin.H {
 	if s.cacheHealthOverride != nil {
 		return s.cacheHealthOverride(ctx)
 	}
@@ -609,7 +609,7 @@ func (s *AgentFieldServer) checkCacheHealth(ctx context.Context) gin.H {
 	}
 }
 
-func (s *AgentFieldServer) setupRoutes() {
+func (s *AgentsServer) setupRoutes() {
 	// Configure CORS from configuration
 	corsConfig := cors.Config{
 		AllowOrigins:     s.config.API.CORS.AllowedOrigins,
@@ -687,7 +687,7 @@ func (s *AgentFieldServer) setupRoutes() {
 				// Get the executable path and find UI dist relative to it
 				execPath, err := os.Executable()
 				if err != nil {
-					distPath = filepath.Join("apps", "platform", "agentfield", "web", "client", "dist")
+					distPath = filepath.Join("apps", "platform", "agents", "web", "client", "dist")
 					if _, statErr := os.Stat(distPath); os.IsNotExist(statErr) {
 						distPath = filepath.Join("web", "client", "dist")
 					}
@@ -696,14 +696,14 @@ func (s *AgentFieldServer) setupRoutes() {
 					// Look for web/client/dist relative to the executable directory
 					distPath = filepath.Join(execDir, "web", "client", "dist")
 
-					// If that doesn't exist, try going up one level (if binary is in apps/platform/agentfield/)
+					// If that doesn't exist, try going up one level (if binary is in apps/platform/agents/)
 					if _, err := os.Stat(distPath); os.IsNotExist(err) {
-						distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agentfield", "web", "client", "dist")
+						distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client", "dist")
 					}
 
 					// Final fallback to current working directory
 					if _, err := os.Stat(distPath); os.IsNotExist(err) {
-						altPath := filepath.Join("apps", "platform", "agentfield", "web", "client", "dist")
+						altPath := filepath.Join("apps", "platform", "agents", "web", "client", "dist")
 						if _, altErr := os.Stat(altPath); altErr == nil {
 							distPath = altPath
 						} else {
@@ -758,7 +758,7 @@ func (s *AgentFieldServer) setupRoutes() {
 				agents.POST("/:agentId/config", configHandler.SetConfigHandler)
 
 				// Environment file endpoints
-				envHandler := ui.NewEnvHandler(s.storage, s.agentService, s.agentfieldHome)
+				envHandler := ui.NewEnvHandler(s.storage, s.agentService, s.agentsHome)
 				agents.GET("/:agentId/env", envHandler.GetEnvHandler)
 				agents.PUT("/:agentId/env", envHandler.PutEnvHandler)
 				agents.PATCH("/:agentId/env", envHandler.PatchEnvHandler)
@@ -953,11 +953,11 @@ func (s *AgentFieldServer) setupRoutes() {
 		agentAPI.POST("/skills/:skill_id", handlers.ExecuteSkillHandler(s.storage))
 
 		// Unified execution endpoints (path-based)
-		agentAPI.POST("/execute/:target", handlers.ExecuteHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.AgentField.ExecutionQueue.AgentCallTimeout))
-		agentAPI.POST("/execute/async/:target", handlers.ExecuteAsyncHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.AgentField.ExecutionQueue.AgentCallTimeout))
+		agentAPI.POST("/execute/:target", handlers.ExecuteHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))
+		agentAPI.POST("/execute/async/:target", handlers.ExecuteAsyncHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))
 		agentAPI.GET("/executions/:execution_id", handlers.GetExecutionStatusHandler(s.storage))
 		agentAPI.POST("/executions/batch-status", handlers.BatchExecutionStatusHandler(s.storage))
-		agentAPI.POST("/executions/:execution_id/status", handlers.UpdateExecutionStatusHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.AgentField.ExecutionQueue.AgentCallTimeout))
+		agentAPI.POST("/executions/:execution_id/status", handlers.UpdateExecutionStatusHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))
 
 		// Execution notes endpoints for app.note() feature
 		agentAPI.POST("/executions/note", handlers.AddExecutionNoteHandler(s.storage))
@@ -1005,19 +1005,19 @@ func (s *AgentFieldServer) setupRoutes() {
 			didHandlers.RegisterRoutes(agentAPI)
 
 			// Add af server DID endpoint
-			agentAPI.GET("/did/agentfield-server", func(c *gin.Context) {
+			agentAPI.GET("/did/agents-server", func(c *gin.Context) {
 				// Get af server ID dynamically
-				agentfieldServerID, err := s.didService.GetAgentFieldServerID()
+				agentsServerID, err := s.didService.GetAgentsServerID()
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"error":   "Failed to get af server ID",
-						"details": fmt.Sprintf("AgentField server ID error: %v", err),
+						"details": fmt.Sprintf("Agents server ID error: %v", err),
 					})
 					return
 				}
 
 				// Get the actual af server DID from the registry
-				registry, err := s.didService.GetRegistry(agentfieldServerID)
+				registry, err := s.didService.GetRegistry(agentsServerID)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"error":   "Failed to get af server DID",
@@ -1028,7 +1028,7 @@ func (s *AgentFieldServer) setupRoutes() {
 
 				if registry == nil {
 					c.JSON(http.StatusNotFound, gin.H{
-						"error":   "AgentField server DID not found",
+						"error":   "Agents server DID not found",
 						"details": "No DID registry exists for af server 'default'. The DID system may not be properly initialized.",
 					})
 					return
@@ -1036,16 +1036,16 @@ func (s *AgentFieldServer) setupRoutes() {
 
 				if registry.RootDID == "" {
 					c.JSON(http.StatusInternalServerError, gin.H{
-						"error":   "AgentField server DID is empty",
+						"error":   "Agents server DID is empty",
 						"details": "Registry exists but root DID is empty. The DID system may be corrupted.",
 					})
 					return
 				}
 
 				c.JSON(http.StatusOK, gin.H{
-					"agentfield_server_id":  "default",
-					"agentfield_server_did": registry.RootDID,
-					"message":               "AgentField server DID retrieved successfully",
+					"agents_server_id":  "default",
+					"agents_server_did": registry.RootDID,
+					"message":               "Agents server DID retrieved successfully",
 				})
 			})
 		} else {
@@ -1111,7 +1111,7 @@ func (s *AgentFieldServer) setupRoutes() {
 					// Get the executable path and find UI dist relative to it
 					execPath, err := os.Executable()
 					if err != nil {
-						distPath = filepath.Join("apps", "platform", "agentfield", "web", "client", "dist")
+						distPath = filepath.Join("apps", "platform", "agents", "web", "client", "dist")
 						if _, statErr := os.Stat(distPath); os.IsNotExist(statErr) {
 							distPath = filepath.Join("web", "client", "dist")
 						}
@@ -1120,14 +1120,14 @@ func (s *AgentFieldServer) setupRoutes() {
 						// Look for web/client/dist relative to the executable directory
 						distPath = filepath.Join(execDir, "web", "client", "dist")
 
-						// If that doesn't exist, try going up one level (if binary is in apps/platform/agentfield/)
+						// If that doesn't exist, try going up one level (if binary is in apps/platform/agents/)
 						if _, err := os.Stat(distPath); os.IsNotExist(err) {
-							distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agentfield", "web", "client", "dist")
+							distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client", "dist")
 						}
 
 						// Final fallback to current working directory
 						if _, err := os.Stat(distPath); os.IsNotExist(err) {
-							altPath := filepath.Join("apps", "platform", "agentfield", "web", "client", "dist")
+							altPath := filepath.Join("apps", "platform", "agents", "web", "client", "dist")
 							if _, altErr := os.Stat(altPath); altErr == nil {
 								distPath = altPath
 							} else {
@@ -1145,22 +1145,22 @@ func (s *AgentFieldServer) setupRoutes() {
 	}
 }
 
-// generateAgentFieldServerID creates a deterministic af server ID based on the agentfield home directory.
-// This ensures each agentfield instance has a unique ID while being deterministic for the same installation.
-func generateAgentFieldServerID(agentfieldHome string) string {
-	// Use the absolute path of agentfield home to generate a deterministic ID
-	absPath, err := filepath.Abs(agentfieldHome)
+// generateAgentsServerID creates a deterministic af server ID based on the agents home directory.
+// This ensures each agents instance has a unique ID while being deterministic for the same installation.
+func generateAgentsServerID(agentsHome string) string {
+	// Use the absolute path of agents home to generate a deterministic ID
+	absPath, err := filepath.Abs(agentsHome)
 	if err != nil {
 		// Fallback to the original path if absolute path fails
-		absPath = agentfieldHome
+		absPath = agentsHome
 	}
 
-	// Create a hash of the agentfield home path to generate a unique but deterministic ID
+	// Create a hash of the agents home path to generate a unique but deterministic ID
 	hash := sha256.Sum256([]byte(absPath))
 
 	// Use first 16 characters of the hex hash as the af server ID
 	// This provides uniqueness while keeping the ID manageable
-	agentfieldServerID := hex.EncodeToString(hash[:])[:16]
+	agentsServerID := hex.EncodeToString(hash[:])[:16]
 
-	return agentfieldServerID
+	return agentsServerID
 }

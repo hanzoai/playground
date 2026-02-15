@@ -1,4 +1,4 @@
-"""Shared testing utilities for AgentField SDK unit tests."""
+"""Shared testing utilities for Playground SDK unit tests."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Tuple
 
-from agentfield.types import AgentStatus, HeartbeatData
+from playground.types import AgentStatus, HeartbeatData
 
 
-class DummyAgentFieldClient:
-    """Simple in-memory agentfield client used to capture registration calls."""
+class DummyPlaygroundClient:
+    """Simple in-memory playground client used to capture registration calls."""
 
     def __init__(self):
         self.register_calls: List[Dict[str, Any]] = []
@@ -89,7 +89,7 @@ class StubAgent:
     """Light-weight stand-in for Agent used across module tests."""
 
     node_id: str = "stub-node"
-    agentfield_server: str = "http://agentfield"
+    agents_server: str = "http://playground"
     callback_url: Optional[str] = None
     base_url: Optional[str] = None
     version: str = "0.0.0"
@@ -97,7 +97,7 @@ class StubAgent:
     api_key: Optional[str] = None
     ai_config: Any = None
     async_config: Any = None
-    client: DummyAgentFieldClient = field(default_factory=DummyAgentFieldClient)
+    client: DummyPlaygroundClient = field(default_factory=DummyPlaygroundClient)
     did_manager: Any = None
     mcp_handler: Any = field(
         default_factory=lambda: type(
@@ -106,7 +106,7 @@ class StubAgent:
     )
     reasoners: List[Dict[str, Any]] = field(default_factory=list)
     skills: List[Dict[str, Any]] = field(default_factory=list)
-    agentfield_connected: bool = True
+    playground_connected: bool = True
     _current_status: AgentStatus = AgentStatus.STARTING
     callback_candidates: List[str] = field(default_factory=list)
 
@@ -177,7 +177,7 @@ class StubAgent:
 
 
 class DummyAsyncExecutionManager:
-    """Simple async execution manager used in tests for AgentFieldClient async flows."""
+    """Simple async execution manager used in tests for PlaygroundClient async flows."""
 
     def __init__(self):
         self.submissions: List[Dict[str, Any]] = []
@@ -230,7 +230,7 @@ class DummyAsyncExecutionManager:
 
 
 __all__ = [
-    "DummyAgentFieldClient",
+    "DummyPlaygroundClient",
     "DummyAsyncExecutionManager",
     "StubAgent",
     "create_test_agent",
@@ -244,20 +244,20 @@ def create_test_agent(
     callback_url: Optional[str] = None,
     dev_mode: bool = False,
     vc_enabled: Optional[bool] = True,
-) -> Tuple[Any, DummyAgentFieldClient]:
+) -> Tuple[Any, DummyPlaygroundClient]:
     """Construct a fully initialized Agent with key dependencies stubbed out.
 
     This helper isolates network-bound components so functional tests can exercise
-    FastAPI routing, workflow notifications, and AgentField registration without
+    FastAPI routing, workflow notifications, and Playground registration without
     touching external services.
     """
 
-    from agentfield.agent import Agent
-    from agentfield.agent_workflow import AgentWorkflow
+    from playground.agent import Agent
+    from playground.agent_workflow import AgentWorkflow
 
     memory_store: Dict[str, Any] = {}
 
-    class _FakeAgentFieldClient(DummyAgentFieldClient):
+    class _FakePlaygroundClient(DummyPlaygroundClient):
         def __init__(self, base_url: str, async_config: Any = None, api_key: Optional[str] = None):
             super().__init__()
             self.base_url = base_url
@@ -265,19 +265,19 @@ def create_test_agent(
             self.async_config = async_config
             self.api_key = api_key
 
-    def _agentfield_client_factory(
+    def _playground_client_factory(
         base_url: str, async_config: Any = None, api_key: Optional[str] = None
-    ) -> _FakeAgentFieldClient:
-        return _FakeAgentFieldClient(base_url, async_config, api_key)
+    ) -> _FakePlaygroundClient:
+        return _FakePlaygroundClient(base_url, async_config, api_key)
 
     class _FakeMemoryClient:
         def __init__(
             self,
-            agentfield_client: Any,
+            playground_client: Any,
             execution_context: Any,
             agent_node_id: Optional[str] = None,
         ):
-            self.agentfield_client = agentfield_client
+            self.hanzo/agents_client = playground_client
             self.execution_context = execution_context
             self.agent_node_id = agent_node_id
 
@@ -398,8 +398,8 @@ def create_test_agent(
             pass
 
     class _FakeDIDManager:
-        def __init__(self, agentfield_server: str, node: str, api_key: Optional[str] = None):
-            self.agentfield_server = agentfield_server
+        def __init__(self, agents_server: str, node: str, api_key: Optional[str] = None):
+            self.hanzo/agents_server = agents_server
             self.node_id = node
             self.api_key = api_key
             self.registered: Dict[str, Any] = {}
@@ -503,17 +503,17 @@ def create_test_agent(
         events.append(("update", payload))
         self.agent._captured_workflow_events = events
 
-    monkeypatch.setattr("agentfield.agent.AgentFieldClient", _agentfield_client_factory)
-    monkeypatch.setattr("agentfield.agent.MemoryClient", _FakeMemoryClient)
-    monkeypatch.setattr("agentfield.agent.MemoryEventClient", _FakeMemoryEventClient)
-    monkeypatch.setattr("agentfield.agent.AgentMCP", _FakeAgentMCP)
-    monkeypatch.setattr("agentfield.agent.MCPManager", _FakeMCPManager)
-    monkeypatch.setattr("agentfield.agent.MCPClientRegistry", _FakeMCPClientRegistry)
+    monkeypatch.setattr("playground.agent.PlaygroundClient", _playground_client_factory)
+    monkeypatch.setattr("playground.agent.MemoryClient", _FakeMemoryClient)
+    monkeypatch.setattr("playground.agent.MemoryEventClient", _FakeMemoryEventClient)
+    monkeypatch.setattr("playground.agent.AgentMCP", _FakeAgentMCP)
+    monkeypatch.setattr("playground.agent.MCPManager", _FakeMCPManager)
+    monkeypatch.setattr("playground.agent.MCPClientRegistry", _FakeMCPClientRegistry)
     monkeypatch.setattr(
-        "agentfield.agent.DynamicMCPSkillManager", _FakeDynamicSkillManager
+        "playground.agent.DynamicMCPSkillManager", _FakeDynamicSkillManager
     )
-    monkeypatch.setattr("agentfield.agent.DIDManager", _FakeDIDManager)
-    monkeypatch.setattr("agentfield.agent.VCGenerator", _FakeVCGenerator)
+    monkeypatch.setattr("playground.agent.DIDManager", _FakeDIDManager)
+    monkeypatch.setattr("playground.agent.VCGenerator", _FakeVCGenerator)
     monkeypatch.setattr(
         AgentWorkflow, "notify_call_start", _record_call_start, raising=False
     )
@@ -532,7 +532,7 @@ def create_test_agent(
 
     agent = Agent(
         node_id=node_id,
-        agentfield_server="http://agentfield",
+        agents_server="http://playground",
         version="1.2.3",
         callback_url=callback_url,
         dev_mode=dev_mode,

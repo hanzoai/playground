@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { DidClient } from '../src/did/DidClient.js';
 
 async function main() {
-  const baseUrl = process.env.AGENTFIELD_URL ?? 'http://localhost:8080';
+  const baseUrl = process.env.AGENTS_URL ?? 'http://localhost:8080';
   const client = new DidClient(baseUrl);
 
   const executionId = randomUUID();

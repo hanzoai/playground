@@ -1,6 +1,6 @@
 import pytest
 
-from agentfield.execution_context import (
+from playground.execution_context import (
     ExecutionContext,
     generate_execution_id,
     set_execution_context,
@@ -73,7 +73,7 @@ def test_generate_execution_id_has_unique_prefix():
 @pytest.mark.unit
 def test_agent_ctx_property_returns_none_outside_execution():
     """Verify app.ctx returns None when not inside a reasoner/skill execution."""
-    from agentfield import Agent
+    from playground import Agent
 
     agent = Agent(node_id="test-ctx-agent")
 
@@ -84,7 +84,7 @@ def test_agent_ctx_property_returns_none_outside_execution():
 @pytest.mark.unit
 def test_agent_ctx_property_returns_context_during_execution():
     """Verify app.ctx returns the execution context when set via thread-local."""
-    from agentfield import Agent
+    from playground import Agent
 
     agent = Agent(node_id="test-ctx-agent")
 
@@ -119,7 +119,7 @@ def test_agent_ctx_property_returns_context_during_execution():
 @pytest.mark.unit
 def test_agent_ctx_property_ignores_unregistered_context():
     """Verify app.ctx returns None for unregistered contexts (created at init time)."""
-    from agentfield import Agent
+    from playground import Agent
 
     agent = Agent(node_id="test-ctx-agent")
 

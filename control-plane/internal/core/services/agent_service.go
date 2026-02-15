@@ -1,4 +1,4 @@
-// agentfield/internal/core/services/agent_service.go
+// agents/internal/core/services/agent_service.go
 package services
 
 import (
@@ -15,9 +15,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
-	"github.com/Agent-Field/agentfield/control-plane/internal/packages"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/packages"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,7 +27,7 @@ type DefaultAgentService struct {
 	portManager     interfaces.PortManager
 	registryStorage interfaces.RegistryStorage
 	agentClient     interfaces.AgentClient
-	agentfieldHome  string
+	agentsHome  string
 }
 
 // NewAgentService creates a new agent service instance
@@ -36,14 +36,14 @@ func NewAgentService(
 	portManager interfaces.PortManager,
 	registryStorage interfaces.RegistryStorage,
 	agentClient interfaces.AgentClient,
-	agentfieldHome string,
+	agentsHome string,
 ) interfaces.AgentService {
 	return &DefaultAgentService{
 		processManager:  processManager,
 		portManager:     portManager,
 		registryStorage: registryStorage,
 		agentClient:     agentClient,
-		agentfieldHome:  agentfieldHome,
+		agentsHome:  agentsHome,
 	}
 }
 
@@ -110,7 +110,7 @@ func (as *DefaultAgentService) RunAgent(name string, options domain.RunOptions) 
 		return nil, fmt.Errorf("agent node failed to start: %w", err)
 	}
 
-	fmt.Printf("🧠 Agent node registered with AgentField Server\n")
+	fmt.Printf("🧠 Agent node registered with Agents Server\n")
 
 	// 6. Update registry with runtime info
 	if err := as.updateRuntimeInfo(name, port, pid); err != nil {
@@ -390,7 +390,7 @@ func (as *DefaultAgentService) ListRunningAgents() ([]domain.RunningAgent, error
 // loadRegistryDirect loads the registry using direct file system access
 // TODO: Eventually replace with registryStorage interface usage
 func (as *DefaultAgentService) loadRegistryDirect() (*packages.InstallationRegistry, error) {
-	registryPath := filepath.Join(as.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(as.agentsHome, "installed.yaml")
 
 	registry := &packages.InstallationRegistry{
 		Installed: make(map[string]packages.InstalledPackage),
@@ -408,7 +408,7 @@ func (as *DefaultAgentService) loadRegistryDirect() (*packages.InstallationRegis
 // saveRegistryDirect saves the registry using direct file system access
 // TODO: Eventually replace with registryStorage interface usage
 func (as *DefaultAgentService) saveRegistryDirect(registry *packages.InstallationRegistry) error {
-	registryPath := filepath.Join(as.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(as.agentsHome, "installed.yaml")
 
 	data, err := yaml.Marshal(registry)
 	if err != nil {
@@ -449,7 +449,7 @@ func (as *DefaultAgentService) buildProcessConfig(agentNode packages.InstalledPa
 	// Prepare environment variables
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("PORT=%d", port))
-	env = append(env, "AGENTFIELD_SERVER_URL=http://localhost:8080")
+	env = append(env, "AGENTS_SERVER_URL=http://localhost:8080")
 
 	// Load environment variables from package .env file
 	if envVars, err := as.loadPackageEnvFile(agentNode.Path); err == nil {
@@ -547,7 +547,7 @@ func (as *DefaultAgentService) waitForAgentNode(port int, timeout time.Duration)
 
 // updateRuntimeInfo updates the registry with runtime information
 func (as *DefaultAgentService) updateRuntimeInfo(agentNodeName string, port, pid int) error {
-	registryPath := filepath.Join(as.agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(as.agentsHome, "installed.yaml")
 
 	// Load registry
 	registry := &packages.InstallationRegistry{}

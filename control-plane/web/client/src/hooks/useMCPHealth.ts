@@ -5,7 +5,7 @@ import type {
   MCPSummaryForUI,
   MCPHealthEvent,
   AppMode
-} from '../types/agentfield';
+} from '../types/playground';
 import { getMCPHealthModeAware } from '../services/api';
 import { useMode } from '../contexts/ModeContext';
 import { useMCPHealthSSE } from './useSSE';

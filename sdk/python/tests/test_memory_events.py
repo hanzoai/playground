@@ -6,12 +6,12 @@ import websockets
 
 import pytest
 
-from agentfield.memory_events import (
+from playground.memory_events import (
     PatternMatcher,
     EventSubscription,
     MemoryEventClient,
 )
-from agentfield.types import MemoryChangeEvent
+from playground.types import MemoryChangeEvent
 
 
 def test_pattern_matcher_wildcards():
@@ -39,7 +39,7 @@ def test_event_subscription_matches_scoped_event():
 
 def test_memory_event_client_subscription_and_unsubscribe(monkeypatch):
     ctx = SimpleNamespace(to_headers=lambda: {"Authorization": "token"})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
 
     callback_called = asyncio.Event()
 
@@ -59,7 +59,7 @@ def test_memory_event_client_subscription_and_unsubscribe(monkeypatch):
 @pytest.mark.asyncio
 async def test_memory_event_client_history(monkeypatch):
     ctx = SimpleNamespace(to_headers=lambda: {"Authorization": "token"})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
 
     class DummyResponse:
         def __init__(self):
@@ -101,7 +101,7 @@ async def test_memory_event_client_history(monkeypatch):
 @pytest.mark.asyncio
 async def test_memory_event_client_connect_builds_ws_url(monkeypatch):
     ctx = SimpleNamespace(to_headers=lambda: {"Authorization": "token"})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
 
     record = {}
     listener_called = {}
@@ -118,7 +118,7 @@ async def test_memory_event_client_connect_builds_ws_url(monkeypatch):
     async def fake_listen(self):
         listener_called["run"] = True
 
-    monkeypatch.setattr("agentfield.memory_events.websockets.connect", fake_connect)
+    monkeypatch.setattr("playground.memory_events.websockets.connect", fake_connect)
     monkeypatch.setattr(MemoryEventClient, "_listen", fake_listen, raising=False)
 
     await client.connect(
@@ -126,7 +126,7 @@ async def test_memory_event_client_connect_builds_ws_url(monkeypatch):
     )
     await asyncio.sleep(0)
 
-    assert record["url"].startswith("ws://agentfield")
+    assert record["url"].startswith("ws://playground")
     assert "patterns=cart.*,order.*" in record["url"]
     assert "scope=session" in record["url"]
     assert "scope_id=abc" in record["url"]
@@ -136,7 +136,7 @@ async def test_memory_event_client_connect_builds_ws_url(monkeypatch):
 
 def test_websockets_version_detection():
     """Verify version detection picks the correct header kwarg for the installed websockets."""
-    from agentfield.memory_events import _WEBSOCKETS_MAJOR, _HEADERS_KWARG
+    from playground.memory_events import _WEBSOCKETS_MAJOR, _HEADERS_KWARG
 
     major = int(websockets.__version__.split(".")[0])
     assert _WEBSOCKETS_MAJOR == major
@@ -150,10 +150,10 @@ def test_websockets_version_detection():
 @pytest.mark.asyncio
 async def test_connect_passes_correct_headers_kwarg(monkeypatch):
     """Verify connect() uses the version-appropriate header parameter."""
-    from agentfield.memory_events import _HEADERS_KWARG
+    from playground.memory_events import _HEADERS_KWARG
 
     ctx = SimpleNamespace(to_headers=lambda: {"Authorization": "token"})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
 
     called_with = {}
 
@@ -165,7 +165,7 @@ async def test_connect_passes_correct_headers_kwarg(monkeypatch):
         called_with.update(kwargs)
         return DummyWebSocket()
 
-    monkeypatch.setattr("agentfield.memory_events.websockets.connect", fake_connect)
+    monkeypatch.setattr("playground.memory_events.websockets.connect", fake_connect)
     monkeypatch.setattr(MemoryEventClient, "_listen", lambda self: asyncio.sleep(0))
 
     await client.connect()
@@ -179,7 +179,7 @@ async def test_connect_passes_correct_headers_kwarg(monkeypatch):
 async def test_connect_does_not_block_startup_on_failure(monkeypatch):
     """When connection fails, reconnect retries run in the background."""
     ctx = SimpleNamespace(to_headers=lambda: {})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
 
     async def failing_connect(url, **kwargs):
         raise ConnectionRefusedError("server unavailable")
@@ -189,7 +189,7 @@ async def test_connect_does_not_block_startup_on_failure(monkeypatch):
     async def fake_reconnect(self):
         reconnect_started.set()
 
-    monkeypatch.setattr("agentfield.memory_events.websockets.connect", failing_connect)
+    monkeypatch.setattr("playground.memory_events.websockets.connect", failing_connect)
     monkeypatch.setattr(MemoryEventClient, "_handle_reconnect", fake_reconnect)
 
     # connect() should return immediately, not block on retries
@@ -205,7 +205,7 @@ async def test_connect_does_not_block_startup_on_failure(monkeypatch):
 @pytest.mark.asyncio
 async def test_memory_event_client_listen_dispatches(monkeypatch):
     ctx = SimpleNamespace(to_headers=lambda: {})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
 
     received = []
 
@@ -261,7 +261,7 @@ async def test_memory_event_client_listen_dispatches(monkeypatch):
 @pytest.mark.asyncio
 async def test_memory_event_client_handle_reconnect(monkeypatch):
     ctx = SimpleNamespace(to_headers=lambda: {})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
     client._max_reconnect_attempts = 2
 
     sleeps = []
@@ -289,7 +289,7 @@ async def test_memory_event_client_handle_reconnect(monkeypatch):
 
 def test_on_change_decorator_marks_wrapper():
     ctx = SimpleNamespace(to_headers=lambda: {})
-    client = MemoryEventClient("http://agentfield", ctx)
+    client = MemoryEventClient("http://playground", ctx)
     client.websocket = SimpleNamespace(open=True)
 
     @client.on_change("foo.*")

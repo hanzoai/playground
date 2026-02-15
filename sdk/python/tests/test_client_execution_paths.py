@@ -1,5 +1,5 @@
 """
-Comprehensive tests for AgentFieldClient execution paths.
+Comprehensive tests for PlaygroundClient execution paths.
 """
 
 import asyncio
@@ -8,14 +8,14 @@ from unittest.mock import MagicMock
 import pytest
 import responses as responses_lib
 
-from agentfield.client import AgentFieldClient
-from agentfield.execution_context import ExecutionContext
+from playground.client import PlaygroundClient
+from playground.execution_context import ExecutionContext
 
 
 @pytest.fixture
 def client():
     """Create a test client."""
-    return AgentFieldClient(base_url="http://localhost:8080")
+    return PlaygroundClient(base_url="http://localhost:8080")
 
 
 def test_call_sync_execution(client):

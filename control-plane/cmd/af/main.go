@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/cli"
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/internal/server"
-	"github.com/Agent-Field/agentfield/control-plane/internal/utils"
-	"github.com/Agent-Field/agentfield/control-plane/web/client"
+	"github.com/hanzoai/playground/control-plane/internal/cli"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server"
+	"github.com/hanzoai/playground/control-plane/internal/utils"
+	"github.com/hanzoai/playground/control-plane/web/client"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,7 +47,7 @@ func main() {
 
 // runServer contains the server startup logic for unified CLI
 func runServer(cmd *cobra.Command, args []string) {
-	logger.Logger.Debug().Msg("AgentField server starting...")
+	logger.Logger.Debug().Msg("Agents server starting...")
 
 	// Load configuration with better defaults
 	cfgFilePath, _ := cmd.Flags().GetString("config")
@@ -59,13 +59,13 @@ func runServer(cmd *cobra.Command, args []string) {
 	// Override port from flag if provided
 	if cmd.Flags().Lookup("port").Changed {
 		port, _ := cmd.Flags().GetInt("port")
-		cfg.AgentField.Port = port
+		cfg.Agents.Port = port
 	}
 
 	// Override from environment variables
-	if envPort := os.Getenv("AGENTFIELD_PORT"); envPort != "" {
+	if envPort := os.Getenv("AGENTS_PORT"); envPort != "" {
 		if port, err := strconv.Atoi(envPort); err == nil {
-			cfg.AgentField.Port = port
+			cfg.Agents.Port = port
 		}
 	}
 
@@ -78,7 +78,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	}
 
 	if !storageModeExplicit {
-		if envMode := os.Getenv("AGENTFIELD_STORAGE_MODE"); envMode != "" {
+		if envMode := os.Getenv("AGENTS_STORAGE_MODE"); envMode != "" {
 			cfg.Storage.Mode = envMode
 		}
 	}
@@ -88,9 +88,9 @@ func runServer(cmd *cobra.Command, args []string) {
 		postgresURL, _ = cmd.Flags().GetString("postgres-url")
 	}
 	if postgresURL == "" {
-		if env := os.Getenv("AGENTFIELD_POSTGRES_URL"); env != "" {
+		if env := os.Getenv("AGENTS_POSTGRES_URL"); env != "" {
 			postgresURL = env
-		} else if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_URL"); env != "" {
+		} else if env := os.Getenv("AGENTS_STORAGE_POSTGRES_URL"); env != "" {
 			postgresURL = env
 		}
 	}
@@ -103,24 +103,24 @@ func runServer(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_HOST"); env != "" {
+	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_HOST"); env != "" {
 		cfg.Storage.Postgres.Host = env
 	}
-	if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_PORT"); env != "" {
+	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_PORT"); env != "" {
 		if port, err := strconv.Atoi(env); err == nil {
 			cfg.Storage.Postgres.Port = port
 		}
 	}
-	if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_DATABASE"); env != "" {
+	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_DATABASE"); env != "" {
 		cfg.Storage.Postgres.Database = env
 	}
-	if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_USER"); env != "" {
+	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_USER"); env != "" {
 		cfg.Storage.Postgres.User = env
 	}
-	if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_PASSWORD"); env != "" {
+	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_PASSWORD"); env != "" {
 		cfg.Storage.Postgres.Password = env
 	}
-	if env := os.Getenv("AGENTFIELD_STORAGE_POSTGRES_SSLMODE"); env != "" {
+	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_SSLMODE"); env != "" {
 		cfg.Storage.Postgres.SSLMode = env
 	}
 
@@ -158,17 +158,17 @@ func runServer(cmd *cobra.Command, args []string) {
 		fmt.Println("UI is already embedded in binary, skipping build.")
 	}
 
-	// Create AgentField server instance
-	agentfieldServer, err := server.NewAgentFieldServer(cfg)
+	// Create Agents server instance
+	agentsServer, err := server.NewAgentsServer(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create AgentField server: %v", err)
+		log.Fatalf("Failed to create Agents server: %v", err)
 	}
 
 	// Start the server in a goroutine so we can open the browser
 	go func() {
-		fmt.Printf("AgentField server attempting to start on port %d...\n", cfg.AgentField.Port)
-		if err := agentfieldServer.Start(); err != nil {
-			log.Fatalf("Failed to start AgentField server: %v", err)
+		fmt.Printf("Agents server attempting to start on port %d...\n", cfg.Agents.Port)
+		if err := agentsServer.Start(); err != nil {
+			log.Fatalf("Failed to start Agents server: %v", err)
 		}
 	}()
 
@@ -177,7 +177,7 @@ func runServer(cmd *cobra.Command, args []string) {
 
 	openBrowserFlag, _ := cmd.Flags().GetBool("open")
 	if cfg.UI.Enabled && openBrowserFlag && !backendOnly {
-		uiTargetURL := fmt.Sprintf("http://localhost:%d", cfg.AgentField.Port)
+		uiTargetURL := fmt.Sprintf("http://localhost:%d", cfg.Agents.Port)
 		if cfg.UI.Mode == "dev" {
 			// Use configured dev port or environment variable
 			devPort := cfg.UI.DevPort
@@ -195,7 +195,7 @@ func runServer(cmd *cobra.Command, args []string) {
 		openBrowser(uiTargetURL)
 	}
 
-	fmt.Printf("AgentField server running on http://localhost:%d\n", cfg.AgentField.Port)
+	fmt.Printf("Agents server running on http://localhost:%d\n", cfg.Agents.Port)
 	fmt.Printf("Press Ctrl+C to exit.\n")
 	// Keep main goroutine alive
 	select {}
@@ -204,14 +204,14 @@ func runServer(cmd *cobra.Command, args []string) {
 // loadConfig loads configuration with sensible defaults for user experience
 func loadConfig(configFile string) (*config.Config, error) {
 	// Set environment variable prefixes
-	viper.SetEnvPrefix("AGENTFIELD")
+	viper.SetEnvPrefix("AGENTS")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	// Explicitly bind environment variables for API auth config
 	// This is needed because Viper's AutomaticEnv only works for keys that exist in config
-	_ = viper.BindEnv("api.auth.api_key", "AGENTFIELD_API_KEY")
-	_ = viper.BindEnv("api.auth.api_key", "AGENTFIELD_API_AUTH_API_KEY")
+	_ = viper.BindEnv("api.auth.api_key", "AGENTS_API_KEY")
+	_ = viper.BindEnv("api.auth.api_key", "AGENTS_API_AUTH_API_KEY")
 
 	// Get the directory where the binary is located for UI paths
 	execPath, err := os.Executable()
@@ -225,16 +225,16 @@ func loadConfig(configFile string) (*config.Config, error) {
 		viper.SetConfigFile(configFile)
 	} else {
 		// Check for config file path from environment
-		if envConfigFile := os.Getenv("AGENTFIELD_CONFIG_FILE"); envConfigFile != "" {
+		if envConfigFile := os.Getenv("AGENTS_CONFIG_FILE"); envConfigFile != "" {
 			viper.SetConfigFile(envConfigFile)
 		} else {
 			// Look for config in user's home directory first, then relative to exec dir, then local
 			homeDir, _ := os.UserHomeDir()
-			viper.AddConfigPath(filepath.Join(homeDir, ".agentfield"))
+			viper.AddConfigPath(filepath.Join(homeDir, ".hanzo/agents"))
 			viper.AddConfigPath(filepath.Join(execDir, "config"))
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(".")
-			viper.SetConfigName("agentfield")
+			viper.SetConfigName("agents")
 			viper.SetConfigType("yaml")
 		}
 	}
@@ -253,8 +253,8 @@ func loadConfig(configFile string) (*config.Config, error) {
 	}
 
 	// Apply sensible defaults for user experience
-	if cfg.AgentField.Port == 0 {
-		cfg.AgentField.Port = 8080
+	if cfg.Agents.Port == 0 {
+		cfg.Agents.Port = 8080
 	}
 	// Enable UI by default unless explicitly disabled
 	if cfg.UI.Mode == "" {
@@ -270,8 +270,8 @@ func loadConfig(configFile string) (*config.Config, error) {
 	if cfg.UI.SourcePath == "" {
 		candidateSourcePaths := []string{
 			filepath.Join(execDir, "web", "client"),
-			filepath.Join(filepath.Dir(execDir), "apps", "platform", "agentfield", "web", "client"),
-			filepath.Join("apps", "platform", "agentfield", "web", "client"),
+			filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client"),
+			filepath.Join("apps", "platform", "agents", "web", "client"),
 			filepath.Join("web", "client"),
 		}
 		for _, candidate := range candidateSourcePaths {
@@ -288,8 +288,8 @@ func loadConfig(configFile string) (*config.Config, error) {
 		candidateDistPaths := []string{
 			filepath.Join(cfg.UI.SourcePath, "dist"),
 			filepath.Join(execDir, "web", "client", "dist"),
-			filepath.Join(filepath.Dir(execDir), "apps", "platform", "agentfield", "web", "client", "dist"),
-			filepath.Join("apps", "platform", "agentfield", "web", "client", "dist"),
+			filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client", "dist"),
+			filepath.Join("apps", "platform", "agents", "web", "client", "dist"),
 			filepath.Join("web", "client", "dist"),
 		}
 		for _, candidate := range candidateDistPaths {
@@ -346,14 +346,14 @@ func loadConfig(configFile string) (*config.Config, error) {
 			}
 			cfg.Storage.Local.KVStorePath = kvPath
 		}
-		// Ensure all AgentField data directories exist
+		// Ensure all Agents data directories exist
 		if _, err := utils.EnsureDataDirectories(); err != nil {
-			return nil, fmt.Errorf("failed to create AgentField data directories: %w", err)
+			return nil, fmt.Errorf("failed to create Agents data directories: %w", err)
 		}
 	}
 
-	fmt.Printf("Loaded config - Storage mode: %s, AgentField Port: %d, UI Mode: %s, UI Enabled: %t\n",
-		cfg.Storage.Mode, cfg.AgentField.Port, cfg.UI.Mode, cfg.UI.Enabled)
+	fmt.Printf("Loaded config - Storage mode: %s, Agents Port: %d, UI Mode: %s, UI Enabled: %t\n",
+		cfg.Storage.Mode, cfg.Agents.Port, cfg.UI.Mode, cfg.UI.Enabled)
 
 	return &cfg, nil
 }
@@ -379,7 +379,7 @@ func buildUI(cfg *config.Config) error {
 		buildEnv = append(buildEnv, fmt.Sprintf("VITE_BUILD_OUT_DIR=%s", filepath.Base(cfg.UI.DistPath)))
 	}
 
-	buildEnv = append(buildEnv, fmt.Sprintf("VITE_API_PROXY_TARGET=http://localhost:%d", cfg.AgentField.Port))
+	buildEnv = append(buildEnv, fmt.Sprintf("VITE_API_PROXY_TARGET=http://localhost:%d", cfg.Agents.Port))
 
 	// Install dependencies
 	cmdInstall := exec.Command("npm", "install", "--force")

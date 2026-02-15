@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AgentField Python SDK Benchmark
+Playground Python SDK Benchmark
 
 Measures: Agent init time, handler registration time (separate), memory footprint, request latency
 
@@ -24,7 +24,7 @@ from typing import Any
 # Add SDK to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'sdk', 'python'))
 
-from agentfield import Agent
+from playground import Agent
 
 
 @dataclass
@@ -77,7 +77,7 @@ def benchmark_agent_init(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         agent = Agent(
             node_id=f"init-bench-{i}",
-            agentfield_server="http://localhost:8080",
+            playground_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -109,7 +109,7 @@ def benchmark_handler_registration(num_handlers: int, iterations: int, warmup: i
         # Create Agent OUTSIDE the measurement
         agent = Agent(
             node_id=f"handler-bench-{i}",
-            agentfield_server="http://localhost:8080",
+            playground_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -154,7 +154,7 @@ def benchmark_agent_memory(iterations: int, warmup: int, verbose: bool) -> list[
 
         agent = Agent(
             node_id=f"agent-mem-{i}",
-            agentfield_server="http://localhost:8080",
+            playground_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -191,7 +191,7 @@ def benchmark_handler_memory(num_handlers: int, iterations: int, warmup: int, ve
         # Create Agent BEFORE starting memory tracking
         agent = Agent(
             node_id=f"handler-mem-{i}",
-            agentfield_server="http://localhost:8080",
+            playground_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -242,7 +242,7 @@ def benchmark_cold_start(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         agent = Agent(
             node_id=f"cold-{i}",
-            agentfield_server="http://localhost:8080",
+            playground_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -304,7 +304,7 @@ async def benchmark_request_processing(num_handlers: int, num_requests: int, ver
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AgentField Python SDK Benchmark")
+    parser = argparse.ArgumentParser(description="Playground Python SDK Benchmark")
     parser.add_argument("--handlers", type=int, default=10000, help="Number of handlers")
     parser.add_argument("--iterations", type=int, default=10, help="Benchmark iterations")
     parser.add_argument("--warmup", type=int, default=2, help="Warmup iterations")
@@ -314,7 +314,7 @@ def main():
     verbose = not args.json
 
     suite = {
-        "framework": "AgentField",
+        "framework": "Playground",
         "language": "Python",
         "python_version": platform.python_version(),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -327,7 +327,7 @@ def main():
     }
 
     if verbose:
-        print("AgentField Python SDK Benchmark (Fixed Methodology)")
+        print("Playground Python SDK Benchmark (Fixed Methodology)")
         print("====================================================")
         print(f"Handlers: {args.handlers} | Iterations: {args.iterations} | Warmup: {args.warmup}")
         print("\nNOTE: Agent init and handler registration are measured SEPARATELY\n")

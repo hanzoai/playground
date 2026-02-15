@@ -1,4 +1,4 @@
-# Pytest configuration and fixtures for AgentField SDK tests
+# Pytest configuration and fixtures for Playground SDK tests
 """
 Shared fixtures used by the actively supported open-source test suite.
 The helpers here focus on deterministic behaviour (frozen time, env patching,
@@ -21,8 +21,8 @@ import respx
 import responses as responses_lib
 from freezegun import freeze_time
 
-from agentfield.agent import Agent
-from agentfield.types import AIConfig, MemoryConfig
+from playground.agent import Agent
+from playground.types import AIConfig, MemoryConfig
 
 # Optional imports guarded for test envs
 try:
@@ -340,9 +340,9 @@ def litellm_mock(monkeypatch) -> LiteLLMMockController:
     return LiteLLMMockController(module=fake)
 
 
-class AgentFieldHTTPMocks:
+class PlaygroundHTTPMocks:
     """
-    Helper wrapper that registers common AgentField server endpoints on both:
+    Helper wrapper that registers common Playground server endpoints on both:
     - httpx (via respx)
     - requests (via responses)
 
@@ -443,9 +443,9 @@ class AgentFieldHTTPMocks:
 
 
 @pytest.fixture
-def http_mocks() -> AgentFieldHTTPMocks:
+def http_mocks() -> PlaygroundHTTPMocks:
     """
-    Returns a helper for mocking AgentField server endpoints on both httpx and requests.
+    Returns a helper for mocking Playground server endpoints on both httpx and requests.
 
     Note:
         This works in concert with the autouse respx/responses wrappers already defined
@@ -455,9 +455,9 @@ def http_mocks() -> AgentFieldHTTPMocks:
         def test_execute_headers_propagation(http_mocks, workflow_context):
             ctx, headers = workflow_context  # minimal by default
             http_mocks.mock_execute("n.reasoner", json={"result": {"ok": True}})
-            # ... call AgentFieldClient.execute(...), ensure headers were passed ...
+            # ... call PlaygroundClient.execute(...), ensure headers were passed ...
     """
-    return AgentFieldHTTPMocks()
+    return PlaygroundHTTPMocks()
 
 
 # ---------------------------- 4) Sample Agent Fixture ----------------------------
@@ -492,7 +492,7 @@ def mock_container_detection(monkeypatch):
             mock_container_detection(is_container=False)
             ...
     """
-    from agentfield import agent as agent_mod
+    from playground import agent as agent_mod
 
     def _apply(is_container: bool = False):
         monkeypatch.setattr(
@@ -513,7 +513,7 @@ def mock_ip_detection(monkeypatch):
             env_patch.unset("AGENT_CALLBACK_URL")
             ...
     """
-    from agentfield import agent as agent_mod
+    from playground import agent as agent_mod
 
     def _apply(container_ip: Optional[str] = None, local_ip: Optional[str] = None):
         monkeypatch.setattr(
@@ -551,7 +551,7 @@ def sample_agent(
 
     agent = Agent(
         node_id="test-node",
-        agentfield_server="http://localhost:8080",
+        agents_server="http://localhost:8080",
         version="0.0.0",
         ai_config=sample_ai_config,
         memory_config=MemoryConfig(
@@ -567,7 +567,7 @@ def sample_agent(
 @pytest.fixture
 def fake_server(monkeypatch, request):
     """
-    Spins up an in-process FastAPI mock server and routes AgentFieldClient calls to it WITHOUT real sockets.
+    Spins up an in-process FastAPI mock server and routes PlaygroundClient calls to it WITHOUT real sockets.
     This is suitable for contract tests while keeping network isolation.
 
     Endpoints:
@@ -579,7 +579,7 @@ def fake_server(monkeypatch, request):
 
     How it works:
       - Patches httpx.AsyncClient to use httpx.ASGITransport against the in-process FastAPI app.
-      - AgentFieldClient(async) calls are transparently routed; no sockets required.
+      - PlaygroundClient(async) calls are transparently routed; no sockets required.
       - requests.* fallbacks are NOT routed here; rely on responses/respx for those.
 
     Returns:
@@ -591,7 +591,7 @@ def fake_server(monkeypatch, request):
     if FastAPI is None or httpx is None:
         pytest.skip("fastapi/httpx are required for fake_server fixture")
 
-    app = FastAPI(title="AgentField Fake Server")
+    app = FastAPI(title="Playground Fake Server")
 
     memory_store: Dict[str, Any] = {}
 
@@ -609,7 +609,7 @@ def fake_server(monkeypatch, request):
             "result": {"echo": payload.get("input", {}), "target": target},
             "metadata": {
                 "execution_id": "exec_" + uuid.uuid4().hex[:8],
-                "agentfield_request_id": "req_" + uuid.uuid4().hex[:8],
+                "agents_request_id": "req_" + uuid.uuid4().hex[:8],
                 "agent_node_id": target.split(".")[0] if "." in target else "node",
                 "duration_ms": 12,
                 "timestamp": "2024-01-01T00:00:00Z",
@@ -673,7 +673,7 @@ def fake_server(monkeypatch, request):
 
 # ---------------------------- Notes and Cross-Cutting Concerns ----------------------------
 # - Agent.__init__ callback URL resolution is exercised via env_patch + mock_container_detection + mock_ip_detection
-# - AgentFieldClient request/header propagation is covered by http_mocks and fake_server
+# - PlaygroundClient request/header propagation is covered by http_mocks and fake_server
 # - MemoryClient serialization and HTTP fallback paths are supported by http_mocks and fake_server
 # - AgentAI model limits caching and message trimming rely on litellm_mock + sample_ai_config
 # - AIConfig parameter merging and fallback logic can be tested via sample_ai_config overrides
@@ -696,11 +696,11 @@ def env_vars(monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture
 def dummy_headers():
-    """Baseline execution headers consumed by memory/agentfield client tests."""
+    """Baseline execution headers consumed by memory/playground client tests."""
     return {
         "X-Workflow-ID": "wf-test",
         "X-Execution-ID": "exec-test",
-        "X-AgentField-Request-ID": "req-test",
+        "X-Playground-Request-ID": "req-test",
     }
 
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ func NewVCCommand() *cobra.Command {
 	vcCmd := &cobra.Command{
 		Use:   "vc",
 		Short: "Verifiable Credential operations",
-		Long:  `Commands for working with AgentField Verifiable Credentials (VCs)`,
+		Long:  `Commands for working with Agents Verifiable Credentials (VCs)`,
 	}
 
 	vcCmd.AddCommand(NewVCVerifyCommand())
@@ -35,8 +35,8 @@ func NewVCVerifyCommand() *cobra.Command {
 
 	verifyCmd := &cobra.Command{
 		Use:   "verify <vc-file.json>",
-		Short: "Verify a AgentField Verifiable Credential",
-		Long: `Verify the cryptographic signature and integrity of a AgentField Verifiable Credential.
+		Short: "Verify a Agents Verifiable Credential",
+		Long: `Verify the cryptographic signature and integrity of a Agents Verifiable Credential.
 This command supports offline verification with bundled DIDs and online verification with web resolution.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -205,7 +205,7 @@ func verifyVC(vcFilePath string, options VerifyOptions) error {
 			normalizeEnhancedChain(&enhancedChain)
 		} else {
 			step2.Success = false
-			step2.Error = "Invalid VC format: not a recognized AgentField VC structure"
+			step2.Error = "Invalid VC format: not a recognized Agents VC structure"
 			result.VerificationSteps = append(result.VerificationSteps, step2)
 			result.Valid = false
 			result.FormatValid = false
@@ -650,7 +650,7 @@ func outputPretty(result VCVerificationResult, verbose bool) error {
 		status = "✅ VALID"
 	}
 
-	fmt.Printf("AgentField VC Verification: %s\n", status)
+	fmt.Printf("Agents VC Verification: %s\n", status)
 	fmt.Printf("Type: %s\n", result.Type)
 
 	if result.WorkflowID != "" {

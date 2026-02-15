@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-func TestLoadAgentFieldPackageConfig(t *testing.T) {
+func TestLoadAgentsPackageConfig(t *testing.T) {
 	// Create a temporary test directory
 	tempDir := t.TempDir()
 
-	// Create a test agentfield-package.yaml
+	// Create a test agents-package.yaml
 	testConfig := `
 name: "test-agent"
 version: "1.0.0"
@@ -24,7 +24,7 @@ agent_node:
   default_port: 8001
 
 dependencies:
-  python: ["agentfield>=1.0.0"]
+  python: ["agents>=1.0.0"]
 
 capabilities:
   reasoners:
@@ -73,17 +73,17 @@ metadata:
   created_at: "2025-06-20"
   sdk_version: "1.0.0"
   language: "python"
-  platform: "agentfield-agent-node"
+  platform: "agents-agent-node"
 `
 
-	configPath := filepath.Join(tempDir, "agentfield-package.yaml")
+	configPath := filepath.Join(tempDir, "agents-package.yaml")
 	err := os.WriteFile(configPath, []byte(testConfig), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	// Test loading the configuration
-	config, err := LoadAgentFieldPackageConfig(tempDir)
+	config, err := LoadAgentsPackageConfig(tempDir)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}

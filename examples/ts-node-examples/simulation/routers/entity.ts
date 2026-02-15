@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentRouter } from '@agentfield/sdk';
+import { AgentRouter } from '@playground/sdk';
 import {
   EntityProfileSchema,
   FactorGraphSchema,

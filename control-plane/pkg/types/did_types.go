@@ -7,7 +7,7 @@ import (
 
 // DIDRegistry represents the master DID registry for a af server.
 type DIDRegistry struct {
-	AgentFieldServerID string                  `json:"agentfield_server_id" db:"agentfield_server_id"`
+	AgentsServerID string                  `json:"agents_server_id" db:"agents_server_id"`
 	MasterSeed         []byte                  `json:"master_seed" db:"master_seed_encrypted"`
 	RootDID            string                  `json:"root_did" db:"root_did"`
 	AgentNodes         map[string]AgentDIDInfo `json:"agent_nodes" db:"agent_nodes"`
@@ -20,7 +20,7 @@ type DIDRegistry struct {
 type AgentDIDInfo struct {
 	DID                string                     `json:"did" db:"did"`
 	AgentNodeID        string                     `json:"agent_node_id" db:"agent_node_id"`
-	AgentFieldServerID string                     `json:"agentfield_server_id" db:"agentfield_server_id"`
+	AgentsServerID string                     `json:"agents_server_id" db:"agents_server_id"`
 	PublicKeyJWK       json.RawMessage            `json:"public_key_jwk" db:"public_key_jwk"`
 	DerivationPath     string                     `json:"derivation_path" db:"derivation_path"`
 	Reasoners          map[string]ReasonerDIDInfo `json:"reasoners" db:"reasoners"`
@@ -107,7 +107,7 @@ type DIDIdentityPackage struct {
 	AgentDID           DIDIdentity            `json:"agent_did"`
 	ReasonerDIDs       map[string]DIDIdentity `json:"reasoner_dids"`
 	SkillDIDs          map[string]DIDIdentity `json:"skill_dids"`
-	AgentFieldServerID string                 `json:"agentfield_server_id"`
+	AgentsServerID string                 `json:"agents_server_id"`
 }
 
 // DIDIdentity represents a single DID identity with keys.
@@ -221,7 +221,7 @@ type VCProof struct {
 
 // DIDFilters holds filters for querying DIDs.
 type DIDFilters struct {
-	AgentFieldServerID *string         `json:"agentfield_server_id,omitempty"`
+	AgentsServerID *string         `json:"agents_server_id,omitempty"`
 	AgentNodeID        *string         `json:"agent_node_id,omitempty"`
 	ComponentType      *string         `json:"component_type,omitempty"`
 	Status             *AgentDIDStatus `json:"status,omitempty"`
@@ -392,9 +392,9 @@ type WorkflowVCInfo struct {
 	DocumentSize   int64      `json:"document_size_bytes" db:"document_size_bytes"`
 }
 
-// AgentFieldServerDIDInfo represents af server-level DID information stored in the database.
-type AgentFieldServerDIDInfo struct {
-	AgentFieldServerID string    `json:"agentfield_server_id" db:"agentfield_server_id"`
+// AgentsServerDIDInfo represents af server-level DID information stored in the database.
+type AgentsServerDIDInfo struct {
+	AgentsServerID string    `json:"agents_server_id" db:"agents_server_id"`
 	RootDID            string    `json:"root_did" db:"root_did"`
 	MasterSeed         []byte    `json:"master_seed" db:"master_seed_encrypted"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`

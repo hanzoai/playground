@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/sdk/go/types"
+	"github.com/hanzoai/playground/sdk/go/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

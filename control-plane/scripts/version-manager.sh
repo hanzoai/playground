@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# AgentField Version Manager
+# Playground Version Manager
 # Handles version tracking and incrementing for releases
 
 set -e
@@ -237,7 +237,7 @@ main() {
             show_version_info
             ;;
         "help"|"-h"|"--help")
-            echo "AgentField Version Manager"
+            echo "Playground Version Manager"
             echo ""
             echo "Usage:"
             echo "  $0 current        Show current version"

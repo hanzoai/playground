@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Agent-Field/agentfield/sdk/go/agent"
+	"github.com/hanzoai/playground/sdk/go/agent"
 )
 
 func main() {
@@ -20,8 +20,8 @@ func main() {
 	cfg := agent.Config{
 		NodeID:               nodeID,
 		Version:              "1.0.0",
-		AgentFieldURL:        strings.TrimSpace(os.Getenv("AGENTFIELD_URL")),
-		Token:                os.Getenv("AGENTFIELD_TOKEN"),
+		PlaygroundURL:        strings.TrimSpace(os.Getenv("AGENTS_URL")),
+		Token:                os.Getenv("AGENTS_TOKEN"),
 		DeploymentType:       "serverless",
 		ListenAddress:        ":" + defaultString(os.Getenv("PORT"), "8085"),
 		LeaseRefreshInterval: 0, // no lease loop in serverless mode
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	srv.RegisterReasoner("hello", func(ctx context.Context, input map[string]any) (any, error) {
-		name := strings.TrimSpace(defaultString(toString(input["name"]), "AgentField"))
+		name := strings.TrimSpace(defaultString(toString(input["name"]), "Playground"))
 		return map[string]any{
 			"greeting": "Hello, " + name + "!",
 			"name":     name,

@@ -10,7 +10,7 @@ export interface AgentConfig {
   nodeId: string;
   version?: string;
   teamId?: string;
-  agentFieldUrl?: string;
+  playgroundUrl?: string;
   port?: number;
   host?: string;
   publicUrl?: string;

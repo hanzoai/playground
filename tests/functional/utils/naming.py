@@ -11,7 +11,7 @@ SAFE_NODE_ID_CHARS = re.compile(r"[^a-zA-Z0-9-_\.]")
 
 def sanitize_node_id(base: str) -> str:
     """
-    Sanitize a node_id base string to include only characters allowed by AgentField.
+    Sanitize a node_id base string to include only characters allowed by Playground.
     """
     return SAFE_NODE_ID_CHARS.sub("-", base).strip("-") or "agent"
 

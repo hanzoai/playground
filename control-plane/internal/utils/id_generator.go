@@ -28,8 +28,8 @@ func GenerateRunID() string {
 	return fmt.Sprintf("run_%s_%s", timestamp, random)
 }
 
-// GenerateAgentFieldRequestID generates a new agentfield request ID
-func GenerateAgentFieldRequestID() string {
+// GenerateAgentsRequestID generates a new agents request ID
+func GenerateAgentsRequestID() string {
 	timestamp := time.Now().Format("20060102_150405")
 	random := generateRandomString(8)
 	return fmt.Sprintf("req_%s_%s", timestamp, random)

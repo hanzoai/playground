@@ -3,7 +3,7 @@ Agent definition that mirrors the README Quick Start example.
 
 Tests can import `AGENT_SPEC` + `create_agent` to obtain a fully configured Agent
 without replicating the agent definition inline. Each test can override the
-node_id to ensure distinct AgentField registrations when multiple nodes run.
+node_id to ensure distinct Playground registrations when multiple nodes run.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import os
 from typing import Dict, Optional
 
 import requests
-from agentfield import AIConfig, Agent
+from playground import AIConfig, Agent
 
 from agents import AgentSpec
 
@@ -41,7 +41,7 @@ def create_agent(
     agent_kwargs.setdefault("dev_mode", True)
     agent_kwargs.setdefault("callback_url", callback_url or "http://test-agent")
     agent_kwargs.setdefault(
-        "agentfield_server", os.environ.get("AGENTFIELD_SERVER", "http://localhost:8080")
+        "playground_server", os.environ.get("AGENTS_SERVER", "http://localhost:8080")
     )
 
     agent = Agent(

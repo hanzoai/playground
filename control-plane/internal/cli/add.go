@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/config"
-	"github.com/Agent-Field/agentfield/control-plane/internal/mcp"
+	"github.com/hanzoai/playground/control-plane/internal/config"
+	"github.com/hanzoai/playground/control-plane/internal/mcp"
 
 	"github.com/spf13/cobra"
 )
@@ -43,8 +43,8 @@ func NewAddCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "add <source> [alias]",
-		Short: "Add dependencies to your AgentField agent project",
-		Long: `Add dependencies to your AgentField agent project.
+		Short: "Add dependencies to your Agents agent project",
+		Long: `Add dependencies to your Agents agent project.
 
 Supports adding MCP servers and regular agent packages with advanced configuration options.
 
@@ -74,7 +74,7 @@ Examples:
     --tags "enterprise" --tags "production"
 
   # Regular agent packages (future)
-  af add github.com/agentfield-helpers/email-utils
+  af add github.com/agents-helpers/email-utils
   af add github.com/openai/prompt-templates
 
 Template Variables:
@@ -121,7 +121,7 @@ func runAddCommandWithOptions(opts *MCPAddOptions, verbose bool) error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := validateAgentFieldProject(projectDir); err != nil {
+	if err := validateAgentsProject(projectDir); err != nil {
 		return err
 	}
 
@@ -138,10 +138,10 @@ func runAddCommandWithOptions(opts *MCPAddOptions, verbose bool) error {
 	return fmt.Errorf("only MCP server dependencies are currently supported. Use --mcp flag")
 }
 
-func validateAgentFieldProject(projectDir string) error {
-	agentfieldYAMLPath := filepath.Join(projectDir, "agentfield.yaml")
-	if _, err := os.Stat(agentfieldYAMLPath); os.IsNotExist(err) {
-		return fmt.Errorf("not a AgentField project directory (agentfield.yaml not found)")
+func validateAgentsProject(projectDir string) error {
+	agentsYAMLPath := filepath.Join(projectDir, "agents.yaml")
+	if _, err := os.Stat(agentsYAMLPath); os.IsNotExist(err) {
+		return fmt.Errorf("not an Agents project directory (agents.yaml not found)")
 	}
 	return nil
 }
@@ -159,12 +159,12 @@ type MCPAddCommand struct {
 // It performs initial processing and validation.
 func NewMCPAddCommand(projectDir string, opts *MCPAddOptions, verboseFlag bool) (*MCPAddCommand, error) {
 	// Load application configuration
-	appCfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+	appCfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 	if err != nil {
-		// Fallback for safety, though agentfield.yaml should exist due to validateAgentFieldProject
-		appCfg, err = config.LoadConfig("agentfield.yaml")
+		// Fallback for safety, though agents.yaml should exist due to validateAgentsProject
+		appCfg, err = config.LoadConfig("agents.yaml")
 		if err != nil {
-			return nil, fmt.Errorf("failed to load af configuration: %w. Ensure agentfield.yaml exists", err)
+			return nil, fmt.Errorf("failed to load af configuration: %w. Ensure agents.yaml exists", err)
 		}
 	}
 
@@ -314,7 +314,7 @@ func (cmd *MCPAddCommand) Execute() error {
 // func addMCPServer(projectDir string, opts *MCPAddOptions, verbose bool) error {
 //	fmt.Printf("Adding MCP server: %s\n", Bold(opts.Source))
 //
-//	appCfg, err := config.LoadConfig(filepath.Join(projectDir, "agentfield.yaml"))
+//	appCfg, err := config.LoadConfig(filepath.Join(projectDir, "agents.yaml"))
 // The orphaned code block that started with "if err != nil {" and was a remnant
 // of the original addMCPServer function body has been removed by this replacement.
 // The logic is now consolidated within MCPAddCommand.Execute().

@@ -1,6 +1,6 @@
 import StatusIndicator from "@/components/ui/status-indicator";
 import { cn } from "@/lib/utils";
-import type { LifecycleStatus } from "../../types/agentfield";
+import type { LifecycleStatus } from "../../types/playground";
 
 export type MCPHealthStatus =
   | "running"

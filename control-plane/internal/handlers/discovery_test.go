@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -224,7 +224,7 @@ func buildDiscoveryAgents() []*types.AgentNode {
 								"name":        "basic",
 								"description": "basic example",
 								"input": map[string]interface{}{
-									"query": "what is AgentField?",
+									"query": "what is Agents?",
 								},
 							},
 						},

@@ -19,7 +19,7 @@ import type {
   ConfigSchemaResponse,
   AgentStatus,
   AgentStatusUpdate
-} from '../types/agentfield';
+} from '../types/playground';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
 const STORAGE_KEY = "af_api_key";

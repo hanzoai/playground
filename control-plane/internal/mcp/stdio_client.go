@@ -128,7 +128,7 @@ func (c *StdioMCPClient) performDiscovery(stdin io.WriteCloser, stdout io.ReadCl
 				},
 			},
 			ClientInfo: ClientInfo{
-				Name:    "agentfield-mcp-client",
+				Name:    "agents-mcp-client",
 				Version: "1.0.0",
 			},
 		},

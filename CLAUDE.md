@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AgentField is a Kubernetes-style control plane for AI agents. It provides production infrastructure for deploying, orchestrating, and observing multi-agent systems with cryptographic identity and audit trails.
+Playground is a Kubernetes-style control plane for AI agents. It provides production infrastructure for deploying, orchestrating, and observing multi-agent systems with cryptographic identity and audit trails.
 
 **Architecture:** Three-tier monorepo
 - **Control Plane** (Go): Orchestration server providing REST/gRPC APIs, workflow execution, observability, and cryptographic identity
@@ -37,20 +37,20 @@ make build
 ```bash
 cd control-plane
 go run ./cmd/af dev
-# Or: go run ./cmd/agentfield-server
+# Or: go run ./cmd/playground-server
 ```
 
 **Cloud mode** (requires PostgreSQL):
 ```bash
 # Run migrations first
 cd control-plane
-export AGENTFIELD_DATABASE_URL="postgres://agentfield:agentfield@localhost:5432/agentfield?sslmode=disable"
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" up
+export AGENTS_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
 
 # Start server
-AGENTFIELD_STORAGE_MODE=postgresql \
-AGENTFIELD_DATABASE_URL="postgres://agentfield:agentfield@localhost:5432/agentfield?sslmode=disable" \
-go run ./cmd/agentfield-server
+AGENTS_STORAGE_MODE=postgresql \
+AGENTS_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable" \
+go run ./cmd/playground-server
 ```
 
 **Docker Compose** (includes PostgreSQL):
@@ -82,7 +82,7 @@ cd sdk/go && go test ./...
 cd sdk/python && pytest
 
 # Python tests with coverage:
-cd sdk/python && pytest --cov=agentfield --cov-report=term-missing
+cd sdk/python && pytest --cov=playground --cov-report=term-missing
 
 # Web UI linting:
 cd control-plane/web/client && npm run lint
@@ -103,13 +103,13 @@ cd sdk/python && ruff format .
 ### Database Migrations
 ```bash
 cd control-plane
-export AGENTFIELD_DATABASE_URL="postgres://agentfield:agentfield@localhost:5432/agentfield?sslmode=disable"
+export AGENTS_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
 
 # Check migration status
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" status
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" status
 
 # Apply all pending migrations
-goose -dir ./migrations postgres "$AGENTFIELD_DATABASE_URL" up
+goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
 
 # Create new migration
 goose -dir ./migrations create <migration_name> sql
@@ -123,7 +123,7 @@ npm run dev    # Runs on http://localhost:5173
 
 # In parallel, run the control plane server to handle API calls
 cd control-plane
-go run ./cmd/agentfield-server
+go run ./cmd/playground-server
 ```
 
 The UI dev server proxies API requests to the control plane. In production, the UI is embedded via Go's `embed` package.
@@ -133,8 +133,8 @@ The UI dev server proxies API requests to the control plane. In production, the 
 ### Control Plane Structure (`control-plane/`)
 
 **Entry Points:**
-- `cmd/agentfield/` - Unified CLI with server + dev/init commands
-- `cmd/agentfield-server/` - Standalone server binary
+- `cmd/playground/` - Unified CLI with server + dev/init commands
+- `cmd/playground-server/` - Standalone server binary
 
 **Core Packages (`internal/`):**
 - `cli/` - CLI command definitions and routing
@@ -156,9 +156,9 @@ The UI dev server proxies API requests to the control plane. In production, the 
 - `embedded/` - Embedded assets (web UI dist)
 
 **Configuration:**
-- Environment variables take precedence over `config/agentfield.yaml`
+- Environment variables take precedence over `config/agents.yaml`
 - See `control-plane/.env.example` for all options
-- Key modes: `AGENTFIELD_MODE=local` (SQLite/BoltDB) vs `AGENTFIELD_STORAGE_MODE=postgresql` (cloud)
+- Key modes: `AGENTS_MODE=local` (SQLite/BoltDB) vs `AGENTS_STORAGE_MODE=postgresql` (cloud)
 
 **Database Schema:**
 - `migrations/` - SQL migrations managed by Goose
@@ -166,7 +166,7 @@ The UI dev server proxies API requests to the control plane. In production, the 
 
 ### SDK Structure
 
-**Python SDK (`sdk/python/agentfield/`):**
+**Python SDK (`sdk/python/playground/`):**
 - Built on FastAPI/Uvicorn for agent HTTP servers
 - Key modules: `Agent`, `agent_field_handler`, `client`, `execution_context`, `memory`, `ai`
 - Agents register "reasoners" (decorated functions) that become REST endpoints
@@ -193,17 +193,17 @@ af init my-agent
 cd my-agent
 
 # Edit agent code (auto-generated template)
-# Run agent locally (connects to control plane at AGENTFIELD_SERVER env var or --server flag)
+# Run agent locally (connects to control plane at AGENTS_SERVER env var or --server flag)
 af run
 ```
 
 ### Creating a New Agent (Go)
 ```go
-import agentfieldagent "github.com/Agent-Field/agentfield/sdk/go/agent"
+import playgroundagent "github.com/hanzoai/playground/sdk/go/agent"
 
-agent, _ := agentfieldagent.New(agentfieldagent.Config{
+agent, _ := playgroundagent.New(playgroundagent.Config{
     NodeID:   "my-agent",
-    AgentFieldURL: "http://localhost:8080",
+    PlaygroundURL: "http://localhost:8080",
 })
 agent.RegisterSkill("greet", func(ctx context.Context, input map[string]any) (any, error) {
     return map[string]any{"message": "hello"}, nil
@@ -249,7 +249,7 @@ Storage interface is unified—services call storage layer methods, storage laye
 
 ### Configuration Precedence
 1. Environment variables (highest priority)
-2. Config file (`config/agentfield.yaml` or `AGENTFIELD_CONFIG_FILE` path)
+2. Config file (`config/agents.yaml` or `AGENTS_CONFIG_FILE` path)
 3. Defaults in code
 
 ### Agent-to-Agent Communication
@@ -274,12 +274,12 @@ Automatically synced by control plane. Agents access via SDK methods: `agent.mem
 ## Module Naming
 
 **Control Plane (Go):**
-- Use `github.com/Agent-Field/agentfield/control-plane` as module path
-- Internal packages: `github.com/Agent-Field/agentfield/control-plane/internal/<package>`
+- Use `github.com/hanzoai/playground/control-plane` as module path
+- Internal packages: `github.com/hanzoai/playground/control-plane/internal/<package>`
 
 **SDKs:**
-- Python: `agentfield` (PyPI package)
-- Go: `github.com/Agent-Field/agentfield/sdk/go` (import path)
+- Python: `playground` (PyPI package)
+- Go: `github.com/hanzoai/playground/sdk/go` (import path)
 
 ## Release Process
 
@@ -290,23 +290,23 @@ Releases are automated via `.github/workflows/release.yml` and `.goreleaser.yml`
 
 ## Debugging Tips
 
-- **Control plane not starting:** Check `AGENTFIELD_DATABASE_URL` is set correctly (PostgreSQL mode) or ensure SQLite file path is writable (local mode)
+- **Control plane not starting:** Check `AGENTS_DATABASE_URL` is set correctly (PostgreSQL mode) or ensure SQLite file path is writable (local mode)
 - **Migrations failing:** Ensure PostgreSQL is running and connection string is correct. Check migration status with `goose status`
-- **Agent can't connect:** Verify `AGENTFIELD_SERVER` env var points to control plane (default: `http://localhost:8080`)
+- **Agent can't connect:** Verify `AGENTS_SERVER` env var points to control plane (default: `http://localhost:8080`)
 - **UI not loading:** In dev, ensure both Vite dev server (`npm run dev`) and control plane server are running. In prod, ensure `make build` was run to embed UI in binary
 - **Agent execution stuck:** Check workflow DAG in UI (`/ui/workflows`) for errors. Check agent logs for exceptions.
-- **Database connection pool exhausted:** Increase `AGENTFIELD_STORAGE_POSTGRES_MAX_CONNECTIONS` in config
+- **Database connection pool exhausted:** Increase `AGENTS_STORAGE_POSTGRES_MAX_CONNECTIONS` in config
 
 ## Environment Variables Reference
 
 See `control-plane/.env.example` for comprehensive list. Key vars:
-- `AGENTFIELD_PORT` - HTTP server port (default: 8080)
-- `AGENTFIELD_MODE` - `local` or `cloud`
-- `AGENTFIELD_STORAGE_MODE` - `local`, `postgresql`, or `cloud`
-- `AGENTFIELD_DATABASE_URL` - PostgreSQL connection string
-- `AGENTFIELD_UI_ENABLED` - Enable/disable web UI
-- `AGENTFIELD_UI_MODE` - `embedded` (production) or `development` (Vite proxy)
-- `AGENTFIELD_CONFIG_FILE` - Path to config YAML
+- `AGENTS_PORT` - HTTP server port (default: 8080)
+- `AGENTS_MODE` - `local` or `cloud`
+- `AGENTS_STORAGE_MODE` - `local`, `postgresql`, or `cloud`
+- `AGENTS_DATABASE_URL` - PostgreSQL connection string
+- `AGENTS_UI_ENABLED` - Enable/disable web UI
+- `AGENTS_UI_MODE` - `embedded` (production) or `development` (Vite proxy)
+- `AGENTS_CONFIG_FILE` - Path to config YAML
 - `GIN_MODE` - `debug` or `release`
 - `LOG_LEVEL` - `debug`, `info`, `warn`, `error`
 

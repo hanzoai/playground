@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/fsnotify/fsnotify"
 	"gopkg.in/yaml.v3"
@@ -48,9 +48,9 @@ type InstalledPackage struct {
 }
 
 // SyncPackagesFromRegistry ensures all packages in installed.yaml are present in the database.
-func SyncPackagesFromRegistry(agentfieldHome string, storageProvider packageStorage) error {
+func SyncPackagesFromRegistry(agentsHome string, storageProvider packageStorage) error {
 	ctx := context.Background()
-	registryPath := filepath.Join(agentfieldHome, "installed.yaml")
+	registryPath := filepath.Join(agentsHome, "installed.yaml")
 	data, err := os.ReadFile(registryPath)
 	if err != nil {
 		return nil // No registry, nothing to sync
@@ -65,8 +65,8 @@ func SyncPackagesFromRegistry(agentfieldHome string, storageProvider packageStor
 		if err == nil {
 			continue // Already present
 		}
-		// Load agentfield-package.yaml
-		packageYamlPath := filepath.Join(pkg.Path, "agentfield-package.yaml")
+		// Load agents-package.yaml
+		packageYamlPath := filepath.Join(pkg.Path, "agents-package.yaml")
 		packageYamlData, err := os.ReadFile(packageYamlPath)
 		if err != nil {
 			continue // Skip if missing
@@ -96,13 +96,13 @@ func SyncPackagesFromRegistry(agentfieldHome string, storageProvider packageStor
 }
 
 // StartPackageRegistryWatcher watches the installed.yaml registry and keeps storage in sync.
-func StartPackageRegistryWatcher(parentCtx context.Context, agentfieldHome string, storageProvider packageStorage) (context.CancelFunc, error) {
+func StartPackageRegistryWatcher(parentCtx context.Context, agentsHome string, storageProvider packageStorage) (context.CancelFunc, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create registry watcher: %w", err)
 	}
 
-	registryDir := agentfieldHome
+	registryDir := agentsHome
 	if err := watcher.Add(registryDir); err != nil {
 		watcher.Close()
 		return nil, fmt.Errorf("failed to watch registry directory %s: %w", registryDir, err)
@@ -123,7 +123,7 @@ func StartPackageRegistryWatcher(parentCtx context.Context, agentfieldHome strin
 	go func() {
 		defer watcher.Close()
 		defer close(syncCh)
-		registryFile := filepath.Join(agentfieldHome, "installed.yaml")
+		registryFile := filepath.Join(agentsHome, "installed.yaml")
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -163,7 +163,7 @@ func StartPackageRegistryWatcher(parentCtx context.Context, agentfieldHome strin
 					return
 				}
 				time.Sleep(250 * time.Millisecond)
-				if err := SyncPackagesFromRegistry(agentfieldHome, storageProvider); err != nil {
+				if err := SyncPackagesFromRegistry(agentsHome, storageProvider); err != nil {
 					logger.Logger.Error().Err(err).Msg("failed to sync packages from registry")
 				} else {
 					logger.Logger.Debug().Msg("registry sync completed")

@@ -7,15 +7,15 @@ local execution for smoke tests.
 """
 
 import os
-from agentfield import Agent
-from agentfield.async_config import AsyncConfig
+from playground import Agent
+from playground.async_config import AsyncConfig
 
 
 # Minimal agent with no heartbeat/lease loop. The control plane discovers
 # capabilities via /discover and invokes via /execute.
 app = Agent(
     node_id=os.getenv("AGENT_NODE_ID", "python-serverless-hello"),
-    agentfield_server=os.getenv("AGENTFIELD_URL", "http://localhost:8080"),
+    playground_server=os.getenv("AGENTS_URL", "http://localhost:8080"),
     auto_register=False,
     dev_mode=True,
     async_config=AsyncConfig(enable_async_execution=False, fallback_to_sync=True),
@@ -23,7 +23,7 @@ app = Agent(
 
 
 @app.reasoner()
-async def hello(name: str = "AgentField") -> dict:
+async def hello(name: str = "Playground") -> dict:
     """Return a greeting and echo execution metadata for debugging."""
     ctx = app.ctx
     return {

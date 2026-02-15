@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +35,7 @@ func TestVCStorage_StoreExecutionVC_Success(t *testing.T) {
 	vcDoc := types.VCDocument{
 		Context: []string{"https://www.w3.org/2018/credentials/v1"},
 		Type:    []string{"VerifiableCredential"},
-		ID:      "urn:agentfield:vc:test-1",
+		ID:      "urn:agents:vc:test-1",
 		Issuer:  "did:key:test",
 	}
 
@@ -126,7 +126,7 @@ func TestVCStorage_GetExecutionVC_Success(t *testing.T) {
 	vcDoc := types.VCDocument{
 		Context: []string{"https://www.w3.org/2018/credentials/v1"},
 		Type:    []string{"VerifiableCredential"},
-		ID:      "urn:agentfield:vc:get-test",
+		ID:      "urn:agents:vc:get-test",
 		Issuer:  "did:key:test",
 	}
 

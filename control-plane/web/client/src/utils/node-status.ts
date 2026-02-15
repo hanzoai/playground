@@ -2,7 +2,7 @@ import type {
   AgentNodeSummary,
   HealthStatus,
   LifecycleStatus,
-} from "@/types/agentfield";
+} from "@/types/playground";
 import {
   getStatusTheme,
   type CanonicalStatus,

@@ -2,7 +2,7 @@
 """
 LangChain Baseline Benchmark
 
-Measures equivalent operations to AgentField for fair comparison.
+Measures equivalent operations to Playground for fair comparison.
 Uses LangChain's tool/function registration as the comparable operation.
 """
 
@@ -80,7 +80,7 @@ def benchmark_tool_registration(num_tools: int, iterations: int, warmup: int, ve
         for j in range(num_tools):
             idx = j
 
-            # Create a tool using StructuredTool (similar to AgentField handler)
+            # Create a tool using StructuredTool (similar to Playground handler)
             def make_func(tool_idx):
                 def tool_func(query: str) -> dict:
                     return {"tool_id": tool_idx, "processed": True}
@@ -170,7 +170,7 @@ def benchmark_cold_start(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         start = time.perf_counter()
 
-        # Create one tool (equivalent to AgentField's single handler setup)
+        # Create one tool (equivalent to Playground's single handler setup)
         @tool
         def ping(query: str) -> dict:
             """Ping tool."""

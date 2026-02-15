@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/cli/framework"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/cli/framework"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +29,7 @@ func (cmd *InstallCommand) GetName() string {
 
 // GetDescription returns the command description
 func (cmd *InstallCommand) GetDescription() string {
-	return "Install a AgentField agent node package for local use"
+	return "Install a Agents agent node package for local use"
 }
 
 // BuildCobraCommand builds the Cobra command
@@ -40,17 +40,17 @@ func (cmd *InstallCommand) BuildCobraCommand() *cobra.Command {
 	cobraCmd := &cobra.Command{
 		Use:   "install <package-path>",
 		Short: cmd.GetDescription(),
-		Long: `Install a AgentField agent node package for local use.
+		Long: `Install a Agents agent node package for local use.
 
 The package can be:
 - A local directory path
 - A GitHub repository URL
-- A package name from the AgentField registry
+- A package name from the Agents registry
 
 Examples:
-  agentfield install ./my-agent
-  agentfield install https://github.com/user/agent-repo
-  agentfield install agent-name`,
+  agents install ./my-agent
+  agents install https://github.com/user/agent-repo
+  agents install agent-name`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			// Update output formatter with verbose setting
@@ -67,7 +67,7 @@ Examples:
 
 // execute performs the actual installation
 func (cmd *InstallCommand) execute(packagePath string, force, verbose bool) error {
-	cmd.output.PrintHeader("Installing AgentField Package")
+	cmd.output.PrintHeader("Installing Agents Package")
 	cmd.output.PrintInfo(fmt.Sprintf("Package: %s", packagePath))
 
 	if verbose {

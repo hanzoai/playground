@@ -1,12 +1,12 @@
-# AgentField CLI Installer for Windows
-# Usage: iwr -useb https://agentfield.ai/install.ps1 | iex
-# Version pinning: $env:VERSION="v1.0.0"; iwr -useb https://agentfield.ai/install.ps1 | iex
+# Playground CLI Installer for Windows
+# Usage: iwr -useb https://playground.ai/install.ps1 | iex
+# Version pinning: $env:VERSION="v1.0.0"; iwr -useb https://playground.ai/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
 # Configuration
-$Repo = "Agent-Field/agentfield"
-$InstallDir = if ($env:AGENTFIELD_INSTALL_DIR) { $env:AGENTFIELD_INSTALL_DIR } else { "$env:USERPROFILE\.agentfield\bin" }
+$Repo = "hanzoai/playground"
+$InstallDir = if ($env:AGENTS_INSTALL_DIR) { $env:AGENTS_INSTALL_DIR } else { "$env:USERPROFILE\.hanzo/agents\bin" }
 $Version = if ($env:VERSION) { $env:VERSION } else { "latest" }
 $Verbose = if ($env:VERBOSE -eq "1") { $true } else { $false }
 $SkipPathConfig = if ($env:SKIP_PATH_CONFIG -eq "1") { $true } else { $false }
@@ -58,7 +58,7 @@ function Write-Verbose {
 function Write-Banner {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║           AgentField CLI Installer (Windows)             ║" -ForegroundColor Cyan
+    Write-Host "║           Playground CLI Installer (Windows)             ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -200,7 +200,7 @@ function Install-Binary {
     }
 
     # Copy binary
-    $targetPath = Join-Path $InstallDir "agentfield.exe"
+    $targetPath = Join-Path $InstallDir "playground.exe"
     Copy-Item -Path $BinaryPath -Destination $targetPath -Force
 
     # Create af.exe alias for convenience (prefer hardlink, fallback to copy)
@@ -215,7 +215,7 @@ function Install-Binary {
         New-Item -ItemType HardLink -Path $afPath -Target $targetPath -Force | Out-Null
         $aliasCreated = $true
         $aliasMethod = "hardlink"
-        Write-Verbose "Created hardlink: af.exe -> agentfield.exe"
+        Write-Verbose "Created hardlink: af.exe -> playground.exe"
     }
     catch {
         Write-Verbose "Hardlink creation failed, falling back to copy: $($_.Exception.Message)"
@@ -235,7 +235,7 @@ function Install-Binary {
         Write-Success "Alias created ($aliasMethod): $afPath"
     }
     else {
-        Write-Info "Alias not created; run agentfield using $targetPath or create your own shortcut."
+        Write-Info "Alias not created; run playground using $targetPath or create your own shortcut."
     }
 }
 
@@ -283,7 +283,7 @@ function Test-Installation {
 
     Write-Info "Verifying installation..."
 
-    $binaryPath = Join-Path $InstallDir "agentfield.exe"
+    $binaryPath = Join-Path $InstallDir "playground.exe"
 
     if (Test-Path $binaryPath) {
         Write-Success "Installation verified"
@@ -308,7 +308,7 @@ function Test-Installation {
 function Write-SuccessMessage {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-    Write-Host "║  AgentField CLI installed successfully!                      ║" -ForegroundColor Green
+    Write-Host "║  Playground CLI installed successfully!                      ║" -ForegroundColor Green
     Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Green
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor White
@@ -317,13 +317,13 @@ function Write-SuccessMessage {
     Write-Host "     `$env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  2. Verify installation:" -ForegroundColor White
-    Write-Host "     agentfield --version" -ForegroundColor Cyan
+    Write-Host "     playground --version" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  3. Initialize your first agent:" -ForegroundColor White
-    Write-Host "     agentfield init my-agent" -ForegroundColor Cyan
+    Write-Host "     playground init my-agent" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Resources:" -ForegroundColor White
-    Write-Host "  Documentation: https://agentfield.ai/docs" -ForegroundColor Blue
+    Write-Host "  Documentation: https://playground.ai/docs" -ForegroundColor Blue
     Write-Host "  GitHub:        https://github.com/$Repo" -ForegroundColor Blue
     Write-Host "  Support:       https://github.com/$Repo/issues" -ForegroundColor Blue
     Write-Host ""
@@ -347,7 +347,7 @@ function Main {
     Write-Info "Installing version: $Version"
 
     # Construct binary name and URL
-    $binaryName = "agentfield-$os-$arch.exe"
+    $binaryName = "playground-$os-$arch.exe"
     $downloadUrl = "https://github.com/$Repo/releases/download/$Version/$binaryName"
     $checksumsUrl = "https://github.com/$Repo/releases/download/$Version/checksums.txt"
 
@@ -356,7 +356,7 @@ function Main {
     Write-Verbose "Checksums URL: $checksumsUrl"
 
     # Create temporary directory
-    $tempDir = Join-Path $env:TEMP "agentfield-install-$(Get-Random)"
+    $tempDir = Join-Path $env:TEMP "playground-install-$(Get-Random)"
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
     try {

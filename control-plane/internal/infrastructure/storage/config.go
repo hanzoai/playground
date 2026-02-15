@@ -1,12 +1,12 @@
-// agentfield/internal/infrastructure/storage/config.go
+// agents/internal/infrastructure/storage/config.go
 package storage
 
 import (
 	"os"
 	"path/filepath"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/domain"
-	"github.com/Agent-Field/agentfield/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/core/domain"
+	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,9 +18,9 @@ func NewLocalConfigStorage(fs interfaces.FileSystemAdapter) interfaces.ConfigSto
 	return &LocalConfigStorage{fs: fs}
 }
 
-func (s *LocalConfigStorage) LoadAgentFieldConfig(path string) (*domain.AgentFieldConfig, error) {
+func (s *LocalConfigStorage) LoadAgentsConfig(path string) (*domain.AgentsConfig, error) {
 	if !s.fs.Exists(path) {
-		return &domain.AgentFieldConfig{
+		return &domain.AgentsConfig{
 			HomeDir:     filepath.Dir(path),
 			Environment: make(map[string]string),
 			MCP: domain.MCPConfig{
@@ -34,7 +34,7 @@ func (s *LocalConfigStorage) LoadAgentFieldConfig(path string) (*domain.AgentFie
 		return nil, err
 	}
 
-	var config domain.AgentFieldConfig
+	var config domain.AgentsConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *LocalConfigStorage) LoadAgentFieldConfig(path string) (*domain.AgentFie
 	return &config, nil
 }
 
-func (s *LocalConfigStorage) SaveAgentFieldConfig(path string, config *domain.AgentFieldConfig) error {
+func (s *LocalConfigStorage) SaveAgentsConfig(path string, config *domain.AgentsConfig) error {
 	data, err := yaml.Marshal(config)
 	if err != nil {
 		return err

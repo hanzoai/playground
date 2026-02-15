@@ -73,8 +73,8 @@ func TestRootCommandHonorsConfigFlag(t *testing.T) {
 	resetCLIStateForTest()
 
 	configDir := t.TempDir()
-	configPath := filepath.Join(configDir, "agentfield.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte("agentfield:\n  port: 7000\n"), 0o644))
+	configPath := filepath.Join(configDir, "agents.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("agents:\n  port: 7000\n"), 0o644))
 
 	var received string
 	cmd := NewRootCommand(func(cmd *cobra.Command, args []string) {

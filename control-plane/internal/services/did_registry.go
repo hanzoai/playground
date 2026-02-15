@@ -6,8 +6,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
-	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
 // DIDRegistry manages the storage and retrieval of DID registries using database-only operations.
@@ -37,11 +37,11 @@ func (r *DIDRegistry) Initialize() error {
 
 // GetRegistry retrieves a DID registry for a af server.
 // Returns (nil, nil) if registry doesn't exist, (nil, error) for actual errors.
-func (r *DIDRegistry) GetRegistry(agentfieldServerID string) (*types.DIDRegistry, error) {
+func (r *DIDRegistry) GetRegistry(agentsServerID string) (*types.DIDRegistry, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	registry, exists := r.registries[agentfieldServerID]
+	registry, exists := r.registries[agentsServerID]
 	if !exists {
 		// Return nil, nil for "not found" to distinguish from actual errors
 		return nil, nil
@@ -56,7 +56,7 @@ func (r *DIDRegistry) StoreRegistry(registry *types.DIDRegistry) error {
 	defer r.mu.Unlock()
 
 	// Store in memory
-	r.registries[registry.AgentFieldServerID] = registry
+	r.registries[registry.AgentsServerID] = registry
 
 	// Persist to database
 	return r.saveRegistryToDatabase(registry)
@@ -76,12 +76,12 @@ func (r *DIDRegistry) ListRegistries() ([]*types.DIDRegistry, error) {
 }
 
 // DeleteRegistry deletes a DID registry for a af server.
-func (r *DIDRegistry) DeleteRegistry(agentfieldServerID string) error {
+func (r *DIDRegistry) DeleteRegistry(agentsServerID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Remove from memory
-	delete(r.registries, agentfieldServerID)
+	delete(r.registries, agentsServerID)
 
 	// TODO: Add database deletion method to storage interface
 	// For now, we'll just remove from memory
@@ -89,13 +89,13 @@ func (r *DIDRegistry) DeleteRegistry(agentfieldServerID string) error {
 }
 
 // UpdateAgentStatus updates the status of an agent DID.
-func (r *DIDRegistry) UpdateAgentStatus(agentfieldServerID, agentNodeID string, status types.AgentDIDStatus) error {
+func (r *DIDRegistry) UpdateAgentStatus(agentsServerID, agentNodeID string, status types.AgentDIDStatus) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	registry, exists := r.registries[agentfieldServerID]
+	registry, exists := r.registries[agentsServerID]
 	if !exists {
-		return fmt.Errorf("registry not found for af server: %s", agentfieldServerID)
+		return fmt.Errorf("registry not found for af server: %s", agentsServerID)
 	}
 
 	agentInfo, exists := registry.AgentNodes[agentNodeID]
@@ -111,13 +111,13 @@ func (r *DIDRegistry) UpdateAgentStatus(agentfieldServerID, agentNodeID string, 
 }
 
 // FindDIDByComponent finds a DID by component type and function name.
-func (r *DIDRegistry) FindDIDByComponent(agentfieldServerID, componentType, functionName string) (*types.DIDIdentity, error) {
+func (r *DIDRegistry) FindDIDByComponent(agentsServerID, componentType, functionName string) (*types.DIDIdentity, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	registry, exists := r.registries[agentfieldServerID]
+	registry, exists := r.registries[agentsServerID]
 	if !exists {
-		return nil, fmt.Errorf("registry not found for af server: %s", agentfieldServerID)
+		return nil, fmt.Errorf("registry not found for af server: %s", agentsServerID)
 	}
 
 	// Search through all agent nodes
@@ -163,13 +163,13 @@ func (r *DIDRegistry) FindDIDByComponent(agentfieldServerID, componentType, func
 }
 
 // GetAgentDIDs retrieves all DIDs for a specific agent node.
-func (r *DIDRegistry) GetAgentDIDs(agentfieldServerID, agentNodeID string) (*types.DIDIdentityPackage, error) {
+func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.DIDIdentityPackage, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	registry, exists := r.registries[agentfieldServerID]
+	registry, exists := r.registries[agentsServerID]
 	if !exists {
-		return nil, fmt.Errorf("registry not found for af server: %s", agentfieldServerID)
+		return nil, fmt.Errorf("registry not found for af server: %s", agentsServerID)
 	}
 
 	agentInfo, exists := registry.AgentNodes[agentNodeID]
@@ -209,7 +209,7 @@ func (r *DIDRegistry) GetAgentDIDs(agentfieldServerID, agentNodeID string) (*typ
 		},
 		ReasonerDIDs:       reasonerDIDs,
 		SkillDIDs:          skillDIDs,
-		AgentFieldServerID: agentfieldServerID,
+		AgentsServerID: agentsServerID,
 	}, nil
 }
 
@@ -221,21 +221,21 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 
 	ctx := context.Background()
 	// Load af server DID information
-	agentfieldServerDIDs, err := r.storageProvider.ListAgentFieldServerDIDs(ctx)
+	agentsServerDIDs, err := r.storageProvider.ListAgentsServerDIDs(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list af server DIDs: %w", err)
 	}
 
 	// Create registries for each af server
-	for _, agentfieldServerDIDInfo := range agentfieldServerDIDs {
+	for _, agentsServerDIDInfo := range agentsServerDIDs {
 		registry := &types.DIDRegistry{
-			AgentFieldServerID: agentfieldServerDIDInfo.AgentFieldServerID,
-			RootDID:            agentfieldServerDIDInfo.RootDID,
-			MasterSeed:         agentfieldServerDIDInfo.MasterSeed,
+			AgentsServerID: agentsServerDIDInfo.AgentsServerID,
+			RootDID:            agentsServerDIDInfo.RootDID,
+			MasterSeed:         agentsServerDIDInfo.MasterSeed,
 			AgentNodes:         make(map[string]types.AgentDIDInfo),
 			TotalDIDs:          0,
-			CreatedAt:          agentfieldServerDIDInfo.CreatedAt,
-			LastKeyRotation:    agentfieldServerDIDInfo.LastKeyRotation,
+			CreatedAt:          agentsServerDIDInfo.CreatedAt,
+			LastKeyRotation:    agentsServerDIDInfo.LastKeyRotation,
 		}
 
 		// Load agent DIDs for this af server
@@ -252,7 +252,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 			agentInfo := types.AgentDIDInfo{
 				DID:                agentDIDInfo.DID,
 				AgentNodeID:        agentDIDInfo.AgentNodeID,
-				AgentFieldServerID: agentfieldServerDIDInfo.AgentFieldServerID,
+				AgentsServerID: agentsServerDIDInfo.AgentsServerID,
 				PublicKeyJWK:       agentDIDInfo.PublicKeyJWK,
 				DerivationPath:     agentDIDInfo.DerivationPath,
 				Status:             agentDIDInfo.Status,
@@ -297,7 +297,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 			registry.TotalDIDs++
 		}
 
-		r.registries[agentfieldServerDIDInfo.AgentFieldServerID] = registry
+		r.registries[agentsServerDIDInfo.AgentsServerID] = registry
 	}
 
 	return nil
@@ -311,9 +311,9 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 
 	ctx := context.Background()
 	// Store af server DID information
-	err := r.storageProvider.StoreAgentFieldServerDID(
+	err := r.storageProvider.StoreAgentsServerDID(
 		ctx,
-		registry.AgentFieldServerID,
+		registry.AgentsServerID,
 		registry.RootDID,
 		registry.MasterSeed,
 		registry.CreatedAt,
@@ -360,7 +360,7 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 			ctx,
 			agentInfo.AgentNodeID,
 			agentInfo.DID,
-			registry.AgentFieldServerID, // Use af server ID instead of root DID
+			registry.AgentsServerID, // Use af server ID instead of root DID
 			string(agentInfo.PublicKeyJWK),
 			derivationIndex,
 			components,

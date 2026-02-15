@@ -3,13 +3,13 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentfield"
+name = "playground"
 version = "0.1.41-rc.4"
-description = "Python SDK for the AgentField control plane"
+description = "Python SDK for the Playground control plane"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "AgentField Maintainers"}
+    {name = "Playground Maintainers"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -38,16 +38,16 @@ dependencies = [
     "websockets",
     "fal-client>=0.5.0"
 ]
-keywords = ["agentfield", "sdk", "agents"]
+keywords = ["playground", "sdk", "agents"]
 
 [project.urls]
-Homepage = "https://github.com/Agent-Field/agentfield"
-Documentation = "https://github.com/Agent-Field/agentfield/tree/main/docs"
-Issues = "https://github.com/Agent-Field/agentfield/issues"
+Homepage = "https://github.com/hanzoai/playground"
+Documentation = "https://github.com/hanzoai/playground/tree/main/docs"
+Issues = "https://github.com/hanzoai/playground/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agentfield*"]
+include = ["playground*"]
 exclude = ["tests*", "examples*"]
 
 [project.optional-dependencies]
@@ -76,17 +76,17 @@ markers = [
     "integration: tests that can touch network/services",
     "mcp: tests that exercise MCP/network interactions"
 ]
-addopts = "-ra -q -m \"not mcp\" --strict-markers --strict-config --cov=agentfield.client --cov=agentfield.agent_field_handler --cov=agentfield.execution_context --cov=agentfield.execution_state --cov=agentfield.memory --cov=agentfield.rate_limiter --cov=agentfield.result_cache --cov-report=term-missing:skip-covered"
+addopts = "-ra -q -m \"not mcp\" --strict-markers --strict-config --cov=playground.client --cov=playground.agent_field_handler --cov=playground.execution_context --cov=playground.execution_state --cov=playground.memory --cov=playground.rate_limiter --cov=playground.result_cache --cov-report=term-missing:skip-covered"
 asyncio_mode = "auto"
 
 [tool.coverage.run]
-source = ["agentfield"]
+source = ["playground"]
 omit = [
-    "agentfield/agent_mcp.py",
-    "agentfield/dynamic_skills.py",
-    "agentfield/mcp_client.py",
-    "agentfield/mcp_manager.py",
-    "agentfield/mcp_stdio_bridge.py",
-    "agentfield/logger.py",
-    "agentfield/types.py",
+    "playground/agent_mcp.py",
+    "playground/dynamic_skills.py",
+    "playground/mcp_client.py",
+    "playground/mcp_manager.py",
+    "playground/mcp_stdio_bridge.py",
+    "playground/logger.py",
+    "playground/types.py",
 ]

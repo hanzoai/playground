@@ -494,7 +494,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 * Update Railway deployment to use Docker images
 
 - Remove railway.toml files (now using Docker images directly)
-- Add AGENTFIELD_API_KEY and AGENT_CALLBACK_URL support to init-example
+- Add AGENTS_API_KEY and AGENT_CALLBACK_URL support to init-example
 - Rewrite Railway README for Docker-based deployment workflow
 - Document critical AGENT_CALLBACK_URL for agent health checks
 
@@ -564,7 +564,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 * Update Railway deployment to use Docker images
 
 - Remove railway.toml files (now using Docker images directly)
-- Add AGENTFIELD_API_KEY and AGENT_CALLBACK_URL support to init-example
+- Add AGENTS_API_KEY and AGENT_CALLBACK_URL support to init-example
 - Rewrite Railway README for Docker-based deployment workflow
 - Document critical AGENT_CALLBACK_URL for agent health checks
 
@@ -1778,7 +1778,7 @@ Adds instructions for waiting for demo agents to become ready and for building/l
 
 Also includes an example of how to use the API key when authentication is enabled.
 
-Updates the control plane deployment configuration to default `AGENTFIELD_CONFIG_FILE` to `/dev/null`.
+Updates the control plane deployment configuration to default `AGENTS_CONFIG_FILE` to `/dev/null`.
 
 Adjusts the kustomization file for the postgres demo overlay to use the standard `patches` key. (b6b0cd3)
 
@@ -2634,7 +2634,7 @@ authentication is enabled on the control plane:
 - send_enhanced_heartbeat() / send_enhanced_heartbeat_sync()
 - notify_graceful_shutdown() / notify_graceful_shutdown_sync()
 
-Also updated documentation-chatbot example to pass AGENTFIELD_API_KEY
+Also updated documentation-chatbot example to pass AGENTS_API_KEY
 from environment to the Agent constructor.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -2667,7 +2667,7 @@ with support in all SDKs (Python, Go, TypeScript).
 
 ## Control Plane Changes
 
-- Add `api_key` config option in agentfield.yaml
+- Add `api_key` config option in agents.yaml
 - Add HTTP auth middleware (X-API-Key header, Bearer token, query param)
 - Add gRPC auth interceptor (x-api-key metadata, Bearer token)
 - Skip auth for /api/v1/health, /metrics, and /ui/* paths
@@ -2979,7 +2979,7 @@ Co-Authored-By: Claude <noreply@anthropic.com> (5a975fa)
 
 - Remove unused configuration variables
 
-Audit of agentfield.yaml revealed many config options that were defined
+Audit of agents.yaml revealed many config options that were defined
 but never actually read or used by the codebase. This creates confusion
 for users who set these values expecting them to have an effect.
 
