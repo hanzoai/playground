@@ -1,0 +1,61 @@
+services:
+  control-plane:
+    build:
+      context: ../../..
+      dockerfile: deployments/docker/Dockerfile.control-plane
+    container_name: playground-control-plane-local
+    environment:
+      AGENTS_STORAGE_MODE: local
+      AGENTS_PORT: 8080
+      AGENTS_CONFIG_FILE: /etc/playground/agents-test.yaml
+      AGENTS_HOME: /data/playground
+    ports:
+      - "8080:8080"
+    volumes:
+      - control-plane-data:/data
+      - ../docker/agents-test.yaml:/etc/playground/agents-test.yaml:ro
+    networks:
+      - playground-test
+    command: ["server", "--port", "8080", "--config", "/etc/playground/agents-test.yaml", "--vc-execution"]
+
+  test-runner:
+    build:
+      context: ../../..
+      dockerfile: tests/functional/docker/Dockerfile.test-runner
+    container_name: playground-test-runner-local
+    environment:
+      AGENTS_SERVER: http://control-plane:8080
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/google/gemini-2.5-flash-lite}
+      STORAGE_MODE: local
+      PYTEST_MARK_EXPR: ${PYTEST_MARK_EXPR:-}
+      PYTEST_ARGS: ${PYTEST_ARGS:--v}
+      TEST_TIMEOUT: ${TEST_TIMEOUT:-300}
+      TEST_AGENT_BIND_HOST: ${TEST_AGENT_BIND_HOST:-0.0.0.0}
+      TEST_AGENT_CALLBACK_HOST: ${TEST_AGENT_CALLBACK_HOST:-test-runner}
+      FUNCTIONAL_LOG_FILE: /tests/functional/logs/functional-tests.log
+      AGENTS_HOME: /tmp/playground-cli
+    volumes:
+      - ../:/tests
+    depends_on:
+      - control-plane
+    networks:
+      - playground-test
+    working_dir: /tests
+    command: >
+      sh -c "
+      echo 'Waiting for control plane to be fully ready...' &&
+      wait-for-services.sh &&
+      if [ -n \"$$PYTEST_MARK_EXPR\" ]; then
+        pytest -n auto -m \"$$PYTEST_MARK_EXPR\" $$PYTEST_ARGS --junit-xml=/reports/junit-local.xml --tb=short;
+      else
+        pytest -n auto $$PYTEST_ARGS --junit-xml=/reports/junit-local.xml --tb=short;
+      fi
+      "
+
+networks:
+  playground-test:
+    driver: bridge
+
+volumes:
+  control-plane-data:

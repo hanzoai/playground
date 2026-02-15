@@ -1,0 +1,179 @@
+# GoReleaser v2 configuration
+version: 2
+
+project_name: playground
+
+before:
+  hooks:
+    - npm --prefix control-plane/web/client install --silent
+    - npm --prefix control-plane/web/client run build --silent
+
+builds:
+  - id: playground-linux-amd64
+    dir: control-plane
+    main: ./cmd/af
+    binary: playground-linux-amd64
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+
+  - id: playground-linux-arm64
+    dir: control-plane
+    main: ./cmd/af
+    binary: playground-linux-arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+    goos:
+      - linux
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+
+  - id: playground-darwin-amd64
+    dir: control-plane
+    main: ./cmd/af
+    binary: playground-darwin-amd64
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+
+  - id: playground-darwin-arm64
+    dir: control-plane
+    main: ./cmd/af
+    binary: playground-darwin-arm64
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
+    tags:
+      - embedded
+      - sqlite_fts5
+
+  # Windows build disabled - focus on Linux and macOS for now
+  # - id: playground-windows-amd64
+  #   dir: control-plane
+  #   main: ./cmd/af
+  #   binary: playground
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - CC=gcc
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+  #   ldflags:
+  #     - -s -w
+  #     - -X main.version={{ .Version }}
+  #     - -X main.commit={{ .ShortCommit }}
+  #     - -X main.date={{ .Date }}
+  #   tags:
+  #     - embedded
+  #     - sqlite_fts5
+  #   no_unique_dist_dir: true
+
+# Don't create archives - ship raw binaries
+archives:
+  - id: default
+    builds:
+      - playground-linux-amd64
+      - playground-linux-arm64
+      - playground-darwin-amd64
+      - playground-darwin-arm64
+    format: binary
+    name_template: "playground-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+release:
+  github:
+    owner: hanzoai
+    name: playground
+  draft: false
+  prerelease: auto
+  name_template: "Playground v{{ .Version }}"
+  header: |
+    ## Playground v{{ .Version }}
+
+    ### Installation
+
+    **Installation:**
+    ```bash
+    curl -fsSL https://playground.ai/install.sh | bash
+    ```
+
+    ### Version Pinning
+
+    ```bash
+    VERSION={{ .Version }} curl -fsSL https://playground.ai/install.sh | bash
+    ```
+
+    ### Manual Download
+
+    Download the binary for your platform below, make it executable, and move it to your PATH.
+
+    ### Supported Platforms
+
+    - **macOS Intel:** `playground-darwin-amd64`
+    - **macOS Apple Silicon:** `playground-darwin-arm64`
+    - **Linux x86_64:** `playground-linux-amd64`
+    - **Linux ARM64:** `playground-linux-arm64`
+
+changelog:
+  use: git
+  sort: asc
+  abbrev: 0
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - '^style:'

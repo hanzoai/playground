@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agents
+      POSTGRES_PASSWORD: agents
+      POSTGRES_DB: agents
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agents"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  control-plane:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.control-plane
+    environment:
+      AGENTS_HOME: /data
+      AGENTS_CONFIG_FILE: /etc/agents/config/agents.yaml
+      AGENTS_STORAGE_MODE: postgres
+      AGENTS_POSTGRES_URL: postgres://agents:agents@postgres:5432/agents?sslmode=disable
+      AGENTS_STORAGE_POSTGRES_URL: postgres://agents:agents@postgres:5432/agents?sslmode=disable
+      AGENTS_DATABASE_URL: postgres://agents:agents@postgres:5432/agents?sslmode=disable
+      AGENTS_HTTP_ADDR: 0.0.0.0:8080
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - agents-data:/data
+
+  demo-go-agent:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.demo-go-agent
+    command: ["serve"]
+    environment:
+      AGENTS_URL: http://control-plane:8080
+      AGENT_NODE_ID: demo-go-agent
+      AGENT_LISTEN_ADDR: :8001
+      AGENT_PUBLIC_URL: http://demo-go-agent:8001
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    depends_on:
+      - control-plane
+
+  demo-python-agent:
+    profiles: ["python-demo"]
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.demo-python-agent
+    environment:
+      AGENTS_URL: http://control-plane:8080
+      AGENT_NODE_ID: demo-python-agent
+      PORT: "8001"
+      AGENT_CALLBACK_URL: http://demo-python-agent:8001
+    ports:
+      - "8002:8001"
+    restart: unless-stopped
+    depends_on:
+      - control-plane
+
+volumes:
+  pgdata:
+  agents-data:
