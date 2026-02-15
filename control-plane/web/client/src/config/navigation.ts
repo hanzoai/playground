@@ -11,6 +11,20 @@ export const navigationSections: NavigationSection[] = [
         href: '/dashboard',
         icon: 'dashboard',
         description: 'Real-time system overview and operational metrics'
+      },
+      {
+        id: 'canvas',
+        label: 'Canvas',
+        href: '/canvas',
+        icon: 'bot',
+        description: 'Visual bot orchestration on an infinite canvas'
+      },
+      {
+        id: 'teams',
+        label: 'Teams',
+        href: '/teams',
+        icon: 'users',
+        description: 'Provision and manage bot teams'
       }
     ]
   },

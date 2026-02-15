@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { setGlobalApiKey } from "../services/api";
+import { resetAllStores } from "../stores/resetAll";
 
 interface AuthContextType {
   apiKey: string | null;
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setApiKeyState(null);
     setGlobalApiKey(null);
     localStorage.removeItem(STORAGE_KEY);
+    resetAllStores();
   };
 
   if (loading) {
