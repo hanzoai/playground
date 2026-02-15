@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.4] - 2026-02-15
+
+
+### Added
+
+- Feat: bot canvas - real-time agent orchestration UI
+
+feat: bot canvas - real-time agent orchestration UI (5067cb9)
+
+- Feat: add bot canvas with real-time agent orchestration
+
+Multi-agent canvas UI for app.hanzo.bot with:
+- Infinite ReactFlow canvas with bot/starter/team nodes
+- Gateway WebSocket client (ZAP protocol, 102+ RPC methods)
+- Drill-down panels: terminal (xterm.js), chat (streaming), desktop (noVNC), files
+- ActionPill centralized approval system with keyboard shortcuts
+- CommandPalette (Cmd+K) for quick navigation
+- Team presets: browse, provision, manage teams of bots
+- Multi-tenant isolation: tenant-scoped localStorage, auth token in gateway,
+  store reset on logout, validated WebSocket URLs, secure iframe sandbox
+- Zustand stores: canvas, agent, actionPill, permissionMode, team
+- Responsive: mobile drawer sidebar, touch support, hidden minimap on mobile
+- New routes: /canvas (full-bleed), /teams (with padding)
+- Dependencies: zustand, @xterm/xterm, @xterm/addon-fit, @xterm/addon-webgl (15c1437)
+
+
+
+### CI
+
+- Ci: fix GHCR push to use repository owner namespace
+
+Use github.repository_owner for GHCR image namespace to match
+the org that owns the repo (hanzoai for the fork). (6048d6d)
+
+- Ci: add GHCR deploy workflow for agents image
+
+Builds and pushes control-plane image to ghcr.io/agent-field/agentfield
+on push to main or manual dispatch. Used by hanzo-k8s console integration. (e1873c5)
+
 ## [0.1.41-rc.3] - 2026-02-10
 
 
