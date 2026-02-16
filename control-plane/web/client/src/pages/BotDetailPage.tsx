@@ -13,16 +13,16 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { DIDIdentityBadge } from "../components/did/DIDDisplay";
 import { Badge } from "../components/ui/badge";
-import { ExecutionForm } from "../components/reasoners/ExecutionForm";
-import { ExecutionHistoryList } from "../components/reasoners/ExecutionHistoryList";
+import { ExecutionForm } from "../components/bots/ExecutionForm";
+import { ExecutionHistoryList } from "../components/bots/ExecutionHistoryList";
 import {
   ExecutionQueue,
   type ExecutionQueueRef,
   type QueuedExecution,
-} from "../components/reasoners/ExecutionQueue";
-import { FormattedOutput } from "../components/reasoners/FormattedOutput";
-import { PerformanceChart } from "../components/reasoners/PerformanceChart";
-import { StatusIndicator } from "../components/reasoners/StatusIndicator";
+} from "../components/bots/ExecutionQueue";
+import { FormattedOutput } from "../components/bots/FormattedOutput";
+import { PerformanceChart } from "../components/bots/PerformanceChart";
+import { StatusIndicator } from "../components/bots/StatusIndicator";
 import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import {
@@ -41,10 +41,10 @@ import {
 import { SegmentedControl } from "../components/ui/segmented-control";
 import type { SegmentedControlOption } from "../components/ui/segmented-control";
 import { ResponsiveGrid } from "@/components/layout/ResponsiveGrid";
-import { reasonersApi } from "../services/reasonersApi";
+import { botsApi } from "../services/botsApi";
 import { normalizeExecutionStatus } from "../utils/status";
 import type { ExecutionHistory, PerformanceMetrics } from "../types/execution";
-import type { ReasonerWithNode } from "../types/reasoners";
+import type { BotWithNode } from "../types/bots";
 import { generateExampleData, validateFormData } from "../utils/schemaUtils";
 
 const RESULT_VIEW_OPTIONS: ReadonlyArray<SegmentedControlOption> = [
@@ -52,10 +52,10 @@ const RESULT_VIEW_OPTIONS: ReadonlyArray<SegmentedControlOption> = [
   { value: "json", label: "JSON", icon: Code },
 ] as const;
 
-export function ReasonerDetailPage() {
-  const { fullReasonerId } = useParams<{ fullReasonerId: string }>();
+export function BotDetailPage() {
+  const { fullBotId } = useParams<{ fullBotId: string }>();
 
-  const [reasoner, setReasoner] = useState<ReasonerWithNode | null>(null);
+  const [bot, setBot] = useState<BotWithNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,18 +77,18 @@ export function ReasonerDetailPage() {
   const [isExecuting, setIsExecuting] = useState(false);
 
   useEffect(() => {
-    loadReasonerDetails();
+    loadBotDetails();
     loadMetrics();
     loadHistory();
-  }, [fullReasonerId]);
+  }, [fullBotId]);
 
-  const loadReasonerDetails = async () => {
-    if (!fullReasonerId) return;
+  const loadBotDetails = async () => {
+    if (!fullBotId) return;
 
     try {
       setLoading(true);
-      const data = await reasonersApi.getReasonerDetails(fullReasonerId);
-      setReasoner(data);
+      const data = await botsApi.getBotDetails(fullBotId);
+      setBot(data);
 
       // Initialize form with example data if schema is available
       if (data.input_schema) {
@@ -97,7 +97,7 @@ export function ReasonerDetailPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load reasoner details"
+        err instanceof Error ? err.message : "Failed to load bot details"
       );
     } finally {
       setLoading(false);
@@ -105,9 +105,9 @@ export function ReasonerDetailPage() {
   };
 
   const loadMetrics = async () => {
-    if (!fullReasonerId) return;
+    if (!fullBotId) return;
     try {
-      const data = await reasonersApi.getPerformanceMetrics(fullReasonerId);
+      const data = await botsApi.getPerformanceMetrics(fullBotId);
       setMetrics(data);
     } catch (err) {
       console.error("Failed to load metrics:", err);
@@ -115,10 +115,10 @@ export function ReasonerDetailPage() {
   };
 
   const loadHistory = async () => {
-    if (!fullReasonerId) return;
+    if (!fullBotId) return;
     try {
-      const data = await reasonersApi.getExecutionHistory(
-        fullReasonerId,
+      const data = await botsApi.getExecutionHistory(
+        fullBotId,
         1,
         10
       );
@@ -129,13 +129,13 @@ export function ReasonerDetailPage() {
   };
 
   const handleExecute = () => {
-    if (!reasoner || !fullReasonerId || !executionQueueRef.current) return;
+    if (!bot || !fullBotId || !executionQueueRef.current) return;
 
     // Validate form data
-    if (reasoner.input_schema) {
+    if (bot.input_schema) {
       const validation = validateFormData(
         formData.input,
-        reasoner.input_schema
+        bot.input_schema
       );
       if (!validation.isValid) {
         setValidationErrors(validation.errors);
@@ -171,11 +171,11 @@ export function ReasonerDetailPage() {
   };
 
   const handleCopyCommand = () => {
-    if (!reasoner || !fullReasonerId) return;
+    if (!bot || !fullBotId) return;
 
     const baseUrl = window.location.origin;
     const curlCommand = `curl -X POST ${baseUrl}/api/v1/execute/${encodeURIComponent(
-      fullReasonerId
+      fullBotId
     )} \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify({ input: formData.input || {} }, null, 2)}'`;
@@ -193,14 +193,14 @@ export function ReasonerDetailPage() {
         <div className="flex flex-col items-center gap-3">
           <InProgress className="h-8 w-8 animate-spin text-muted-foreground" />
           <p className="text-body-small">
-            Loading reasoner details...
+            Loading bot details...
           </p>
         </div>
       </div>
     );
   }
 
-  if (error || !reasoner) {
+  if (error || !bot) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Alert className="max-w-md mx-auto border-red-200 bg-red-50">
@@ -209,7 +209,7 @@ export function ReasonerDetailPage() {
             <div>
               <h3 className="font-semibold text-red-900">Error</h3>
               <p className="text-sm text-red-700">
-                {error || "Reasoner not found"}
+                {error || "Bot not found"}
               </p>
             </div>
           </div>
@@ -225,18 +225,18 @@ export function ReasonerDetailPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-display">
-              {reasoner.name}
+              {bot.name}
             </h2>
             <p className="text-body">
-              {reasoner.description || "No description available"}
+              {bot.description || "No description available"}
             </p>
           </div>
           <div className="flex items-center gap-4">
             <StatusIndicator
               status={
-                reasoner.node_status === "active"
+                bot.node_status === "active"
                   ? "online"
-                  : reasoner.node_status === "inactive"
+                  : bot.node_status === "inactive"
                   ? "offline"
                   : "unknown"
               }
@@ -253,17 +253,17 @@ export function ReasonerDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-4 text-body">
-          <span>Node: {reasoner.node_id}</span>
+          <span>Node: {bot.node_id}</span>
           <span>•</span>
-          <span>ID: {fullReasonerId}</span>
+          <span>ID: {fullBotId}</span>
           <span>•</span>
-          <DIDIdentityBadge nodeId={reasoner.node_id} showDID={true} />
+          <DIDIdentityBadge nodeId={bot.node_id} showDID={true} />
         </div>
-        {reasoner.tags && reasoner.tags.length > 0 && (
+        {bot.tags && bot.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {reasoner.tags.map((tag) => (
+            {bot.tags.map((tag) => (
               <Badge
-                key={`${reasoner.reasoner_id}-${tag}`}
+                key={`${bot.bot_id}-${tag}`}
                 variant="secondary"
                 className="text-xs"
               >
@@ -330,15 +330,15 @@ export function ReasonerDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Play className="h-5 w-5" />
-                Execute Reasoner
+                Execute Bot
               </CardTitle>
               <CardDescription>
-                Provide input data and execute the reasoner
+                Provide input data and execute the bot
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <ExecutionForm
-                schema={reasoner.input_schema}
+                schema={bot.input_schema}
                 formData={formData}
                 onChange={setFormData}
                 validationErrors={validationErrors}
@@ -358,7 +358,7 @@ export function ReasonerDetailPage() {
                 ) : (
                   <>
                     <Play className="h-4 w-4 mr-2" />
-                    Execute Reasoner
+                    Execute Bot
                   </>
                 )}
               </Button>
@@ -377,13 +377,13 @@ export function ReasonerDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-sm">Input Schema</CardTitle>
                   <CardDescription>
-                    Expected input format for this reasoner
+                    Expected input format for this bot
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {reasoner.input_schema ? (
+                  {bot.input_schema ? (
                     <pre className="bg-bg-secondary p-4 rounded-lg text-sm overflow-auto scrollbar-thin border border-border-secondary">
-                      {JSON.stringify(reasoner.input_schema, null, 2)}
+                      {JSON.stringify(bot.input_schema, null, 2)}
                     </pre>
                   ) : (
                     <p className="text-text-tertiary">
@@ -399,13 +399,13 @@ export function ReasonerDetailPage() {
                 <CardHeader>
                   <CardTitle className="text-sm">Output Schema</CardTitle>
                   <CardDescription>
-                    Expected output format from this reasoner
+                    Expected output format from this bot
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {reasoner.output_schema ? (
+                  {bot.output_schema ? (
                     <pre className="bg-bg-secondary p-4 rounded-lg text-sm overflow-auto scrollbar-thin border border-border-secondary">
-                      {JSON.stringify(reasoner.output_schema, null, 2)}
+                      {JSON.stringify(bot.output_schema, null, 2)}
                     </pre>
                   ) : (
                     <p className="text-text-tertiary">
@@ -422,7 +422,7 @@ export function ReasonerDetailPage() {
         <div className="lg:col-span-7 space-y-6">
           {/* Execution Queue */}
           <ExecutionQueue
-            reasonerId={fullReasonerId!}
+            botId={fullBotId!}
             onExecutionComplete={handleExecutionComplete}
             onExecutionSelect={handleExecutionSelect}
             ref={executionQueueRef}

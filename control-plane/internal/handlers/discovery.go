@@ -27,7 +27,7 @@ type AgentLister interface {
 // DiscoveryFilters captures query parameters for capability discovery.
 type DiscoveryFilters struct {
 	AgentIDs            []string
-	ReasonerPattern     *string
+	BotPattern     *string
 	SkillPattern        *string
 	Tags                []string
 	IncludeInputSchema  bool
@@ -65,13 +65,13 @@ type DiscoveryPagination struct {
 type DiscoveryResponse struct {
 	DiscoveredAt   time.Time           `json:"discovered_at"`
 	TotalAgents    int                 `json:"total_agents"`
-	TotalReasoners int                 `json:"total_reasoners"`
+	TotalBots int                 `json:"total_bots"`
 	TotalSkills    int                 `json:"total_skills"`
 	Pagination     DiscoveryPagination `json:"pagination"`
 	Capabilities   []AgentCapability   `json:"capabilities"`
 }
 
-// AgentCapability describes a single agent and its reasoners/skills.
+// AgentCapability describes a single agent and its bots/skills.
 type AgentCapability struct {
 	AgentID        string               `json:"agent_id"`
 	BaseURL        string               `json:"base_url"`
@@ -79,12 +79,12 @@ type AgentCapability struct {
 	HealthStatus   string               `json:"health_status"`
 	DeploymentType string               `json:"deployment_type"`
 	LastHeartbeat  time.Time            `json:"last_heartbeat"`
-	Reasoners      []ReasonerCapability `json:"reasoners"`
+	Bots      []BotCapability `json:"bots"`
 	Skills         []SkillCapability    `json:"skills"`
 }
 
-// ReasonerCapability captures metadata for a reasoner.
-type ReasonerCapability struct {
+// BotCapability captures metadata for a bot.
+type BotCapability struct {
 	ID               string                   `json:"id"`
 	Description      *string                  `json:"description,omitempty"`
 	Tags             []string                 `json:"tags,omitempty"`
@@ -106,7 +106,7 @@ type SkillCapability struct {
 // CompactDiscoveryResponse is a lightweight view for LLM/tooling scenarios.
 type CompactDiscoveryResponse struct {
 	DiscoveredAt time.Time           `json:"discovered_at"`
-	Reasoners    []CompactCapability `json:"reasoners"`
+	Bots    []CompactCapability `json:"bots"`
 	Skills       []CompactCapability `json:"skills"`
 }
 
@@ -385,7 +385,7 @@ func parseDiscoveryFilters(c *gin.Context) (DiscoveryFilters, error) {
 
 	return DiscoveryFilters{
 		AgentIDs:            agentIDs,
-		ReasonerPattern:     optionalString(c.Query("reasoner")),
+		BotPattern:     optionalString(c.Query("bot")),
 		SkillPattern:        optionalString(c.Query("skill")),
 		Tags:                parseCSV(c.Query("tags")),
 		IncludeInputSchema:  includeInputSchema,
@@ -470,7 +470,7 @@ func buildDiscoveryResponse(agents []*types.AgentNode, filters DiscoveryFilters)
 
 	var (
 		matchedCapabilities []AgentCapability
-		totalReasoners      int
+		totalBots      int
 		totalSkills         int
 	)
 
@@ -494,34 +494,34 @@ func buildDiscoveryResponse(agents []*types.AgentNode, filters DiscoveryFilters)
 			LastHeartbeat:  agent.LastHeartbeat,
 		}
 
-		for _, reasoner := range agent.Reasoners {
-			if filters.ReasonerPattern != nil && !matchesPattern(reasoner.ID, *filters.ReasonerPattern) {
+		for _, bot := range agent.Bots {
+			if filters.BotPattern != nil && !matchesPattern(bot.ID, *filters.BotPattern) {
 				continue
 			}
-			if len(filters.Tags) > 0 && !matchesTags(reasoner.Tags, filters.Tags) {
+			if len(filters.Tags) > 0 && !matchesTags(bot.Tags, filters.Tags) {
 				continue
 			}
 
-			reasonerCap := ReasonerCapability{
-				ID:               reasoner.ID,
-				Tags:             reasoner.Tags,
-				InvocationTarget: fmt.Sprintf("%s:%s", agent.ID, reasoner.ID),
+			botCap := BotCapability{
+				ID:               bot.ID,
+				Tags:             bot.Tags,
+				InvocationTarget: fmt.Sprintf("%s:%s", agent.ID, bot.ID),
 			}
 
 			if filters.IncludeInputSchema {
-				reasonerCap.InputSchema = decodeSchema(reasoner.InputSchema)
+				botCap.InputSchema = decodeSchema(bot.InputSchema)
 			}
 			if filters.IncludeOutputSchema {
-				reasonerCap.OutputSchema = decodeSchema(reasoner.OutputSchema)
+				botCap.OutputSchema = decodeSchema(bot.OutputSchema)
 			}
 			if filters.IncludeDescriptions {
-				reasonerCap.Description = extractDescription(agent.Metadata, reasoner.ID)
+				botCap.Description = extractDescription(agent.Metadata, bot.ID)
 			}
 			if filters.IncludeExamples {
-				reasonerCap.Examples = extractExamples(agent.Metadata, reasoner.ID)
+				botCap.Examples = extractExamples(agent.Metadata, bot.ID)
 			}
 
-			capability.Reasoners = append(capability.Reasoners, reasonerCap)
+			capability.Bots = append(capability.Bots, botCap)
 		}
 
 		for _, skill := range agent.Skills {
@@ -548,8 +548,8 @@ func buildDiscoveryResponse(agents []*types.AgentNode, filters DiscoveryFilters)
 			capability.Skills = append(capability.Skills, skillCap)
 		}
 
-		if len(capability.Reasoners) > 0 || len(capability.Skills) > 0 {
-			totalReasoners += len(capability.Reasoners)
+		if len(capability.Bots) > 0 || len(capability.Skills) > 0 {
+			totalBots += len(capability.Bots)
 			totalSkills += len(capability.Skills)
 			matchedCapabilities = append(matchedCapabilities, capability)
 		}
@@ -570,7 +570,7 @@ func buildDiscoveryResponse(agents []*types.AgentNode, filters DiscoveryFilters)
 	return DiscoveryResponse{
 		DiscoveredAt:   time.Now().UTC(),
 		TotalAgents:    totalAgents,
-		TotalReasoners: totalReasoners,
+		TotalBots: totalBots,
 		TotalSkills:    totalSkills,
 		Pagination: DiscoveryPagination{
 			Limit:   filters.Limit,
@@ -673,7 +673,7 @@ func formatJSONResponse(response DiscoveryResponse) interface{} {
 }
 
 func formatXMLResponse(response DiscoveryResponse) (string, error) {
-	type xmlReasoner struct {
+	type xmlBot struct {
 		ID           string   `xml:"id,attr"`
 		Target       string   `xml:"target,attr"`
 		Description  *string  `xml:"description,omitempty"`
@@ -697,7 +697,7 @@ func formatXMLResponse(response DiscoveryResponse) (string, error) {
 		HealthStatus   string        `xml:"health_status,attr"`
 		DeploymentType string        `xml:"deployment_type,attr"`
 		LastHeartbeat  string        `xml:"last_heartbeat,attr"`
-		Reasoners      []xmlReasoner `xml:"reasoners>reasoner,omitempty"`
+		Bots      []xmlBot `xml:"bots>bot,omitempty"`
 		Skills         []xmlSkill    `xml:"skills>skill,omitempty"`
 	}
 
@@ -706,7 +706,7 @@ func formatXMLResponse(response DiscoveryResponse) (string, error) {
 		DiscoveredAt string   `xml:"discovered_at,attr"`
 		Summary      struct {
 			TotalAgents    int `xml:"total_agents,attr"`
-			TotalReasoners int `xml:"total_reasoners,attr"`
+			TotalBots int `xml:"total_bots,attr"`
 			TotalSkills    int `xml:"total_skills,attr"`
 		} `xml:"summary"`
 		Agents []xmlAgent `xml:"capabilities>agent"`
@@ -717,7 +717,7 @@ func formatXMLResponse(response DiscoveryResponse) (string, error) {
 		Agents:       make([]xmlAgent, 0, len(response.Capabilities)),
 	}
 	payload.Summary.TotalAgents = response.TotalAgents
-	payload.Summary.TotalReasoners = response.TotalReasoners
+	payload.Summary.TotalBots = response.TotalBots
 	payload.Summary.TotalSkills = response.TotalSkills
 
 	for _, cap := range response.Capabilities {
@@ -730,8 +730,8 @@ func formatXMLResponse(response DiscoveryResponse) (string, error) {
 			LastHeartbeat:  cap.LastHeartbeat.Format(time.RFC3339),
 		}
 
-		for _, r := range cap.Reasoners {
-			agent.Reasoners = append(agent.Reasoners, xmlReasoner{
+		for _, r := range cap.Bots {
+			agent.Bots = append(agent.Bots, xmlBot{
 				ID:           r.ID,
 				Target:       r.InvocationTarget,
 				Description:  r.Description,
@@ -764,8 +764,8 @@ func formatCompactResponse(response DiscoveryResponse) CompactDiscoveryResponse 
 		DiscoveredAt: response.DiscoveredAt,
 	}
 	for _, cap := range response.Capabilities {
-		for _, r := range cap.Reasoners {
-			result.Reasoners = append(result.Reasoners, CompactCapability{
+		for _, r := range cap.Bots {
+			result.Bots = append(result.Bots, CompactCapability{
 				ID:      r.ID,
 				AgentID: cap.AgentID,
 				Target:  r.InvocationTarget,
@@ -834,8 +834,8 @@ func trackFilterUsage(filters DiscoveryFilters) {
 	if len(filters.AgentIDs) > 0 {
 		discoveryFilterUsage.WithLabelValues("agent").Inc()
 	}
-	if filters.ReasonerPattern != nil && strings.TrimSpace(*filters.ReasonerPattern) != "" {
-		discoveryFilterUsage.WithLabelValues("reasoner").Inc()
+	if filters.BotPattern != nil && strings.TrimSpace(*filters.BotPattern) != "" {
+		discoveryFilterUsage.WithLabelValues("bot").Inc()
 	}
 	if filters.SkillPattern != nil && strings.TrimSpace(*filters.SkillPattern) != "" {
 		discoveryFilterUsage.WithLabelValues("skill").Inc()
@@ -851,12 +851,12 @@ func logDiscoverySuccess(c *gin.Context, filters DiscoveryFilters, response Disc
 		Dur("duration", duration).
 		Str("format", normalizeDiscoveryFormat(filters.Format)).
 		Int("agents", response.TotalAgents).
-		Int("reasoners", response.TotalReasoners).
+		Int("bots", response.TotalBots).
 		Int("skills", response.TotalSkills).
 		Bool("cache_hit", cacheHit).
 		Interface("filters", gin.H{
 			"agent_ids": filters.AgentIDs,
-			"reasoner":  derefOrEmpty(filters.ReasonerPattern),
+			"bot":  derefOrEmpty(filters.BotPattern),
 			"skill":     derefOrEmpty(filters.SkillPattern),
 			"tags":      filters.Tags,
 			"health":    derefHealth(filters.HealthStatus),

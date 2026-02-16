@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronUp, ServerProxy, Time, Earth, Network_3 } from '@/components/ui/icon-bridge';
 import { getNodeDetails } from '../services/api';
 import StatusIndicator from './ui/status-indicator';
-import ReasonersList from './ReasonersList';
+import BotsList from './BotsList';
 import SkillsList from './SkillsList';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -36,7 +36,7 @@ const AgentNodesTable: React.FC<AgentNodesTableProps> = ({ nodes, isLoading, err
               <TableHead>Team</TableHead>
               <TableHead>Version</TableHead>
               <TableHead>Health</TableHead>
-              <TableHead>Reasoners</TableHead>
+              <TableHead>Bots</TableHead>
               <TableHead>Skills</TableHead>
             </TableRow>
           </TableHeader>
@@ -69,7 +69,7 @@ const AgentNodesTable: React.FC<AgentNodesTableProps> = ({ nodes, isLoading, err
           <Network_3 className="h-12 w-12 text-muted-foreground" />
         </div>
         <h3 className="text-heading-3 mb-2">No Agent Nodes</h3>
-        <p className="text-muted-foreground">No agent nodes are currently registered with the Playground server.</p>
+        <p className="text-muted-foreground">No agent nodes are currently registered with the Hanzo Bot server.</p>
       </div>
     );
   }
@@ -84,7 +84,7 @@ const AgentNodesTable: React.FC<AgentNodesTableProps> = ({ nodes, isLoading, err
             <TableHead className="font-medium">Team</TableHead>
             <TableHead className="font-medium">Version</TableHead>
             <TableHead className="font-medium">Status</TableHead>
-            <TableHead className="font-medium">Reasoners</TableHead>
+            <TableHead className="font-medium">Bots</TableHead>
             <TableHead className="font-medium">Skills</TableHead>
           </TableRow>
         </TableHeader>
@@ -152,7 +152,7 @@ const NodeRow: React.FC<NodeRowProps> = ({ nodeSummary }) => {
               healthStatus={nodeSummary.health_status}
             />
           </TableCell>
-          <TableCell>{nodeSummary.reasoner_count}</TableCell>
+          <TableCell>{nodeSummary.bot_count}</TableCell>
           <TableCell>{nodeSummary.skill_count}</TableCell>
         </TableRow>
         <CollapsibleContent asChild>
@@ -203,7 +203,7 @@ const NodeRow: React.FC<NodeRowProps> = ({ nodeSummary }) => {
                     <Separator />
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <ReasonersList reasoners={nodeDetails.reasoners ?? []} />
+                      <BotsList bots={nodeDetails.bots ?? []} />
                       <SkillsList skills={nodeDetails.skills ?? []} />
                     </div>
                   </div>

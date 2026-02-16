@@ -31,7 +31,7 @@ type WorkflowRunSummary struct {
 	Status           string         `json:"status"`
 	DisplayName      string         `json:"display_name"`
 	CurrentTask      string         `json:"current_task"`
-	RootReasoner     string         `json:"root_reasoner"`
+	RootBot     string         `json:"root_bot"`
 	AgentID          *string        `json:"agent_id,omitempty"`
 	SessionID        *string        `json:"session_id,omitempty"`
 	ActorID          *string        `json:"actor_id,omitempty"`
@@ -79,7 +79,7 @@ type apiWorkflowExecution struct {
 	ParentExecutionID *string `json:"parent_execution_id,omitempty"`
 	ParentWorkflowID  *string `json:"parent_workflow_id,omitempty"`
 	AgentNodeID       string  `json:"agent_node_id"`
-	ReasonerID        string  `json:"reasoner_id"`
+	BotID        string  `json:"bot_id"`
 	Status            string  `json:"status"`
 	StartedAt         string  `json:"started_at"`
 	CompletedAt       *string `json:"completed_at,omitempty"`
@@ -175,14 +175,14 @@ func convertAggregationToSummary(agg *storage.RunSummaryAggregation) WorkflowRun
 		summary.RootExecutionID = *agg.RootExecutionID
 	}
 
-	// Set display name from root reasoner or run ID
-	if agg.RootReasonerID != nil && *agg.RootReasonerID != "" {
-		summary.DisplayName = *agg.RootReasonerID
-		summary.RootReasoner = *agg.RootReasonerID
-		summary.CurrentTask = *agg.RootReasonerID
+	// Set display name from root bot or run ID
+	if agg.RootBotID != nil && *agg.RootBotID != "" {
+		summary.DisplayName = *agg.RootBotID
+		summary.RootBot = *agg.RootBotID
+		summary.CurrentTask = *agg.RootBotID
 	} else {
 		summary.DisplayName = agg.RunID
-		summary.RootReasoner = agg.RunID
+		summary.RootBot = agg.RunID
 		summary.CurrentTask = agg.RunID
 	}
 
@@ -342,12 +342,12 @@ func summarizeRun(runID string, executions []*types.Execution) WorkflowRunSummar
 	summary.RootExecutionID = dag.ExecutionID
 	if name != "" {
 		summary.DisplayName = name
-	} else if dag.ReasonerID != "" {
-		summary.DisplayName = dag.ReasonerID
+	} else if dag.BotID != "" {
+		summary.DisplayName = dag.BotID
 	} else {
 		summary.DisplayName = runID
 	}
-	summary.RootReasoner = dag.ReasonerID
+	summary.RootBot = dag.BotID
 	if dag.AgentNodeID != "" {
 		summary.AgentID = &dag.AgentNodeID
 	}
@@ -359,12 +359,12 @@ func summarizeRun(runID string, executions []*types.Execution) WorkflowRunSummar
 	summary.MaxDepth = maxDepth
 	if len(sortedExecutions) > 0 {
 		lastExec := sortedExecutions[len(sortedExecutions)-1]
-		if lastExec != nil && lastExec.ReasonerID != "" {
-			summary.CurrentTask = lastExec.ReasonerID
+		if lastExec != nil && lastExec.BotID != "" {
+			summary.CurrentTask = lastExec.BotID
 		}
 	}
 	if summary.CurrentTask == "" {
-		summary.CurrentTask = dag.ReasonerID
+		summary.CurrentTask = dag.BotID
 	}
 	if summary.CurrentTask == "" {
 		summary.CurrentTask = summary.DisplayName
@@ -481,7 +481,7 @@ func buildAPIExecutions(nodes []handlers.WorkflowDAGNode) []apiWorkflowExecution
 				return nil
 			}(),
 			AgentNodeID:     node.AgentNodeID,
-			ReasonerID:      node.ReasonerID,
+			BotID:      node.BotID,
 			Status:          node.Status,
 			StartedAt:       node.StartedAt,
 			CompletedAt:     node.CompletedAt,

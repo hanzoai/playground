@@ -99,7 +99,7 @@ export function CompactExecutionHeader({
 
           <div className="flex items-center gap-2 min-w-0">
             <h1 className="text-sm font-semibold text-foreground">
-              {execution.reasoner_id}
+              {execution.bot_id}
             </h1>
             <StatusIndicator
               status={normalizedStatus}

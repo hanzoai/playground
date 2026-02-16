@@ -283,7 +283,7 @@ export function RecentActivityStream({ className }: RecentActivityStreamProps) {
                   </span>
                   <span className="text-muted-foreground">·</span>
                   <span className="text-text-secondary truncate">
-                    {execution.reasoner_name}
+                    {execution.bot_name}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2 mt-1">

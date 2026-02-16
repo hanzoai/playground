@@ -40,7 +40,7 @@ type RecentActivityResponse struct {
 type ActivityExecution struct {
 	ExecutionID  string               `json:"execution_id"`
 	AgentName    string               `json:"agent_name"`
-	ReasonerName string               `json:"reasoner_name"`
+	BotName string               `json:"bot_name"`
 	Status       string               `json:"status"`
 	StartedAt    string               `json:"started_at"`
 	DurationMs   *int64               `json:"duration_ms,omitempty"`
@@ -159,10 +159,10 @@ func (h *RecentActivityHandler) getRecentExecutions(ctx context.Context) ([]Acti
 			agentName = exec.AgentNodeID
 		}
 
-		// Format reasoner name (remove agent prefix if present)
-		reasonerName := exec.ReasonerID
-		if len(reasonerName) > len(agentName)+1 && reasonerName[:len(agentName)+1] == agentName+"." {
-			reasonerName = reasonerName[len(agentName)+1:]
+		// Format bot name (remove agent prefix if present)
+		botName := exec.BotID
+		if len(botName) > len(agentName)+1 && botName[:len(agentName)+1] == agentName+"." {
+			botName = botName[len(agentName)+1:]
 		}
 
 		// Calculate relative time
@@ -172,7 +172,7 @@ func (h *RecentActivityHandler) getRecentExecutions(ctx context.Context) ([]Acti
 		recentExec := ActivityExecution{
 			ExecutionID:  exec.ExecutionID,
 			AgentName:    agentName,
-			ReasonerName: reasonerName,
+			BotName: botName,
 			Status:       types.NormalizeExecutionStatus(exec.Status),
 			StartedAt:    exec.StartedAt.Format(time.RFC3339),
 			RelativeTime: relativeTime,

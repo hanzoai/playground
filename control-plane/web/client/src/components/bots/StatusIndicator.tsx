@@ -1,13 +1,13 @@
-import type { ReasonerStatus } from '../../types/reasoners';
+import type { BotStatus } from '../../types/bots';
 
 interface StatusIndicatorProps {
-  status: ReasonerStatus;
+  status: BotStatus;
   showText?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }
 
 export function StatusIndicator({ status, showText = true, size = 'md' }: StatusIndicatorProps) {
-  const getStatusConfig = (status: ReasonerStatus) => {
+  const getStatusConfig = (status: BotStatus) => {
     switch (status) {
       case 'online':
         return {

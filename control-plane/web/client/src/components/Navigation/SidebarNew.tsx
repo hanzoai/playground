@@ -37,7 +37,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   <Icon name="dashboard" size={16} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold tracking-tight">Playground</span>
+                  <span className="truncate font-semibold tracking-tight">Hanzo Bot</span>
                   <span className="truncate text-[10px] text-muted-foreground font-mono">v1.0.0</span>
                 </div>
               </NavLink>
@@ -114,7 +114,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="GitHub">
-              <a href="https://github.com/hanzoai/playground" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/hanzoai/bot" target="_blank" rel="noopener noreferrer">
                 <Icon name="github" size={15} className="text-muted-foreground" />
                 <span>GitHub</span>
               </a>
@@ -122,7 +122,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Support">
-              <a href="https://github.com/hanzoai/playground/issues" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/hanzoai/bot/issues" target="_blank" rel="noopener noreferrer">
                 <Icon name="support" size={15} className="text-muted-foreground" />
                 <span>Support</span>
               </a>

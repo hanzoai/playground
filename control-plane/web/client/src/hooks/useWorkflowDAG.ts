@@ -7,7 +7,7 @@ interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -358,7 +358,7 @@ function transformRunDetailToDag(detail: WorkflowRunDetailResponse): WorkflowDAG
       workflow_id: exec.workflow_id,
       execution_id: exec.execution_id,
       agent_node_id: exec.agent_node_id,
-      reasoner_id: exec.reasoner_id,
+      bot_id: exec.bot_id,
       status: exec.status,
       started_at: exec.started_at,
       completed_at: exec.completed_at ?? undefined,
@@ -409,7 +409,7 @@ function transformRunDetailToDag(detail: WorkflowRunDetailResponse): WorkflowDAG
     workflow_id: detail.run.root_workflow_id,
     execution_id: rootExecutionId ?? detail.run.root_workflow_id,
     agent_node_id: rootNode?.agent_node_id ?? '',
-    reasoner_id: rootNode?.reasoner_id ?? detail.run.root_workflow_id,
+    bot_id: rootNode?.bot_id ?? detail.run.root_workflow_id,
     status: normalizedStatus,
     started_at: detail.run.created_at,
     completed_at: detail.run.completed_at ?? undefined,
@@ -428,7 +428,7 @@ function transformRunDetailToDag(detail: WorkflowRunDetailResponse): WorkflowDAG
   return {
     root_workflow_id: detail.run.root_workflow_id,
     workflow_status: normalizedStatus,
-    workflow_name: rootNode?.reasoner_id ?? detail.run.root_workflow_id,
+    workflow_name: rootNode?.bot_id ?? detail.run.root_workflow_id,
     total_nodes: totalNodes,
     displayed_nodes: displayedNodes,
     max_depth: maxDepth,

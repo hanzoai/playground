@@ -102,7 +102,7 @@ export function EnhancedDashboardPage() {
       compare: apiParams.compare,
     });
 
-  const reasonerStats = useMemo<ReasonerSummary[]>(() => {
+  const botStats = useMemo<BotSummary[]>(() => {
     if (!data) {
       return [];
     }
@@ -112,29 +112,29 @@ export function EnhancedDashboardPage() {
     );
 
     const ensureEntry = (
-      map: Map<string, ReasonerAccumulator>,
-      reasonerId: string
+      map: Map<string, BotAccumulator>,
+      botId: string
     ) => {
-      let entry = map.get(reasonerId);
+      let entry = map.get(botId);
       if (!entry) {
         entry = {
-          reasonerId,
+          botId,
           activeRuns: 0,
           incidentCount: 0,
           agentIds: new Set<string>(),
         };
-        map.set(reasonerId, entry);
+        map.set(botId, entry);
       }
       return entry;
     };
 
-    const accumulator = new Map<string, ReasonerAccumulator>();
+    const accumulator = new Map<string, BotAccumulator>();
 
     data.workflows.active_runs.forEach((run) => {
-      if (!run.reasoner_id) {
+      if (!run.bot_id) {
         return;
       }
-      const entry = ensureEntry(accumulator, run.reasoner_id);
+      const entry = ensureEntry(accumulator, run.bot_id);
       entry.activeRuns += 1;
       if (run.agent_node_id) {
         entry.agentIds.add(run.agent_node_id);
@@ -142,17 +142,17 @@ export function EnhancedDashboardPage() {
     });
 
     data.incidents.forEach((incident) => {
-      if (!incident.reasoner_id) {
+      if (!incident.bot_id) {
         return;
       }
-      const entry = ensureEntry(accumulator, incident.reasoner_id);
+      const entry = ensureEntry(accumulator, incident.bot_id);
       entry.incidentCount += 1;
       if (incident.agent_node_id) {
         entry.agentIds.add(incident.agent_node_id);
       }
     });
 
-    const summaries: ReasonerSummary[] = Array.from(accumulator.values()).map(
+    const summaries: BotSummary[] = Array.from(accumulator.values()).map(
       (entry) => {
         const agentDetails = Array.from(entry.agentIds).map((agentId) => {
           const meta = agentMeta.get(agentId);
@@ -171,12 +171,12 @@ export function EnhancedDashboardPage() {
               : "idle";
 
         return {
-          reasonerId: entry.reasonerId,
+          botId: entry.botId,
           activeRuns: entry.activeRuns,
           incidentCount: entry.incidentCount,
           agents: agentDetails,
           status,
-        } as ReasonerSummary;
+        } as BotSummary;
       }
     );
 
@@ -342,7 +342,7 @@ export function EnhancedDashboardPage() {
       >
         <ResponsiveGrid.Item>
           <HotspotPanel
-            hotspots={data.hotspots?.top_failing_reasoners || []}
+            hotspots={data.hotspots?.top_failing_bots || []}
             className="h-[300px]"
           />
         </ResponsiveGrid.Item>
@@ -351,7 +351,7 @@ export function EnhancedDashboardPage() {
         </ResponsiveGrid.Item>
       </ResponsiveGrid>
 
-      {/* Row 3: Detailed drill-downs - Workflow Insights + Reasoner Activity */}
+      {/* Row 3: Detailed drill-downs - Workflow Insights + Bot Activity */}
       <ResponsiveGrid
         columns={{ base: 1, md: 6, lg: 12 }}
         flow="dense"
@@ -362,8 +362,8 @@ export function EnhancedDashboardPage() {
           <WorkflowInsightsPanel insights={data.workflows} />
         </ResponsiveGrid.Item>
         <ResponsiveGrid.Item span={{ md: 6, lg: 5, xl: 6, "2xl": 5 }} className="animate-slide-in" style={{ animationDelay: "300ms" }}>
-          <ReasonerActivityPanel
-            reasoners={reasonerStats}
+          <BotActivityPanel
+            bots={botStats}
             agentSummary={data.agent_health}
           />
         </ResponsiveGrid.Item>
@@ -806,7 +806,7 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
                     </span>
                   </div>
                   <p className="ml-4 mt-1 text-text-secondary">
-                    {incident.execution_id} · {incident.reasoner_id}
+                    {incident.execution_id} · {incident.bot_id}
                   </p>
                   {incident.error && (
                     <p className="ml-4 mt-2 line-clamp-2 text-body-small text-destructive/80">
@@ -826,8 +826,8 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
   );
 }
 
-interface ReasonerSummary {
-  reasonerId: string;
+interface BotSummary {
+  botId: string;
   activeRuns: number;
   incidentCount: number;
   agents: Array<{
@@ -838,27 +838,27 @@ interface ReasonerSummary {
   status: "active" | "attention" | "idle";
 }
 
-interface ReasonerAccumulator {
-  reasonerId: string;
+interface BotAccumulator {
+  botId: string;
   activeRuns: number;
   incidentCount: number;
   agentIds: Set<string>;
 }
 
-interface ReasonerActivityPanelProps {
-  reasoners: ReasonerSummary[];
+interface BotActivityPanelProps {
+  bots: BotSummary[];
   agentSummary: EnhancedDashboardResponse["agent_health"];
 }
 
-function ReasonerActivityPanel({
-  reasoners,
+function BotActivityPanel({
+  bots,
   agentSummary,
-}: ReasonerActivityPanelProps) {
+}: BotActivityPanelProps) {
   return (
     <Card variant="surface" interactive={false} className="flex h-full flex-col">
       <CardHeader className="space-y-4 p-5 pb-2">
         <CardTitle className="flex items-center gap-2">
-          <Cpu className="h-4 w-4" /> Reasoner activity
+          <Cpu className="h-4 w-4" /> Bot activity
         </CardTitle>
         <div className="grid grid-cols-3 gap-2 text-center text-body-small uppercase tracking-wide text-text-tertiary">
           <StatusCounter
@@ -879,15 +879,15 @@ function ReasonerActivityPanel({
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4 min-h-0 p-5 pt-0">
-        {reasoners.length === 0 ? (
+        {bots.length === 0 ? (
           <p className="text-body-small">
-            No recent reasoner activity. Trigger a workflow or execution to
+            No recent bot activity. Trigger a workflow or execution to
             populate this view.
           </p>
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
-            {reasoners.map((reasoner) => (
-              <ReasonerRow key={reasoner.reasonerId} reasoner={reasoner} />
+            {bots.map((bot) => (
+              <BotRow key={bot.botId} bot={bot} />
             ))}
           </div>
         )}
@@ -896,7 +896,7 @@ function ReasonerActivityPanel({
   );
 }
 
-function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
+function BotRow({ bot }: { bot: BotSummary }) {
   return (
     <div
       className={cn(
@@ -908,14 +908,14 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
         <div className="flex items-center gap-2">
           <Badge variant="metadata" className="inline-flex items-center gap-1">
             <Zap className="h-3 w-3" />
-            {reasoner.reasonerId}
+            {bot.botId}
           </Badge>
           <StatusIndicator
-            status={reasoner.status}
+            status={bot.status}
             label={
-              reasoner.status === "active"
+              bot.status === "active"
                 ? "Active"
-                : reasoner.status === "attention"
+                : bot.status === "attention"
                   ? "Needs attention"
                   : "Idle"
             }
@@ -924,14 +924,14 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
           />
         </div>
         <div className="flex items-center gap-4 text-[10px] text-text-tertiary">
-          <span>{reasoner.activeRuns} running</span>
-          <span>{reasoner.incidentCount} incidents</span>
+          <span>{bot.activeRuns} running</span>
+          <span>{bot.incidentCount} incidents</span>
         </div>
       </div>
 
-      {reasoner.agents.length > 0 && (
+      {bot.agents.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {reasoner.agents.map((agent) => (
+          {bot.agents.map((agent) => (
             <span
               key={agent.id}
               className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-[10px]"

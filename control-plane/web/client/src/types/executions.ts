@@ -8,7 +8,7 @@ export interface ExecutionSummary {
   workflow_id: string;
   session_id?: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: CanonicalStatus;
   duration_ms: number;
   input_size: number;
@@ -105,7 +105,7 @@ export interface WorkflowExecution {
   parent_workflow_id?: string;
   root_workflow_id?: string;
   workflow_depth: number;
-  reasoner_id: string;
+  bot_id: string;
   input_data: any;
   output_data: any;
   input_size: number;

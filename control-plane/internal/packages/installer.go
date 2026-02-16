@@ -58,11 +58,11 @@ type DependencyConfig struct {
 
 // CapabilityConfig represents agent node capabilities
 type CapabilityConfig struct {
-	Reasoners []FunctionInfo `yaml:"reasoners"`
+	Bots []FunctionInfo `yaml:"bots"`
 	Skills    []FunctionInfo `yaml:"skills"`
 }
 
-// FunctionInfo represents a reasoner or skill function
+// FunctionInfo represents a bot or skill function
 type FunctionInfo struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`

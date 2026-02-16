@@ -27,7 +27,7 @@ type ExecutionSummaryForUI struct {
 	SessionID    *string    `json:"session_id"`
 	ActorID      *string    `json:"actor_id"`
 	AgentNodeID  string     `json:"agent_node_id"`
-	ReasonerID   string     `json:"reasoner_id"`
+	BotID   string     `json:"bot_id"`
 	Status       string     `json:"status"`
 	StartedAt    time.Time  `json:"started_at"`
 	CompletedAt  *time.Time `json:"completed_at"`
@@ -299,7 +299,7 @@ func (s *ExecutionsUIService) convertToUISummary(exec *types.WorkflowExecution) 
 		SessionID:    exec.SessionID,
 		ActorID:      exec.ActorID,
 		AgentNodeID:  exec.AgentNodeID,
-		ReasonerID:   exec.ReasonerID,
+		BotID:   exec.BotID,
 		Status:       exec.Status,
 		StartedAt:    exec.StartedAt,
 		CompletedAt:  exec.CompletedAt,

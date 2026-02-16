@@ -385,7 +385,7 @@ export function ObservabilityWebhookSettingsPage() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                If set, requests will include an X-Playground-Signature header with HMAC-SHA256
+                If set, requests will include an X-Bot-Signature header with HMAC-SHA256
                 signature
               </p>
             </div>
@@ -613,11 +613,11 @@ export function ObservabilityWebhookSettingsPage() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h4 className="font-medium">Reasoner Events</h4>
+              <h4 className="font-medium">Bot Events</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>reasoner_online</li>
-                <li>reasoner_offline</li>
-                <li>reasoner_updated</li>
+                <li>bot_online</li>
+                <li>bot_offline</li>
+                <li>bot_updated</li>
               </ul>
             </div>
           </div>

@@ -14,7 +14,7 @@ import { Badge } from "../ui/badge";
 import { CopyButton } from "../ui/copy-button";
 import { SegmentedControl } from "../ui/segmented-control";
 import type { SegmentedControlOption } from "../ui/segmented-control";
-import { EnhancedJsonViewer } from "../reasoners/EnhancedJsonViewer";
+import { EnhancedJsonViewer } from "../bots/EnhancedJsonViewer";
 import { JsonViewer } from "../execution/JsonViewer";
 import { DataModal } from "../execution/EnhancedModal";
 import { useMainNodeExecution } from "../../hooks/useMainNodeExecution";
@@ -23,7 +23,7 @@ interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;

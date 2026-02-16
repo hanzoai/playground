@@ -1,56 +1,56 @@
 import type {
-  ReasonerGridProps,
-  ReasonerWithNode,
-} from "../../types/reasoners";
+  BotGridProps,
+  BotWithNode,
+} from "../../types/bots";
 import { ResponsiveGrid } from "../layout/ResponsiveGrid";
 import { Skeleton } from "../ui/skeleton";
 import { DIDIdentityBadge } from "../did/DIDDisplay";
-import { EmptyReasonersState } from "./EmptyReasonersState";
-import { ReasonerCard } from "./ReasonerCard";
+import { EmptyBotsState } from "./EmptyBotsState";
+import { BotCard } from "./BotCard";
 import { StatusIndicator } from "./StatusIndicator";
 
-export function ReasonerGrid({
-  reasoners,
+export function BotGrid({
+  bots,
   loading = false,
-  onReasonerClick,
+  onBotClick,
   viewMode = "grid",
-}: ReasonerGridProps) {
-  // Add null safety check for reasoners array
-  const safeReasoners = reasoners || [];
+}: BotGridProps) {
+  // Add null safety check for bots array
+  const safeBots = bots || [];
 
   if (loading) {
-    return <ReasonerGridSkeleton viewMode={viewMode} />;
+    return <BotGridSkeleton viewMode={viewMode} />;
   }
 
-  if (safeReasoners.length === 0) {
-    return <EmptyReasonersState type="no-reasoners" onRefresh={() => {}} />;
+  if (safeBots.length === 0) {
+    return <EmptyBotsState type="no-bots" onRefresh={() => {}} />;
   }
 
   if (viewMode === "table") {
     return (
-      <ReasonerTable
-        reasoners={safeReasoners}
-        onReasonerClick={onReasonerClick}
+      <BotTable
+        bots={safeBots}
+        onBotClick={onBotClick}
       />
     );
   }
 
   return (
     <ResponsiveGrid variant="dashboard" align="start">
-      {safeReasoners.map((reasoner) => (
-        <ReasonerCard
-          key={reasoner.reasoner_id}
-          reasoner={reasoner}
-          onClick={onReasonerClick}
+      {safeBots.map((bot) => (
+        <BotCard
+          key={bot.bot_id}
+          bot={bot}
+          onClick={onBotClick}
         />
       ))}
     </ResponsiveGrid>
   );
 }
 
-function ReasonerGridSkeleton({ viewMode }: { viewMode?: "grid" | "table" }) {
+function BotGridSkeleton({ viewMode }: { viewMode?: "grid" | "table" }) {
   if (viewMode === "table") {
-    return <ReasonerTableSkeleton />;
+    return <BotTableSkeleton />;
   }
   return (
     <ResponsiveGrid variant="dashboard" align="start">
@@ -95,15 +95,15 @@ function ReasonerGridSkeleton({ viewMode }: { viewMode?: "grid" | "table" }) {
   );
 }
 
-function ReasonerTable({
-  reasoners,
-  onReasonerClick,
+function BotTable({
+  bots,
+  onBotClick,
 }: {
-  reasoners: ReasonerWithNode[];
-  onReasonerClick?: (reasoner: ReasonerWithNode) => void;
+  bots: BotWithNode[];
+  onBotClick?: (bot: BotWithNode) => void;
 }) {
-  // Add null safety for reasoners array
-  const safeReasoners = reasoners || [];
+  // Add null safety for bots array
+  const safeBots = bots || [];
 
   const getStatusFromNodeStatus = (nodeStatus: string) => {
     switch (nodeStatus) {
@@ -159,41 +159,41 @@ function ReasonerTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border-secondary">
-            {safeReasoners.map((reasoner) => {
-              const status = getStatusFromNodeStatus(reasoner.node_status);
+            {safeBots.map((bot) => {
+              const status = getStatusFromNodeStatus(bot.node_status);
               const isOffline = status === "offline";
 
               return (
                 <tr
-                  key={reasoner.reasoner_id}
+                  key={bot.bot_id}
                   className={`
                     hover:bg-bg-tertiary transition-colors cursor-pointer
                     ${isOffline ? "opacity-75" : ""}
                   `}
-                  onClick={() => onReasonerClick?.(reasoner)}
+                  onClick={() => onBotClick?.(bot)}
                 >
                   <td className="py-2 px-3">
                     <div>
                       <div>
                         <span
                           className="font-medium text-text-primary text-sm line-clamp-2 break-words max-w-xs"
-                          title={reasoner.name}
+                          title={bot.name}
                         >
-                          {reasoner.name}
+                          {bot.name}
                         </span>
                       </div>
                       <div className="text-xs text-text-tertiary truncate max-w-xs mt-0.5">
-                        {reasoner.description}
+                        {bot.description}
                       </div>
                     </div>
                   </td>
                   <td className="py-2 px-3">
                     <div className="space-y-0.5">
                       <div className="text-xs text-text-tertiary">
-                        {reasoner.node_id}
+                        {bot.node_id}
                       </div>
                       <DIDIdentityBadge
-                        nodeId={reasoner.node_id}
+                        nodeId={bot.node_id}
                         showDID={true}
                         className="text-xs"
                       />
@@ -208,28 +208,28 @@ function ReasonerTable({
                   </td>
                   <td className="py-2 px-3">
                     <div className="text-xs space-y-0.5">
-                      {reasoner.avg_response_time_ms && (
+                      {bot.avg_response_time_ms && (
                         <div className="text-text-tertiary">
-                          {reasoner.avg_response_time_ms}ms
+                          {bot.avg_response_time_ms}ms
                         </div>
                       )}
-                      {reasoner.success_rate && (
+                      {bot.success_rate && (
                         <div className="text-status-success-light">
-                          {(reasoner.success_rate * 100).toFixed(1)}%
+                          {(bot.success_rate * 100).toFixed(1)}%
                         </div>
                       )}
                     </div>
                   </td>
                   <td className="py-2 px-3">
                     <div className="text-xs text-text-tertiary">
-                      {formatTimeAgo(reasoner.last_updated)}
+                      {formatTimeAgo(bot.last_updated)}
                     </div>
                   </td>
                   <td className="py-2 px-3 text-right">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onReasonerClick?.(reasoner);
+                        onBotClick?.(bot);
                       }}
                       className="text-xs text-accent-primary hover:text-accent-primary-hover transition-colors"
                     >
@@ -246,7 +246,7 @@ function ReasonerTable({
   );
 }
 
-function ReasonerTableSkeleton() {
+function BotTableSkeleton() {
   return (
     <div className="card-elevated overflow-hidden">
       <div className="overflow-x-auto">

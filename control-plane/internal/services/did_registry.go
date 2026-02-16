@@ -132,15 +132,15 @@ func (r *DIDRegistry) FindDIDByComponent(agentsServerID, componentType, function
 					ComponentType:  "agent",
 				}, nil
 			}
-		case "reasoner":
-			for _, reasonerInfo := range agentInfo.Reasoners {
-				if reasonerInfo.FunctionName == functionName {
+		case "bot":
+			for _, botInfo := range agentInfo.Bots {
+				if botInfo.FunctionName == functionName {
 					return &types.DIDIdentity{
-						DID:            reasonerInfo.DID,
-						PublicKeyJWK:   string(reasonerInfo.PublicKeyJWK),
-						DerivationPath: reasonerInfo.DerivationPath,
-						ComponentType:  "reasoner",
-						FunctionName:   reasonerInfo.FunctionName,
+						DID:            botInfo.DID,
+						PublicKeyJWK:   string(botInfo.PublicKeyJWK),
+						DerivationPath: botInfo.DerivationPath,
+						ComponentType:  "bot",
+						FunctionName:   botInfo.FunctionName,
 					}, nil
 				}
 			}
@@ -178,14 +178,14 @@ func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.D
 	}
 
 	// Build identity package (without private keys for security)
-	reasonerDIDs := make(map[string]types.DIDIdentity)
-	for id, reasonerInfo := range agentInfo.Reasoners {
-		reasonerDIDs[id] = types.DIDIdentity{
-			DID:            reasonerInfo.DID,
-			PublicKeyJWK:   string(reasonerInfo.PublicKeyJWK),
-			DerivationPath: reasonerInfo.DerivationPath,
-			ComponentType:  "reasoner",
-			FunctionName:   reasonerInfo.FunctionName,
+	botDIDs := make(map[string]types.DIDIdentity)
+	for id, botInfo := range agentInfo.Bots {
+		botDIDs[id] = types.DIDIdentity{
+			DID:            botInfo.DID,
+			PublicKeyJWK:   string(botInfo.PublicKeyJWK),
+			DerivationPath: botInfo.DerivationPath,
+			ComponentType:  "bot",
+			FunctionName:   botInfo.FunctionName,
 		}
 	}
 
@@ -207,7 +207,7 @@ func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.D
 			DerivationPath: agentInfo.DerivationPath,
 			ComponentType:  "agent",
 		},
-		ReasonerDIDs:       reasonerDIDs,
+		BotDIDs:       botDIDs,
 		SkillDIDs:          skillDIDs,
 		AgentsServerID: agentsServerID,
 	}, nil
@@ -257,7 +257,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 				DerivationPath:     agentDIDInfo.DerivationPath,
 				Status:             agentDIDInfo.Status,
 				RegisteredAt:       agentDIDInfo.RegisteredAt,
-				Reasoners:          make(map[string]types.ReasonerDIDInfo),
+				Bots:          make(map[string]types.BotDIDInfo),
 				Skills:             make(map[string]types.SkillDIDInfo),
 			}
 
@@ -269,8 +269,8 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 
 			for _, componentDID := range componentDIDs {
 				switch componentDID.ComponentType {
-				case "reasoner":
-					reasonerInfo := types.ReasonerDIDInfo{
+				case "bot":
+					botInfo := types.BotDIDInfo{
 						DID:            componentDID.ComponentDID,
 						FunctionName:   componentDID.ComponentName,
 						DerivationPath: fmt.Sprintf("m/44'/0'/0'/%d", componentDID.DerivationIndex),
@@ -278,7 +278,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 						ExposureLevel:  "private",  // TODO: Load from database
 						CreatedAt:      componentDID.CreatedAt,
 					}
-					agentInfo.Reasoners[componentDID.ComponentName] = reasonerInfo
+					agentInfo.Bots[componentDID.ComponentName] = botInfo
 
 				case "skill":
 					skillInfo := types.SkillDIDInfo{
@@ -331,15 +331,15 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 		// Prepare component DIDs for batch storage
 		var components []storage.ComponentDIDRequest
 
-		// Add reasoner DIDs
-		for _, reasonerInfo := range agentInfo.Reasoners {
-			reasonerDerivationIndex := 0 // TODO: Parse from reasonerInfo.DerivationPath
+		// Add bot DIDs
+		for _, botInfo := range agentInfo.Bots {
+			botDerivationIndex := 0 // TODO: Parse from botInfo.DerivationPath
 			components = append(components, storage.ComponentDIDRequest{
-				ComponentDID:    reasonerInfo.DID,
-				ComponentType:   "reasoner",
-				ComponentName:   reasonerInfo.FunctionName,
-				PublicKeyJWK:    string(reasonerInfo.PublicKeyJWK),
-				DerivationIndex: reasonerDerivationIndex,
+				ComponentDID:    botInfo.DID,
+				ComponentType:   "bot",
+				ComponentName:   botInfo.FunctionName,
+				PublicKeyJWK:    string(botInfo.PublicKeyJWK),
+				DerivationIndex: botDerivationIndex,
 			})
 		}
 

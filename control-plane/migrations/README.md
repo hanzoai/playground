@@ -17,11 +17,11 @@ Creates the `did_registry` table for organization-level DID management:
 Creates the `agent_dids` table for agent node DID information:
 - **Purpose**: Individual agent node DID records
 - **Key Fields**: did, agent_node_id, public_key_jwk, status
-- **Features**: JWK key storage, reasoner/skill mapping, status tracking
+- **Features**: JWK key storage, bot/skill mapping, status tracking
 
 ### 003_create_component_dids.sql
-Creates the `component_dids` table for reasoner and skill DIDs:
-- **Purpose**: Component-level DID records (reasoners and skills)
+Creates the `component_dids` table for bot and skill DIDs:
+- **Purpose**: Component-level DID records (bots and skills)
 - **Key Fields**: did, component_type, function_name, capabilities/tags
 - **Features**: Component type differentiation, exposure level control
 

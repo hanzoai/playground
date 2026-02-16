@@ -3,7 +3,7 @@ import type { AgentNodeSummary } from '../types/playground';
 
 export interface SearchResult {
   id: string;
-  type: 'agent' | 'workflow' | 'execution' | 'reasoner' | 'package';
+  type: 'agent' | 'workflow' | 'execution' | 'bot' | 'package';
   title: string;
   subtitle?: string;
   description?: string;
@@ -11,7 +11,7 @@ export interface SearchResult {
   status?: string;
 }
 
-export type SearchCategory = 'agents' | 'workflows' | 'executions' | 'packages' | 'reasoners';
+export type SearchCategory = 'agents' | 'workflows' | 'executions' | 'packages' | 'bots';
 
 const MAX_RESULTS_PER_CATEGORY = 10;
 
@@ -37,7 +37,7 @@ class SearchService {
         categories.includes('executions') ? this.searchExecutions(query, limit) : Promise.resolve([]),
         categories.includes('workflows') ? this.searchWorkflows(query, limit) : Promise.resolve([]),
         categories.includes('packages') ? this.searchPackages(query, limit) : Promise.resolve([]),
-        categories.includes('reasoners') ? this.searchReasoners(query, limit) : Promise.resolve([])
+        categories.includes('bots') ? this.searchBots(query, limit) : Promise.resolve([])
       ]);
 
       const flattenedResults = results.flat();
@@ -91,7 +91,7 @@ class SearchService {
     return [];
   }
 
-  private async searchReasoners(_query: string, _limit: number): Promise<SearchResult[]> {
+  private async searchBots(_query: string, _limit: number): Promise<SearchResult[]> {
     return [];
   }
 }

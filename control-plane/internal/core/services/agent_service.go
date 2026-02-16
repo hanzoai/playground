@@ -582,15 +582,15 @@ func (as *DefaultAgentService) updateRuntimeInfo(agentNodeName string, port, pid
 func (as *DefaultAgentService) displayCapabilities(agentNode packages.InstalledPackage, port int) error {
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	// Get reasoners
-	reasonersResp, err := client.Get(fmt.Sprintf("http://localhost:%d/reasoners", port))
+	// Get bots
+	botsResp, err := client.Get(fmt.Sprintf("http://localhost:%d/bots", port))
 	if err != nil {
 		return err
 	}
-	defer reasonersResp.Body.Close()
+	defer botsResp.Body.Close()
 
-	var reasonersData map[string]interface{}
-	if err := json.NewDecoder(reasonersResp.Body).Decode(&reasonersData); err != nil {
+	var botsData map[string]interface{}
+	if err := json.NewDecoder(botsResp.Body).Decode(&botsData); err != nil {
 		return err
 	}
 
@@ -609,18 +609,18 @@ func (as *DefaultAgentService) displayCapabilities(agentNode packages.InstalledP
 	fmt.Printf("\n🌐 Access locally at: http://localhost:%d\n", port)
 	fmt.Printf("📖 Available functions:\n")
 
-	// Display reasoners
-	if reasoners, ok := reasonersData["reasoners"].([]interface{}); ok && len(reasoners) > 0 {
-		fmt.Printf("  🧠 Reasoners: ")
-		var reasonerNames []string
-		for _, reasoner := range reasoners {
-			if r, ok := reasoner.(map[string]interface{}); ok {
+	// Display bots
+	if bots, ok := botsData["bots"].([]interface{}); ok && len(bots) > 0 {
+		fmt.Printf("  🧠 Bots: ")
+		var botNames []string
+		for _, bot := range bots {
+			if r, ok := bot.(map[string]interface{}); ok {
 				if id, ok := r["id"].(string); ok {
-					reasonerNames = append(reasonerNames, id)
+					botNames = append(botNames, id)
 				}
 			}
 		}
-		fmt.Printf("%s\n", strings.Join(reasonerNames, ", "))
+		fmt.Printf("%s\n", strings.Join(botNames, ", "))
 	}
 
 	// Display skills

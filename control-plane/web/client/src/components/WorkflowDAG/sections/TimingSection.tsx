@@ -7,7 +7,7 @@ interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;

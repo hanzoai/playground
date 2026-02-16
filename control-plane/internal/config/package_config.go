@@ -56,7 +56,7 @@ type DependenciesConfig struct {
 }
 
 type CapabilitiesConfig struct {
-	Reasoners []CapabilityItem `yaml:"reasoners"`
+	Bots []CapabilityItem `yaml:"bots"`
 	Skills    []CapabilityItem `yaml:"skills"`
 }
 

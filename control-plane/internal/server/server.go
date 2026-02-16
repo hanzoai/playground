@@ -324,7 +324,7 @@ func (s *AgentsServer) Start() error {
 		// Don't fail server startup if cleanup service fails to start
 	}
 
-	// Start reasoner event heartbeat (30 second intervals)
+	// Start bot event heartbeat (30 second intervals)
 	events.StartHeartbeat(30 * time.Second)
 
 	// Start node event heartbeat (30 second intervals)
@@ -785,17 +785,17 @@ func (s *AgentsServer) setupRoutes() {
 				workflows.GET("/:workflowId/notes/events", workflowNotesHandler.StreamWorkflowNodeNotesHandler)
 			}
 
-			// Reasoners management group
-			reasoners := uiAPI.Group("/reasoners")
+			// Bots management group
+			bots := uiAPI.Group("/bots")
 			{
-				reasonersHandler := ui.NewReasonersHandler(s.storage)
-				reasoners.GET("/all", reasonersHandler.GetAllReasonersHandler)
-				reasoners.GET("/events", reasonersHandler.StreamReasonerEventsHandler)
-				reasoners.GET("/:reasonerId/details", reasonersHandler.GetReasonerDetailsHandler)
-				reasoners.GET("/:reasonerId/metrics", reasonersHandler.GetPerformanceMetricsHandler)
-				reasoners.GET("/:reasonerId/executions", reasonersHandler.GetExecutionHistoryHandler)
-				reasoners.GET("/:reasonerId/templates", reasonersHandler.GetExecutionTemplatesHandler)
-				reasoners.POST("/:reasonerId/templates", reasonersHandler.SaveExecutionTemplateHandler)
+				botsHandler := ui.NewBotsHandler(s.storage)
+				bots.GET("/all", botsHandler.GetAllBotsHandler)
+				bots.GET("/events", botsHandler.StreamBotEventsHandler)
+				bots.GET("/:botId/details", botsHandler.GetBotDetailsHandler)
+				bots.GET("/:botId/metrics", botsHandler.GetPerformanceMetricsHandler)
+				bots.GET("/:botId/executions", botsHandler.GetExecutionHistoryHandler)
+				bots.GET("/:botId/templates", botsHandler.GetExecutionTemplatesHandler)
+				bots.POST("/:botId/templates", botsHandler.SaveExecutionTemplateHandler)
 			}
 
 			// MCP system-wide endpoints
@@ -882,8 +882,8 @@ func (s *AgentsServer) setupRoutes() {
 
 		// TODO: Add other node routes (DeleteNode)
 
-		// Reasoner execution endpoints (legacy)
-		agentAPI.POST("/reasoners/:reasoner_id", handlers.ExecuteReasonerHandler(s.storage))
+		// Bot execution endpoints (legacy)
+		agentAPI.POST("/bots/:bot_id", handlers.ExecuteBotHandler(s.storage))
 
 		// Skill execution endpoints (legacy)
 		agentAPI.POST("/skills/:skill_id", handlers.ExecuteSkillHandler(s.storage))
@@ -1014,7 +1014,7 @@ func (s *AgentsServer) setupRoutes() {
 			// Only handle /ui/* paths
 			if strings.HasPrefix(c.Request.URL.Path, "/ui/") {
 				// Check if it's a static asset by looking for common web asset file extensions
-				// This prevents reasoner IDs with dots (like "deepresearchagent.meta_research_methodology_reasoner")
+				// This prevents bot IDs with dots (like "deepresearchagent.meta_research_methodology_bot")
 				// from being treated as static assets
 				path := strings.ToLower(c.Request.URL.Path)
 				isStaticAsset := strings.HasSuffix(path, ".js") ||
@@ -1041,7 +1041,7 @@ func (s *AgentsServer) setupRoutes() {
 					return
 				}
 
-				// For SPA routes (including reasoner detail pages), serve index.html from filesystem
+				// For SPA routes (including bot detail pages), serve index.html from filesystem
 				distPath := s.config.UI.DistPath
 				if distPath == "" {
 					// Get the executable path and find UI dist relative to it

@@ -57,11 +57,11 @@ export interface EnhancedOverviewDelta {
 
 // Hotspot types
 export interface HotspotSummary {
-  top_failing_reasoners: HotspotItem[];
+  top_failing_bots: HotspotItem[];
 }
 
 export interface HotspotItem {
-  reasoner_id: string;
+  bot_id: string;
   total_executions: number;
   failed_executions: number;
   error_rate: number;
@@ -103,7 +103,7 @@ export interface EnhancedDashboardOverview {
   active_agents: number;
   degraded_agents: number;
   offline_agents: number;
-  total_reasoners: number;
+  total_bots: number;
   total_skills: number;
   executions_last_24h: number;
   executions_last_7d: number;
@@ -149,7 +149,7 @@ export interface AgentHealthItem {
   health: string;
   lifecycle: string;
   last_heartbeat: string;
-  reasoners: number;
+  bots: number;
   skills: number;
   uptime?: string;
 }
@@ -177,7 +177,7 @@ export interface ActiveWorkflowRun {
   started_at: string;
   elapsed_ms: number;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
 }
 
@@ -198,6 +198,6 @@ export interface IncidentItem {
   started_at: string;
   completed_at?: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   error?: string;
 }

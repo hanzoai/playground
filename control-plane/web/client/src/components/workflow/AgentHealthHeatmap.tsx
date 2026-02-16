@@ -36,7 +36,7 @@ export function AgentHealthHeatmap({ timedNodes, className }: AgentHealthHeatmap
     // 1. Identify Agents
     const agents = Array.from(
       new Set(
-        timedNodes.map((n) => n.agent_name || n.reasoner_id || "Unknown")
+        timedNodes.map((n) => n.agent_name || n.bot_id || "Unknown")
       )
     ).sort();
 
@@ -63,7 +63,7 @@ export function AgentHealthHeatmap({ timedNodes, className }: AgentHealthHeatmap
 
     timedNodes.forEach((node) => {
       const nodeTime = new Date(node.started_at).getTime();
-      const agent = node.agent_name || node.reasoner_id || "Unknown";
+      const agent = node.agent_name || node.bot_id || "Unknown";
       const agentIndex = agents.indexOf(agent);
 
       // Find time bucket

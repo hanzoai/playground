@@ -170,7 +170,7 @@ function transformExecutionDetailsResponse(raw: any): WorkflowExecution {
     root_workflow_id: raw.root_workflow_id ?? undefined,
     workflow_depth:
       typeof raw.workflow_depth === "number" ? raw.workflow_depth : 0,
-    reasoner_id: raw.reasoner_id,
+    bot_id: raw.bot_id,
     input_data: inputData ?? null,
     output_data: outputData ?? null,
     input_size: typeof raw.input_size === "number" ? raw.input_size : 0,

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDIDInfo } from "../../hooks/useDIDInfo";
 import { copyDIDToClipboard } from "../../services/didApi";
-import type { ReasonerDIDInfo, SkillDIDInfo } from "../../types/did";
+import type { BotDIDInfo, SkillDIDInfo } from "../../types/did";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
@@ -79,8 +79,8 @@ export function DIDIdentityCard({
           <div className="flex items-center gap-2">
             <DIDStatusBadge status={didInfo.status} size="sm" />
             <DIDCountBadge
-              count={Object.keys(didInfo.reasoners).length}
-              type="reasoners"
+              count={Object.keys(didInfo.bots).length}
+              type="bots"
             />
             <DIDCountBadge
               count={Object.keys(didInfo.skills).length}
@@ -109,8 +109,8 @@ export function DIDIdentityCard({
     );
   }
 
-  const reasoners = didInfo.reasoners && typeof didInfo.reasoners === 'object' && didInfo.reasoners !== null
-    ? Object.entries(didInfo.reasoners)
+  const bots = didInfo.bots && typeof didInfo.bots === 'object' && didInfo.bots !== null
+    ? Object.entries(didInfo.bots)
     : [];
   const skills = didInfo.skills && typeof didInfo.skills === 'object' && didInfo.skills !== null
     ? Object.entries(didInfo.skills)
@@ -125,7 +125,7 @@ export function DIDIdentityCard({
           <DIDStatusBadge status={didInfo.status} />
         </div>
         <div className="flex items-center gap-2">
-          <DIDCountBadge count={reasoners.length} type="reasoners" />
+          <DIDCountBadge count={bots.length} type="bots" />
           <DIDCountBadge count={skills.length} type="skills" />
         </div>
       </div>
@@ -153,22 +153,22 @@ export function DIDIdentityCard({
       </div>
 
       {/* Hierarchy */}
-      {showHierarchy && (reasoners.length > 0 || skills.length > 0) && (
+      {showHierarchy && (bots.length > 0 || skills.length > 0) && (
         <div className="space-y-4">
-          {/* Reasoners */}
-          {reasoners.length > 0 && (
+          {/* Bots */}
+          {bots.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <span>🧠</span>
-                Reasoners ({reasoners.length})
+                Bots ({bots.length})
               </h4>
               <div className="space-y-2 pl-4 border-l-2 border-blue-100">
-                {reasoners.map(([functionName, reasoner]) => (
-                  <ReasonerDIDItem
+                {bots.map(([functionName, bot]) => (
+                  <BotDIDItem
                     key={functionName}
                     functionName={functionName}
-                    reasoner={reasoner}
-                    onCopyDID={(did) => handleCopyDID(did, "Reasoner")}
+                    bot={bot}
+                    onCopyDID={(did) => handleCopyDID(did, "Bot")}
                   />
                 ))}
               </div>
@@ -223,24 +223,24 @@ export function DIDIdentityCard({
           </Button>
         </div>
         <span className="text-xs text-gray-500">
-          Playground Server: {didInfo.agents_server_id}
+          Hanzo Bot Server: {didInfo.agents_server_id}
         </span>
       </div>
     </Card>
   );
 }
 
-interface ReasonerDIDItemProps {
+interface BotDIDItemProps {
   functionName: string;
-  reasoner: ReasonerDIDInfo;
+  bot: BotDIDInfo;
   onCopyDID: (did: string) => void;
 }
 
-function ReasonerDIDItem({
+function BotDIDItem({
   functionName,
-  reasoner,
+  bot,
   onCopyDID,
-}: ReasonerDIDItemProps) {
+}: BotDIDItemProps) {
   return (
     <div className="bg-blue-50 p-3 rounded border border-blue-100">
       <div className="flex items-center justify-between mb-2">
@@ -251,20 +251,20 @@ function ReasonerDIDItem({
           variant="outline"
           className="text-xs bg-blue-100 text-blue-700 border-blue-200"
         >
-          {reasoner.exposure_level}
+          {bot.exposure_level}
         </Badge>
       </div>
 
       <DIDIdentityBadge
-        did={reasoner.did}
+        did={bot.did}
         maxLength={35}
         onCopy={onCopyDID}
         className="mb-2"
       />
 
-      {reasoner.capabilities.length > 0 && (
+      {bot.capabilities.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {reasoner.capabilities.map((capability, index) => (
+          {bot.capabilities.map((capability, index) => (
             <Badge
               key={index}
               variant="outline"
@@ -324,4 +324,4 @@ function SkillDIDItem({ functionName, skill, onCopyDID }: SkillDIDItemProps) {
   );
 }
 
-export { ReasonerDIDItem, SkillDIDItem };
+export { BotDIDItem, SkillDIDItem };

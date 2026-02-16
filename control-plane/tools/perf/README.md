@@ -24,7 +24,7 @@ path introduced in the orchestration refactor.
    pip install -r requirements.txt
    ```
 
-3. Target the `synthetic_nested` reasoner (or any workflow that fans out) with the
+3. Target the `synthetic_nested bot (or any workflow that fans out) with the
    stress driver. The script works against both sync and async handlers.
 
    ```bash
@@ -82,7 +82,7 @@ Supported environment variables when no CLI arguments are provided:
 | Variable | Default | Description |
 | --- | --- | --- |
 | `BASE_URL` | `http://host.docker.internal:8080` | Gateway address. |
-| `TARGET` | `demo-agent.synthetic_nested` | `node.reasoner` or `node.skill`. |
+| `TARGET` | `demo-agent.synthetic_nested` | `node.bot` or `node.skill`. |
 | `MODE` | `async` | `sync` or `async`. |
 | `REQUESTS` | `200` | Total requests to issue. |
 | `CONCURRENCY` | `16` | Max in-flight requests. |
@@ -157,7 +157,7 @@ Example `scenarios.json`:
 ## Integrating with benchmarking runs
 
 - **Nested fan-out sweeps**: Script parameters mirror depth/width knobs in the
-  synthetic nested reasoner. Automate sweeps with `for depth in ...` loops and
+  synthetic nested bot. Automate sweeps with `for depth in ...` loops and
   keep JSON outputs side by side to compare queue depth, goroutine count, and
   latency after each change.
 - **Backpressure verification**: Drive queue overload by setting

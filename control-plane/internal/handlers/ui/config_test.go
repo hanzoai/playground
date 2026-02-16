@@ -280,20 +280,20 @@ func (m *MockStorageProvider) GetConfig(ctx context.Context, key string) (interf
 	return args.Get(0), args.Error(1)
 }
 
-func (m *MockStorageProvider) GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error) {
-	args := m.Called(ctx, reasonerID)
+func (m *MockStorageProvider) GetBotPerformanceMetrics(ctx context.Context, botID string) (*types.BotPerformanceMetrics, error) {
+	args := m.Called(ctx, botID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.ReasonerPerformanceMetrics), args.Error(1)
+	return args.Get(0).(*types.BotPerformanceMetrics), args.Error(1)
 }
 
-func (m *MockStorageProvider) GetReasonerExecutionHistory(ctx context.Context, reasonerID string, page, limit int) (*types.ReasonerExecutionHistory, error) {
-	args := m.Called(ctx, reasonerID, page, limit)
+func (m *MockStorageProvider) GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error) {
+	args := m.Called(ctx, botID, page, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.ReasonerExecutionHistory), args.Error(1)
+	return args.Get(0).(*types.BotExecutionHistory), args.Error(1)
 }
 
 func (m *MockStorageProvider) StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {

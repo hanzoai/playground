@@ -170,7 +170,7 @@ export function ExecutionHeader({
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <h1 className="text-heading-2 font-semibold tracking-tight">
-                {execution.reasoner_id}
+                {execution.bot_id}
               </h1>
               <StatusIndicator
                 status={normalizedStatus}

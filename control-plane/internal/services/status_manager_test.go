@@ -90,7 +90,7 @@ func registerTestAgent(t *testing.T, provider storage.StorageProvider, ctx conte
 		HealthStatus:    types.HealthStatusInactive,
 		LifecycleStatus: types.AgentStatusOffline,
 		LastHeartbeat:   time.Now().Add(-1 * time.Minute),
-		Reasoners:       []types.ReasonerDefinition{},
+		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 
@@ -192,7 +192,7 @@ func TestStatusManagerBroadcastsNodeOfflineEvent(t *testing.T) {
 		HealthStatus:    types.HealthStatusActive,
 		LifecycleStatus: types.AgentStatusReady,
 		LastHeartbeat:   time.Now(),
-		Reasoners:       []types.ReasonerDefinition{},
+		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 	require.NoError(t, provider.RegisterAgent(ctx, node))
@@ -401,7 +401,7 @@ func TestStatusManagerPreservesOldStatusForEventBroadcast(t *testing.T) {
 		HealthStatus:    types.HealthStatusActive,
 		LifecycleStatus: types.AgentStatusReady,
 		LastHeartbeat:   time.Now(),
-		Reasoners:       []types.ReasonerDefinition{},
+		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 	require.NoError(t, provider.RegisterAgent(ctx, node))

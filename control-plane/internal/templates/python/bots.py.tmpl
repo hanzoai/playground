@@ -1,14 +1,14 @@
 from playground import AgentRouter
 from pydantic import BaseModel, Field
 
-# Group related reasoners with a router
-reasoners_router = AgentRouter(prefix="demo", tags=["example"])
+# Group related bots with a router
+bots_router = AgentRouter(prefix="demo", tags=["example"])
 
 
-@reasoners_router.reasoner()
+@bots_router.bot()
 async def echo(message: str) -> dict:
     """
-    Simple echo reasoner - works without AI configured.
+    Simple echo bot - works without AI configured.
 
     Example usage:
     curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
@@ -31,7 +31,7 @@ async def echo(message: str) -> dict:
 #     reasoning: str = Field(description="Explanation of the analysis")
 #
 #
-# @reasoners_router.reasoner()
+# @bots_router.bot()
 # async def analyze_sentiment(text: str) -> dict:
 #     """
 #     AI-powered sentiment analysis with structured output.
@@ -42,14 +42,14 @@ async def echo(message: str) -> dict:
 #       -d '{"input": {"text": "I love this product!"}}'
 #     """
 #     # Access AI directly through the router's app instance
-#     result = await reasoners_router.ai(
+#     result = await bots_router.ai(
 #         system="You are a sentiment analysis expert.",
 #         user=f"Analyze the sentiment of this text: {text}",
 #         schema=SentimentAnalysis
 #     )
 #
 #     # Add a note for observability
-#     reasoners_router.app.note(
+#     bots_router.app.note(
 #         f"Analyzed sentiment: {result.sentiment} (confidence: {result.confidence})",
 #         tags=["sentiment", "analysis"]
 #     )

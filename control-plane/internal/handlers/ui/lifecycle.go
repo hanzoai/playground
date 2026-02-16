@@ -44,7 +44,7 @@ func (h *LifecycleHandler) buildEndpoints(ctx context.Context, agentID string, p
 	baseURL := h.getAgentBaseURL(ctx, agentID, port)
 	return map[string]string{
 		"health":    baseURL + "/health",
-		"reasoners": baseURL + "/reasoners",
+		"bots": baseURL + "/bots",
 		"skills":    baseURL + "/skills",
 	}
 }

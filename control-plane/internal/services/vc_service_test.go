@@ -161,7 +161,7 @@ func TestVCService_GenerateExecutionVC_Success(t *testing.T) {
 	// Register an agent first
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-vc-test",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -169,7 +169,7 @@ func TestVCService_GenerateExecutionVC_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 	targetDID := regResp.IdentityPackage.SkillDIDs["skill1"].DID
 
 	execCtx := &types.ExecutionContext{
@@ -227,14 +227,14 @@ func TestVCService_GenerateExecutionVC_WithError(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-vc-error",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-error",
@@ -315,14 +315,14 @@ func TestVCService_GenerateExecutionVC_EmptyData(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-empty",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-empty",
@@ -351,14 +351,14 @@ func TestVCService_GenerateExecutionVC_LongErrorMessage(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-long-error",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-long-error",
@@ -395,14 +395,14 @@ func TestVCService_VerifyVC_Success(t *testing.T) {
 	// Register an agent and generate a VC
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-verify",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-verify",
@@ -461,14 +461,14 @@ func TestVCService_VerifyVC_TamperedSignature(t *testing.T) {
 	// Register an agent and generate a VC
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-tamper",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-tamper",
@@ -505,14 +505,14 @@ func TestVCService_VerifyVC_InvalidIssuerDID(t *testing.T) {
 	// Register an agent and generate a VC
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-invalid-issuer",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-invalid-issuer",
@@ -640,14 +640,14 @@ func TestVCService_CreateWorkflowVC_Success(t *testing.T) {
 	// Register an agent first
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-workflow-vc",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	// Generate some execution VCs
 	execCtx1 := &types.ExecutionContext{
@@ -719,14 +719,14 @@ func TestVCService_QueryExecutionVCs_Success(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-query",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	// Generate execution VCs
 	execCtx1 := &types.ExecutionContext{
@@ -778,14 +778,14 @@ func TestVCService_GetExecutionVCByExecutionID(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-get-exec",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-get-by-id",
@@ -838,14 +838,14 @@ func TestVCService_ListWorkflowVCs_Success(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-list-workflow",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	// Generate execution VC
 	execCtx := &types.ExecutionContext{
@@ -887,7 +887,7 @@ func TestVCService_VerifyExecutionVCComprehensive_Success(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-comprehensive",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -895,7 +895,7 @@ func TestVCService_VerifyExecutionVCComprehensive_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 	targetDID := regResp.IdentityPackage.SkillDIDs["skill1"].DID
 
 	execCtx := &types.ExecutionContext{
@@ -964,14 +964,14 @@ func TestVCService_VerifyExecutionVCComprehensive_IssuerMismatch(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-mismatch",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	execCtx := &types.ExecutionContext{
 		ExecutionID:  "exec-mismatch",
@@ -1050,14 +1050,14 @@ func TestVCService_DetermineWorkflowStatus(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-status",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	// Create VCs with different statuses
 	execCtx1 := &types.ExecutionContext{
@@ -1108,14 +1108,14 @@ func TestVCService_DetermineWorkflowStatus_AllSucceeded(t *testing.T) {
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-status-all-success",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
 	regResp, err := didService.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
-	callerDID := regResp.IdentityPackage.ReasonerDIDs["reasoner1"].DID
+	callerDID := regResp.IdentityPackage.BotDIDs["bot1"].DID
 
 	// Create multiple succeeded VCs
 	for i := 1; i <= 3; i++ {

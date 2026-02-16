@@ -128,7 +128,7 @@ export function NodesPage() {
     } catch (err) {
       console.error("Failed to load nodes summary:", err);
       setError(
-        "Failed to load agent nodes. Please ensure the Playground server is running and accessible."
+        "Failed to load agent nodes. Please ensure the Hanzo Bot server is running and accessible."
       );
     } finally {
       setIsLoading(false);
@@ -538,7 +538,7 @@ export function NodesPage() {
     ? `Showing ${filteredNodes.length} result${
         filteredNodes.length === 1 ? "" : "s"
       } for "${searchQuery}"`
-    : "Monitor and manage your AI agent nodes in the Playground orchestration platform.";
+    : "Monitor and manage your AI agent nodes in the Hanzo Bot platform.";
 
   const connectionBadgeVariant = connected
     ? "success"
@@ -640,7 +640,7 @@ export function NodesPage() {
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search nodes, teams, reasoners, or skills..."
+              placeholder="Search nodes, teams, bots, or skills..."
               wrapperClassName="w-full lg:max-w-md"
               inputClassName="border-border bg-background focus-visible:ring-0 focus-visible:outline-none"
             />

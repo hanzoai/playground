@@ -102,8 +102,8 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
       }
 
       // Then by capability count (descending)
-      const aImportance = a.reasoner_count + a.skill_count;
-      const bImportance = b.reasoner_count + b.skill_count;
+      const aImportance = a.bot_count + a.skill_count;
+      const bImportance = b.bot_count + b.skill_count;
 
       if (aImportance !== bImportance) {
         return bImportance - aImportance;

@@ -17,7 +17,7 @@ var workflowExecutionLifecycleColumns = []string{
 	"parent_execution_id",
 	"root_workflow_id",
 	"workflow_depth",
-	"reasoner_id",
+	"bot_id",
 	"input_data",
 	"output_data",
 	"input_size",

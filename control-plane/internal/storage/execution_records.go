@@ -33,7 +33,7 @@ func (ls *LocalStorage) CreateExecutionRecord(ctx context.Context, exec *types.E
 	insert := `
 		INSERT INTO executions (
 			execution_id, run_id, parent_execution_id,
-			agent_node_id, reasoner_id, node_id,
+			agent_node_id, bot_id, node_id,
 			status, input_payload, result_payload, error_message,
 			input_uri, result_uri,
 			session_id, actor_id,
@@ -59,7 +59,7 @@ func (ls *LocalStorage) CreateExecutionRecord(ctx context.Context, exec *types.E
 		exec.RunID,
 		exec.ParentExecutionID,
 		exec.AgentNodeID,
-		exec.ReasonerID,
+		exec.BotID,
 		exec.NodeID,
 		exec.Status,
 		bytesOrNil(exec.InputPayload),
@@ -87,7 +87,7 @@ func (ls *LocalStorage) CreateExecutionRecord(ctx context.Context, exec *types.E
 func (ls *LocalStorage) GetExecutionRecord(ctx context.Context, executionID string) (*types.Execution, error) {
 	query := `
 		SELECT execution_id, run_id, parent_execution_id,
-		       agent_node_id, reasoner_id, node_id,
+		       agent_node_id, bot_id, node_id,
 		       status, input_payload, result_payload, error_message,
 		       input_uri, result_uri,
 		       session_id, actor_id,
@@ -124,7 +124,7 @@ func (ls *LocalStorage) UpdateExecutionRecord(ctx context.Context, executionID s
 
 	row := tx.QueryRowContext(ctx, `
 		SELECT execution_id, run_id, parent_execution_id,
-		       agent_node_id, reasoner_id, node_id,
+		       agent_node_id, bot_id, node_id,
 		       status, input_payload, result_payload, error_message,
 		       input_uri, result_uri,
 		       session_id, actor_id,
@@ -166,7 +166,7 @@ func (ls *LocalStorage) UpdateExecutionRecord(ctx context.Context, executionID s
 			run_id = ?,
 			parent_execution_id = ?,
 			agent_node_id = ?,
-			reasoner_id = ?,
+			bot_id = ?,
 			node_id = ?,
 			status = ?,
 			input_payload = ?,
@@ -189,7 +189,7 @@ func (ls *LocalStorage) UpdateExecutionRecord(ctx context.Context, executionID s
 		updated.RunID,
 		updated.ParentExecutionID,
 		updated.AgentNodeID,
-		updated.ReasonerID,
+		updated.BotID,
 		updated.NodeID,
 		updated.Status,
 		bytesOrNil(updated.InputPayload),
@@ -241,9 +241,9 @@ func (ls *LocalStorage) QueryExecutionRecords(ctx context.Context, filter types.
 		where = append(where, "agent_node_id = ?")
 		args = append(args, *filter.AgentNodeID)
 	}
-	if filter.ReasonerID != nil {
-		where = append(where, "reasoner_id = ?")
-		args = append(args, *filter.ReasonerID)
+	if filter.BotID != nil {
+		where = append(where, "bot_id = ?")
+		args = append(args, *filter.BotID)
 	}
 	if filter.Status != nil {
 		where = append(where, "status = ?")
@@ -269,7 +269,7 @@ func (ls *LocalStorage) QueryExecutionRecords(ctx context.Context, filter types.
 	queryBuilder := strings.Builder{}
 	queryBuilder.WriteString(`
 		SELECT execution_id, run_id, parent_execution_id,
-		       agent_node_id, reasoner_id, node_id,
+		       agent_node_id, bot_id, node_id,
 		       status, input_payload, result_payload, error_message,
 		       input_uri, result_uri,
 		       session_id, actor_id,
@@ -290,8 +290,8 @@ func (ls *LocalStorage) QueryExecutionRecords(ctx context.Context, filter types.
 		orderColumn = "duration_ms"
 	case "agent_node_id":
 		orderColumn = "agent_node_id"
-	case "reasoner_id":
-		orderColumn = "reasoner_id"
+	case "bot_id":
+		orderColumn = "bot_id"
 	case "execution_id":
 		orderColumn = "execution_id"
 	case "run_id":
@@ -421,7 +421,7 @@ func (ls *LocalStorage) QueryRunSummaries(ctx context.Context, filter types.Exec
 			SUM(CASE WHEN LOWER(status) IN ('running','pending','queued') THEN 1 ELSE 0 END) AS active_executions,
 			MAX(CASE WHEN parent_execution_id IS NULL OR parent_execution_id = '' THEN execution_id END) AS root_execution_id,
 			MAX(CASE WHEN parent_execution_id IS NULL OR parent_execution_id = '' THEN agent_node_id END) AS root_agent_node_id,
-			MAX(CASE WHEN parent_execution_id IS NULL OR parent_execution_id = '' THEN reasoner_id END) AS root_reasoner_id,
+			MAX(CASE WHEN parent_execution_id IS NULL OR parent_execution_id = '' THEN bot_id END) AS root_bot_id,
 			MAX(session_id) AS session_id,
 			MAX(actor_id) AS actor_id,
 			CASE
@@ -468,7 +468,7 @@ func (ls *LocalStorage) QueryRunSummaries(ctx context.Context, filter types.Exec
 			activeExecutions   int
 			rootExecutionID    sql.NullString
 			rootAgentNodeID    sql.NullString
-			rootReasonerID     sql.NullString
+			rootBotID     sql.NullString
 			sessionID          sql.NullString
 			actorID            sql.NullString
 			statusRank         int
@@ -489,7 +489,7 @@ func (ls *LocalStorage) QueryRunSummaries(ctx context.Context, filter types.Exec
 			&activeExecutions,
 			&rootExecutionID,
 			&rootAgentNodeID,
-			&rootReasonerID,
+			&rootBotID,
 			&sessionID,
 			&actorID,
 			&statusRank,
@@ -539,8 +539,8 @@ func (ls *LocalStorage) QueryRunSummaries(ctx context.Context, filter types.Exec
 		if rootAgentNodeID.Valid && rootAgentNodeID.String != "" {
 			summary.RootAgentNodeID = &rootAgentNodeID.String
 		}
-		if rootReasonerID.Valid && rootReasonerID.String != "" {
-			summary.RootReasonerID = &rootReasonerID.String
+		if rootBotID.Valid && rootBotID.String != "" {
+			summary.RootBotID = &rootBotID.String
 		}
 		if sessionID.Valid && sessionID.String != "" {
 			summary.SessionID = &sessionID.String
@@ -714,18 +714,18 @@ func (ls *LocalStorage) getRunAggregation(ctx context.Context, runID string) (*R
 
 	// Query 3: Get root execution info (execution with no parent)
 	rootQuery := `
-		SELECT execution_id, agent_node_id, reasoner_id, session_id, actor_id
+		SELECT execution_id, agent_node_id, bot_id, session_id, actor_id
 		FROM executions
 		WHERE run_id = ? AND (parent_execution_id IS NULL OR parent_execution_id = '')
 		ORDER BY started_at ASC
 		LIMIT 1`
 
-	var rootExecID, rootAgentNodeID, rootReasonerID sql.NullString
+	var rootExecID, rootAgentNodeID, rootBotID sql.NullString
 	var sessionID, actorID sql.NullString
 	err = db.QueryRowContext(ctx, rootQuery, runID).Scan(
 		&rootExecID,
 		&rootAgentNodeID,
-		&rootReasonerID,
+		&rootBotID,
 		&sessionID,
 		&actorID,
 	)
@@ -739,8 +739,8 @@ func (ls *LocalStorage) getRunAggregation(ctx context.Context, runID string) (*R
 	if rootAgentNodeID.Valid {
 		summary.RootAgentNodeID = &rootAgentNodeID.String
 	}
-	if rootReasonerID.Valid {
-		summary.RootReasonerID = &rootReasonerID.String
+	if rootBotID.Valid {
+		summary.RootBotID = &rootBotID.String
 	}
 	if sessionID.Valid && sessionID.String != "" {
 		summary.SessionID = &sessionID.String
@@ -1046,7 +1046,7 @@ func scanExecution(scanner interface {
 		&exec.RunID,
 		&parentExecutionID,
 		&exec.AgentNodeID,
-		&exec.ReasonerID,
+		&exec.BotID,
 		&exec.NodeID,
 		&exec.Status,
 		&inputPayload,

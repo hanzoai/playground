@@ -5,7 +5,7 @@
 export interface ActivityExecution {
   execution_id: string;
   agent_name: string;
-  reasoner_name: string;
+  bot_name: string;
   status: 'running' | 'completed' | 'success' | 'failed' | 'pending';
   started_at: string;
   duration_ms?: number;

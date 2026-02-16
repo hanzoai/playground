@@ -23,14 +23,14 @@ type AgentDIDInfo struct {
 	AgentsServerID string                     `json:"agents_server_id" db:"agents_server_id"`
 	PublicKeyJWK       json.RawMessage            `json:"public_key_jwk" db:"public_key_jwk"`
 	DerivationPath     string                     `json:"derivation_path" db:"derivation_path"`
-	Reasoners          map[string]ReasonerDIDInfo `json:"reasoners" db:"reasoners"`
+	Bots          map[string]BotDIDInfo `json:"bots" db:"bots"`
 	Skills             map[string]SkillDIDInfo    `json:"skills" db:"skills"`
 	Status             AgentDIDStatus             `json:"status" db:"status"`
 	RegisteredAt       time.Time                  `json:"registered_at" db:"registered_at"`
 }
 
-// ReasonerDIDInfo represents DID information for a reasoner.
-type ReasonerDIDInfo struct {
+// BotDIDInfo represents DID information for a bot.
+type BotDIDInfo struct {
 	DID            string          `json:"did" db:"did"`
 	FunctionName   string          `json:"function_name" db:"function_name"`
 	PublicKeyJWK   json.RawMessage `json:"public_key_jwk" db:"public_key_jwk"`
@@ -105,7 +105,7 @@ type WorkflowVC struct {
 // DIDIdentityPackage represents the complete DID identity package for an agent.
 type DIDIdentityPackage struct {
 	AgentDID           DIDIdentity            `json:"agent_did"`
-	ReasonerDIDs       map[string]DIDIdentity `json:"reasoner_dids"`
+	BotDIDs       map[string]DIDIdentity `json:"bot_dids"`
 	SkillDIDs          map[string]DIDIdentity `json:"skill_dids"`
 	AgentsServerID string                 `json:"agents_server_id"`
 }
@@ -252,7 +252,7 @@ type VCFilters struct {
 // DIDRegistrationRequest represents a request to register an agent with DIDs.
 type DIDRegistrationRequest struct {
 	AgentNodeID string               `json:"agent_node_id"`
-	Reasoners   []ReasonerDefinition `json:"reasoners"`
+	Bots   []BotDefinition `json:"bots"`
 	Skills      []SkillDefinition    `json:"skills"`
 }
 
@@ -347,7 +347,7 @@ type DIDRegistryEntry struct {
 	Status         string    `json:"status" db:"status"`
 }
 
-// ComponentDIDInfo represents DID information for a component (reasoner or skill).
+// ComponentDIDInfo represents DID information for a component (bot or skill).
 type ComponentDIDInfo struct {
 	ComponentID     string    `json:"component_id" db:"component_id"`
 	ComponentDID    string    `json:"component_did" db:"component_did"`
@@ -413,17 +413,17 @@ const (
 // EnhancedDIDRegistrationRequest represents an enhanced request to register an agent with DIDs.
 type EnhancedDIDRegistrationRequest struct {
 	AgentNodeID      string               `json:"agent_node_id"`
-	Reasoners        []ReasonerDefinition `json:"reasoners"`
+	Bots        []BotDefinition `json:"bots"`
 	Skills           []SkillDefinition    `json:"skills"`
 	RegistrationType RegistrationType     `json:"registration_type"`
 	ForceOverwrite   bool                 `json:"force_overwrite,omitempty"`
 }
 
-// DifferentialAnalysisResult represents the result of comparing existing vs new reasoners/skills.
+// DifferentialAnalysisResult represents the result of comparing existing vs new bots/skills.
 type DifferentialAnalysisResult struct {
-	NewReasonerIDs     []string `json:"new_reasoner_ids"`
-	UpdatedReasonerIDs []string `json:"updated_reasoner_ids"`
-	RemovedReasonerIDs []string `json:"removed_reasoner_ids"`
+	NewBotIDs     []string `json:"new_bot_ids"`
+	UpdatedBotIDs []string `json:"updated_bot_ids"`
+	RemovedBotIDs []string `json:"removed_bot_ids"`
 	NewSkillIDs        []string `json:"new_skill_ids"`
 	UpdatedSkillIDs    []string `json:"updated_skill_ids"`
 	RemovedSkillIDs    []string `json:"removed_skill_ids"`
@@ -433,18 +433,18 @@ type DifferentialAnalysisResult struct {
 // PartialDIDRegistrationRequest represents a request for partial DID registration.
 type PartialDIDRegistrationRequest struct {
 	AgentNodeID        string               `json:"agent_node_id"`
-	NewReasonerIDs     []string             `json:"new_reasoner_ids"`
+	NewBotIDs     []string             `json:"new_bot_ids"`
 	NewSkillIDs        []string             `json:"new_skill_ids"`
-	UpdatedReasonerIDs []string             `json:"updated_reasoner_ids"`
+	UpdatedBotIDs []string             `json:"updated_bot_ids"`
 	UpdatedSkillIDs    []string             `json:"updated_skill_ids"`
-	AllReasoners       []ReasonerDefinition `json:"all_reasoners"`
+	AllBots       []BotDefinition `json:"all_bots"`
 	AllSkills          []SkillDefinition    `json:"all_skills"`
 }
 
 // ComponentDeregistrationRequest represents a request to deregister specific components.
 type ComponentDeregistrationRequest struct {
 	AgentNodeID         string   `json:"agent_node_id"`
-	ReasonerIDsToRemove []string `json:"reasoner_ids_to_remove"`
+	BotIDsToRemove []string `json:"bot_ids_to_remove"`
 	SkillIDsToRemove    []string `json:"skill_ids_to_remove"`
 }
 
@@ -454,7 +454,7 @@ type PartialDIDRegistrationResponse struct {
 	IdentityPackage DIDIdentityPackage `json:"identity_package"`
 	Message         string             `json:"message,omitempty"`
 	Error           string             `json:"error,omitempty"`
-	NewReasonerDIDs int                `json:"new_reasoner_dids"`
+	NewBotDIDs int                `json:"new_bot_dids"`
 	NewSkillDIDs    int                `json:"new_skill_dids"`
 }
 

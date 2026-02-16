@@ -23,7 +23,7 @@ interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -86,7 +86,7 @@ const StatusPlaceholder = memo(
           borderColor: agentColor.primary,
           boxShadow: `0 0 4px ${glowColor}`,
         }}
-        title={`${getStatusLabel(status)} - ${data.task_name || data.reasoner_id}`}
+        title={`${getStatusLabel(status)} - ${data.task_name || data.bot_id}`}
       />
     );
   },
@@ -325,7 +325,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
   }
 
   // Calculate optimal node width based on content
-  const taskText = data.task_name || data.reasoner_id;
+  const taskText = data.task_name || data.bot_id;
   const agentText = data.agent_name || data.agent_node_id;
   const nodeWidth = calculateOptimalWidth(taskText, agentText);
 
@@ -532,7 +532,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
         <div className="space-y-3">
           {/* Header */}
           <div className="border-b border-border/60 pb-2 text-sm font-semibold text-foreground">
-            {humanizeText(data.task_name || data.reasoner_id)}
+            {humanizeText(data.task_name || data.bot_id)}
           </div>
 
           {/* Main Info */}

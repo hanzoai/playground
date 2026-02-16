@@ -1,7 +1,7 @@
 // Package server provides the ZAP admin node for the playground control-plane.
 //
 // Replaces the old gRPC admin service with a ZAP-native node that exposes
-// admin operations (list reasoners, health) via Cap'n Proto zero-copy messaging.
+// admin operations (list bots, health) via Cap'n Proto zero-copy messaging.
 // Also exposes the same operations as REST endpoints on the existing Gin router.
 package server
 
@@ -70,8 +70,8 @@ func (a *zapAdminNode) handle(msg *zap.Message) *zap.Message {
 	path := root.Text(fieldPath)
 
 	switch path {
-	case "/list-reasoners":
-		return a.listReasoners()
+	case "/list-bots":
+		return a.listBots()
 	case "/health":
 		return zapRespond(http.StatusOK, map[string]string{"status": "ok", "service": "playground-admin"})
 	default:
@@ -79,7 +79,7 @@ func (a *zapAdminNode) handle(msg *zap.Message) *zap.Message {
 	}
 }
 
-func (a *zapAdminNode) listReasoners() *zap.Message {
+func (a *zapAdminNode) listBots() *zap.Message {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -88,8 +88,8 @@ func (a *zapAdminNode) listReasoners() *zap.Message {
 		return zapRespond(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	type reasonerInfo struct {
-		ReasonerID  string `json:"reasoner_id"`
+	type botInfo struct {
+		BotID  string `json:"bot_id"`
 		AgentNodeID string `json:"agent_node_id"`
 		Name        string `json:"name"`
 		Description string `json:"description"`
@@ -98,17 +98,17 @@ func (a *zapAdminNode) listReasoners() *zap.Message {
 		LastHB      string `json:"last_heartbeat"`
 	}
 
-	var reasoners []reasonerInfo
+	var bots []botInfo
 	for _, node := range nodes {
 		if node == nil {
 			continue
 		}
-		for _, r := range node.Reasoners {
-			reasoners = append(reasoners, reasonerInfo{
-				ReasonerID:  fmt.Sprintf("%s.%s", node.ID, r.ID),
+		for _, r := range node.Bots {
+			bots = append(bots, botInfo{
+				BotID:  fmt.Sprintf("%s.%s", node.ID, r.ID),
 				AgentNodeID: node.ID,
 				Name:        r.ID,
-				Description: fmt.Sprintf("Reasoner %s from node %s", r.ID, node.ID),
+				Description: fmt.Sprintf("Bot %s from node %s", r.ID, node.ID),
 				Status:      string(node.HealthStatus),
 				NodeVersion: node.Version,
 				LastHB:      node.LastHeartbeat.Format(time.RFC3339),
@@ -117,8 +117,8 @@ func (a *zapAdminNode) listReasoners() *zap.Message {
 	}
 
 	return zapRespond(http.StatusOK, map[string]interface{}{
-		"reasoners": reasoners,
-		"count":     len(reasoners),
+		"bots": bots,
+		"count":     len(bots),
 	})
 }
 
@@ -139,7 +139,7 @@ func zapRespond(status int, data interface{}) *zap.Message {
 func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) {
 	admin := router.Group("/api/v1/admin")
 	{
-		admin.GET("/reasoners", func(c *gin.Context) {
+		admin.GET("/bots", func(c *gin.Context) {
 			ctx := c.Request.Context()
 			nodes, err := store.ListAgents(ctx, types.AgentFilters{})
 			if err != nil {
@@ -147,8 +147,8 @@ func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) 
 				return
 			}
 
-			type reasonerInfo struct {
-				ReasonerID  string `json:"reasoner_id"`
+			type botInfo struct {
+				BotID  string `json:"bot_id"`
 				AgentNodeID string `json:"agent_node_id"`
 				Name        string `json:"name"`
 				Description string `json:"description"`
@@ -157,17 +157,17 @@ func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) 
 				LastHB      string `json:"last_heartbeat"`
 			}
 
-			var reasoners []reasonerInfo
+			var bots []botInfo
 			for _, node := range nodes {
 				if node == nil {
 					continue
 				}
-				for _, r := range node.Reasoners {
-					reasoners = append(reasoners, reasonerInfo{
-						ReasonerID:  fmt.Sprintf("%s.%s", node.ID, r.ID),
+				for _, r := range node.Bots {
+					bots = append(bots, botInfo{
+						BotID:  fmt.Sprintf("%s.%s", node.ID, r.ID),
 						AgentNodeID: node.ID,
 						Name:        r.ID,
-						Description: fmt.Sprintf("Reasoner %s from node %s", r.ID, node.ID),
+						Description: fmt.Sprintf("Bot %s from node %s", r.ID, node.ID),
 						Status:      string(node.HealthStatus),
 						NodeVersion: node.Version,
 						LastHB:      node.LastHeartbeat.Format(time.RFC3339),
@@ -176,8 +176,8 @@ func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) 
 			}
 
 			c.JSON(http.StatusOK, gin.H{
-				"reasoners": reasoners,
-				"count":     len(reasoners),
+				"bots": bots,
+				"count":     len(bots),
 			})
 		})
 	}

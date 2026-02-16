@@ -116,7 +116,7 @@ export function EnhancedWorkflowPerformance({
     const map = new Map<string, { totalDuration: number; count: number; maxDuration: number }>();
 
     timedNodes.forEach((node) => {
-      const key = node.agent_name || node.reasoner_id || 'Unknown';
+      const key = node.agent_name || node.bot_id || 'Unknown';
       const duration = Number(node.duration_ms) || 0;
       const entry = map.get(key) || { totalDuration: 0, count: 0, maxDuration: 0 };
       entry.totalDuration += duration;
@@ -281,7 +281,7 @@ export function EnhancedWorkflowPerformance({
                               <div className="flex items-center gap-2">
                                 <Badge variant="destructive" className="text-body-small">#{index + 1}</Badge>
                                 <span className="font-medium text-foreground">
-                                  {node.agent_name || node.reasoner_id || 'Workflow step'}
+                                  {node.agent_name || node.bot_id || 'Workflow step'}
                                 </span>
                               </div>
                               <div className="text-right text-body-small">

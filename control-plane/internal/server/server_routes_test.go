@@ -214,11 +214,11 @@ func (s *stubStorage) GetConfig(ctx context.Context, key string) (interface{}, e
 	return nil, nil
 }
 
-// Reasoner Performance and History
-func (s *stubStorage) GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error) {
+// Bot Performance and History
+func (s *stubStorage) GetBotPerformanceMetrics(ctx context.Context, botID string) (*types.BotPerformanceMetrics, error) {
 	return nil, nil
 }
-func (s *stubStorage) GetReasonerExecutionHistory(ctx context.Context, reasonerID string, page, limit int) (*types.ReasonerExecutionHistory, error) {
+func (s *stubStorage) GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error) {
 	return nil, nil
 }
 

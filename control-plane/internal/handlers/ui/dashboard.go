@@ -130,14 +130,14 @@ type EnhancedOverviewDelta struct {
 	AvgDurationDeltaPct float64 `json:"avg_duration_delta_pct"`
 }
 
-// HotspotSummary contains top error contributors by reasoner
+// HotspotSummary contains top error contributors by bot
 type HotspotSummary struct {
-	TopFailingReasoners []HotspotItem `json:"top_failing_reasoners"`
+	TopFailingBots []HotspotItem `json:"top_failing_bots"`
 }
 
-// HotspotItem represents a single reasoner's failure statistics
+// HotspotItem represents a single bot's failure statistics
 type HotspotItem struct {
-	ReasonerID        string       `json:"reasoner_id"`
+	BotID        string       `json:"bot_id"`
 	TotalExecutions   int          `json:"total_executions"`
 	FailedExecutions  int          `json:"failed_executions"`
 	ErrorRate         float64      `json:"error_rate"`
@@ -183,7 +183,7 @@ type EnhancedOverview struct {
 	ActiveAgents         int     `json:"active_agents"`
 	DegradedAgents       int     `json:"degraded_agents"`
 	OfflineAgents        int     `json:"offline_agents"`
-	TotalReasoners       int     `json:"total_reasoners"`
+	TotalBots       int     `json:"total_bots"`
 	TotalSkills          int     `json:"total_skills"`
 	ExecutionsLast24h    int     `json:"executions_last_24h"`
 	ExecutionsLast7d     int     `json:"executions_last_7d"`
@@ -229,7 +229,7 @@ type AgentHealthItem struct {
 	Health        string    `json:"health"`
 	Lifecycle     string    `json:"lifecycle"`
 	LastHeartbeat time.Time `json:"last_heartbeat"`
-	Reasoners     int       `json:"reasoners"`
+	Bots     int       `json:"bots"`
 	Skills        int       `json:"skills"`
 	Uptime        string    `json:"uptime,omitempty"`
 }
@@ -257,7 +257,7 @@ type ActiveWorkflowRun struct {
 	StartedAt   time.Time `json:"started_at"`
 	ElapsedMs   int64     `json:"elapsed_ms"`
 	AgentNodeID string    `json:"agent_node_id"`
-	ReasonerID  string    `json:"reasoner_id"`
+	BotID  string    `json:"bot_id"`
 	Status      string    `json:"status"`
 }
 
@@ -278,7 +278,7 @@ type IncidentItem struct {
 	StartedAt   time.Time  `json:"started_at"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	AgentNodeID string     `json:"agent_node_id"`
-	ReasonerID  string     `json:"reasoner_id"`
+	BotID  string     `json:"bot_id"`
 	Error       string     `json:"error,omitempty"`
 }
 
@@ -642,7 +642,7 @@ func (h *DashboardHandler) buildEnhancedOverviewForRange(agents []*types.AgentNo
 	overview := EnhancedOverview{TotalAgents: len(agents)}
 
 	for _, agent := range agents {
-		overview.TotalReasoners += len(agent.Reasoners)
+		overview.TotalBots += len(agent.Bots)
 		overview.TotalSkills += len(agent.Skills)
 
 		isDegraded := agent.LifecycleStatus == types.AgentStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
@@ -842,26 +842,26 @@ func buildComparisonData(current, previous EnhancedOverview, prevStart, prevEnd 
 	}
 }
 
-// buildHotspotSummary aggregates failures by reasoner
+// buildHotspotSummary aggregates failures by bot
 func buildHotspotSummary(executions []*types.Execution) HotspotSummary {
-	type reasonerStats struct {
+	type botStats struct {
 		total      int
 		failed     int
 		errorMsgs  map[string]int
 	}
 
-	statsMap := make(map[string]*reasonerStats)
+	statsMap := make(map[string]*botStats)
 	totalFailures := 0
 
 	for _, exec := range executions {
-		if exec.ReasonerID == "" {
+		if exec.BotID == "" {
 			continue
 		}
 
-		stats, ok := statsMap[exec.ReasonerID]
+		stats, ok := statsMap[exec.BotID]
 		if !ok {
-			stats = &reasonerStats{errorMsgs: make(map[string]int)}
-			statsMap[exec.ReasonerID] = stats
+			stats = &botStats{errorMsgs: make(map[string]int)}
+			statsMap[exec.BotID] = stats
 		}
 
 		stats.total++
@@ -886,13 +886,13 @@ func buildHotspotSummary(executions []*types.Execution) HotspotSummary {
 
 	// Convert to slice and sort by failure count
 	items := make([]HotspotItem, 0, len(statsMap))
-	for reasonerID, stats := range statsMap {
+	for botID, stats := range statsMap {
 		if stats.failed == 0 {
 			continue
 		}
 
 		item := HotspotItem{
-			ReasonerID:       reasonerID,
+			BotID:       botID,
 			TotalExecutions:  stats.total,
 			FailedExecutions: stats.failed,
 		}
@@ -930,7 +930,7 @@ func buildHotspotSummary(executions []*types.Execution) HotspotSummary {
 		items = items[:10]
 	}
 
-	return HotspotSummary{TopFailingReasoners: items}
+	return HotspotSummary{TopFailingBots: items}
 }
 
 // buildActivityPatterns creates a 7x24 heatmap of execution activity
@@ -971,8 +971,8 @@ func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.
 	overview := EnhancedOverview{TotalAgents: len(agents)}
 
 	for _, agent := range agents {
-		// Count reasoners and skills
-		overview.TotalReasoners += len(agent.Reasoners)
+		// Count bots and skills
+		overview.TotalBots += len(agent.Bots)
 		overview.TotalSkills += len(agent.Skills)
 
 		isDegraded := agent.LifecycleStatus == types.AgentStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
@@ -1117,7 +1117,7 @@ func (h *DashboardHandler) buildAgentHealthSummary(ctx context.Context, agents [
 			Health:        string(agent.HealthStatus),
 			Lifecycle:     string(agent.LifecycleStatus),
 			LastHeartbeat: agent.LastHeartbeat,
-			Reasoners:     len(agent.Reasoners),
+			Bots:     len(agent.Bots),
 			Skills:        len(agent.Skills),
 		}
 
@@ -1193,7 +1193,7 @@ func buildWorkflowInsights(executions []*types.Execution, running []*types.Execu
 		if !ok {
 			aggregate = &WorkflowStat{
 				WorkflowID: id,
-				Name:       exec.ReasonerID,
+				Name:       exec.BotID,
 			}
 			workflowAggregates[id] = aggregate
 		}
@@ -1241,11 +1241,11 @@ func buildWorkflowInsights(executions []*types.Execution, running []*types.Execu
 		activeRuns = append(activeRuns, ActiveWorkflowRun{
 			ExecutionID: exec.ExecutionID,
 			WorkflowID:  exec.RunID,
-			Name:        exec.ReasonerID,
+			Name:        exec.BotID,
 			StartedAt:   exec.StartedAt,
 			ElapsedMs:   elapsed,
 			AgentNodeID: exec.AgentNodeID,
-			ReasonerID:  exec.ReasonerID,
+			BotID:  exec.BotID,
 			Status:      exec.Status,
 		})
 	}
@@ -1266,7 +1266,7 @@ func buildWorkflowInsights(executions []*types.Execution, running []*types.Execu
 		completed = append(completed, CompletedExecutionStat{
 			ExecutionID: exec.ExecutionID,
 			WorkflowID:  exec.RunID,
-			Name:        exec.ReasonerID,
+			Name:        exec.BotID,
 			DurationMs:  *exec.DurationMS,
 			CompletedAt: exec.CompletedAt,
 			Status:      exec.Status,
@@ -1306,12 +1306,12 @@ func buildIncidentItems(executions []*types.Execution, limit int) []IncidentItem
 		incidents = append(incidents, IncidentItem{
 			ExecutionID: exec.ExecutionID,
 			WorkflowID:  exec.RunID,
-			Name:        exec.ReasonerID,
+			Name:        exec.BotID,
 			Status:      exec.Status,
 			StartedAt:   exec.StartedAt,
 			CompletedAt: exec.CompletedAt,
 			AgentNodeID: exec.AgentNodeID,
-			ReasonerID:  exec.ReasonerID,
+			BotID:  exec.BotID,
 			Error:       errorMessage,
 		})
 	}

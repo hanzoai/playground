@@ -249,7 +249,7 @@ export function CompactActivityStream({ className }: CompactActivityStreamProps)
                 "hover:bg-muted/50 transition-colors duration-200",
                 "group"
               )}
-              title={`${execution.agent_name} • ${execution.reasoner_name} • ${execution.relative_time}${duration ? ` • ${duration}` : ''}`}
+              title={`${execution.agent_name} • ${execution.bot_name} • ${execution.relative_time}${duration ? ` • ${duration}` : ''}`}
             >
               {/* Status icon */}
               <StatusIcon className={cn("h-3 w-3 flex-shrink-0", theme.iconClass)} />
@@ -258,7 +258,7 @@ export function CompactActivityStream({ className }: CompactActivityStreamProps)
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-1">
                   <span className="text-xs font-medium text-foreground truncate">
-                    {execution.reasoner_name}
+                    {execution.bot_name}
                   </span>
                   <span className="text-body-small">·</span>
                   <span className="text-body-small truncate">

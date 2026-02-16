@@ -1,5 +1,5 @@
 from playground import Agent, AIConfig
-from reasoners import reasoners_router
+from bots import bots_router
 
 # Basic agent setup - works immediately
 app = Agent(
@@ -17,8 +17,8 @@ app = Agent(
     # ),
 )
 
-# Include reasoners from separate file
-app.include_router(reasoners_router)
+# Include bots from separate file
+app.include_router(bots_router)
 
 if __name__ == "__main__":
     # Auto-discover available port starting from 8000

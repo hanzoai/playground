@@ -25,7 +25,7 @@ func TestHandleStatusUpdateMarksSuccess(t *testing.T) {
 		ExecutionID: "exec-123",
 		RunID:       "run-123",
 		AgentNodeID: "agent-1",
-		ReasonerID:  "reasoner",
+		BotID:  "bot",
 		NodeID:      "agent-1",
 		Status:      types.ExecutionStatusRunning,
 		StartedAt:   now,

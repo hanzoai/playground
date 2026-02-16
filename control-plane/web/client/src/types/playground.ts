@@ -11,7 +11,7 @@ export interface AgentNode {
   invocation_url?: string; // For serverless agents
   mcp_summary?: MCPSummaryForUI;
   mcp_servers?: MCPServerHealthForUI[];
-  reasoners?: ReasonerDefinition[];
+  bots?: BotDefinition[];
   skills?: SkillDefinition[];
 }
 
@@ -26,7 +26,7 @@ export interface AgentNodeSummary {
   deployment_type?: string; // "long_running" or "serverless"
   invocation_url?: string; // For serverless agents
   mcp_summary?: MCPSummaryForUI;
-  reasoner_count: number;
+  bot_count: number;
   skill_count: number;
 }
 
@@ -258,7 +258,7 @@ export interface AgentLifecycleInfo {
   error_message?: string;
 }
 
-export interface ReasonerDefinition {
+export interface BotDefinition {
   id: string;
   name: string;
   description?: string;

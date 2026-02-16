@@ -57,7 +57,7 @@ export function EnhancedWorkflowOverview({
   const agentBreakdown = useMemo(() => {
     const map = new Map<string, { count: number; duration: number }>();
     timeline.forEach((node) => {
-      const key = node.agent_name || node.reasoner_id || 'Unassigned';
+      const key = node.agent_name || node.bot_id || 'Unassigned';
       const duration = Number(node.duration_ms) || 0;
       const current = map.get(key) || { count: 0, duration: 0 };
       current.count += 1;
@@ -110,7 +110,7 @@ export function EnhancedWorkflowOverview({
   const handleAgentFocus = useCallback(
     (agentName: string) => {
       const matching = timeline
-        .filter((node) => (node.agent_name || node.reasoner_id || 'Unassigned') === agentName)
+        .filter((node) => (node.agent_name || node.bot_id || 'Unassigned') === agentName)
         .map((node) => node.execution_id)
         .slice(0, 25);
 
@@ -271,7 +271,7 @@ export function EnhancedWorkflowOverview({
                 >
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium text-foreground truncate">
-                      {node.agent_name || node.reasoner_id || 'Workflow step'}
+                      {node.agent_name || node.bot_id || 'Workflow step'}
                     </span>
                     <Badge variant="outline" className="text-[10px] capitalize">
                       {getStatusLabel(normalized)}

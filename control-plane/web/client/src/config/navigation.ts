@@ -13,11 +13,11 @@ export const navigationSections: NavigationSection[] = [
         description: 'Real-time system overview and operational metrics'
       },
       {
-        id: 'playground',
-        label: 'Playground',
+        id: 'canvas',
+        label: 'Canvas',
         href: '/canvas',
         icon: 'bot',
-        description: 'Visual bot orchestration playground'
+        description: 'Visual bot orchestration canvas'
       },
       {
         id: 'teams',
@@ -40,11 +40,11 @@ export const navigationSections: NavigationSection[] = [
         description: 'Node infrastructure and status'
       },
       {
-        id: 'all-reasoners',
-        label: 'Reasoners',
-        href: '/reasoners/all',
+        id: 'all-bots',
+        label: 'Bots',
+        href: '/bots/all',
         icon: 'function',
-        description: 'Browse and manage all reasoners'
+        description: 'Browse and manage all bots'
       }
     ]
   },
@@ -77,7 +77,7 @@ export const navigationSections: NavigationSection[] = [
         label: 'DID Explorer',
         href: '/identity/dids',
         icon: 'identification',
-        description: 'Explore decentralized identifiers for agents and reasoners'
+        description: 'Explore decentralized identifiers for agents and bots'
       },
       {
         id: 'credentials',

@@ -16,7 +16,7 @@ interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -79,8 +79,8 @@ export function TechnicalSection({
       icon: <Chip size={14} className="text-muted-foreground" />,
     },
     {
-      label: "Reasoner ID",
-      value: node.reasoner_id,
+      label: "Bot ID",
+      value: node.bot_id,
       copyable: true,
       icon: <Settings size={14} className="text-muted-foreground" />,
     },
@@ -287,7 +287,7 @@ export function TechnicalSection({
                 Node Type
               </span>
               <span className="text-muted-foreground font-mono">
-                Reasoner Execution
+                Bot Execution
               </span>
             </div>
             <div className="flex justify-between">

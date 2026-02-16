@@ -153,10 +153,10 @@ func (s *DIDService) RegisterAgent(req *types.DIDRegistrationRequest) (*types.DI
 
 	if existingAgent != nil {
 		// Perform differential analysis
-		newReasonerIDs := extractReasonerIDs(req.Reasoners)
+		newBotIDs := extractBotIDs(req.Bots)
 		newSkillIDs := extractSkillIDs(req.Skills)
 
-		diffResult, err := s.PerformDifferentialAnalysis(req.AgentNodeID, newReasonerIDs, newSkillIDs)
+		diffResult, err := s.PerformDifferentialAnalysis(req.AgentNodeID, newBotIDs, newSkillIDs)
 		if err != nil {
 			return &types.DIDRegistrationResponse{
 				Success: false,
@@ -218,53 +218,53 @@ func (s *DIDService) handleNewRegistration(req *types.DIDRegistrationRequest) (*
 		}, nil
 	}
 
-	// Generate reasoner DIDs
-	reasonerDIDs := make(map[string]types.DIDIdentity)
-	reasonerInfos := make(map[string]types.ReasonerDIDInfo)
+	// Generate bot DIDs
+	botDIDs := make(map[string]types.DIDIdentity)
+	botInfos := make(map[string]types.BotDIDInfo)
 
-	logger.Logger.Debug().Msgf("🔍 DEBUG: Calling did_manager.register_agent() with %d reasoners and %d skills", len(req.Reasoners), len(req.Skills))
+	logger.Logger.Debug().Msgf("🔍 DEBUG: Calling did_manager.register_agent() with %d bots and %d skills", len(req.Bots), len(req.Skills))
 
-	validReasonerIndex := 0
-	for i, reasoner := range req.Reasoners {
-		// Skip reasoners with empty IDs to prevent malformed DIDs
-		if reasoner.ID == "" {
-			logger.Logger.Warn().Msgf("⚠️ Skipping reasoner at index %d with empty ID", i)
+	validBotIndex := 0
+	for i, bot := range req.Bots {
+		// Skip bots with empty IDs to prevent malformed DIDs
+		if bot.ID == "" {
+			logger.Logger.Warn().Msgf("⚠️ Skipping bot at index %d with empty ID", i)
 			continue
 		}
 
-		reasonerPath := fmt.Sprintf("m/44'/%d'/%d'/0'/%d'", agentsServerHash, agentIndex, validReasonerIndex)
-		reasonerDID, reasonerPrivKey, reasonerPubKey, err := s.generateDIDWithKeys(registry.MasterSeed, reasonerPath)
+		botPath := fmt.Sprintf("m/44'/%d'/%d'/0'/%d'", agentsServerHash, agentIndex, validBotIndex)
+		botDID, botPrivKey, botPubKey, err := s.generateDIDWithKeys(registry.MasterSeed, botPath)
 		if err != nil {
 			return &types.DIDRegistrationResponse{
 				Success: false,
-				Error:   fmt.Sprintf("failed to generate reasoner DID for %s: %v", reasoner.ID, err),
+				Error:   fmt.Sprintf("failed to generate bot DID for %s: %v", bot.ID, err),
 			}, nil
 		}
 
-		reasonerDIDs[reasoner.ID] = types.DIDIdentity{
-			DID:            reasonerDID,
-			PrivateKeyJWK:  reasonerPrivKey,
-			PublicKeyJWK:   reasonerPubKey,
-			DerivationPath: reasonerPath,
-			ComponentType:  "reasoner",
-			FunctionName:   reasoner.ID,
+		botDIDs[bot.ID] = types.DIDIdentity{
+			DID:            botDID,
+			PrivateKeyJWK:  botPrivKey,
+			PublicKeyJWK:   botPubKey,
+			DerivationPath: botPath,
+			ComponentType:  "bot",
+			FunctionName:   bot.ID,
 		}
 
-		reasonerInfos[reasoner.ID] = types.ReasonerDIDInfo{
-			DID:            reasonerDID,
-			FunctionName:   reasoner.ID,
-			PublicKeyJWK:   json.RawMessage(reasonerPubKey),
-			DerivationPath: reasonerPath,
-			Capabilities:   []string{}, // TODO: Extract from reasoner definition
+		botInfos[bot.ID] = types.BotDIDInfo{
+			DID:            botDID,
+			FunctionName:   bot.ID,
+			PublicKeyJWK:   json.RawMessage(botPubKey),
+			DerivationPath: botPath,
+			Capabilities:   []string{}, // TODO: Extract from bot definition
 			ExposureLevel:  "internal",
 			CreatedAt:      time.Now(),
 		}
 
-		validReasonerIndex++
-		logger.Logger.Debug().Msgf("🔍 Created DID for reasoner %s: %s", reasoner.ID, reasonerDID)
+		validBotIndex++
+		logger.Logger.Debug().Msgf("🔍 Created DID for bot %s: %s", bot.ID, botDID)
 	}
 
-	logger.Logger.Debug().Msgf("🔍 Successfully created %d reasoner DIDs out of %d total reasoners", len(reasonerDIDs), len(req.Reasoners))
+	logger.Logger.Debug().Msgf("🔍 Successfully created %d bot DIDs out of %d total bots", len(botDIDs), len(req.Bots))
 
 	// Generate skill DIDs
 	skillDIDs := make(map[string]types.DIDIdentity)
@@ -318,7 +318,7 @@ func (s *DIDService) handleNewRegistration(req *types.DIDRegistrationRequest) (*
 		AgentNodeID:    req.AgentNodeID,
 		PublicKeyJWK:   json.RawMessage(agentPubKey),
 		DerivationPath: agentPath,
-		Reasoners:      reasonerInfos,
+		Bots:      botInfos,
 		Skills:         skillInfos,
 		Status:         types.AgentDIDStatusActive,
 		RegisteredAt:   time.Now(),
@@ -326,7 +326,7 @@ func (s *DIDService) handleNewRegistration(req *types.DIDRegistrationRequest) (*
 
 	// Update registry
 	registry.AgentNodes[req.AgentNodeID] = agentDIDInfo
-	registry.TotalDIDs += 1 + len(req.Reasoners) + len(req.Skills)
+	registry.TotalDIDs += 1 + len(req.Bots) + len(req.Skills)
 
 	// Store updated registry
 	if err := s.registry.StoreRegistry(registry); err != nil {
@@ -345,22 +345,22 @@ func (s *DIDService) handleNewRegistration(req *types.DIDRegistrationRequest) (*
 			DerivationPath: agentPath,
 			ComponentType:  "agent",
 		},
-		ReasonerDIDs:       reasonerDIDs,
+		BotDIDs:       botDIDs,
 		SkillDIDs:          skillDIDs,
 		AgentsServerID: registry.AgentsServerID,
 	}
 
 	// Debug log the response structure
-	reasonerDIDKeys := make([]string, 0, len(reasonerDIDs))
-	for key := range reasonerDIDs {
-		reasonerDIDKeys = append(reasonerDIDKeys, key)
+	botDIDKeys := make([]string, 0, len(botDIDs))
+	for key := range botDIDs {
+		botDIDKeys = append(botDIDKeys, key)
 	}
-	logger.Logger.Debug().Msgf("🔍 DEBUG: DID registration response: {'reasoner_dids': %v, 'skill_dids': %d}", reasonerDIDKeys, len(skillDIDs))
+	logger.Logger.Debug().Msgf("🔍 DEBUG: DID registration response: {'bot_dids': %v, 'skill_dids': %d}", botDIDKeys, len(skillDIDs))
 
 	return &types.DIDRegistrationResponse{
 		Success:         true,
 		IdentityPackage: identityPackage,
-		Message:         fmt.Sprintf("Successfully registered agent %s with %d reasoners and %d skills", req.AgentNodeID, len(reasonerDIDs), len(skillDIDs)),
+		Message:         fmt.Sprintf("Successfully registered agent %s with %d bots and %d skills", req.AgentNodeID, len(botDIDs), len(skillDIDs)),
 	}, nil
 }
 
@@ -428,22 +428,22 @@ func (s *DIDService) ResolveDID(did string) (*types.DIDIdentity, error) {
 			}, nil
 		}
 
-		// Check reasoners
-		for _, reasonerInfo := range agentInfo.Reasoners {
-			if reasonerInfo.DID == did {
+		// Check bots
+		for _, botInfo := range agentInfo.Bots {
+			if botInfo.DID == did {
 				// Regenerate private key from master seed and derivation path
-				privateKeyJWK, err := s.regeneratePrivateKeyJWK(registry.MasterSeed, reasonerInfo.DerivationPath)
+				privateKeyJWK, err := s.regeneratePrivateKeyJWK(registry.MasterSeed, botInfo.DerivationPath)
 				if err != nil {
-					return nil, fmt.Errorf("failed to regenerate private key for reasoner DID %s: %w", did, err)
+					return nil, fmt.Errorf("failed to regenerate private key for bot DID %s: %w", did, err)
 				}
 
 				return &types.DIDIdentity{
-					DID:            reasonerInfo.DID,
+					DID:            botInfo.DID,
 					PrivateKeyJWK:  privateKeyJWK,
-					PublicKeyJWK:   string(reasonerInfo.PublicKeyJWK),
-					DerivationPath: reasonerInfo.DerivationPath,
-					ComponentType:  "reasoner",
-					FunctionName:   reasonerInfo.FunctionName,
+					PublicKeyJWK:   string(botInfo.PublicKeyJWK),
+					DerivationPath: botInfo.DerivationPath,
+					ComponentType:  "bot",
+					FunctionName:   botInfo.FunctionName,
 				}, nil
 			}
 		}
@@ -702,7 +702,7 @@ func (s *DIDService) BackfillExistingNodes(ctx context.Context, storageProvider 
 		// Register node with DID system
 		didReq := &types.DIDRegistrationRequest{
 			AgentNodeID: node.ID,
-			Reasoners:   node.Reasoners,
+			Bots:   node.Bots,
 			Skills:      node.Skills,
 		}
 
@@ -753,17 +753,17 @@ func (s *DIDService) GetExistingAgentDID(agentNodeID string) (*types.AgentDIDInf
 	return &agentInfo, nil
 }
 
-// PerformDifferentialAnalysis compares existing vs new reasoners/skills to determine what needs to be updated.
-func (s *DIDService) PerformDifferentialAnalysis(agentNodeID string, newReasonerIDs, newSkillIDs []string) (*types.DifferentialAnalysisResult, error) {
+// PerformDifferentialAnalysis compares existing vs new bots/skills to determine what needs to be updated.
+func (s *DIDService) PerformDifferentialAnalysis(agentNodeID string, newBotIDs, newSkillIDs []string) (*types.DifferentialAnalysisResult, error) {
 	existingAgent, err := s.GetExistingAgentDID(agentNodeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing agent: %w", err)
 	}
 
 	// Extract existing IDs
-	existingReasonerIDs := make([]string, 0, len(existingAgent.Reasoners))
-	for id := range existingAgent.Reasoners {
-		existingReasonerIDs = append(existingReasonerIDs, id)
+	existingBotIDs := make([]string, 0, len(existingAgent.Bots))
+	for id := range existingAgent.Bots {
+		existingBotIDs = append(existingBotIDs, id)
 	}
 
 	existingSkillIDs := make([]string, 0, len(existingAgent.Skills))
@@ -773,21 +773,21 @@ func (s *DIDService) PerformDifferentialAnalysis(agentNodeID string, newReasoner
 
 	// Perform set operations
 	result := &types.DifferentialAnalysisResult{
-		NewReasonerIDs:     setDifference(newReasonerIDs, existingReasonerIDs),
-		RemovedReasonerIDs: setDifference(existingReasonerIDs, newReasonerIDs),
-		UpdatedReasonerIDs: setIntersection(newReasonerIDs, existingReasonerIDs),
+		NewBotIDs:     setDifference(newBotIDs, existingBotIDs),
+		RemovedBotIDs: setDifference(existingBotIDs, newBotIDs),
+		UpdatedBotIDs: setIntersection(newBotIDs, existingBotIDs),
 		NewSkillIDs:        setDifference(newSkillIDs, existingSkillIDs),
 		RemovedSkillIDs:    setDifference(existingSkillIDs, newSkillIDs),
 		UpdatedSkillIDs:    setIntersection(newSkillIDs, existingSkillIDs),
 	}
 
-	result.RequiresUpdate = len(result.NewReasonerIDs) > 0 ||
-		len(result.RemovedReasonerIDs) > 0 ||
+	result.RequiresUpdate = len(result.NewBotIDs) > 0 ||
+		len(result.RemovedBotIDs) > 0 ||
 		len(result.NewSkillIDs) > 0 ||
 		len(result.RemovedSkillIDs) > 0
 
-	logger.Logger.Debug().Msgf("🔍 Differential analysis for agent %s: new_reasoners=%d, removed_reasoners=%d, new_skills=%d, removed_skills=%d, requires_update=%v",
-		agentNodeID, len(result.NewReasonerIDs), len(result.RemovedReasonerIDs), len(result.NewSkillIDs), len(result.RemovedSkillIDs), result.RequiresUpdate)
+	logger.Logger.Debug().Msgf("🔍 Differential analysis for agent %s: new_bots=%d, removed_bots=%d, new_skills=%d, removed_skills=%d, requires_update=%v",
+		agentNodeID, len(result.NewBotIDs), len(result.RemovedBotIDs), len(result.NewSkillIDs), len(result.RemovedSkillIDs), result.RequiresUpdate)
 
 	return result, nil
 }
@@ -824,12 +824,12 @@ func setIntersection(a, b []string) []string {
 	return result
 }
 
-// extractReasonerIDs extracts reasoner IDs from reasoner definitions.
-func extractReasonerIDs(reasoners []types.ReasonerDefinition) []string {
-	ids := make([]string, 0, len(reasoners))
-	for _, reasoner := range reasoners {
-		if reasoner.ID != "" {
-			ids = append(ids, reasoner.ID)
+// extractBotIDs extracts bot IDs from bot definitions.
+func extractBotIDs(bots []types.BotDefinition) []string {
+	ids := make([]string, 0, len(bots))
+	for _, bot := range bots {
+		if bot.ID != "" {
+			ids = append(ids, bot.ID)
 		}
 	}
 	return ids
@@ -846,11 +846,11 @@ func extractSkillIDs(skills []types.SkillDefinition) []string {
 	return ids
 }
 
-// findReasonerByID finds a reasoner definition by ID.
-func (s *DIDService) findReasonerByID(reasoners []types.ReasonerDefinition, id string) *types.ReasonerDefinition {
-	for _, reasoner := range reasoners {
-		if reasoner.ID == id {
-			return &reasoner
+// findBotByID finds a bot definition by ID.
+func (s *DIDService) findBotByID(bots []types.BotDefinition, id string) *types.BotDefinition {
+	for _, bot := range bots {
+		if bot.ID == id {
+			return &bot
 		}
 	}
 	return nil
@@ -866,19 +866,19 @@ func (s *DIDService) findSkillByID(skills []types.SkillDefinition, id string) *t
 	return nil
 }
 
-// generateReasonerPath generates a derivation path for a reasoner.
-func (s *DIDService) generateReasonerPath(agentNodeID, reasonerID string) string {
+// generateBotPath generates a derivation path for a bot.
+func (s *DIDService) generateBotPath(agentNodeID, botID string) string {
 	// Get af server ID dynamically
 	agentsServerID, err := s.getAgentsServerID()
 	if err != nil {
-		logger.Logger.Error().Err(err).Msg("Failed to get af server ID for reasoner path generation")
+		logger.Logger.Error().Err(err).Msg("Failed to get af server ID for bot path generation")
 		return ""
 	}
 
 	// Get registry to find agent index
 	registry, err := s.registry.GetRegistry(agentsServerID)
 	if err != nil {
-		logger.Logger.Error().Err(err).Msg("Failed to get registry for reasoner path generation")
+		logger.Logger.Error().Err(err).Msg("Failed to get registry for bot path generation")
 		return ""
 	}
 
@@ -894,11 +894,11 @@ func (s *DIDService) generateReasonerPath(agentNodeID, reasonerID string) string
 		agentIndex++
 	}
 
-	// Count existing reasoners to get next index
+	// Count existing bots to get next index
 	existingAgent := registry.AgentNodes[agentNodeID]
-	reasonerIndex := len(existingAgent.Reasoners)
+	botIndex := len(existingAgent.Bots)
 
-	return fmt.Sprintf("m/44'/%d'/%d'/0'/%d'", agentsServerHash, agentIndex, reasonerIndex)
+	return fmt.Sprintf("m/44'/%d'/%d'/0'/%d'", agentsServerHash, agentIndex, botIndex)
 }
 
 // generateSkillPath generates a derivation path for a skill.
@@ -945,16 +945,16 @@ func (s *DIDService) buildExistingIdentityPackage(existingAgent *types.AgentDIDI
 		agentsServerID = "unknown"
 	}
 
-	// Build reasoner DIDs map
-	reasonerDIDs := make(map[string]types.DIDIdentity)
-	for id, reasonerInfo := range existingAgent.Reasoners {
-		reasonerDIDs[id] = types.DIDIdentity{
-			DID:            reasonerInfo.DID,
+	// Build bot DIDs map
+	botDIDs := make(map[string]types.DIDIdentity)
+	for id, botInfo := range existingAgent.Bots {
+		botDIDs[id] = types.DIDIdentity{
+			DID:            botInfo.DID,
 			PrivateKeyJWK:  "", // Don't include private keys in existing package
-			PublicKeyJWK:   string(reasonerInfo.PublicKeyJWK),
-			DerivationPath: reasonerInfo.DerivationPath,
-			ComponentType:  "reasoner",
-			FunctionName:   reasonerInfo.FunctionName,
+			PublicKeyJWK:   string(botInfo.PublicKeyJWK),
+			DerivationPath: botInfo.DerivationPath,
+			ComponentType:  "bot",
+			FunctionName:   botInfo.FunctionName,
 		}
 	}
 
@@ -979,7 +979,7 @@ func (s *DIDService) buildExistingIdentityPackage(existingAgent *types.AgentDIDI
 			DerivationPath: existingAgent.DerivationPath,
 			ComponentType:  "agent",
 		},
-		ReasonerDIDs:       reasonerDIDs,
+		BotDIDs:       botDIDs,
 		SkillDIDs:          skillDIDs,
 		AgentsServerID: agentsServerID,
 	}
@@ -988,10 +988,10 @@ func (s *DIDService) buildExistingIdentityPackage(existingAgent *types.AgentDIDI
 // handlePartialRegistration handles partial registration for existing agents.
 func (s *DIDService) handlePartialRegistration(req *types.DIDRegistrationRequest, diffResult *types.DifferentialAnalysisResult) (*types.DIDRegistrationResponse, error) {
 	// Handle deregistration of removed components first
-	if len(diffResult.RemovedReasonerIDs) > 0 || len(diffResult.RemovedSkillIDs) > 0 {
+	if len(diffResult.RemovedBotIDs) > 0 || len(diffResult.RemovedSkillIDs) > 0 {
 		deregReq := &types.ComponentDeregistrationRequest{
 			AgentNodeID:         req.AgentNodeID,
-			ReasonerIDsToRemove: diffResult.RemovedReasonerIDs,
+			BotIDsToRemove: diffResult.RemovedBotIDs,
 			SkillIDsToRemove:    diffResult.RemovedSkillIDs,
 		}
 
@@ -1014,14 +1014,14 @@ func (s *DIDService) handlePartialRegistration(req *types.DIDRegistrationRequest
 	}
 
 	// Handle partial registration of new components
-	if len(diffResult.NewReasonerIDs) > 0 || len(diffResult.NewSkillIDs) > 0 {
+	if len(diffResult.NewBotIDs) > 0 || len(diffResult.NewSkillIDs) > 0 {
 		partialReq := &types.PartialDIDRegistrationRequest{
 			AgentNodeID:        req.AgentNodeID,
-			NewReasonerIDs:     diffResult.NewReasonerIDs,
+			NewBotIDs:     diffResult.NewBotIDs,
 			NewSkillIDs:        diffResult.NewSkillIDs,
-			UpdatedReasonerIDs: diffResult.UpdatedReasonerIDs,
+			UpdatedBotIDs: diffResult.UpdatedBotIDs,
 			UpdatedSkillIDs:    diffResult.UpdatedSkillIDs,
-			AllReasoners:       req.Reasoners,
+			AllBots:       req.Bots,
 			AllSkills:          req.Skills,
 		}
 
@@ -1040,7 +1040,7 @@ func (s *DIDService) handlePartialRegistration(req *types.DIDRegistrationRequest
 	identityPackage := s.buildExistingIdentityPackage(existingAgent)
 	return &types.DIDRegistrationResponse{
 		Success:         true,
-		Message:         fmt.Sprintf("Registration updated: removed %d reasoners, %d skills", len(diffResult.RemovedReasonerIDs), len(diffResult.RemovedSkillIDs)),
+		Message:         fmt.Sprintf("Registration updated: removed %d bots, %d skills", len(diffResult.RemovedBotIDs), len(diffResult.RemovedSkillIDs)),
 		IdentityPackage: identityPackage,
 	}, nil
 }
@@ -1088,56 +1088,56 @@ func (s *DIDService) PartialRegisterAgent(req *types.PartialDIDRegistrationReque
 		}, nil
 	}
 
-	// Generate DIDs for new reasoners only
-	newReasonerDIDs := make(map[string]types.DIDIdentity)
-	newReasonerInfos := make(map[string]types.ReasonerDIDInfo)
+	// Generate DIDs for new bots only
+	newBotDIDs := make(map[string]types.DIDIdentity)
+	newBotInfos := make(map[string]types.BotDIDInfo)
 
-	for _, reasonerID := range req.NewReasonerIDs {
-		reasoner := s.findReasonerByID(req.AllReasoners, reasonerID)
-		if reasoner == nil {
+	for _, botID := range req.NewBotIDs {
+		bot := s.findBotByID(req.AllBots, botID)
+		if bot == nil {
 			return &types.DIDRegistrationResponse{
 				Success: false,
-				Error:   fmt.Sprintf("reasoner %s not found in request", reasonerID),
+				Error:   fmt.Sprintf("bot %s not found in request", botID),
 			}, nil
 		}
 
-		// Generate DID for new reasoner
-		reasonerPath := s.generateReasonerPath(req.AgentNodeID, reasonerID)
-		if reasonerPath == "" {
+		// Generate DID for new bot
+		botPath := s.generateBotPath(req.AgentNodeID, botID)
+		if botPath == "" {
 			return &types.DIDRegistrationResponse{
 				Success: false,
-				Error:   fmt.Sprintf("failed to generate derivation path for reasoner %s", reasonerID),
+				Error:   fmt.Sprintf("failed to generate derivation path for bot %s", botID),
 			}, nil
 		}
 
-		reasonerDID, privKey, pubKey, err := s.generateDIDWithKeys(registry.MasterSeed, reasonerPath)
+		botDID, privKey, pubKey, err := s.generateDIDWithKeys(registry.MasterSeed, botPath)
 		if err != nil {
 			return &types.DIDRegistrationResponse{
 				Success: false,
-				Error:   fmt.Sprintf("failed to generate DID for reasoner %s: %v", reasonerID, err),
+				Error:   fmt.Sprintf("failed to generate DID for bot %s: %v", botID, err),
 			}, nil
 		}
 
-		newReasonerDIDs[reasonerID] = types.DIDIdentity{
-			DID:            reasonerDID,
+		newBotDIDs[botID] = types.DIDIdentity{
+			DID:            botDID,
 			PrivateKeyJWK:  privKey,
 			PublicKeyJWK:   pubKey,
-			DerivationPath: reasonerPath,
-			ComponentType:  "reasoner",
-			FunctionName:   reasonerID,
+			DerivationPath: botPath,
+			ComponentType:  "bot",
+			FunctionName:   botID,
 		}
 
-		newReasonerInfos[reasonerID] = types.ReasonerDIDInfo{
-			DID:            reasonerDID,
-			FunctionName:   reasonerID,
+		newBotInfos[botID] = types.BotDIDInfo{
+			DID:            botDID,
+			FunctionName:   botID,
 			PublicKeyJWK:   json.RawMessage(pubKey),
-			DerivationPath: reasonerPath,
+			DerivationPath: botPath,
 			Capabilities:   []string{}, // Default empty capabilities
 			ExposureLevel:  "internal",
 			CreatedAt:      time.Now(),
 		}
 
-		logger.Logger.Debug().Msgf("🔍 Generated new DID for reasoner %s: %s", reasonerID, reasonerDID)
+		logger.Logger.Debug().Msgf("🔍 Generated new DID for bot %s: %s", botID, botDID)
 	}
 
 	// Generate DIDs for new skills
@@ -1193,8 +1193,8 @@ func (s *DIDService) PartialRegisterAgent(req *types.PartialDIDRegistrationReque
 	}
 
 	// Update existing agent info with new components
-	for id, info := range newReasonerInfos {
-		existingAgent.Reasoners[id] = info
+	for id, info := range newBotInfos {
+		existingAgent.Bots[id] = info
 	}
 	for id, info := range newSkillInfos {
 		existingAgent.Skills[id] = info
@@ -1202,7 +1202,7 @@ func (s *DIDService) PartialRegisterAgent(req *types.PartialDIDRegistrationReque
 
 	// Update registry
 	registry.AgentNodes[req.AgentNodeID] = existingAgent
-	registry.TotalDIDs += len(newReasonerDIDs) + len(newSkillDIDs)
+	registry.TotalDIDs += len(newBotDIDs) + len(newSkillDIDs)
 
 	if err := s.registry.StoreRegistry(registry); err != nil {
 		return &types.DIDRegistrationResponse{
@@ -1220,18 +1220,18 @@ func (s *DIDService) PartialRegisterAgent(req *types.PartialDIDRegistrationReque
 			DerivationPath: existingAgent.DerivationPath,
 			ComponentType:  "agent",
 		},
-		ReasonerDIDs:       newReasonerDIDs,
+		BotDIDs:       newBotDIDs,
 		SkillDIDs:          newSkillDIDs,
 		AgentsServerID: registry.AgentsServerID,
 	}
 
-	logger.Logger.Debug().Msgf("✅ Partial registration successful for agent %s: %d new reasoners, %d new skills",
-		req.AgentNodeID, len(newReasonerDIDs), len(newSkillDIDs))
+	logger.Logger.Debug().Msgf("✅ Partial registration successful for agent %s: %d new bots, %d new skills",
+		req.AgentNodeID, len(newBotDIDs), len(newSkillDIDs))
 
 	return &types.DIDRegistrationResponse{
 		Success:         true,
 		IdentityPackage: identityPackage,
-		Message:         fmt.Sprintf("Partial registration successful: %d new reasoners, %d new skills", len(newReasonerDIDs), len(newSkillDIDs)),
+		Message:         fmt.Sprintf("Partial registration successful: %d new bots, %d new skills", len(newBotDIDs), len(newSkillDIDs)),
 	}, nil
 }
 
@@ -1280,14 +1280,14 @@ func (s *DIDService) DeregisterComponents(req *types.ComponentDeregistrationRequ
 
 	removedCount := 0
 
-	// Remove reasoners
-	for _, reasonerID := range req.ReasonerIDsToRemove {
-		if _, exists := existingAgent.Reasoners[reasonerID]; exists {
-			delete(existingAgent.Reasoners, reasonerID)
+	// Remove bots
+	for _, botID := range req.BotIDsToRemove {
+		if _, exists := existingAgent.Bots[botID]; exists {
+			delete(existingAgent.Bots, botID)
 			removedCount++
-			logger.Logger.Debug().Msgf("🗑️ Removed reasoner DID: %s from agent %s", reasonerID, req.AgentNodeID)
+			logger.Logger.Debug().Msgf("🗑️ Removed bot DID: %s from agent %s", botID, req.AgentNodeID)
 		} else {
-			logger.Logger.Warn().Msgf("⚠️ Reasoner %s not found in agent %s, skipping removal", reasonerID, req.AgentNodeID)
+			logger.Logger.Warn().Msgf("⚠️ Bot %s not found in agent %s, skipping removal", botID, req.AgentNodeID)
 		}
 	}
 

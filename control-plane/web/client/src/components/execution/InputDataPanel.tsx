@@ -9,7 +9,7 @@ import {
   type SegmentedControlOption,
 } from "../ui/segmented-control";
 import { JsonViewer } from "./JsonViewer";
-import { EnhancedJsonViewer } from "../reasoners/EnhancedJsonViewer";
+import { EnhancedJsonViewer } from "../bots/EnhancedJsonViewer";
 
 interface InputDataPanelProps {
   execution: WorkflowExecution;

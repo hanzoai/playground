@@ -24,7 +24,7 @@ func TestExecuteHandler_Success(t *testing.T) {
 	var requestCount int32
 	agentServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&requestCount, 1)
-		require.Equal(t, "/reasoners/reasoner-a", r.URL.Path)
+		require.Equal(t, "/bots/bot-a", r.URL.Path)
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		defer r.Body.Close()
@@ -41,7 +41,7 @@ func TestExecuteHandler_Success(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -50,7 +50,7 @@ func TestExecuteHandler_Success(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.reasoner-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.bot-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -93,7 +93,7 @@ func TestExecuteHandler_AgentError(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -102,7 +102,7 @@ func TestExecuteHandler_AgentError(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.reasoner-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.bot-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -128,7 +128,7 @@ func TestExecuteHandler_TargetNotFound(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -168,7 +168,7 @@ func TestExecuteAsyncHandler_ReturnsAccepted(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -177,7 +177,7 @@ func TestExecuteAsyncHandler_ReturnsAccepted(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/execute/async/:target", ExecuteAsyncHandler(store, payloads, nil, 90*time.Second))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.reasoner-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.bot-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -213,7 +213,7 @@ func TestExecuteAsyncHandler_InvalidJSON(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/execute/async/:target", ExecuteAsyncHandler(store, payloads, nil, 90*time.Second))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.reasoner-a", strings.NewReader("not-json"))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.bot-a", strings.NewReader("not-json"))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -233,7 +233,7 @@ func TestGetExecutionStatusHandler_ReturnsResult(t *testing.T) {
 		ExecutionID:   "exec-1",
 		RunID:         "run-1",
 		AgentNodeID:   "node-1",
-		ReasonerID:    "reasoner-a",
+		BotID:    "bot-a",
 		Status:        types.ExecutionStatusSucceeded,
 		ResultPayload: result,
 		ResultURI:     ptrString("payload://result"),

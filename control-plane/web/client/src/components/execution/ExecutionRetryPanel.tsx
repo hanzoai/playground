@@ -25,9 +25,9 @@ interface ExecutionRetryPanelProps {
 }
 
 function generateCurlCommand(execution: WorkflowExecution): string {
-  // Use the correct API format: nodeid.reasonerid
+  // Use the correct API format: nodeid.botid
   const baseUrl = window.location.origin.replace('/ui', ''); // Remove /ui if present
-  const target = `${execution.agent_node_id}.${execution.reasoner_id}`;
+  const target = `${execution.agent_node_id}.${execution.bot_id}`;
   const apiUrl = `${baseUrl}/api/v1/execute/${target}`;
 
   const payload = {
@@ -45,7 +45,7 @@ function generateCurlCommand(execution: WorkflowExecution): string {
 
 function generatePythonCode(execution: WorkflowExecution): string {
   const baseUrl = window.location.origin.replace('/ui', ''); // Remove /ui if present
-  const target = `${execution.agent_node_id}.${execution.reasoner_id}`;
+  const target = `${execution.agent_node_id}.${execution.bot_id}`;
   const apiUrl = `${baseUrl}/api/v1/execute/${target}`;
 
   const payload = {
@@ -109,9 +109,9 @@ export function ExecutionRetryPanel({ execution }: ExecutionRetryPanelProps) {
     setRetryResult(null);
 
     try {
-      // Use the correct API format: nodeid.reasonerid
+      // Use the correct API format: nodeid.botid
       const baseUrl = window.location.origin.replace('/ui', '');
-      const target = `${execution.agent_node_id}.${execution.reasoner_id}`;
+      const target = `${execution.agent_node_id}.${execution.bot_id}`;
       const apiUrl = `${baseUrl}/api/v1/execute/${target}`;
 
       const payload = {
@@ -189,7 +189,7 @@ export function ExecutionRetryPanel({ execution }: ExecutionRetryPanelProps) {
 
           <div className="flex items-center gap-2 text-body-small ml-auto">
             <Badge variant="secondary" className="text-xs">
-              {execution.agent_node_id}.{execution.reasoner_id}
+              {execution.agent_node_id}.{execution.bot_id}
             </Badge>
             {!hasInputData && (
               <div
@@ -304,7 +304,7 @@ export function ExecutionRetryPanel({ execution }: ExecutionRetryPanelProps) {
         <div className="pt-4 border-t border-border/40">
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="text-muted-foreground">Context:</span>
-            <Badge variant="outline">Target: {execution.agent_node_id}.{execution.reasoner_id}</Badge>
+            <Badge variant="outline">Target: {execution.agent_node_id}.{execution.bot_id}</Badge>
             {execution.session_id && (
               <Badge variant="outline">Session: {execution.session_id.slice(0, 8)}...</Badge>
             )}

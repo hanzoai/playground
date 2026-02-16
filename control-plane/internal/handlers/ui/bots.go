@@ -15,29 +15,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ReasonersHandler provides handlers for UI-related reasoner operations.
-type ReasonersHandler struct {
+// BotsHandler provides handlers for UI-related bot operations.
+type BotsHandler struct {
 	storage storage.StorageProvider
 }
 
-// NewReasonersHandler creates a new ReasonersHandler.
-func NewReasonersHandler(storageProvider storage.StorageProvider) *ReasonersHandler {
-	return &ReasonersHandler{storage: storageProvider}
+// NewBotsHandler creates a new BotsHandler.
+func NewBotsHandler(storageProvider storage.StorageProvider) *BotsHandler {
+	return &BotsHandler{storage: storageProvider}
 }
 
-// ReasonerWithNode represents a reasoner with its associated node information.
-type ReasonerWithNode struct {
-	// Reasoner identification
-	ReasonerID  string `json:"reasoner_id"` // Format: "node_id.reasoner_id"
+// BotWithNode represents a bot with its associated node information.
+type BotWithNode struct {
+	// Bot identification
+	BotID  string `json:"bot_id"` // Format: "node_id.bot_id"
 	Name        string `json:"name"`        // Human-readable name
-	Description string `json:"description"` // Reasoner description
+	Description string `json:"description"` // Bot description
 
 	// Node context
 	NodeID      string             `json:"node_id"`
 	NodeStatus  types.HealthStatus `json:"node_status"`
 	NodeVersion string             `json:"node_version"`
 
-	// Reasoner details
+	// Bot details
 	InputSchema  interface{}        `json:"input_schema"`
 	OutputSchema interface{}        `json:"output_schema"`
 	MemoryConfig types.MemoryConfig `json:"memory_config"`
@@ -53,20 +53,20 @@ type ReasonerWithNode struct {
 	LastUpdated time.Time `json:"last_updated"`
 }
 
-// ReasonersResponse represents the response for the all reasoners endpoint.
-type ReasonersResponse struct {
-	Reasoners    []ReasonerWithNode `json:"reasoners"`
+// BotsResponse represents the response for the all bots endpoint.
+type BotsResponse struct {
+	Bots    []BotWithNode `json:"bots"`
 	Total        int                `json:"total"`
 	OnlineCount  int                `json:"online_count"`
 	OfflineCount int                `json:"offline_count"`
 	NodesCount   int                `json:"nodes_count"`
 }
 
-// GetAllReasonersHandler handles requests for all reasoners across all nodes.
-func (h *ReasonersHandler) GetAllReasonersHandler(c *gin.Context) {
+// GetAllBotsHandler handles requests for all bots across all nodes.
+func (h *BotsHandler) GetAllBotsHandler(c *gin.Context) {
 	// Parse query parameters
 	statusFilter := c.Query("status") // "online", "offline", "all" (default: "all")
-	searchTerm := c.Query("search")   // Search in reasoner names/descriptions
+	searchTerm := c.Query("search")   // Search in bot names/descriptions
 	limitStr := c.Query("limit")      // Pagination limit
 	offsetStr := c.Query("offset")    // Pagination offset
 
@@ -99,50 +99,50 @@ func (h *ReasonersHandler) GetAllReasonersHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	nodes, err := h.storage.ListAgents(ctx, filters)
 	if err != nil {
-		fmt.Printf("❌ Error listing agents for reasoners: %v\n", err)
+		fmt.Printf("❌ Error listing agents for bots: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve nodes"})
 		return
 	}
 
-	fmt.Printf("📊 Found %d nodes for reasoner aggregation\n", len(nodes))
+	fmt.Printf("📊 Found %d nodes for bot aggregation\n", len(nodes))
 
-	// Aggregate reasoners from all nodes
-	var allReasoners []ReasonerWithNode
+	// Aggregate bots from all nodes
+	var allBots []BotWithNode
 	onlineCount := 0
 	offlineCount := 0
 
 	// Ensure we always have a valid slice
-	if allReasoners == nil {
-		allReasoners = make([]ReasonerWithNode, 0)
+	if allBots == nil {
+		allBots = make([]BotWithNode, 0)
 	}
 
 	for _, node := range nodes {
-		fmt.Printf("  Processing node %s with %d reasoners (status: %s)\n",
-			node.ID, len(node.Reasoners), node.HealthStatus)
+		fmt.Printf("  Processing node %s with %d bots (status: %s)\n",
+			node.ID, len(node.Bots), node.HealthStatus)
 
-		for _, reasoner := range node.Reasoners {
-			// Create full reasoner ID
-			fullReasonerID := fmt.Sprintf("%s.%s", node.ID, reasoner.ID)
+		for _, bot := range node.Bots {
+			// Create full bot ID
+			fullBotID := fmt.Sprintf("%s.%s", node.ID, bot.ID)
 
-			// Extract name from reasoner ID (use ID as name for now)
-			name := reasoner.ID
-			description := fmt.Sprintf("Reasoner %s from node %s", reasoner.ID, node.ID)
+			// Extract name from bot ID (use ID as name for now)
+			name := bot.ID
+			description := fmt.Sprintf("Bot %s from node %s", bot.ID, node.ID)
 
-			// DIAGNOSTIC LOG: Track reasoner status determination
-			fmt.Printf("🔍 REASONER_STATUS_DEBUG: Reasoner %s - NodeHealth: %s, NodeLifecycle: %s, LastHeartbeat: %s\n",
-				fullReasonerID, node.HealthStatus, node.LifecycleStatus, node.LastHeartbeat.Format(time.RFC3339))
+			// DIAGNOSTIC LOG: Track bot status determination
+			fmt.Printf("🔍 BOT_STATUS_DEBUG: Bot %s - NodeHealth: %s, NodeLifecycle: %s, LastHeartbeat: %s\n",
+				fullBotID, node.HealthStatus, node.LifecycleStatus, node.LastHeartbeat.Format(time.RFC3339))
 
-			reasonerWithNode := ReasonerWithNode{
-				ReasonerID:   fullReasonerID,
+			botWithNode := BotWithNode{
+				BotID:   fullBotID,
 				Name:         name,
 				Description:  description,
 				NodeID:       node.ID,
 				NodeStatus:   node.HealthStatus,
 				NodeVersion:  node.Version,
-				InputSchema:  reasoner.InputSchema,
-				OutputSchema: reasoner.OutputSchema,
-				MemoryConfig: reasoner.MemoryConfig,
-				Tags:         reasoner.Tags,
+				InputSchema:  bot.InputSchema,
+				OutputSchema: bot.OutputSchema,
+				MemoryConfig: bot.MemoryConfig,
+				Tags:         bot.Tags,
 				LastUpdated:  node.LastHeartbeat,
 			}
 
@@ -151,7 +151,7 @@ func (h *ReasonersHandler) GetAllReasonersHandler(c *gin.Context) {
 				searchLower := strings.ToLower(searchTerm)
 				if !strings.Contains(strings.ToLower(name), searchLower) &&
 					!strings.Contains(strings.ToLower(description), searchLower) &&
-					!strings.Contains(strings.ToLower(reasoner.ID), searchLower) {
+					!strings.Contains(strings.ToLower(bot.ID), searchLower) {
 					continue
 				}
 			}
@@ -163,30 +163,30 @@ func (h *ReasonersHandler) GetAllReasonersHandler(c *gin.Context) {
 				offlineCount++
 			}
 
-			allReasoners = append(allReasoners, reasonerWithNode)
+			allBots = append(allBots, botWithNode)
 		}
 	}
 
 	// Apply status filter after aggregation (for accurate counts)
-	var filteredReasoners []ReasonerWithNode
+	var filteredBots []BotWithNode
 	if statusFilter == "online" {
-		for _, reasoner := range allReasoners {
-			if reasoner.NodeStatus == types.HealthStatusActive {
-				filteredReasoners = append(filteredReasoners, reasoner)
+		for _, bot := range allBots {
+			if bot.NodeStatus == types.HealthStatusActive {
+				filteredBots = append(filteredBots, bot)
 			}
 		}
 	} else if statusFilter == "offline" {
-		for _, reasoner := range allReasoners {
-			if reasoner.NodeStatus != types.HealthStatusActive {
-				filteredReasoners = append(filteredReasoners, reasoner)
+		for _, bot := range allBots {
+			if bot.NodeStatus != types.HealthStatusActive {
+				filteredBots = append(filteredBots, bot)
 			}
 		}
 	} else {
-		filteredReasoners = allReasoners
+		filteredBots = allBots
 	}
 
 	// Apply pagination
-	total := len(filteredReasoners)
+	total := len(filteredBots)
 	start := offset
 	end := offset + limit
 
@@ -197,13 +197,13 @@ func (h *ReasonersHandler) GetAllReasonersHandler(c *gin.Context) {
 		end = total
 	}
 
-	paginatedReasoners := filteredReasoners[start:end]
+	paginatedBots := filteredBots[start:end]
 
-	fmt.Printf("📋 Returning %d reasoners (total: %d, online: %d, offline: %d) from %d nodes\n",
-		len(paginatedReasoners), total, onlineCount, offlineCount, len(nodes))
+	fmt.Printf("📋 Returning %d bots (total: %d, online: %d, offline: %d) from %d nodes\n",
+		len(paginatedBots), total, onlineCount, offlineCount, len(nodes))
 
-	response := ReasonersResponse{
-		Reasoners:    paginatedReasoners,
+	response := BotsResponse{
+		Bots:    paginatedBots,
 		Total:        total,
 		OnlineCount:  onlineCount,
 		OfflineCount: offlineCount,
@@ -213,23 +213,23 @@ func (h *ReasonersHandler) GetAllReasonersHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetReasonerDetailsHandler handles requests for detailed information about a specific reasoner.
-func (h *ReasonersHandler) GetReasonerDetailsHandler(c *gin.Context) {
-	reasonerID := c.Param("reasonerId")
-	if reasonerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "reasoner_id is required"})
+// GetBotDetailsHandler handles requests for detailed information about a specific bot.
+func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
+	botID := c.Param("botId")
+	if botID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid reasoner_id format, expected 'node_id.reasoner_id'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
 		return
 	}
 
 	nodeID := parts[0]
-	localReasonerID := parts[1]
+	localBotID := parts[1]
 
 	// Get the node
 	ctx := c.Request.Context()
@@ -239,41 +239,41 @@ func (h *ReasonersHandler) GetReasonerDetailsHandler(c *gin.Context) {
 		return
 	}
 
-	// Find the reasoner
-	var foundReasoner *types.ReasonerDefinition
-	for _, reasoner := range node.Reasoners {
-		if reasoner.ID == localReasonerID {
-			foundReasoner = &reasoner
+	// Find the bot
+	var foundBot *types.BotDefinition
+	for _, bot := range node.Bots {
+		if bot.ID == localBotID {
+			foundBot = &bot
 			break
 		}
 	}
 
-	if foundReasoner == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "reasoner not found"})
+	if foundBot == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "bot not found"})
 		return
 	}
 
 	// Create detailed response
-	reasonerDetails := ReasonerWithNode{
-		ReasonerID:   reasonerID,
-		Name:         foundReasoner.ID,
-		Description:  fmt.Sprintf("Reasoner %s from node %s", foundReasoner.ID, nodeID),
+	botDetails := BotWithNode{
+		BotID:   botID,
+		Name:         foundBot.ID,
+		Description:  fmt.Sprintf("Bot %s from node %s", foundBot.ID, nodeID),
 		NodeID:       nodeID,
 		NodeStatus:   node.HealthStatus,
 		NodeVersion:  node.Version,
-		InputSchema:  foundReasoner.InputSchema,
-		OutputSchema: foundReasoner.OutputSchema,
-		MemoryConfig: foundReasoner.MemoryConfig,
-		Tags:         foundReasoner.Tags,
+		InputSchema:  foundBot.InputSchema,
+		OutputSchema: foundBot.OutputSchema,
+		MemoryConfig: foundBot.MemoryConfig,
+		Tags:         foundBot.Tags,
 		LastUpdated:  node.LastHeartbeat,
 	}
 
-	fmt.Printf("📋 Retrieved details for reasoner %s\n", reasonerID)
+	fmt.Printf("📋 Retrieved details for bot %s\n", botID)
 
-	c.JSON(http.StatusOK, reasonerDetails)
+	c.JSON(http.StatusOK, botDetails)
 }
 
-// PerformanceMetrics represents performance data for a reasoner
+// PerformanceMetrics represents performance data for a bot
 type PerformanceMetrics struct {
 	AvgResponseTimeMs int               `json:"avg_response_time_ms"`
 	SuccessRate       float64           `json:"success_rate"`
@@ -319,41 +319,41 @@ type ExecutionTemplate struct {
 	CreatedAt   time.Time              `json:"created_at"`
 }
 
-// GetPerformanceMetricsHandler handles requests for reasoner performance metrics
-func (h *ReasonersHandler) GetPerformanceMetricsHandler(c *gin.Context) {
-	reasonerID := c.Param("reasonerId")
-	if reasonerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "reasoner_id is required"})
+// GetPerformanceMetricsHandler handles requests for bot performance metrics
+func (h *BotsHandler) GetPerformanceMetricsHandler(c *gin.Context) {
+	botID := c.Param("botId")
+	if botID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid reasoner_id format, expected 'node_id.reasoner_id'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
 		return
 	}
 
 	// Get real performance metrics from storage
 	ctx := c.Request.Context()
-	metrics, err := h.storage.GetReasonerPerformanceMetrics(ctx, reasonerID)
+	metrics, err := h.storage.GetBotPerformanceMetrics(ctx, botID)
 	if err != nil {
-		fmt.Printf("❌ Error getting performance metrics for reasoner %s: %v\n", reasonerID, err)
+		fmt.Printf("❌ Error getting performance metrics for bot %s: %v\n", botID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve performance metrics"})
 		return
 	}
 
-	fmt.Printf("📊 Retrieved performance metrics for reasoner %s: %d executions, %.2f%% success rate\n",
-		reasonerID, metrics.TotalExecutions, metrics.SuccessRate*100)
+	fmt.Printf("📊 Retrieved performance metrics for bot %s: %d executions, %.2f%% success rate\n",
+		botID, metrics.TotalExecutions, metrics.SuccessRate*100)
 
 	c.JSON(http.StatusOK, metrics)
 }
 
-// GetExecutionHistoryHandler handles requests for reasoner execution history
-func (h *ReasonersHandler) GetExecutionHistoryHandler(c *gin.Context) {
-	reasonerID := c.Param("reasonerId")
-	if reasonerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "reasoner_id is required"})
+// GetExecutionHistoryHandler handles requests for bot execution history
+func (h *BotsHandler) GetExecutionHistoryHandler(c *gin.Context) {
+	botID := c.Param("botId")
+	if botID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
 
@@ -371,40 +371,40 @@ func (h *ReasonersHandler) GetExecutionHistoryHandler(c *gin.Context) {
 		limit = 20
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid reasoner_id format, expected 'node_id.reasoner_id'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
 		return
 	}
 
 	// Get real execution history from storage
 	ctx := c.Request.Context()
-	history, err := h.storage.GetReasonerExecutionHistory(ctx, reasonerID, page, limit)
+	history, err := h.storage.GetBotExecutionHistory(ctx, botID, page, limit)
 	if err != nil {
-		fmt.Printf("❌ Error getting execution history for reasoner %s: %v\n", reasonerID, err)
+		fmt.Printf("❌ Error getting execution history for bot %s: %v\n", botID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve execution history"})
 		return
 	}
 
-	fmt.Printf("📋 Retrieved execution history for reasoner %s: %d executions (page %d, limit %d)\n",
-		reasonerID, len(history.Executions), page, limit)
+	fmt.Printf("📋 Retrieved execution history for bot %s: %d executions (page %d, limit %d)\n",
+		botID, len(history.Executions), page, limit)
 
 	c.JSON(http.StatusOK, history)
 }
 
-// GetExecutionTemplatesHandler handles requests for reasoner execution templates
-func (h *ReasonersHandler) GetExecutionTemplatesHandler(c *gin.Context) {
-	reasonerID := c.Param("reasonerId")
-	if reasonerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "reasoner_id is required"})
+// GetExecutionTemplatesHandler handles requests for bot execution templates
+func (h *BotsHandler) GetExecutionTemplatesHandler(c *gin.Context) {
+	botID := c.Param("botId")
+	if botID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid reasoner_id format, expected 'node_id.reasoner_id'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
 		return
 	}
 
@@ -431,17 +431,17 @@ func (h *ReasonersHandler) GetExecutionTemplatesHandler(c *gin.Context) {
 }
 
 // SaveExecutionTemplateHandler handles saving new execution templates
-func (h *ReasonersHandler) SaveExecutionTemplateHandler(c *gin.Context) {
-	reasonerID := c.Param("reasonerId")
-	if reasonerID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "reasoner_id is required"})
+func (h *BotsHandler) SaveExecutionTemplateHandler(c *gin.Context) {
+	botID := c.Param("botId")
+	if botID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid reasoner_id format, expected 'node_id.reasoner_id'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
 		return
 	}
 
@@ -469,9 +469,9 @@ func (h *ReasonersHandler) SaveExecutionTemplateHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, savedTemplate)
 }
 
-// StreamReasonerEventsHandler handles reasoner event streaming
-// GET /api/ui/v1/reasoners/events
-func (h *ReasonersHandler) StreamReasonerEventsHandler(c *gin.Context) {
+// StreamBotEventsHandler handles bot event streaming
+// GET /api/ui/v1/bots/events
+func (h *BotsHandler) StreamBotEventsHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
@@ -479,16 +479,16 @@ func (h *ReasonersHandler) StreamReasonerEventsHandler(c *gin.Context) {
 	c.Header("Access-Control-Allow-Headers", "Cache-Control")
 
 	// Generate unique subscriber ID
-	subscriberID := fmt.Sprintf("reasoner_sse_%d_%s", time.Now().UnixNano(), c.ClientIP())
+	subscriberID := fmt.Sprintf("bot_sse_%d_%s", time.Now().UnixNano(), c.ClientIP())
 
-	// Subscribe to reasoner events
-	eventChan := events.GlobalReasonerEventBus.Subscribe(subscriberID)
-	defer events.GlobalReasonerEventBus.Unsubscribe(subscriberID)
+	// Subscribe to bot events
+	eventChan := events.GlobalBotEventBus.Subscribe(subscriberID)
+	defer events.GlobalBotEventBus.Unsubscribe(subscriberID)
 
 	// Send initial connection confirmation
 	initialEvent := map[string]interface{}{
 		"type":      "connected",
-		"message":   "Reasoner events stream connected",
+		"message":   "Bot events stream connected",
 		"timestamp": time.Now().Format(time.RFC3339),
 	}
 
@@ -505,13 +505,13 @@ func (h *ReasonersHandler) StreamReasonerEventsHandler(c *gin.Context) {
 	heartbeatTicker := time.NewTicker(30 * time.Second)
 	defer heartbeatTicker.Stop()
 
-	fmt.Printf("🔄 Reasoner SSE client connected: %s\n", subscriberID)
+	fmt.Printf("🔄 Bot SSE client connected: %s\n", subscriberID)
 
 	for {
 		select {
 		case <-ctx.Done():
 			// Client disconnected
-			fmt.Printf("🔌 Reasoner SSE client disconnected: %s\n", subscriberID)
+			fmt.Printf("🔌 Bot SSE client disconnected: %s\n", subscriberID)
 			return
 		case <-heartbeatTicker.C:
 			// Send heartbeat
@@ -527,7 +527,7 @@ func (h *ReasonersHandler) StreamReasonerEventsHandler(c *gin.Context) {
 		case event, ok := <-eventChan:
 			if !ok {
 				// Channel closed
-				fmt.Printf("📡 Reasoner SSE channel closed for: %s\n", subscriberID)
+				fmt.Printf("📡 Bot SSE channel closed for: %s\n", subscriberID)
 				return
 			}
 
@@ -536,7 +536,7 @@ func (h *ReasonersHandler) StreamReasonerEventsHandler(c *gin.Context) {
 				if !writeSSE(c, []byte(eventJSON)) {
 					return
 				}
-				fmt.Printf("📤 Sent reasoner event %s to client %s\n", event.Type, subscriberID)
+				fmt.Printf("📤 Sent bot event %s to client %s\n", event.Type, subscriberID)
 			}
 		}
 	}

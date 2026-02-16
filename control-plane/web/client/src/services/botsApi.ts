@@ -1,4 +1,4 @@
-import type { ReasonersResponse, ReasonerWithNode, ReasonerFilters } from '../types/reasoners';
+import type { BotsResponse, BotWithNode, BotFilters } from '../types/bots';
 import type {
   ExecutionRequest,
   ExecutionResponse,
@@ -20,21 +20,21 @@ const withAuthHeaders = (headers?: HeadersInit) => {
   return merged;
 };
 
-export class ReasonersApiError extends Error {
+export class BotsApiError extends Error {
   public status?: number;
 
   constructor(message: string, status?: number) {
     super(message);
-    this.name = 'ReasonersApiError';
+    this.name = 'BotsApiError';
     this.status = status;
   }
 }
 
-export const reasonersApi = {
+export const botsApi = {
   /**
-   * Fetch all reasoners with optional filters
+   * Fetch all bots with optional filters
    */
-  getAllReasoners: async (filters: ReasonerFilters = {}): Promise<ReasonersResponse> => {
+  getAllBots: async (filters: BotFilters = {}): Promise<BotsResponse> => {
     const params = new URLSearchParams();
 
     if (filters.status && filters.status !== 'all') {
@@ -50,23 +50,23 @@ export const reasonersApi = {
       params.append('offset', filters.offset.toString());
     }
 
-    const url = `${API_BASE_URL}/reasoners/all${params.toString() ? `?${params.toString()}` : ''}`;
+    const url = `${API_BASE_URL}/bots/all${params.toString() ? `?${params.toString()}` : ''}`;
 
     try {
       const response = await fetch(url, { headers: withAuthHeaders() });
 
       if (!response.ok) {
-        throw new ReasonersApiError(
-          `Failed to fetch reasoners: ${response.statusText}`,
+        throw new BotsApiError(
+          `Failed to fetch bots: ${response.statusText}`,
           response.status
         );
       }
 
-      const data: ReasonersResponse = await response.json();
+      const data: BotsResponse = await response.json();
 
       // Validate and ensure proper structure
-      const validatedData: ReasonersResponse = {
-        reasoners: Array.isArray(data.reasoners) ? data.reasoners : [],
+      const validatedData: BotsResponse = {
+        bots: Array.isArray(data.bots) ? data.bots : [],
         total: typeof data.total === 'number' ? data.total : 0,
         online_count: typeof data.online_count === 'number' ? data.online_count : 0,
         offline_count: typeof data.offline_count === 'number' ? data.offline_count : 0,
@@ -75,48 +75,48 @@ export const reasonersApi = {
 
       return validatedData;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Fetch details for a specific reasoner
+   * Fetch details for a specific bot
    */
-  getReasonerDetails: async (reasonerId: string): Promise<ReasonerWithNode> => {
-    const url = `${API_BASE_URL}/reasoners/${encodeURIComponent(reasonerId)}/details`;
+  getBotDetails: async (botId: string): Promise<BotWithNode> => {
+    const url = `${API_BASE_URL}/bots/${encodeURIComponent(botId)}/details`;
 
     try {
       const response = await fetch(url, { headers: withAuthHeaders() });
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new ReasonersApiError('Reasoner not found', 404);
+          throw new BotsApiError('Bot not found', 404);
         }
-        throw new ReasonersApiError(
-          `Failed to fetch reasoner details: ${response.statusText}`,
+        throw new BotsApiError(
+          `Failed to fetch bot details: ${response.statusText}`,
           response.status
         );
       }
 
-      const data: ReasonerWithNode = await response.json();
+      const data: BotWithNode = await response.json();
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Execute a reasoner with given input data (synchronous - waits for completion)
+   * Execute a bot with given input data (synchronous - waits for completion)
    * Enhanced version with proper request/response types and validation
    */
-  executeReasoner: async (reasonerId: string, request: ExecutionRequest): Promise<ExecutionResponse> => {
-    const url = `/api/v1/execute/${encodeURIComponent(reasonerId)}`;
+  executeBot: async (botId: string, request: ExecutionRequest): Promise<ExecutionResponse> => {
+    const url = `/api/v1/execute/${encodeURIComponent(botId)}`;
 
     try {
       const response = await fetch(url, {
@@ -129,8 +129,8 @@ export const reasonersApi = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new ReasonersApiError(
-          `Failed to execute reasoner: ${response.statusText} - ${errorText}`,
+        throw new BotsApiError(
+          `Failed to execute bot: ${response.statusText} - ${errorText}`,
           response.status
         );
       }
@@ -140,7 +140,7 @@ export const reasonersApi = {
       // Validate response structure
       if (!data || typeof data !== 'object') {
         console.error('Invalid response structure:', data);
-        throw new ReasonersApiError('Invalid response format from server');
+        throw new BotsApiError('Invalid response format from server');
       }
 
       // Log response for debugging if it seems malformed
@@ -150,27 +150,27 @@ export const reasonersApi = {
 
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
 
       // Enhanced error logging for debugging
-      console.error('Reasoner execution error:', {
-        reasonerId,
+      console.error('Bot execution error:', {
+        botId,
         request,
         error: error instanceof Error ? error.message : error
       });
 
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Execute a reasoner asynchronously (returns immediately with execution_id)
+   * Execute a bot asynchronously (returns immediately with execution_id)
    * Use this when you need the execution_id immediately for navigation/tracking
    */
-  executeReasonerAsync: async (reasonerId: string, request: ExecutionRequest): Promise<AsyncExecuteResponse> => {
-    const url = `/api/v1/execute/async/${encodeURIComponent(reasonerId)}`;
+  executeBotAsync: async (botId: string, request: ExecutionRequest): Promise<AsyncExecuteResponse> => {
+    const url = `/api/v1/execute/async/${encodeURIComponent(botId)}`;
 
     try {
       const response = await fetch(url, {
@@ -183,8 +183,8 @@ export const reasonersApi = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new ReasonersApiError(
-          `Failed to execute reasoner async: ${response.statusText} - ${errorText}`,
+        throw new BotsApiError(
+          `Failed to execute bot async: ${response.statusText} - ${errorText}`,
           response.status
         );
       }
@@ -194,29 +194,29 @@ export const reasonersApi = {
       // Validate response structure
       if (!data || typeof data !== 'object' || !data.execution_id) {
         console.error('Invalid async response structure:', data);
-        throw new ReasonersApiError('Invalid async response format from server');
+        throw new BotsApiError('Invalid async response format from server');
       }
 
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
 
       // Enhanced error logging for debugging
-      console.error('Reasoner async execution error:', {
-        reasonerId,
+      console.error('Bot async execution error:', {
+        botId,
         request,
         error: error instanceof Error ? error.message : error
       });
 
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
    * Get execution status by execution_id
-   * Use this to poll for execution completion after starting with executeReasonerAsync
+   * Use this to poll for execution completion after starting with executeBotAsync
    */
   getExecutionStatus: async (executionId: string): Promise<ExecutionStatusResponse> => {
     const url = `/api/v1/executions/${encodeURIComponent(executionId)}`;
@@ -226,9 +226,9 @@ export const reasonersApi = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new ReasonersApiError('Execution not found', 404);
+          throw new BotsApiError('Execution not found', 404);
         }
-        throw new ReasonersApiError(
+        throw new BotsApiError(
           `Failed to fetch execution status: ${response.statusText}`,
           response.status
         );
@@ -239,12 +239,12 @@ export const reasonersApi = {
       // Validate response structure
       if (!data || typeof data !== 'object' || !data.execution_id) {
         console.error('Invalid execution status response structure:', data);
-        throw new ReasonersApiError('Invalid execution status response format from server');
+        throw new BotsApiError('Invalid execution status response format from server');
       }
 
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
 
@@ -253,21 +253,21 @@ export const reasonersApi = {
         error: error instanceof Error ? error.message : error
       });
 
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Get performance metrics for a specific reasoner
+   * Get performance metrics for a specific bot
    */
-  getPerformanceMetrics: async (reasonerId: string): Promise<PerformanceMetrics> => {
-    const url = `${API_BASE_URL}/reasoners/${encodeURIComponent(reasonerId)}/metrics`;
+  getPerformanceMetrics: async (botId: string): Promise<PerformanceMetrics> => {
+    const url = `${API_BASE_URL}/bots/${encodeURIComponent(botId)}/metrics`;
 
     try {
       const response = await fetch(url, { headers: withAuthHeaders() });
 
       if (!response.ok) {
-        throw new ReasonersApiError(
+        throw new BotsApiError(
           `Failed to fetch performance metrics: ${response.statusText}`,
           response.status
         );
@@ -276,18 +276,18 @@ export const reasonersApi = {
       const data: PerformanceMetrics = await response.json();
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Get execution history for a specific reasoner
+   * Get execution history for a specific bot
    */
   getExecutionHistory: async (
-    reasonerId: string,
+    botId: string,
     page: number = 1,
     limit: number = 20
   ): Promise<ExecutionHistory> => {
@@ -296,13 +296,13 @@ export const reasonersApi = {
       limit: limit.toString(),
     });
 
-    const url = `${API_BASE_URL}/reasoners/${encodeURIComponent(reasonerId)}/executions?${params.toString()}`;
+    const url = `${API_BASE_URL}/bots/${encodeURIComponent(botId)}/executions?${params.toString()}`;
 
     try {
       const response = await fetch(url, { headers: withAuthHeaders() });
 
       if (!response.ok) {
-        throw new ReasonersApiError(
+        throw new BotsApiError(
           `Failed to fetch execution history: ${response.statusText}`,
           response.status
         );
@@ -311,24 +311,24 @@ export const reasonersApi = {
       const data: ExecutionHistory = await response.json();
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Get saved execution templates for a reasoner
+   * Get saved execution templates for a bot
    */
-  getExecutionTemplates: async (reasonerId: string): Promise<ExecutionTemplate[]> => {
-    const url = `${API_BASE_URL}/reasoners/${encodeURIComponent(reasonerId)}/templates`;
+  getExecutionTemplates: async (botId: string): Promise<ExecutionTemplate[]> => {
+    const url = `${API_BASE_URL}/bots/${encodeURIComponent(botId)}/templates`;
 
     try {
       const response = await fetch(url, { headers: withAuthHeaders() });
 
       if (!response.ok) {
-        throw new ReasonersApiError(
+        throw new BotsApiError(
           `Failed to fetch execution templates: ${response.statusText}`,
           response.status
         );
@@ -337,10 +337,10 @@ export const reasonersApi = {
       const data: ExecutionTemplate[] = await response.json();
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
@@ -348,10 +348,10 @@ export const reasonersApi = {
    * Save an execution template
    */
   saveExecutionTemplate: async (
-    reasonerId: string,
+    botId: string,
     template: Omit<ExecutionTemplate, 'id' | 'created_at'>
   ): Promise<ExecutionTemplate> => {
-    const url = `${API_BASE_URL}/reasoners/${encodeURIComponent(reasonerId)}/templates`;
+    const url = `${API_BASE_URL}/bots/${encodeURIComponent(botId)}/templates`;
 
     try {
       const response = await fetch(url, {
@@ -363,7 +363,7 @@ export const reasonersApi = {
       });
 
       if (!response.ok) {
-        throw new ReasonersApiError(
+        throw new BotsApiError(
           `Failed to save execution template: ${response.statusText}`,
           response.status
         );
@@ -372,15 +372,15 @@ export const reasonersApi = {
       const data: ExecutionTemplate = await response.json();
       return data;
     } catch (error) {
-      if (error instanceof ReasonersApiError) {
+      if (error instanceof BotsApiError) {
         throw error;
       }
-      throw new ReasonersApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new BotsApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
   /**
-   * Create an SSE connection for real-time reasoner events
+   * Create an SSE connection for real-time bot events
    */
   createEventStream: (
     onEvent: (event: any) => void,
@@ -389,20 +389,20 @@ export const reasonersApi = {
   ): EventSource => {
     const apiKey = getGlobalApiKey();
     const url = apiKey
-      ? `${API_BASE_URL}/reasoners/events?api_key=${encodeURIComponent(apiKey)}`
-      : `${API_BASE_URL}/reasoners/events`;
+      ? `${API_BASE_URL}/bots/events?api_key=${encodeURIComponent(apiKey)}`
+      : `${API_BASE_URL}/bots/events`;
     console.log('🔄 Attempting to create SSE connection to:', url);
     const eventSource = new EventSource(url);
 
     eventSource.onopen = () => {
-      console.log('✅ Reasoner SSE connection opened successfully');
+      console.log('✅ Bot SSE connection opened successfully');
       onConnect?.();
     };
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('📡 Received reasoner event:', data);
+        console.log('📡 Received bot event:', data);
         onEvent(data);
       } catch (error) {
         console.error('❌ Failed to parse SSE event data:', error, 'Raw data:', event.data);
@@ -411,7 +411,7 @@ export const reasonersApi = {
     };
 
     eventSource.onerror = (error) => {
-      console.error('❌ Reasoner SSE connection error:', error);
+      console.error('❌ Bot SSE connection error:', error);
       console.error('❌ EventSource readyState:', eventSource.readyState);
       console.error('❌ EventSource url:', eventSource.url);
       onError?.(new Error(`SSE connection error - readyState: ${eventSource.readyState}`));
@@ -426,7 +426,7 @@ export const reasonersApi = {
   closeEventStream: (eventSource: EventSource): void => {
     if (eventSource) {
       eventSource.close();
-      console.log('🔌 Reasoner SSE connection closed');
+      console.log('🔌 Bot SSE connection closed');
     }
   }
 };

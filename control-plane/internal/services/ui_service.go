@@ -65,7 +65,7 @@ type AgentNodeSummaryForUI struct {
 	Version         string                     `json:"version"`
 	HealthStatus    types.HealthStatus         `json:"health_status"`
 	LifecycleStatus types.AgentLifecycleStatus `json:"lifecycle_status"`
-	ReasonerCount   int                        `json:"reasoner_count"`
+	BotCount   int                        `json:"bot_count"`
 	SkillCount      int                        `json:"skill_count"`
 	LastHeartbeat   time.Time                  `json:"last_heartbeat"`
 
@@ -99,7 +99,7 @@ func (s *UIService) GetNodesSummary(ctx context.Context) ([]AgentNodeSummaryForU
 			Version:         node.Version,
 			HealthStatus:    healthStatus,
 			LifecycleStatus: lifecycleStatus,
-			ReasonerCount:   len(node.Reasoners),
+			BotCount:   len(node.Bots),
 			SkillCount:      len(node.Skills),
 			LastHeartbeat:   node.LastHeartbeat,
 		}
@@ -339,7 +339,7 @@ func (s *UIService) OnAgentRegistered(node *types.AgentNode) {
 		Version:         node.Version,
 		HealthStatus:    node.HealthStatus,
 		LifecycleStatus: node.LifecycleStatus,
-		ReasonerCount:   len(node.Reasoners),
+		BotCount:   len(node.Bots),
 		SkillCount:      len(node.Skills),
 		LastHeartbeat:   node.LastHeartbeat,
 	}
@@ -357,41 +357,41 @@ func (s *UIService) OnNodeStatusChanged(node *types.AgentNode) {
 		Version:         node.Version,
 		HealthStatus:    node.HealthStatus,
 		LifecycleStatus: node.LifecycleStatus,
-		ReasonerCount:   len(node.Reasoners),
+		BotCount:   len(node.Bots),
 		SkillCount:      len(node.Skills),
 		LastHeartbeat:   node.LastHeartbeat,
 	}
 	s.BroadcastEvent("node_status_changed", summary)
 
-	// CRITICAL FIX: Also broadcast reasoner-specific events for immediate UI updates
-	s.OnReasonerStatusChanged(node)
+	// CRITICAL FIX: Also broadcast bot-specific events for immediate UI updates
+	s.OnBotStatusChanged(node)
 }
 
-// OnReasonerStatusChanged broadcasts reasoner-specific status change events
-// This ensures the reasoners UI gets immediate updates when node status changes
-func (s *UIService) OnReasonerStatusChanged(node *types.AgentNode) {
-	// Determine effective reasoner status based on node health and lifecycle
-	reasonerStatus := "online"
+// OnBotStatusChanged broadcasts bot-specific status change events
+// This ensures the bots UI gets immediate updates when node status changes
+func (s *UIService) OnBotStatusChanged(node *types.AgentNode) {
+	// Determine effective bot status based on node health and lifecycle
+	botStatus := "online"
 	if node.HealthStatus != types.HealthStatusActive || node.LifecycleStatus == types.AgentStatusOffline {
-		reasonerStatus = "offline"
+		botStatus = "offline"
 	}
 
-	// Broadcast individual reasoner status events
-	for _, reasoner := range node.Reasoners {
-		reasonerEvent := map[string]interface{}{
-			"reasoner_id": reasoner.ID,
+	// Broadcast individual bot status events
+	for _, bot := range node.Bots {
+		botEvent := map[string]interface{}{
+			"bot_id": bot.ID,
 			"node_id":     node.ID,
-			"status":      reasonerStatus,
+			"status":      botStatus,
 			"timestamp":   node.LastHeartbeat,
 		}
-		s.BroadcastEvent("reasoner_status_changed", reasonerEvent)
+		s.BroadcastEvent("bot_status_changed", botEvent)
 	}
 
-	// Also broadcast a general reasoners refresh event
-	s.BroadcastEvent("reasoners_refresh", map[string]interface{}{
+	// Also broadcast a general bots refresh event
+	s.BroadcastEvent("bots_refresh", map[string]interface{}{
 		"node_id":        node.ID,
-		"reasoner_count": len(node.Reasoners),
-		"status":         reasonerStatus,
+		"bot_count": len(node.Bots),
+		"status":         botStatus,
 	})
 }
 

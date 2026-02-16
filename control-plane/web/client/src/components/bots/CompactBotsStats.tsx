@@ -13,7 +13,7 @@ import {
   HoverCardTrigger,
 } from "../ui/hover-card";
 
-interface CompactReasonersStatsProps {
+interface CompactBotsStatsProps {
   total: number;
   onlineCount: number;
   offlineCount: number;
@@ -24,7 +24,7 @@ interface CompactReasonersStatsProps {
   className?: string;
 }
 
-export function CompactReasonersStats({
+export function CompactBotsStats({
   total = 0,
   onlineCount = 0,
   offlineCount = 0,
@@ -33,7 +33,7 @@ export function CompactReasonersStats({
   loading = false,
   onRefresh,
   className
-}: CompactReasonersStatsProps) {
+}: CompactBotsStatsProps) {
   // Ensure we have safe values
   const safeTotal = total ?? 0;
   const safeOnlineCount = onlineCount ?? 0;

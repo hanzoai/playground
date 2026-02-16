@@ -51,7 +51,7 @@ export function VelocityChart({ timedNodes, className }: VelocityChartProps) {
         duration: Number(node.duration_ms) || 0,
         formattedTime: formatTime(new Date(node.started_at).getTime()),
         formattedDuration: formatDuration(Number(node.duration_ms) || 0),
-        label: node.agent_name || node.reasoner_id || "Unknown",
+        label: node.agent_name || node.bot_id || "Unknown",
         executionId: node.execution_id,
       }))
       .filter((item) => Number.isFinite(item.timestamp) && item.duration > 0)

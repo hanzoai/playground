@@ -276,8 +276,8 @@ function VerificationModal({
                       )}
                     </div>
                     <div className="flex justify-between">
-                      <span>Playground Standard</span>
-                      {verificationResult.compliance_checks.playground_standard_compliance ? (
+                      <span>Bot Standard</span>
+                      {verificationResult.compliance_checks.bot_standard_compliance ? (
                         <CheckmarkFilled size={16} className="text-green-500" />
                       ) : (
                         <CloseFilled size={16} className="text-red-500" />

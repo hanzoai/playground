@@ -22,7 +22,7 @@ import type {
 const ITEMS_PER_PAGE = 50;
 const GRID_TEMPLATE =
     "80px minmax(200px,1fr) minmax(300px,2fr) minmax(150px,1fr) 120px 80px";
-const GRID_TEMPLATE_REASONERS =
+const GRID_TEMPLATE_BOTS =
     "minmax(200px,1fr) minmax(350px,2fr) 100px 140px";
 
 export function DIDExplorerPage() {
@@ -33,20 +33,20 @@ export function DIDExplorerPage() {
     const [selectedAgent, setSelectedAgent] = useState<AgentDIDResponse | null>(
         null,
     );
-    const [selectedAgentReasoners, setSelectedAgentReasoners] = useState<
+    const [selectedAgentBots, setSelectedAgentBots] = useState<
         ComponentDIDInfo[]
     >([]);
 
     // Loading states
     const [loadingSearch, setLoadingSearch] = useState(false);
     const [loadingAgents, setLoadingAgents] = useState(false);
-    const [loadingReasoners, setLoadingReasoners] = useState(false);
+    const [loadingBots, setLoadingBots] = useState(false);
 
     // Pagination
     const [searchOffset, setSearchOffset] = useState(0);
-    const [reasonersOffset, setReasonersOffset] = useState(0);
+    const [botsOffset, setBotsOffset] = useState(0);
     const [hasMoreSearch, setHasMoreSearch] = useState(false);
-    const [hasMoreReasoners, setHasMoreReasoners] = useState(false);
+    const [hasMoreBots, setHasMoreBots] = useState(false);
 
     const [error, setError] = useState<string | null>(null);
     const [_, setCopiedDID] = useState<string | null>(null);
@@ -107,11 +107,11 @@ export function DIDExplorerPage() {
         [],
     );
 
-    // Fetch agent reasoners
-    const fetchAgentReasoners = useCallback(
+    // Fetch agent bots
+    const fetchAgentBots = useCallback(
         async (agentId: string, offset: number = 0) => {
             try {
-                setLoadingReasoners(true);
+                setLoadingBots(true);
                 const data = await identityApi.getAgentDetails(
                     agentId,
                     ITEMS_PER_PAGE,
@@ -119,20 +119,20 @@ export function DIDExplorerPage() {
                 );
 
                 if (offset === 0) {
-                    setSelectedAgentReasoners(data.agent.reasoners || []);
+                    setSelectedAgentBots(data.agent.bots || []);
                 } else {
-                    setSelectedAgentReasoners((prev) => [
+                    setSelectedAgentBots((prev) => [
                         ...prev,
-                        ...(data.agent.reasoners || []),
+                        ...(data.agent.bots || []),
                     ]);
                 }
 
-                setHasMoreReasoners(data.reasoners_has_more);
-                setReasonersOffset(offset);
+                setHasMoreBots(data.bots_has_more);
+                setBotsOffset(offset);
             } catch (err) {
-                console.error("Failed to fetch agent reasoners:", err);
+                console.error("Failed to fetch agent bots:", err);
             } finally {
-                setLoadingReasoners(false);
+                setLoadingBots(false);
             }
         },
         [],
@@ -159,7 +159,7 @@ export function DIDExplorerPage() {
     // Handlers
     const handleAgentClick = (agent: AgentDIDResponse) => {
         setSelectedAgent(agent);
-        fetchAgentReasoners(agent.agent_node_id, 0);
+        fetchAgentBots(agent.agent_node_id, 0);
     };
 
     const handleCopyDID = async (did: string) => {
@@ -182,7 +182,7 @@ export function DIDExplorerPage() {
 
     const handleBackToList = () => {
         setSelectedAgent(null);
-        setSelectedAgentReasoners([]);
+        setSelectedAgentBots([]);
     };
 
     // Table columns for search results
@@ -260,15 +260,15 @@ export function DIDExplorerPage() {
         },
     ];
 
-    // Table columns for reasoners
-    const reasonerColumns = [
+    // Table columns for bots
+    const botColumns = [
         {
             key: "name",
-            header: "Reasoner Name",
+            header: "Bot Name",
             sortable: true,
             align: "left" as const,
-            render: (reasoner: ComponentDIDInfo) => (
-                <span className="font-medium">{reasoner.name}</span>
+            render: (bot: ComponentDIDInfo) => (
+                <span className="font-medium">{bot.name}</span>
             ),
         },
         {
@@ -276,10 +276,10 @@ export function DIDExplorerPage() {
             header: "DID",
             sortable: false,
             align: "left" as const,
-            render: (reasoner: ComponentDIDInfo) => (
+            render: (bot: ComponentDIDInfo) => (
                 <div className="flex items-center gap-2 min-w-0">
                     <code className="text-xs font-mono text-muted-foreground truncate block">
-                        {reasoner.did}
+                        {bot.did}
                     </code>
                     <Button
                         variant="ghost"
@@ -287,7 +287,7 @@ export function DIDExplorerPage() {
                         className="h-6 w-6 flex-shrink-0"
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleCopyDID(reasoner.did);
+                            handleCopyDID(bot.did);
                         }}
                         title="Copy DID"
                     >
@@ -301,11 +301,11 @@ export function DIDExplorerPage() {
             header: "Index",
             sortable: false,
             align: "left" as const,
-            render: (reasoner: ComponentDIDInfo, index?: number) => {
+            render: (bot: ComponentDIDInfo, index?: number) => {
                 // Use the array index for proper sequential numbering
                 return (
                     <span className="text-sm text-muted-foreground">
-                        #{index !== undefined ? index : reasoner.derivation_path}
+                        #{index !== undefined ? index : bot.derivation_path}
                     </span>
                 );
             },
@@ -315,9 +315,9 @@ export function DIDExplorerPage() {
             header: "Created",
             sortable: true,
             align: "left" as const,
-            render: (reasoner: ComponentDIDInfo) => (
+            render: (bot: ComponentDIDInfo) => (
                 <span className="text-sm text-muted-foreground">
-                    {new Date(reasoner.created_at).toLocaleDateString()}
+                    {new Date(bot.created_at).toLocaleDateString()}
                 </span>
             ),
         },
@@ -330,8 +330,8 @@ export function DIDExplorerPage() {
                     title={selectedAgent ? selectedAgent.agent_node_id : "DID Explorer"}
                     description={
                         selectedAgent
-                            ? `Viewing reasoners for agent ${selectedAgent.agent_node_id}`
-                            : "Explore decentralized identifiers for agents and reasoners"
+                            ? `Viewing bots for agent ${selectedAgent.agent_node_id}`
+                            : "Explore decentralized identifiers for agents and bots"
                     }
                     aside={
                         <div className="flex items-center gap-2">
@@ -418,10 +418,10 @@ export function DIDExplorerPage() {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                 <div>
                                     <span className="text-muted-foreground">
-                                        Reasoners:
+                                        Bots:
                                     </span>
                                     <div className="mt-1 font-medium">
-                                        {selectedAgentReasoners.length}
+                                        {selectedAgentBots.length}
                                     </div>
                                 </div>
                                 <div>
@@ -445,43 +445,43 @@ export function DIDExplorerPage() {
                             </div>
                         </div>
 
-                        {/* Reasoners Table */}
+                        {/* Bots Table */}
                         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                             <h3 className="text-lg font-semibold mb-4 flex-shrink-0">
-                                Reasoners ({selectedAgentReasoners.length})
+                                Bots ({selectedAgentBots.length})
                             </h3>
                             <div className="flex-1 overflow-hidden">
                                 <CompactTable
-                                data={selectedAgentReasoners}
+                                data={selectedAgentBots}
                                 loading={
-                                    loadingReasoners &&
-                                    selectedAgentReasoners.length === 0
+                                    loadingBots &&
+                                    selectedAgentBots.length === 0
                                 }
-                                hasMore={hasMoreReasoners}
+                                hasMore={hasMoreBots}
                                 isFetchingMore={
-                                    loadingReasoners &&
-                                    selectedAgentReasoners.length > 0
+                                    loadingBots &&
+                                    selectedAgentBots.length > 0
                                 }
                                 sortBy="name"
                                 sortOrder="asc"
                                 onSortChange={() => {}}
                                 onLoadMore={() =>
-                                    fetchAgentReasoners(
+                                    fetchAgentBots(
                                         selectedAgent.agent_node_id,
-                                        reasonersOffset + ITEMS_PER_PAGE,
+                                        botsOffset + ITEMS_PER_PAGE,
                                     )
                                 }
-                                columns={reasonerColumns}
-                                gridTemplate={GRID_TEMPLATE_REASONERS}
+                                columns={botColumns}
+                                gridTemplate={GRID_TEMPLATE_BOTS}
                                 emptyState={{
-                                    title: "No reasoners found",
+                                    title: "No bots found",
                                     description:
-                                        "This agent doesn't have any reasoners yet.",
+                                        "This agent doesn't have any bots yet.",
                                     icon: (
                                         <Function className="h-6 w-6 text-muted-foreground" />
                                     ),
                                 }}
-                                    getRowKey={(reasoner) => reasoner.did}
+                                    getRowKey={(bot) => bot.did}
                                 />
                             </div>
                         </div>
@@ -592,9 +592,9 @@ export function DIDExplorerPage() {
                                                             size="sm"
                                                         >
                                                             {
-                                                                agent.reasoner_count
+                                                                agent.bot_count
                                                             }{" "}
-                                                            reasoners
+                                                            bots
                                                         </Badge>
                                                     </div>
                                                 </div>

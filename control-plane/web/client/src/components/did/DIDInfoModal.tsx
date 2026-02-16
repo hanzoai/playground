@@ -11,7 +11,7 @@ import {
 import { useState } from "react";
 import { useDIDInfo } from "../../hooks/useDIDInfo";
 import { copyDIDToClipboard, getDIDDocument } from "../../services/didApi";
-import type { ReasonerDIDInfo, SkillDIDInfo } from "../../types/did";
+import type { BotDIDInfo, SkillDIDInfo } from "../../types/did";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -153,8 +153,8 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
     );
   }
 
-  const reasoners = didInfo.reasoners && typeof didInfo.reasoners === 'object' && didInfo.reasoners !== null
-    ? Object.entries(didInfo.reasoners)
+  const bots = didInfo.bots && typeof didInfo.bots === 'object' && didInfo.bots !== null
+    ? Object.entries(didInfo.bots)
     : [];
   const skills = didInfo.skills && typeof didInfo.skills === 'object' && didInfo.skills !== null
     ? Object.entries(didInfo.skills)
@@ -191,8 +191,8 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList variant="underline" className="grid w-full grid-cols-4">
             <TabsTrigger value="overview" variant="underline">Overview</TabsTrigger>
-            <TabsTrigger value="reasoners" variant="underline">
-              Reasoners ({reasoners.length})
+            <TabsTrigger value="bots" variant="underline">
+              Bots ({bots.length})
             </TabsTrigger>
             <TabsTrigger value="skills" variant="underline">Skills ({skills.length})</TabsTrigger>
             <TabsTrigger value="technical" variant="underline">Technical</TabsTrigger>
@@ -228,7 +228,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-muted-foreground">
-                        Playground Server:
+                        Hanzo Bot Server:
                       </span>
                       <span className="text-foreground font-mono text-xs">
                         {didInfo.agents_server_id}
@@ -274,10 +274,10 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-muted border border-border rounded-xl">
                       <div className="text-heading-1">
-                        {reasoners.length}
+                        {bots.length}
                       </div>
                       <div className="text-body-small font-medium">
-                        Reasoners
+                        Bots
                       </div>
                     </div>
                     <div className="text-center p-4 bg-muted border border-border rounded-xl">
@@ -291,7 +291,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                   </div>
                   <div className="text-center p-4 bg-muted border border-border rounded-xl">
                     <div className="text-heading-3">
-                      Total Components: {reasoners.length + skills.length + 1}
+                      Total Components: {bots.length + skills.length + 1}
                     </div>
                     <div className="text-body-small">
                       Including agent DID
@@ -302,18 +302,18 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
             </div>
           </TabsContent>
 
-          {/* Reasoners Tab */}
-          <TabsContent value="reasoners" className="space-y-4">
-            {reasoners.length > 0 ? (
+          {/* Bots Tab */}
+          <TabsContent value="bots" className="space-y-4">
+            {bots.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {reasoners.map(([functionName, reasoner]) => (
-                  <ReasonerDIDCard
+                {bots.map(([functionName, bot]) => (
+                  <BotDIDCard
                     key={functionName}
                     functionName={functionName}
-                    reasoner={reasoner}
-                    onCopyDID={(did) => handleCopyDID(did, "Reasoner")}
-                    onViewDocument={() => handleViewDIDDocument(reasoner.did)}
-                    loadingDocument={loadingDocument === reasoner.did}
+                    bot={bot}
+                    onCopyDID={(did) => handleCopyDID(did, "Bot")}
+                    onViewDocument={() => handleViewDIDDocument(bot.did)}
+                    loadingDocument={loadingDocument === bot.did}
                   />
                 ))}
               </div>
@@ -323,10 +323,10 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                   <Function size={32} className="text-blue-500" />
                 </div>
                 <h3 className="text-heading-3 text-foreground mb-2">
-                  No Reasoners
+                  No Bots
                 </h3>
                 <p className="text-muted-foreground">
-                  This agent has no reasoners with DID identities.
+                  This agent has no bots with DID identities.
                 </p>
               </div>
             )}
@@ -398,7 +398,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                       </div>
                       <div className="flex items-center justify-between">
                         <dt className="font-medium text-muted-foreground">
-                          Playground Server:
+                          Hanzo Bot Server:
                         </dt>
                         <dd className="font-mono text-foreground text-right max-w-[60%] break-all">
                           {didInfo.agents_server_id}
@@ -431,21 +431,21 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
   );
 }
 
-interface ReasonerDIDCardProps {
+interface BotDIDCardProps {
   functionName: string;
-  reasoner: ReasonerDIDInfo;
+  bot: BotDIDInfo;
   onCopyDID: (did: string) => void;
   onViewDocument: () => void;
   loadingDocument: boolean;
 }
 
-function ReasonerDIDCard({
+function BotDIDCard({
   functionName,
-  reasoner,
+  bot,
   onCopyDID,
   onViewDocument,
   loadingDocument,
-}: ReasonerDIDCardProps) {
+}: BotDIDCardProps) {
   return (
     <Card className="bg-card border-card-border shadow-sm hover:shadow-md transition-shadow duration-200">
       <CardHeader className="pb-3">
@@ -460,24 +460,24 @@ function ReasonerDIDCard({
             variant="outline"
             className="bg-muted text-muted-foreground border-border font-medium"
           >
-            {reasoner.exposure_level}
+            {bot.exposure_level}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <DIDIdentityBadge
-          did={reasoner.did}
+          did={bot.did}
           maxLength={40}
           onCopy={onCopyDID}
         />
 
-        {reasoner.capabilities.length > 0 && (
+        {bot.capabilities.length > 0 && (
           <div>
             <div className="text-sm font-medium text-muted-foreground mb-2">
               Capabilities:
             </div>
             <div className="flex flex-wrap gap-2">
-              {reasoner.capabilities.map((capability, index) => (
+              {bot.capabilities.map((capability, index) => (
                 <Badge
                   key={index}
                   variant="secondary"
@@ -504,7 +504,7 @@ function ReasonerDIDCard({
         </div>
 
         <div className="text-body-small">
-          Created: {new Date(reasoner.created_at).toLocaleDateString()}
+          Created: {new Date(bot.created_at).toLocaleDateString()}
         </div>
       </CardContent>
     </Card>

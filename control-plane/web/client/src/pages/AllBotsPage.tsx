@@ -15,18 +15,18 @@ import {
 } from "@/components/ui/icon-bridge";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CompactReasonersStats } from "../components/reasoners/CompactReasonersStats";
+import { CompactBotsStats } from "../components/bots/CompactBotsStats";
 import { PageHeader } from "../components/PageHeader";
-import { EmptyReasonersState } from "../components/reasoners/EmptyReasonersState";
-import { ReasonerGrid } from "../components/reasoners/ReasonerGrid";
-import { SearchFilters } from "../components/reasoners/SearchFilters";
+import { EmptyBotsState } from "../components/bots/EmptyBotsState";
+import { BotGrid } from "../components/bots/BotGrid";
+import { SearchFilters } from "../components/bots/SearchFilters";
 import { useNodeEventsSSE, useUnifiedStatusSSE } from "../hooks/useSSE";
-import { reasonersApi, ReasonersApiError } from "../services/reasonersApi";
+import { botsApi, BotsApiError } from "../services/botsApi";
 import type {
-  ReasonerFilters,
-  ReasonersResponse,
-  ReasonerWithNode,
-} from "../types/reasoners";
+  BotFilters,
+  BotsResponse,
+  BotWithNode,
+} from "../types/bots";
 
 type ViewMode = "grid" | "table";
 const VIEW_OPTIONS: ReadonlyArray<SegmentedControlOption> = [
@@ -34,12 +34,12 @@ const VIEW_OPTIONS: ReadonlyArray<SegmentedControlOption> = [
   { value: "table", label: "Table", icon: List },
 ] as const;
 
-export function AllReasonersPage() {
+export function AllBotsPage() {
   const navigate = useNavigate();
-  const [data, setData] = useState<ReasonersResponse | null>(null);
+  const [data, setData] = useState<BotsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<ReasonerFilters>({
+  const [filters, setFilters] = useState<BotFilters>({
     status: "online", // Default to online instead of all
     limit: 50,
     offset: 0,
@@ -57,28 +57,28 @@ export function AllReasonersPage() {
   const unifiedStatusSSE = useUnifiedStatusSSE();
   const { latestEvent: unifiedStatusEvent } = unifiedStatusSSE;
 
-  const fetchReasoners = useCallback(
-    async (currentFilters: ReasonerFilters) => {
+  const fetchBots = useCallback(
+    async (currentFilters: BotFilters) => {
       try {
-        console.log("🔄 fetchReasoners called with filters:", currentFilters);
-        console.trace("🔍 fetchReasoners call stack:");
+        console.log("🔄 fetchBots called with filters:", currentFilters);
+        console.trace("🔍 fetchBots call stack:");
         setLoading(true);
         setError(null);
-        const response = await reasonersApi.getAllReasoners(currentFilters);
+        const response = await botsApi.getAllBots(currentFilters);
         setData(response);
         setLastRefresh(new Date());
-        console.log("✅ fetchReasoners completed successfully");
+        console.log("✅ fetchBots completed successfully");
       } catch (err) {
-        console.error("❌ fetchReasoners failed:", err);
-        if (err instanceof ReasonersApiError) {
+        console.error("❌ fetchBots failed:", err);
+        if (err instanceof BotsApiError) {
           // Handle specific cases where filtering returns empty results
           if (
             err.status === 404 ||
-            (err.message && err.message.includes("no reasoners found"))
+            (err.message && err.message.includes("no bots found"))
           ) {
             // Set empty data instead of error for empty filter results
             setData({
-              reasoners: [],
+              bots: [],
               total: 0,
               online_count: 0,
               offline_count: 0,
@@ -89,9 +89,9 @@ export function AllReasonersPage() {
             setError(err.message);
           }
         } else {
-          setError("An unexpected error occurred while fetching reasoners");
+          setError("An unexpected error occurred while fetching bots");
         }
-        console.error("Failed to fetch reasoners:", err);
+        console.error("Failed to fetch bots:", err);
       } finally {
         setLoading(false);
       }
@@ -103,42 +103,42 @@ export function AllReasonersPage() {
   useEffect(() => {
     console.log("🔄 useEffect triggered for filters change:", filters);
     console.trace("🔍 useEffect call stack:");
-    fetchReasoners(filters);
+    fetchBots(filters);
   }, [
     filters.status,
     filters.limit,
     filters.offset,
     filters.search,
-  ]); // Remove fetchReasoners from dependencies to prevent infinite loops
+  ]); // Remove fetchBots from dependencies to prevent infinite loops
 
   // SSE connection setup - for status monitoring only, no auto-refresh
   useEffect(() => {
     const setupSSE = () => {
       try {
-        console.log("🔄 Setting up SSE connection for reasoners...");
+        console.log("🔄 Setting up SSE connection for bots...");
         setSseError(null);
 
-        const eventSource = reasonersApi.createEventStream(
+        const eventSource = botsApi.createEventStream(
           (event) => {
             console.log("📡 SSE Event received:", event);
             // Handle different event types
             switch (event.type) {
               case "connected":
                 setSseConnected(true);
-                console.log("✅ Reasoner SSE connected successfully");
+                console.log("✅ Bot SSE connected successfully");
                 break;
               case "heartbeat":
                 console.log("💓 SSE Heartbeat received - connection alive");
                 // Keep connection alive, no action needed
                 break;
-              case "reasoner_online":
-              case "reasoner_offline":
-              case "reasoner_updated":
-              case "reasoner_status_changed":
+              case "bot_online":
+              case "bot_offline":
+              case "bot_updated":
+              case "bot_status_changed":
               case "node_status_changed":
-              case "reasoners_refresh":
+              case "bots_refresh":
                 // Log events but don't auto-refresh to prevent scroll jumping
-                console.log("📡 Received reasoner update event:", event);
+                console.log("📡 Received bot update event:", event);
                 console.log("ℹ️ Auto-refresh disabled - use refresh button for latest data");
                 break;
               default:
@@ -180,7 +180,7 @@ export function AllReasonersPage() {
     return () => {
       console.log("🧹 Cleaning up SSE connection...");
       if (eventSourceRef.current) {
-        reasonersApi.closeEventStream(eventSourceRef.current);
+        botsApi.closeEventStream(eventSourceRef.current);
         eventSourceRef.current = null;
         setSseConnected(false);
       }
@@ -194,9 +194,9 @@ export function AllReasonersPage() {
     const event = unifiedStatusEvent || nodeEvent;
     if (!event) return;
 
-    console.log('🔄 AllReasonersPage: Received status event:', event.type, event);
+    console.log('🔄 AllBotsPage: Received status event:', event.type, event);
 
-    // Handle events that might affect reasoner status (since reasoners depend on nodes)
+    // Handle events that might affect bot status (since bots depend on nodes)
     switch (event.type) {
       case 'node_unified_status_changed':
       case 'node_state_transition':
@@ -204,9 +204,9 @@ export function AllReasonersPage() {
       case 'node_health_changed':
       case 'node_online':
       case 'node_offline':
-        console.log('📡 Node status changed, reasoners may be affected');
+        console.log('📡 Node status changed, bots may be affected');
         // Note: We don't auto-refresh to prevent scroll jumping
-        // Users can manually refresh to see updated reasoner status
+        // Users can manually refresh to see updated bot status
         break;
 
       case 'bulk_status_update':
@@ -230,23 +230,23 @@ export function AllReasonersPage() {
       });
     };
 
-    window.addEventListener("clearReasonerFilters", handleClearFilters);
+    window.addEventListener("clearBotFilters", handleClearFilters);
     return () =>
-      window.removeEventListener("clearReasonerFilters", handleClearFilters);
+      window.removeEventListener("clearBotFilters", handleClearFilters);
   }, []);
 
-  const handleFiltersChange = (newFilters: ReasonerFilters) => {
+  const handleFiltersChange = (newFilters: BotFilters) => {
     setFilters({ ...newFilters, offset: 0 }); // Reset pagination when filters change
   };
 
-  const handleReasonerClick = (reasoner: ReasonerWithNode) => {
-    // Navigate to reasoner detail page using React Router
-    // reasoner_id already contains the full format: "node_id.reasoner_name"
-    navigate(`/reasoners/${encodeURIComponent(reasoner.reasoner_id)}`);
+  const handleBotClick = (bot: BotWithNode) => {
+    // Navigate to bot detail page using React Router
+    // bot_id already contains the full format: "node_id.bot_name"
+    navigate(`/bots/${encodeURIComponent(bot.bot_id)}`);
   };
 
   const handleRefresh = () => {
-    fetchReasoners(filters);
+    fetchBots(filters);
   };
 
   const handleClearFilters = () => {
@@ -269,14 +269,14 @@ export function AllReasonersPage() {
   const getEmptyStateType = () => {
     if (!data) return null;
 
-    if (data.total === 0) return "no-reasoners";
+    if (data.total === 0) return "no-bots";
     if (filters.status === "online" && data.online_count === 0)
       return "no-online";
     if (filters.status === "offline" && data.offline_count === 0)
       return "no-offline";
-    if (filters.search && data.reasoners.length === 0)
+    if (filters.search && data.bots.length === 0)
       return "no-search-results";
-    if (data.reasoners.length === 0 && data.total > 0)
+    if (data.bots.length === 0 && data.total > 0)
       return "no-search-results";
 
     return null;
@@ -284,7 +284,7 @@ export function AllReasonersPage() {
 
   // Safe data with defaults
   const safeData = data || {
-    reasoners: [],
+    bots: [],
     total: 0,
     online_count: 0,
     offline_count: 0,
@@ -294,8 +294,8 @@ export function AllReasonersPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="All Reasoners"
-        description="Browse and execute reasoners across all connected agent nodes."
+        title="All Bots"
+        description="Browse and execute bots across all connected agent nodes."
         aside={
           <div className="flex flex-wrap items-center gap-4">
             <SegmentedControl
@@ -330,7 +330,7 @@ export function AllReasonersPage() {
       />
 
       {/* Compact Stats Summary - Always show with safe data */}
-      <CompactReasonersStats
+      <CompactBotsStats
         total={safeData.total}
         onlineCount={safeData.online_count}
         offlineCount={safeData.offline_count}
@@ -377,10 +377,10 @@ export function AllReasonersPage() {
         if (loading && !data) {
           // Initial loading state
           return (
-            <ReasonerGrid
-              reasoners={[]}
+            <BotGrid
+              bots={[]}
               loading={true}
-              onReasonerClick={handleReasonerClick}
+              onBotClick={handleBotClick}
               viewMode={viewMode}
             />
           );
@@ -389,7 +389,7 @@ export function AllReasonersPage() {
         if (emptyStateType) {
           // Show appropriate empty state
           return (
-            <EmptyReasonersState
+            <EmptyBotsState
               type={emptyStateType}
               searchTerm={filters.search}
               onRefresh={handleRefresh}
@@ -400,19 +400,19 @@ export function AllReasonersPage() {
           );
         }
 
-        // Show reasoners grid/table
+        // Show bots grid/table
         return (
-          <ReasonerGrid
-            reasoners={safeData.reasoners}
+          <BotGrid
+            bots={safeData.bots}
             loading={loading}
-            onReasonerClick={handleReasonerClick}
+            onBotClick={handleBotClick}
             viewMode={viewMode}
           />
         );
       })()}
 
       {/* Load More Button (if needed for pagination) */}
-      {data && data.reasoners.length < data.total && (
+      {data && data.bots.length < data.total && (
         <div className="flex justify-center mt-8">
           <Button
             variant="outline"
@@ -451,7 +451,7 @@ export function AllReasonersPage() {
       )}
 
       {/* Footer Info */}
-      {!loading && !error && data && data.reasoners.length > 0 && (
+      {!loading && !error && data && data.bots.length > 0 && (
         <div className="text-center text-body-small py-4">
           Last updated: {lastRefresh.toLocaleTimeString()}
         </div>

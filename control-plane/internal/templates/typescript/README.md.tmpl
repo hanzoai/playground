@@ -23,7 +23,7 @@ An Playground agent created with `af init`.
 
 ## Test the Agent
 
-### Echo Reasoner (No AI Required)
+### Echo Bot (No AI Required)
 ```bash
 curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
   -H "Content-Type: application/json" \
@@ -35,7 +35,7 @@ curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
 1. Uncomment the `aiConfig` block in `main.ts`
 2. Set your API key: `export OPENAI_API_KEY=sk-...`
    - Or use `OPENROUTER_API_KEY` for OpenRouter-compatible models
-3. Uncomment the `analyzeSentiment` reasoner in `reasoners.ts`
+3. Uncomment the `analyzeSentiment bot in `bots.ts`
 4. Restart the agent
 
 ```bash
@@ -47,7 +47,7 @@ curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_analyzeSentim
 ## Project Structure
 
 - `main.ts` - Agent configuration and startup
-- `reasoners.ts` - Reasoner definitions (AI-powered functions)
+- `bots.ts` - Bot definitions (AI-powered functions)
 - `package.json` - Dependencies and scripts
 - `tsconfig.json` - TypeScript configuration
 - `.env.example` - Environment variable examples

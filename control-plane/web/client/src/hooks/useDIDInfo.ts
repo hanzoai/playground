@@ -104,7 +104,7 @@ export function useMultipleDIDStatuses(nodeIds: string[]) {
             status: {
               has_did: false,
               did_status: 'inactive' as const,
-              reasoner_count: 0,
+              bot_count: 0,
               skill_count: 0,
               last_updated: ''
             }

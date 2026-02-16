@@ -13,7 +13,7 @@ import {
   Analytics,
   Launch
 } from '@/components/ui/icon-bridge';
-import { reasonersApi } from '../../services/reasonersApi';
+import { botsApi } from '../../services/botsApi';
 import type { ExecutionRequest } from '../../types/execution';
 
 export interface QueuedExecution {
@@ -34,7 +34,7 @@ export interface QueuedExecution {
 }
 
 interface ExecutionQueueProps {
-  reasonerId: string;
+  botId: string;
   maxConcurrent?: number;
   onExecutionComplete?: (execution: QueuedExecution) => void;
   onExecutionSelect?: (execution: QueuedExecution | null) => void;
@@ -45,7 +45,7 @@ export interface ExecutionQueueRef {
 }
 
 export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>(({
-  reasonerId,
+  botId,
   maxConcurrent = 5,
   onExecutionComplete,
   onExecutionSelect
@@ -83,7 +83,7 @@ export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>
 
     // Start execution if not queued
     if (newExecution.status === 'running') {
-      executeReasoner(executionId, input);
+      executeBot(executionId, input);
     }
 
     return executionId;
@@ -102,7 +102,7 @@ export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>
     processQueue();
   };
 
-  const executeReasoner = async (executionId: string, input: any) => {
+  const executeBot = async (executionId: string, input: any) => {
     try {
       // Update status to running
       setExecutions(prev =>
@@ -122,7 +122,7 @@ export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>
       };
 
       // Use async API to get execution_id immediately
-      const asyncResponse = await reasonersApi.executeReasonerAsync(reasonerId, request);
+      const asyncResponse = await botsApi.executeBotAsync(botId, request);
 
       // Immediately capture the backend execution_id for navigation
       setExecutions(prev =>
@@ -148,7 +148,7 @@ export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>
 
         while (attempts < maxAttempts) {
           try {
-            const statusResponse = await reasonersApi.getExecutionStatus(asyncResponse.execution_id);
+            const statusResponse = await botsApi.getExecutionStatus(asyncResponse.execution_id);
 
             if (statusResponse.status === 'completed') {
               const endTime = new Date();
@@ -271,7 +271,7 @@ export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>
 
     if (runningCount < maxConcurrent && queuedExecutions.length > 0) {
       const nextExecution = queuedExecutions[0];
-      executeReasoner(nextExecution.id, nextExecution.input);
+      executeBot(nextExecution.id, nextExecution.input);
     }
   };
 
@@ -289,7 +289,7 @@ export const ExecutionQueue = forwardRef<ExecutionQueueRef, ExecutionQueueProps>
       );
 
       // Check if execution details are available by trying to fetch execution status
-      await reasonersApi.getExecutionStatus(backendExecutionId);
+      await botsApi.getExecutionStatus(backendExecutionId);
 
       // If we can fetch the status, the page should be available
       setExecutions(prev =>

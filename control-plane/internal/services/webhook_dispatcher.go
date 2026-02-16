@@ -398,7 +398,7 @@ func (d *webhookDispatcher) buildPayload(ctx context.Context, exec *types.Execut
 		ExecutionID: exec.ExecutionID,
 		RunID:       exec.RunID,
 		Status:      exec.Status,
-		Target:      fmt.Sprintf("%s.%s", exec.NodeID, exec.ReasonerID),
+		Target:      fmt.Sprintf("%s.%s", exec.NodeID, exec.BotID),
 		TargetType:  targetType,
 		DurationMS:  exec.DurationMS,
 	}
@@ -421,19 +421,19 @@ func (d *webhookDispatcher) buildPayload(ctx context.Context, exec *types.Execut
 func (d *webhookDispatcher) resolveTargetType(ctx context.Context, exec *types.Execution) string {
 	agent, err := d.store.GetAgent(ctx, exec.NodeID)
 	if err != nil || agent == nil {
-		return "reasoner"
+		return "bot"
 	}
-	for _, reasoner := range agent.Reasoners {
-		if reasoner.ID == exec.ReasonerID {
-			return "reasoner"
+	for _, bot := range agent.Bots {
+		if bot.ID == exec.BotID {
+			return "bot"
 		}
 	}
 	for _, skill := range agent.Skills {
-		if skill.ID == exec.ReasonerID {
+		if skill.ID == exec.BotID {
 			return "skill"
 		}
 	}
-	return "reasoner"
+	return "bot"
 }
 
 func (d *webhookDispatcher) computeBackoff(attempt int) time.Duration {

@@ -8,14 +8,14 @@ import (
 	"github.com/hanzoai/playground/sdk/go/ai"
 )
 
-func registerReasoners(app *agent.Agent) {
-	// Simple echo reasoner - works without AI configured
+func registerBots(app *agent.Agent) {
+	// Simple echo bot - works without AI configured
 	//
 	// Example usage:
 	// curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.echo \
 	//   -H "Content-Type: application/json" \
 	//   -d '{"input": {"message": "Hello World"}}'
-	app.RegisterReasoner("echo", func(ctx context.Context, input map[string]any) (any, error) {
+	app.RegisterBot("echo", func(ctx context.Context, input map[string]any) (any, error) {
 		message, _ := input["message"].(string)
 		return map[string]any{
 			"original": message,
@@ -33,7 +33,7 @@ func registerReasoners(app *agent.Agent) {
 	//   -H "Content-Type: application/json" \
 	//   -d '{"input": {"text": "I love this product!"}}'
 	//
-	// app.RegisterReasoner("analyze_sentiment", func(ctx context.Context, input map[string]any) (any, error) {
+	// app.RegisterBot("analyze_sentiment", func(ctx context.Context, input map[string]any) (any, error) {
 	// 	text, _ := input["text"].(string)
 	//
 	// 	result, err := app.AI(ctx,

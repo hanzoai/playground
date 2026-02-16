@@ -16,7 +16,7 @@ interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -121,7 +121,7 @@ export function NodeDetailSidebar({
               Execution Details
             </h2>
             <p className="mt-1 text-body-small">
-              {node.task_name || node.reasoner_id}
+              {node.task_name || node.bot_id}
             </p>
           </div>
           <Button

@@ -154,7 +154,7 @@ export function DIDDisplay({
             <div className="flex items-center justify-center w-5 h-5 rounded bg-muted border border-border">
               <Cognitive size={12} className="text-muted-foreground" />
             </div>
-            <span>{Object.keys(didInfo.reasoners).length} reasoners</span>
+            <span>{Object.keys(didInfo.bots).length} bots</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="flex items-center justify-center w-5 h-5 rounded bg-muted border border-border">

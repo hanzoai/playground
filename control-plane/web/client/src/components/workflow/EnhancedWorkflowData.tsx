@@ -165,7 +165,7 @@ export function EnhancedWorkflowData({
         const outputData = getNodeOutput(node);
         const basis = [
           node.agent_name,
-          node.reasoner_id,
+          node.bot_id,
           node.execution_id,
           node.status,
           JSON.stringify(inputData ?? {}),
@@ -283,15 +283,15 @@ export function EnhancedWorkflowData({
     navigate(`/executions/${encodeURIComponent(activeNode.execution_id)}`);
   }, [navigate, activeNode]);
 
-  const handleOpenReasonerPage = useCallback(() => {
+  const handleOpenBotPage = useCallback(() => {
     const agentNodeId =
       activeNode?.agent_node_id || activeDetails?.agent_node_id;
-    const reasonerId = activeNode?.reasoner_id || activeDetails?.reasoner_id;
+    const botId = activeNode?.bot_id || activeDetails?.bot_id;
 
-    if (!agentNodeId || !reasonerId) return;
+    if (!agentNodeId || !botId) return;
 
-    const fullReasonerId = `${agentNodeId}.${reasonerId}`;
-    navigate(`/reasoners/${encodeURIComponent(fullReasonerId)}`);
+    const fullBotId = `${agentNodeId}.${botId}`;
+    navigate(`/bots/${encodeURIComponent(fullBotId)}`);
   }, [navigate, activeNode, activeDetails]);
 
   const handleDownloadNode = useCallback(() => {
@@ -299,7 +299,7 @@ export function EnhancedWorkflowData({
     const payload = {
       execution_id: activeNode.execution_id,
       agent_name: activeNode.agent_name,
-      reasoner_id: activeNode.reasoner_id,
+      bot_id: activeNode.bot_id,
       status: activeNode.status,
       duration_ms: activeNode.duration_ms,
       started_at: activeNode.started_at,
@@ -419,10 +419,10 @@ export function EnhancedWorkflowData({
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col">
             <span className="text-sm font-medium text-foreground truncate">
-              {node.agent_name || node.reasoner_id || "Unnamed node"}
+              {node.agent_name || node.bot_id || "Unnamed node"}
             </span>
             <span className="text-body-small truncate">
-              {node.reasoner_id || node.execution_id}
+              {node.bot_id || node.execution_id}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -591,7 +591,7 @@ export function EnhancedWorkflowData({
           // Left Panel - Search + Node List
           <div key="node-list" className="h-full flex flex-col space-y-4 p-4">
             <Input
-              placeholder="Search by agent, reasoner, execution, or JSON content"
+              placeholder="Search by agent, bot, execution, or JSON content"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full"
@@ -631,7 +631,7 @@ export function EnhancedWorkflowData({
                 <div className="space-y-2">
                   <h3 className="text-heading-3">
                     {activeNode.agent_name ||
-                      activeNode.reasoner_id ||
+                      activeNode.bot_id ||
                       "Selected node"}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 text-body-small">
@@ -663,13 +663,13 @@ export function EnhancedWorkflowData({
                   >
                     Go to Execution
                   </Button>
-                  {(activeNode?.reasoner_id || activeDetails?.reasoner_id) && (
+                  {(activeNode?.bot_id || activeDetails?.bot_id) && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleOpenReasonerPage}
+                      onClick={handleOpenBotPage}
                     >
-                      Go to Reasoner
+                      Go to Bot
                     </Button>
                   )}
                   <Button

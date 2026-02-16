@@ -15,7 +15,7 @@ type Execution struct {
 
 	// Agent metadata
 	AgentNodeID string `json:"agent_node_id" db:"agent_node_id"`
-	ReasonerID  string `json:"reasoner_id" db:"reasoner_id"`
+	BotID  string `json:"bot_id" db:"bot_id"`
 	NodeID      string `json:"node_id" db:"node_id"`
 
 	// Payloads
@@ -52,7 +52,7 @@ type ExecutionFilter struct {
 	ExecutionID       *string
 	ParentExecutionID *string
 	AgentNodeID       *string
-	ReasonerID        *string
+	BotID        *string
 	Status            *string
 	SessionID         *string
 	ActorID           *string

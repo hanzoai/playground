@@ -71,7 +71,7 @@ func (ls *LocalStorage) getWorkflowExecutionByID(ctx context.Context, q DBTX, ex
 	query := `
 		SELECT workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
 		       agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id, workflow_depth,
-		       reasoner_id, input_data, output_data, input_size, output_size,
+		       bot_id, input_data, output_data, input_size, output_size,
 		       status, started_at, completed_at, duration_ms,
 		       state_version, last_event_sequence, active_children, pending_children,
 		       pending_terminal_status, status_reason, lease_owner, lease_expires_at,
@@ -92,7 +92,7 @@ func (ls *LocalStorage) getWorkflowExecutionByID(ctx context.Context, q DBTX, ex
 		&execution.WorkflowID, &execution.ExecutionID, &execution.AgentsRequestID,
 		&runID, &execution.SessionID, &execution.ActorID, &execution.AgentNodeID,
 		&execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID, &execution.WorkflowDepth,
-		&execution.ReasonerID, &inputData, &outputData,
+		&execution.BotID, &inputData, &outputData,
 		&execution.InputSize, &execution.OutputSize, &execution.Status,
 		&execution.StartedAt, &execution.CompletedAt, &execution.DurationMS,
 		&execution.StateVersion, &execution.LastEventSequence, &execution.ActiveChildren, &execution.PendingChildren,
@@ -896,7 +896,7 @@ func (ls *LocalStorage) createSchema(ctx context.Context) error {
 
 func (ls *LocalStorage) initializeMemoryBuckets() error {
 	if err := ls.kvStore.Update(func(tx *bolt.Tx) error {
-		scopes := []string{"workflow", "session", "actor", "reasoner", "global"}
+		scopes := []string{"workflow", "session", "actor", "bot", "global"}
 		for _, scope := range scopes {
 			if _, err := tx.CreateBucketIfNotExists([]byte(scope)); err != nil {
 				return fmt.Errorf("failed to create BoltDB bucket '%s': %w", scope, err)
@@ -1811,8 +1811,8 @@ func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.Execu
 	if filters.AgentNodeID != nil {
 		query = query.Where("agent_node_id = ?", *filters.AgentNodeID)
 	}
-	if filters.ReasonerID != nil {
-		query = query.Where("reasoner_id = ?", *filters.ReasonerID)
+	if filters.BotID != nil {
+		query = query.Where("bot_id = ?", *filters.BotID)
 	}
 	if filters.Status != nil {
 		query = query.Where("status = ?", *filters.Status)
@@ -1865,7 +1865,7 @@ func agentExecutionToModel(exec *types.AgentExecution) (*AgentExecutionModel, er
 		WorkflowID:   exec.WorkflowID,
 		SessionID:    exec.SessionID,
 		AgentNodeID:  exec.AgentNodeID,
-		ReasonerID:   exec.ReasonerID,
+		BotID:   exec.BotID,
 		InputData:    []byte(exec.InputData),
 		OutputData:   []byte(exec.OutputData),
 		InputSize:    exec.InputSize,
@@ -1888,7 +1888,7 @@ func agentExecutionFromModel(model *AgentExecutionModel) (*types.AgentExecution,
 		WorkflowID:   model.WorkflowID,
 		SessionID:    model.SessionID,
 		AgentNodeID:  model.AgentNodeID,
-		ReasonerID:   model.ReasonerID,
+		BotID:   model.BotID,
 		InputData:    json.RawMessage(append([]byte(nil), model.InputData...)),
 		OutputData:   json.RawMessage(append([]byte(nil), model.OutputData...)),
 		InputSize:    model.InputSize,
@@ -2043,7 +2043,7 @@ func (ls *LocalStorage) retryDatabaseOperation(ctx context.Context, operationID 
 const sqliteWorkflowExecutionInsertQuery = `INSERT INTO workflow_executions (
 	workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
 	agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id, workflow_depth,
-	reasoner_id, input_data, output_data, input_size, output_size,
+	bot_id, input_data, output_data, input_size, output_size,
 	status, started_at, completed_at, duration_ms,
 	state_version, last_event_sequence, active_children, pending_children,
 	pending_terminal_status, status_reason, lease_owner, lease_expires_at,
@@ -2132,7 +2132,7 @@ func (ls *LocalStorage) executeWorkflowInsert(ctx context.Context, q DBTX, execu
 		execution.WorkflowID, execution.ExecutionID, execution.AgentsRequestID, execution.RunID,
 		execution.SessionID, execution.ActorID, execution.AgentNodeID,
 		execution.ParentWorkflowID, execution.ParentExecutionID, execution.RootWorkflowID, execution.WorkflowDepth,
-		execution.ReasonerID, execution.InputData, execution.OutputData,
+		execution.BotID, execution.InputData, execution.OutputData,
 		execution.InputSize, execution.OutputSize,
 		execution.Status, execution.StartedAt, execution.CompletedAt, execution.DurationMS,
 		execution.StateVersion, execution.LastEventSequence, execution.ActiveChildren, execution.PendingChildren,
@@ -2398,7 +2398,7 @@ func (ls *LocalStorage) QueryWorkflowExecutions(ctx context.Context, filters typ
 			workflow_executions.agents_request_id, workflow_executions.run_id, workflow_executions.session_id, workflow_executions.actor_id,
 			workflow_executions.agent_node_id, workflow_executions.parent_workflow_id, workflow_executions.parent_execution_id,
 			workflow_executions.root_workflow_id, workflow_executions.workflow_depth,
-			workflow_executions.reasoner_id, workflow_executions.input_data, workflow_executions.output_data,
+			workflow_executions.bot_id, workflow_executions.input_data, workflow_executions.output_data,
 			workflow_executions.input_size, workflow_executions.output_size,
 			workflow_executions.status, workflow_executions.started_at, workflow_executions.completed_at,
 			workflow_executions.duration_ms,
@@ -2525,7 +2525,7 @@ func (ls *LocalStorage) QueryWorkflowExecutions(ctx context.Context, filters typ
 			&execution.ID, &execution.WorkflowID, &execution.ExecutionID,
 			&execution.AgentsRequestID, &runID, &execution.SessionID, &execution.ActorID,
 			&execution.AgentNodeID, &execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID,
-			&execution.WorkflowDepth, &execution.ReasonerID, &inputData,
+			&execution.WorkflowDepth, &execution.BotID, &inputData,
 			&outputData, &execution.InputSize, &execution.OutputSize,
 			&execution.Status, &execution.StartedAt, &execution.CompletedAt,
 			&execution.DurationMS,
@@ -2599,7 +2599,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 			SELECT
 				id, workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
 				agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id,
-				workflow_depth, reasoner_id, input_data, output_data, input_size, output_size,
+				workflow_depth, bot_id, input_data, output_data, input_size, output_size,
 				status, started_at, completed_at, duration_ms,
 				state_version, last_event_sequence, active_children, pending_children,
 				pending_terminal_status, status_reason,
@@ -2617,7 +2617,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 			SELECT
 				we.id, we.workflow_id, we.execution_id, we.agents_request_id, we.run_id, we.session_id, we.actor_id,
 				we.agent_node_id, we.parent_workflow_id, we.parent_execution_id, we.root_workflow_id,
-				we.workflow_depth, we.reasoner_id, we.input_data, we.output_data, we.input_size, we.output_size,
+				we.workflow_depth, we.bot_id, we.input_data, we.output_data, we.input_size, we.output_size,
 				we.status, we.started_at, we.completed_at, we.duration_ms,
 				we.state_version, we.last_event_sequence, we.active_children, we.pending_children,
 				we.pending_terminal_status, we.status_reason,
@@ -2633,7 +2633,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 		SELECT
 			id, workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
 			agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id,
-			workflow_depth, reasoner_id, input_data, output_data, input_size, output_size,
+			workflow_depth, bot_id, input_data, output_data, input_size, output_size,
 			status, started_at, completed_at, duration_ms,
 			state_version, last_event_sequence, active_children, pending_children,
 			pending_terminal_status, status_reason,
@@ -2666,7 +2666,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 			&execution.ID, &execution.WorkflowID, &execution.ExecutionID,
 			&execution.AgentsRequestID, &runID, &execution.SessionID, &execution.ActorID,
 			&execution.AgentNodeID, &execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID,
-			&execution.WorkflowDepth, &execution.ReasonerID, &inputData,
+			&execution.WorkflowDepth, &execution.BotID, &inputData,
 			&outputData, &execution.InputSize, &execution.OutputSize,
 			&execution.Status, &execution.StartedAt, &execution.CompletedAt,
 			&execution.DurationMS,
@@ -4298,7 +4298,7 @@ func (ls *LocalStorage) RegisterAgent(ctx context.Context, agent *types.AgentNod
 func (ls *LocalStorage) executeRegisterAgent(ctx context.Context, q DBTX, agent *types.AgentNode) error {
 	query := `
 		INSERT INTO agent_nodes (
-			id, team_id, base_url, version, deployment_type, invocation_url, reasoners, skills,
+			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -4308,7 +4308,7 @@ func (ls *LocalStorage) executeRegisterAgent(ctx context.Context, q DBTX, agent 
 			version = excluded.version,
 			deployment_type = excluded.deployment_type,
 			invocation_url = excluded.invocation_url,
-			reasoners = excluded.reasoners,
+			bots = excluded.bots,
 			skills = excluded.skills,
 			communication_config = excluded.communication_config,
 			health_status = excluded.health_status,
@@ -4317,9 +4317,9 @@ func (ls *LocalStorage) executeRegisterAgent(ctx context.Context, q DBTX, agent 
 			features = excluded.features,
 			metadata = excluded.metadata;`
 
-	reasonersJSON, err := json.Marshal(agent.Reasoners)
+	botsJSON, err := json.Marshal(agent.Bots)
 	if err != nil {
-		return fmt.Errorf("failed to marshal reasoners: %w", err)
+		return fmt.Errorf("failed to marshal bots: %w", err)
 	}
 	skillsJSON, err := json.Marshal(agent.Skills)
 	if err != nil {
@@ -4340,7 +4340,7 @@ func (ls *LocalStorage) executeRegisterAgent(ctx context.Context, q DBTX, agent 
 
 	_, err = q.ExecContext(ctx, query,
 		agent.ID, agent.TeamID, agent.BaseURL, agent.Version, agent.DeploymentType, agent.InvocationURL,
-		reasonersJSON, skillsJSON, commConfigJSON, agent.HealthStatus, agent.LifecycleStatus,
+		botsJSON, skillsJSON, commConfigJSON, agent.HealthStatus, agent.LifecycleStatus,
 		agent.LastHeartbeat, agent.RegisteredAt, featuresJSON, metadataJSON,
 	)
 
@@ -4360,7 +4360,7 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 
 	query := `
 		SELECT
-			id, team_id, base_url, version, deployment_type, invocation_url, reasoners, skills,
+			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
 		FROM agent_nodes WHERE id = ?`
@@ -4368,13 +4368,13 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 	row := ls.db.QueryRowContext(ctx, query, id)
 
 	agent := &types.AgentNode{}
-	var reasonersJSON, skillsJSON, commConfigJSON, featuresJSON, metadataJSON []byte
+	var botsJSON, skillsJSON, commConfigJSON, featuresJSON, metadataJSON []byte
 	var healthStatusStr, lifecycleStatusStr string
 	var invocationURL sql.NullString
 
 	err := row.Scan(
 		&agent.ID, &agent.TeamID, &agent.BaseURL, &agent.Version, &agent.DeploymentType, &invocationURL,
-		&reasonersJSON, &skillsJSON, &commConfigJSON, &healthStatusStr, &lifecycleStatusStr,
+		&botsJSON, &skillsJSON, &commConfigJSON, &healthStatusStr, &lifecycleStatusStr,
 		&agent.LastHeartbeat, &agent.RegisteredAt, &featuresJSON, &metadataJSON,
 	)
 
@@ -4392,9 +4392,9 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 		agent.InvocationURL = &url
 	}
 
-	if len(reasonersJSON) > 0 {
-		if err := json.Unmarshal(reasonersJSON, &agent.Reasoners); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal agent reasoners: %w", err)
+	if len(botsJSON) > 0 {
+		if err := json.Unmarshal(botsJSON, &agent.Bots); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal agent bots: %w", err)
 		}
 	}
 	if len(skillsJSON) > 0 {
@@ -4448,7 +4448,7 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 	// Build query with filters
 	query := `
 		SELECT
-			id, team_id, base_url, version, deployment_type, invocation_url, reasoners, skills,
+			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
 		FROM agent_nodes`
@@ -4492,13 +4492,13 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 		}
 
 		agent := &types.AgentNode{}
-		var reasonersJSON, skillsJSON, commConfigJSON, featuresJSON, metadataJSON []byte
+		var botsJSON, skillsJSON, commConfigJSON, featuresJSON, metadataJSON []byte
 		var healthStatusStr, lifecycleStatusStr string
 		var invocationURL sql.NullString
 
 		err := rows.Scan(
 			&agent.ID, &agent.TeamID, &agent.BaseURL, &agent.Version, &agent.DeploymentType, &invocationURL,
-			&reasonersJSON, &skillsJSON, &commConfigJSON, &healthStatusStr, &lifecycleStatusStr,
+			&botsJSON, &skillsJSON, &commConfigJSON, &healthStatusStr, &lifecycleStatusStr,
 			&agent.LastHeartbeat, &agent.RegisteredAt, &featuresJSON, &metadataJSON,
 		)
 		if err != nil {
@@ -4512,9 +4512,9 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 			agent.InvocationURL = &url
 		}
 
-		if len(reasonersJSON) > 0 {
-			if err := json.Unmarshal(reasonersJSON, &agent.Reasoners); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal agent reasoners: %w", err)
+		if len(botsJSON) > 0 {
+			if err := json.Unmarshal(botsJSON, &agent.Bots); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal agent bots: %w", err)
 			}
 		}
 		if len(skillsJSON) > 0 {
@@ -5334,33 +5334,33 @@ func (ls *LocalStorage) DeleteAgentPackage(ctx context.Context, packageID string
 	return nil
 }
 
-// GetReasonerPerformanceMetrics retrieves performance metrics for a specific reasoner
+// GetBotPerformanceMetrics retrieves performance metrics for a specific bot
 // This is a read-only operation that leverages SQLite WAL mode for concurrent access
-func (ls *LocalStorage) GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error) {
+func (ls *LocalStorage) GetBotPerformanceMetrics(ctx context.Context, botID string) (*types.BotPerformanceMetrics, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("context cancelled during get reasoner performance metrics: %w", err)
+		return nil, fmt.Errorf("context cancelled during get bot performance metrics: %w", err)
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid reasoner_id format, expected 'node_id.reasoner_id'")
+		return nil, fmt.Errorf("invalid bot_id format, expected 'node_id.bot_id'")
 	}
 
 	nodeID := parts[0]
-	localReasonerID := parts[1]
+	localBotID := parts[1]
 
 	// Execute read-only query directly - no write mutex needed due to SQLite WAL mode
 	// WAL mode allows concurrent readers without blocking writers
-	return ls.executeReasonerMetricsQueryDirect(ctx, nodeID, localReasonerID)
+	return ls.executeBotMetricsQueryDirect(ctx, nodeID, localBotID)
 }
 
-// executeReasonerMetricsQuery performs the reasoner metrics query within a transaction
+// executeBotMetricsQuery performs the bot metrics query within a transaction
 //
 //nolint:unused // retained for upcoming analytics endpoints
-func (ls *LocalStorage) executeReasonerMetricsQuery(tx DBTX, nodeID, localReasonerID string) (*types.ReasonerPerformanceMetrics, error) {
-	// Query for metrics from workflow_executions table using separate node_id and reasoner_id
+func (ls *LocalStorage) executeBotMetricsQuery(tx DBTX, nodeID, localBotID string) (*types.BotPerformanceMetrics, error) {
+	// Query for metrics from workflow_executions table using separate node_id and bot_id
 	metricsQuery := `
 		SELECT
 			COUNT(*) as total_executions,
@@ -5368,16 +5368,16 @@ func (ls *LocalStorage) executeReasonerMetricsQuery(tx DBTX, nodeID, localReason
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful_executions,
 			COALESCE(SUM(CASE WHEN started_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END), 0) as executions_last_24h
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND reasoner_id = ?`
+		WHERE agent_node_id = ? AND bot_id = ?`
 
-	row := tx.QueryRow(metricsQuery, nodeID, localReasonerID)
+	row := tx.QueryRow(metricsQuery, nodeID, localBotID)
 
 	var totalExecutions, successfulExecutions, executionsLast24h int
 	var avgDuration float64
 
 	err := row.Scan(&totalExecutions, &avgDuration, &successfulExecutions, &executionsLast24h)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query reasoner metrics: %w", err)
+		return nil, fmt.Errorf("failed to query bot metrics: %w", err)
 	}
 
 	// Calculate success rate
@@ -5390,11 +5390,11 @@ func (ls *LocalStorage) executeReasonerMetricsQuery(tx DBTX, nodeID, localReason
 	recentQuery := `
 		SELECT execution_id, status, duration_ms, started_at
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND reasoner_id = ?
+		WHERE agent_node_id = ? AND bot_id = ?
 		ORDER BY started_at DESC
 		LIMIT 5`
 
-	rows, err := tx.Query(recentQuery, nodeID, localReasonerID)
+	rows, err := tx.Query(recentQuery, nodeID, localBotID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query recent executions: %w", err)
 	}
@@ -5419,7 +5419,7 @@ func (ls *LocalStorage) executeReasonerMetricsQuery(tx DBTX, nodeID, localReason
 
 	avgResponseTimeMs := int(avgDuration)
 
-	metrics := &types.ReasonerPerformanceMetrics{
+	metrics := &types.BotPerformanceMetrics{
 		AvgResponseTimeMs: avgResponseTimeMs,
 		SuccessRate:       successRate,
 		TotalExecutions:   totalExecutions,
@@ -5430,10 +5430,10 @@ func (ls *LocalStorage) executeReasonerMetricsQuery(tx DBTX, nodeID, localReason
 	return metrics, nil
 }
 
-// executeReasonerMetricsQueryDirect performs reasoner metrics query without transaction wrapper
+// executeBotMetricsQueryDirect performs bot metrics query without transaction wrapper
 // This is used when we detect we're already in a transaction context
-func (ls *LocalStorage) executeReasonerMetricsQueryDirect(ctx context.Context, nodeID, localReasonerID string) (*types.ReasonerPerformanceMetrics, error) {
-	// Query for metrics from workflow_executions table using separate node_id and reasoner_id
+func (ls *LocalStorage) executeBotMetricsQueryDirect(ctx context.Context, nodeID, localBotID string) (*types.BotPerformanceMetrics, error) {
+	// Query for metrics from workflow_executions table using separate node_id and bot_id
 	metricsQuery := `
 		SELECT
 			COUNT(*) as total_executions,
@@ -5441,16 +5441,16 @@ func (ls *LocalStorage) executeReasonerMetricsQueryDirect(ctx context.Context, n
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful_executions,
 			COALESCE(SUM(CASE WHEN started_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END), 0) as executions_last_24h
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND reasoner_id = ?`
+		WHERE agent_node_id = ? AND bot_id = ?`
 
-	row := ls.db.QueryRowContext(ctx, metricsQuery, nodeID, localReasonerID)
+	row := ls.db.QueryRowContext(ctx, metricsQuery, nodeID, localBotID)
 
 	var totalExecutions, successfulExecutions, executionsLast24h int
 	var avgDuration float64
 
 	err := row.Scan(&totalExecutions, &avgDuration, &successfulExecutions, &executionsLast24h)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query reasoner metrics: %w", err)
+		return nil, fmt.Errorf("failed to query bot metrics: %w", err)
 	}
 
 	// Calculate success rate
@@ -5463,11 +5463,11 @@ func (ls *LocalStorage) executeReasonerMetricsQueryDirect(ctx context.Context, n
 	recentQuery := `
 		SELECT execution_id, status, duration_ms, started_at
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND reasoner_id = ?
+		WHERE agent_node_id = ? AND bot_id = ?
 		ORDER BY started_at DESC
 		LIMIT 5`
 
-	rows, err := ls.db.QueryContext(ctx, recentQuery, nodeID, localReasonerID)
+	rows, err := ls.db.QueryContext(ctx, recentQuery, nodeID, localBotID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query recent executions: %w", err)
 	}
@@ -5497,7 +5497,7 @@ func (ls *LocalStorage) executeReasonerMetricsQueryDirect(ctx context.Context, n
 
 	avgResponseTimeMs := int(avgDuration)
 
-	metrics := &types.ReasonerPerformanceMetrics{
+	metrics := &types.BotPerformanceMetrics{
 		AvgResponseTimeMs: avgResponseTimeMs,
 		SuccessRate:       successRate,
 		TotalExecutions:   totalExecutions,
@@ -5508,35 +5508,35 @@ func (ls *LocalStorage) executeReasonerMetricsQueryDirect(ctx context.Context, n
 	return metrics, nil
 }
 
-// GetReasonerExecutionHistory retrieves paginated execution history for a specific reasoner
+// GetBotExecutionHistory retrieves paginated execution history for a specific bot
 // This is a read-only operation that leverages SQLite WAL mode for concurrent access
-func (ls *LocalStorage) GetReasonerExecutionHistory(ctx context.Context, reasonerID string, page, limit int) (*types.ReasonerExecutionHistory, error) {
+func (ls *LocalStorage) GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("context cancelled during get reasoner execution history: %w", err)
+		return nil, fmt.Errorf("context cancelled during get bot execution history: %w", err)
 	}
 
-	// Parse reasoner ID (format: "node_id.reasoner_id")
-	parts := strings.SplitN(reasonerID, ".", 2)
+	// Parse bot ID (format: "node_id.bot_id")
+	parts := strings.SplitN(botID, ".", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid reasoner_id format, expected 'node_id.reasoner_id'")
+		return nil, fmt.Errorf("invalid bot_id format, expected 'node_id.bot_id'")
 	}
 
 	nodeID := parts[0]
-	localReasonerID := parts[1]
+	localBotID := parts[1]
 
 	// Calculate offset
 	offset := (page - 1) * limit
 
 	// Execute read-only query directly - no write mutex needed due to SQLite WAL mode
 	// WAL mode allows concurrent readers without blocking writers
-	return ls.executeReasonerHistoryQueryDirect(ctx, nodeID, localReasonerID, page, limit, offset)
+	return ls.executeBotHistoryQueryDirect(ctx, nodeID, localBotID, page, limit, offset)
 }
 
-// executeReasonerHistoryQuery performs the reasoner history query within a transaction
+// executeBotHistoryQuery performs the bot history query within a transaction
 //
 //nolint:unused // retained for upcoming analytics endpoints
-func (ls *LocalStorage) executeReasonerHistoryQuery(tx DBTX, nodeID, localReasonerID string, page, limit, offset int) (*types.ReasonerExecutionHistory, error) {
+func (ls *LocalStorage) executeBotHistoryQuery(tx DBTX, nodeID, localBotID string, page, limit, offset int) (*types.BotExecutionHistory, error) {
 	// Use a single optimized query with window functions to get both count and data efficiently
 	// This reduces lock time and improves performance
 	combinedQuery := `
@@ -5546,24 +5546,24 @@ func (ls *LocalStorage) executeReasonerHistoryQuery(tx DBTX, nodeID, localReason
 				COUNT(*) OVER() as total_count,
 				ROW_NUMBER() OVER(ORDER BY started_at DESC) as row_num
 			FROM workflow_executions
-			WHERE agent_node_id = ? AND reasoner_id = ?
+			WHERE agent_node_id = ? AND bot_id = ?
 		)
 		SELECT execution_id, status, input_data, output_data, error_message, duration_ms, started_at, total_count
 		FROM execution_data
 		WHERE row_num > ? AND row_num <= ?
 		ORDER BY started_at DESC`
 
-	rows, err := tx.Query(combinedQuery, nodeID, localReasonerID, offset, offset+limit)
+	rows, err := tx.Query(combinedQuery, nodeID, localBotID, offset, offset+limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query execution history: %w", err)
 	}
 	defer rows.Close()
 
-	var executions []types.ReasonerExecutionRecord
+	var executions []types.BotExecutionRecord
 	var total int
 
 	for rows.Next() {
-		var record types.ReasonerExecutionRecord
+		var record types.BotExecutionRecord
 		var inputData, outputData sql.NullString
 		var errorMessage sql.NullString
 		var durationMs sql.NullInt64
@@ -5608,7 +5608,7 @@ func (ls *LocalStorage) executeReasonerHistoryQuery(tx DBTX, nodeID, localReason
 
 	hasMore := (page * limit) < total
 
-	history := &types.ReasonerExecutionHistory{
+	history := &types.BotExecutionHistory{
 		Executions: executions,
 		Total:      total,
 		Page:       page,
@@ -5619,9 +5619,9 @@ func (ls *LocalStorage) executeReasonerHistoryQuery(tx DBTX, nodeID, localReason
 	return history, nil
 }
 
-// executeReasonerHistoryQueryDirect performs reasoner history query without transaction wrapper
+// executeBotHistoryQueryDirect performs bot history query without transaction wrapper
 // This is used when we detect we're already in a transaction context
-func (ls *LocalStorage) executeReasonerHistoryQueryDirect(ctx context.Context, nodeID, localReasonerID string, page, limit, offset int) (*types.ReasonerExecutionHistory, error) {
+func (ls *LocalStorage) executeBotHistoryQueryDirect(ctx context.Context, nodeID, localBotID string, page, limit, offset int) (*types.BotExecutionHistory, error) {
 	// Use a single optimized query with window functions to get both count and data efficiently
 	// This reduces lock time and improves performance
 	combinedQuery := `
@@ -5631,20 +5631,20 @@ func (ls *LocalStorage) executeReasonerHistoryQueryDirect(ctx context.Context, n
 				COUNT(*) OVER() as total_count,
 				ROW_NUMBER() OVER(ORDER BY started_at DESC) as row_num
 			FROM workflow_executions
-			WHERE agent_node_id = ? AND reasoner_id = ?
+			WHERE agent_node_id = ? AND bot_id = ?
 		)
 		SELECT execution_id, status, input_data, output_data, error_message, duration_ms, started_at, total_count
 		FROM execution_data
 		WHERE row_num > ? AND row_num <= ?
 		ORDER BY started_at DESC`
 
-	rows, err := ls.db.QueryContext(ctx, combinedQuery, nodeID, localReasonerID, offset, offset+limit)
+	rows, err := ls.db.QueryContext(ctx, combinedQuery, nodeID, localBotID, offset, offset+limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query execution history: %w", err)
 	}
 	defer rows.Close()
 
-	var executions []types.ReasonerExecutionRecord
+	var executions []types.BotExecutionRecord
 	var total int
 
 	for rows.Next() {
@@ -5653,7 +5653,7 @@ func (ls *LocalStorage) executeReasonerHistoryQueryDirect(ctx context.Context, n
 			return nil, fmt.Errorf("context cancelled during execution history iteration: %w", err)
 		}
 
-		var record types.ReasonerExecutionRecord
+		var record types.BotExecutionRecord
 		var inputData, outputData sql.NullString
 		var errorMessage sql.NullString
 		var durationMs sql.NullInt64
@@ -5698,7 +5698,7 @@ func (ls *LocalStorage) executeReasonerHistoryQueryDirect(ctx context.Context, n
 
 	hasMore := (page * limit) < total
 
-	history := &types.ReasonerExecutionHistory{
+	history := &types.BotExecutionHistory{
 		Executions: executions,
 		Total:      total,
 		Page:       page,
@@ -6263,15 +6263,15 @@ func (ls *LocalStorage) GetAgentDID(ctx context.Context, agentID string) (*types
 
 	query := `
 		SELECT agent_node_id, did, agents_server_id, public_key_jwk, derivation_path,
-		       reasoners, skills, status, registered_at
+		       bots, skills, status, registered_at
 		FROM agent_dids WHERE agent_node_id = ?`
 
 	row := ls.db.QueryRowContext(ctx, query, agentID)
 	info := &types.AgentDIDInfo{}
 
-	var reasonersJSON, skillsJSON, publicKeyJWK string
+	var botsJSON, skillsJSON, publicKeyJWK string
 	err := row.Scan(&info.AgentNodeID, &info.DID, &info.AgentsServerID, &publicKeyJWK,
-		&info.DerivationPath, &reasonersJSON, &skillsJSON, &info.Status, &info.RegisteredAt)
+		&info.DerivationPath, &botsJSON, &skillsJSON, &info.Status, &info.RegisteredAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("agent DID for %s not found", agentID)
@@ -6281,12 +6281,12 @@ func (ls *LocalStorage) GetAgentDID(ctx context.Context, agentID string) (*types
 	info.PublicKeyJWK = json.RawMessage(publicKeyJWK)
 
 	// Parse JSON fields
-	if reasonersJSON != "" {
-		if err := json.Unmarshal([]byte(reasonersJSON), &info.Reasoners); err != nil {
-			return nil, fmt.Errorf("failed to parse reasoners JSON: %w", err)
+	if botsJSON != "" {
+		if err := json.Unmarshal([]byte(botsJSON), &info.Bots); err != nil {
+			return nil, fmt.Errorf("failed to parse bots JSON: %w", err)
 		}
 	} else {
-		info.Reasoners = make(map[string]types.ReasonerDIDInfo)
+		info.Bots = make(map[string]types.BotDIDInfo)
 	}
 
 	if skillsJSON != "" {
@@ -6308,7 +6308,7 @@ func (ls *LocalStorage) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInf
 
 	query := `
 		SELECT agent_node_id, did, agents_server_id, public_key_jwk, derivation_path,
-		       reasoners, skills, status, registered_at
+		       bots, skills, status, registered_at
 		FROM agent_dids ORDER BY registered_at DESC`
 
 	rows, err := ls.db.QueryContext(ctx, query)
@@ -6325,21 +6325,21 @@ func (ls *LocalStorage) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInf
 		}
 
 		info := &types.AgentDIDInfo{}
-		var reasonersJSON, skillsJSON, publicKeyJWK string
+		var botsJSON, skillsJSON, publicKeyJWK string
 		err := rows.Scan(&info.AgentNodeID, &info.DID, &info.AgentsServerID, &publicKeyJWK,
-			&info.DerivationPath, &reasonersJSON, &skillsJSON, &info.Status, &info.RegisteredAt)
+			&info.DerivationPath, &botsJSON, &skillsJSON, &info.Status, &info.RegisteredAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan agent DID: %w", err)
 		}
 		info.PublicKeyJWK = json.RawMessage(publicKeyJWK)
 
 		// Parse JSON fields
-		if reasonersJSON != "" {
-			if err := json.Unmarshal([]byte(reasonersJSON), &info.Reasoners); err != nil {
-				return nil, fmt.Errorf("failed to parse reasoners JSON: %w", err)
+		if botsJSON != "" {
+			if err := json.Unmarshal([]byte(botsJSON), &info.Bots); err != nil {
+				return nil, fmt.Errorf("failed to parse bots JSON: %w", err)
 			}
 		} else {
-			info.Reasoners = make(map[string]types.ReasonerDIDInfo)
+			info.Bots = make(map[string]types.BotDIDInfo)
 		}
 
 		if skillsJSON != "" {
@@ -6393,12 +6393,12 @@ func (ls *LocalStorage) StoreComponentDID(ctx context.Context, componentID, comp
 		}
 	}
 	// Validate component type
-	validTypes := map[string]bool{"reasoner": true, "skill": true}
+	validTypes := map[string]bool{"bot": true, "skill": true}
 	if !validTypes[componentType] {
 		return &ValidationError{
 			Field:   "component_type",
 			Value:   componentType,
-			Reason:  "component type must be 'reasoner' or 'skill'",
+			Reason:  "component type must be 'bot' or 'skill'",
 			Context: "StoreComponentDID",
 		}
 	}

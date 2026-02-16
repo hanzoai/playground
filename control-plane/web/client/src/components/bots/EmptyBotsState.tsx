@@ -19,8 +19,8 @@ import {
   EmptyTitle,
 } from "../ui/empty";
 
-interface EmptyReasonersStateProps {
-  type: 'no-reasoners' | 'no-online' | 'no-offline' | 'no-search-results';
+interface EmptyBotsStateProps {
+  type: 'no-bots' | 'no-online' | 'no-offline' | 'no-search-results';
   searchTerm?: string;
   onRefresh?: () => void;
   onClearFilters?: () => void;
@@ -50,7 +50,7 @@ interface EmptyStateConfig {
   tip?: EmptyStateTip;
 }
 
-export function EmptyReasonersState({
+export function EmptyBotsState({
   type,
   searchTerm,
   onRefresh,
@@ -58,43 +58,43 @@ export function EmptyReasonersState({
   onShowAll,
   loading = false,
   className
-}: EmptyReasonersStateProps) {
+}: EmptyBotsStateProps) {
   const getStateConfig = (): EmptyStateConfig => {
     switch (type) {
-      case 'no-reasoners':
+      case 'no-bots':
         return {
           icon: <Grid className="h-10 w-10" />,
-          title: "No Reasoners Available",
-          description: "There are no reasoners registered in the system yet. Connect some agent nodes to see reasoners here.",
+          title: "No Bots Available",
+          description: "There are no bots registered in the system yet. Connect some agent nodes to see bots here.",
           primaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
           secondaryAction: null,
           tip: {
             icon: <Terminal className="h-5 w-5 text-muted-foreground" />,
             title: "Getting started",
-            body: "Launch an agent node to register reasoners with Playground. They will appear here as soon as they are online.",
+            body: "Launch an agent node to register bots with Hanzo Bot. They will appear here as soon as they are online.",
           },
         };
 
       case 'no-online':
         return {
           icon: <Wifi className="h-10 w-10" />,
-          title: "No Online Reasoners",
-          description: "All reasoners are currently offline. Check your agent node connections or try viewing all reasoners.",
-          primaryAction: { label: "Show All Reasoners", action: onShowAll, icon: <Grid className="h-4 w-4" /> },
+          title: "No Online Bots",
+          description: "All bots are currently offline. Check your agent node connections or try viewing all bots.",
+          primaryAction: { label: "Show All Bots", action: onShowAll, icon: <Grid className="h-4 w-4" /> },
           secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
           tip: {
             icon: <CloudOffline className="h-5 w-5 text-muted-foreground" />,
             title: "Connection check",
-            body: "Verify that your agent nodes are connected and healthy. Offline reasoners usually indicate network or configuration issues.",
+            body: "Verify that your agent nodes are connected and healthy. Offline bots usually indicate network or configuration issues.",
           },
         };
 
       case 'no-offline':
         return {
           icon: <WifiOff className="h-10 w-10" />,
-          title: "No Offline Reasoners",
-          description: "Great! All your reasoners are currently online and ready to use.",
-          primaryAction: { label: "Show Online Reasoners", action: onShowAll, icon: <Wifi className="h-4 w-4" /> },
+          title: "No Offline Bots",
+          description: "Great! All your bots are currently online and ready to use.",
+          primaryAction: { label: "Show Online Bots", action: onShowAll, icon: <Wifi className="h-4 w-4" /> },
           secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> }
         };
 
@@ -103,8 +103,8 @@ export function EmptyReasonersState({
           icon: <Search className="h-10 w-10" />,
           title: "No Results Found",
           description: searchTerm
-            ? `No reasoners match "${searchTerm}". Try a different search term or clear your filters.`
-            : "No reasoners match your current filters. Try adjusting your search criteria.",
+            ? `No bots match "${searchTerm}". Try a different search term or clear your filters.`
+            : "No bots match your current filters. Try adjusting your search criteria.",
           primaryAction: { label: "Clear Filters", action: onClearFilters, icon: <Grid className="h-4 w-4" /> },
           secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> }
         };
@@ -113,7 +113,7 @@ export function EmptyReasonersState({
         return {
           icon: <CloudOffline className="h-10 w-10" />,
           title: "Something went wrong",
-          description: "Unable to load reasoners. Please try refreshing the page.",
+          description: "Unable to load bots. Please try refreshing the page.",
           primaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
           secondaryAction: null
         };

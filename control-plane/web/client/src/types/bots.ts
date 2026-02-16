@@ -1,15 +1,15 @@
-export interface ReasonerWithNode {
-  // Reasoner identification
-  reasoner_id: string;   // Format: "node_id.reasoner_id"
+export interface BotWithNode {
+  // Bot identification
+  bot_id: string;   // Format: "node_id.bot_id"
   name: string;          // Human-readable name
-  description: string;   // Reasoner description
+  description: string;   // Bot description
 
   // Node context
   node_id: string;
   node_status: 'active' | 'inactive' | 'unknown';
   node_version: string;
 
-  // Reasoner details
+  // Bot details
   input_schema: any;
   output_schema: any;
   memory_config: {
@@ -29,38 +29,38 @@ export interface ReasonerWithNode {
   last_updated: string;
 }
 
-export interface ReasonersResponse {
-  reasoners: ReasonerWithNode[];
+export interface BotsResponse {
+  bots: BotWithNode[];
   total: number;
   online_count: number;
   offline_count: number;
   nodes_count: number;
 }
 
-export interface ReasonerFilters {
+export interface BotFilters {
   status?: 'all' | 'online' | 'offline';
   search?: string;
   limit?: number;
   offset?: number;
 }
 
-export type ReasonerStatus = 'online' | 'degraded' | 'offline' | 'unknown';
+export type BotStatus = 'online' | 'degraded' | 'offline' | 'unknown';
 
-export interface ReasonerCardProps {
-  reasoner: ReasonerWithNode;
-  onClick?: (reasoner: ReasonerWithNode) => void;
+export interface BotCardProps {
+  bot: BotWithNode;
+  onClick?: (bot: BotWithNode) => void;
 }
 
-export interface ReasonerGridProps {
-  reasoners: ReasonerWithNode[];
+export interface BotGridProps {
+  bots: BotWithNode[];
   loading?: boolean;
-  onReasonerClick?: (reasoner: ReasonerWithNode) => void;
+  onBotClick?: (bot: BotWithNode) => void;
   viewMode?: 'grid' | 'table';
 }
 
 export interface SearchFiltersProps {
-  filters: ReasonerFilters;
-  onFiltersChange: (filters: ReasonerFilters) => void;
+  filters: BotFilters;
+  onFiltersChange: (filters: BotFilters) => void;
   totalCount: number;
   onlineCount: number;
   offlineCount: number;

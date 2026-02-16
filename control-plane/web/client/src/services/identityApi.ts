@@ -25,7 +25,7 @@ async function fetchWrapper<T>(url: string, options?: RequestInit): Promise<T> {
 // DID Explorer Types
 export interface DIDStatsResponse {
   total_agents: number;
-  total_reasoners: number;
+  total_bots: number;
   total_skills: number;
   total_dids: number;
 }
@@ -33,7 +33,7 @@ export interface DIDStatsResponse {
 export interface DIDStats extends DIDStatsResponse {}
 
 export interface DIDSearchResult {
-  type: "agent" | "reasoner" | "skill";
+  type: "agent" | "bot" | "skill";
   did: string;
   id: string; // Add missing id property
   name: string;
@@ -48,7 +48,7 @@ export interface ComponentDIDInfo {
   did: string;
   name: string;
   component_name: string;
-  type: "reasoner" | "skill";
+  type: "bot" | "skill";
   derivation_path: string;
   created_at: string;
 }
@@ -59,9 +59,9 @@ export interface AgentDIDResponse {
   status: string;
   derivation_path: string;
   created_at: string;
-  reasoner_count: number;
+  bot_count: number;
   skill_count: number;
-  reasoners?: ComponentDIDInfo[];
+  bots?: ComponentDIDInfo[];
   skills?: ComponentDIDInfo[];
 }
 
@@ -72,10 +72,10 @@ export type AgentDID = AgentDIDResponse;
 
 export interface AgentDetailsResponse {
   agent: AgentDIDResponse;
-  total_reasoners: number;
-  reasoners_limit: number;
-  reasoners_offset: number;
-  reasoners_has_more: boolean;
+  total_bots: number;
+  bots_limit: number;
+  bots_offset: number;
+  bots_has_more: boolean;
 }
 
 // VerifiableCredential interface for Credentials
@@ -87,7 +87,7 @@ export interface VerifiableCredential {
   issuer_did: string;
   target_did: string;
   caller_did: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   created_at: string;
   duration_ms?: number;
@@ -110,8 +110,8 @@ export interface VCSearchResult {
   status: string;
   created_at: string;
   duration_ms?: number;
-  reasoner_id?: string;
-  reasoner_name?: string;
+  bot_id?: string;
+  bot_name?: string;
   agent_name?: string;
   agent_node_id?: string;
   verified: boolean;
@@ -127,7 +127,7 @@ export async function getDIDStats(): Promise<DIDStats> {
 
 export async function searchDIDs(
   query: string,
-  type: "all" | "agent" | "reasoner" | "skill" = "all",
+  type: "all" | "agent" | "bot" | "skill" = "all",
   limit: number = 20,
   offset: number = 0
 ): Promise<{
@@ -226,9 +226,9 @@ export async function getAgentDIDs(
   limit: number = 20,
   offset: number = 0
 ): Promise<{
-  reasoners: ComponentDIDInfo[];
+  bots: ComponentDIDInfo[];
   skills: ComponentDIDInfo[];
-  total_reasoners: number;
+  total_bots: number;
   total_skills: number;
 }> {
   const params = new URLSearchParams({

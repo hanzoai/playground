@@ -7,7 +7,7 @@ import { ModeProvider } from "./contexts/ModeContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { useFocusManagement } from "./hooks/useFocusManagement";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
-import { AllReasonersPage } from "./pages/AllReasonersPage.tsx";
+import { AllBotsPage } from "./pages/AllBotsPage.tsx";
 import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
 import { ExecutionsPage } from "./pages/ExecutionsPage";
 import { EnhancedExecutionDetailPage } from "./pages/EnhancedExecutionDetailPage";
@@ -15,7 +15,7 @@ import { EnhancedWorkflowDetailPage } from "./pages/EnhancedWorkflowDetailPage";
 import { NodeDetailPage } from "./pages/NodeDetailPage";
 import { NodesPage } from "./pages/NodesPage";
 import { PackagesPage } from "./pages/PackagesPage";
-import { ReasonerDetailPage } from "./pages/ReasonerDetailPage.tsx";
+import { BotDetailPage } from "./pages/BotDetailPage.tsx";
 import { WorkflowsPage } from "./pages/WorkflowsPage.tsx";
 import { WorkflowDeckGLTestPage } from "./pages/WorkflowDeckGLTestPage";
 import { DIDExplorerPage } from "./pages/DIDExplorerPage";
@@ -80,10 +80,10 @@ function AppContent() {
               <Route path="/dashboard" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/nodes" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
               <Route path="/nodes/:nodeId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodeDetailPage /></div>} />
-              <Route path="/reasoners/all" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><AllReasonersPage /></div>} />
+              <Route path="/bots/all" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><AllBotsPage /></div>} />
               <Route
-                path="/reasoners/:fullReasonerId"
-                element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ReasonerDetailPage /></div>}
+                path="/bots/:fullBotId"
+                element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BotDetailPage /></div>}
               />
               <Route path="/executions" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ExecutionsPage /></div>} />
               <Route

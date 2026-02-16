@@ -523,7 +523,7 @@ export async function registerServerlessAgent(invocationUrl: string): Promise<{
     version: string;
     deployment_type: string;
     invocation_url: string;
-    reasoners_count: number;
+    bots_count: number;
     skills_count: number;
   };
 }> {

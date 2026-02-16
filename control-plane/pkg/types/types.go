@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-// AgentExecution represents a single execution of a reasoner or skill.
+// AgentExecution represents a single execution of a bot or skill.
 type AgentExecution struct {
 	ID          int64   `json:"id" db:"id"`
 	WorkflowID  string  `json:"workflow_id" db:"workflow_id"`
 	SessionID   *string `json:"session_id,omitempty" db:"session_id"`
 	AgentNodeID string  `json:"agent_node_id" db:"agent_node_id"`
-	ReasonerID  string  `json:"reasoner_id" db:"reasoner_id"`
+	BotID  string  `json:"bot_id" db:"bot_id"`
 
 	InputData  json.RawMessage `json:"input_data" db:"input_data"`
 	OutputData json.RawMessage `json:"output_data" db:"output_data"`
@@ -167,7 +167,7 @@ type AgentNode struct {
 
 	CallbackDiscovery *CallbackDiscoveryInfo `json:"callback_discovery,omitempty" db:"-"`
 
-	Reasoners           []ReasonerDefinition `json:"reasoners" db:"reasoners"`
+	Bots           []BotDefinition `json:"bots" db:"bots"`
 	Skills              []SkillDefinition    `json:"skills" db:"skills"`
 	CommunicationConfig CommunicationConfig  `json:"communication_config" db:"communication_config"`
 
@@ -200,8 +200,8 @@ type CallbackTestResult struct {
 	LatencyMS int64  `json:"latency_ms,omitempty"`
 }
 
-// ReasonerDefinition defines a reasoner provided by an agent node.
-type ReasonerDefinition struct {
+// BotDefinition defines a bot provided by an agent node.
+type BotDefinition struct {
 	ID           string          `json:"id"`
 	InputSchema  json.RawMessage `json:"input_schema"`
 	OutputSchema json.RawMessage `json:"output_schema"`
@@ -216,7 +216,7 @@ type SkillDefinition struct {
 	Tags        []string        `json:"tags"`
 }
 
-// MemoryConfig defines memory configuration for a reasoner.
+// MemoryConfig defines memory configuration for a bot.
 type MemoryConfig struct {
 	AutoInject      []string `json:"auto_inject"`
 	MemoryRetention string   `json:"memory_retention"`
@@ -552,7 +552,7 @@ type ExecutionFilters struct {
 	WorkflowID  *string    `json:"workflow_id,omitempty"`
 	SessionID   *string    `json:"session_id,omitempty"`
 	AgentNodeID *string    `json:"agent_node_id,omitempty"`
-	ReasonerID  *string    `json:"reasoner_id,omitempty"`
+	BotID  *string    `json:"bot_id,omitempty"`
 	Status      *string    `json:"status,omitempty"`
 	UserID      *string    `json:"user_id,omitempty"`
 	TeamID      *string    `json:"team_id,omitempty"`
@@ -640,7 +640,7 @@ type WorkflowExecution struct {
 	WorkflowDepth     int     `json:"workflow_depth" db:"workflow_depth"`
 
 	// Request details
-	ReasonerID string          `json:"reasoner_id" db:"reasoner_id"`
+	BotID string          `json:"bot_id" db:"bot_id"`
 	InputData  json.RawMessage `json:"input_data" db:"input_data"`
 	OutputData json.RawMessage `json:"output_data" db:"output_data"`
 	InputSize  int             `json:"input_size" db:"input_size"`
@@ -906,8 +906,8 @@ type SessionFilters struct {
 	Offset    int        `json:"offset,omitempty"`
 }
 
-// ReasonerPerformanceMetrics represents performance data for a reasoner
-type ReasonerPerformanceMetrics struct {
+// BotPerformanceMetrics represents performance data for a bot
+type BotPerformanceMetrics struct {
 	AvgResponseTimeMs int                   `json:"avg_response_time_ms"`
 	SuccessRate       float64               `json:"success_rate"`
 	TotalExecutions   int                   `json:"total_executions"`
@@ -923,17 +923,17 @@ type RecentExecutionItem struct {
 	Timestamp   time.Time `json:"timestamp"`
 }
 
-// ReasonerExecutionHistory represents paginated execution history
-type ReasonerExecutionHistory struct {
-	Executions []ReasonerExecutionRecord `json:"executions"`
+// BotExecutionHistory represents paginated execution history
+type BotExecutionHistory struct {
+	Executions []BotExecutionRecord `json:"executions"`
 	Total      int                       `json:"total"`
 	Page       int                       `json:"page"`
 	Limit      int                       `json:"limit"`
 	HasMore    bool                      `json:"has_more"`
 }
 
-// ReasonerExecutionRecord represents a single execution record for reasoner history
-type ReasonerExecutionRecord struct {
+// BotExecutionRecord represents a single execution record for bot history
+type BotExecutionRecord struct {
 	ExecutionID string                 `json:"execution_id"`
 	Status      string                 `json:"status"`
 	Input       map[string]interface{} `json:"input"`
@@ -949,7 +949,7 @@ type WorkflowSummaryData struct {
 	TotalExecutions int       `json:"total_executions" db:"total_executions"`
 	LatestActivity  time.Time `json:"latest_activity" db:"latest_activity"`
 	StartedAt       time.Time `json:"started_at" db:"started_at"`
-	RootReasoner    *string   `json:"root_reasoner" db:"root_reasoner"`
+	RootBot    *string   `json:"root_bot" db:"root_bot"`
 	AgentNodeID     *string   `json:"agent_node_id" db:"agent_node_id"`
 	WorkflowStatus  *string   `json:"workflow_status" db:"workflow_status"`
 	TotalDurationMS *int64    `json:"total_duration_ms" db:"total_duration_ms"`

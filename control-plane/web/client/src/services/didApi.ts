@@ -28,7 +28,7 @@ async function fetchWrapper<T>(url: string, options?: RequestInit): Promise<T> {
 // DID Management API Functions
 
 /**
- * Register an agent with DIDs for reasoners and skills
+ * Register an agent with DIDs for bots and skills
  */
 export async function registerAgentDID(
   request: DIDRegistrationRequest
@@ -70,7 +70,7 @@ export async function getDIDStatusSummary(nodeId: string): Promise<DIDStatusSumm
     return {
       has_did: false,
       did_status: 'inactive',
-      reasoner_count: 0,
+      bot_count: 0,
       skill_count: 0,
       last_updated: ''
     };
@@ -79,7 +79,7 @@ export async function getDIDStatusSummary(nodeId: string): Promise<DIDStatusSumm
   return {
     has_did: true,
     did_status: didInfo.status,
-    reasoner_count: Object.keys(didInfo.reasoners).length,
+    bot_count: Object.keys(didInfo.bots).length,
     skill_count: Object.keys(didInfo.skills).length,
     last_updated: didInfo.registered_at
   };

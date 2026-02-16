@@ -131,7 +131,7 @@ export function ExecutionHero({
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-heading-2">
-                  {execution.reasoner_id}
+                  {execution.bot_id}
                 </h1>
                 <StatusIndicator
                   status={execution.status as any}
@@ -228,13 +228,13 @@ export function ExecutionHero({
               size="sm"
               onClick={() =>
                 navigate(
-                  `/reasoners/${execution.agent_node_id}.${execution.reasoner_id}`
+                  `/bots/${execution.agent_node_id}.${execution.bot_id}`
                 )
               }
               className="flex items-center gap-2 h-8"
             >
               <BracketsCurly className="w-4 h-4" />
-              Reasoner
+              Bot
             </Button>
 
             <Button

@@ -4,7 +4,7 @@ import { cn } from "../../lib/utils";
 
 /**
  * Reusable data formatting components for consistent data display
- * across the Playground application. These components ensure uniform
+ * across the Hanzo Bot application. These components ensure uniform
  * formatting of timestamps, durations, file sizes, and other common data types.
  */
 
@@ -185,14 +185,14 @@ export function DataSizeComparison({
 
 // Agent capability summary component
 interface AgentCapabilitySummaryProps {
-  reasonerCount: number;
+  botCount: number;
   skillCount: number;
   className?: string;
   format?: 'full' | 'compact' | 'minimal';
 }
 
 export function AgentCapabilitySummary({
-  reasonerCount,
+  botCount,
   skillCount,
   className,
   format = 'full'
@@ -200,11 +200,11 @@ export function AgentCapabilitySummary({
   const formatCapabilities = () => {
     switch (format) {
       case 'compact':
-        return `${reasonerCount}R/${skillCount}S`;
+        return `${botCount}R/${skillCount}S`;
       case 'minimal':
-        return `${reasonerCount + skillCount}`;
+        return `${botCount + skillCount}`;
       default:
-        return `${reasonerCount} reasoners, ${skillCount} skills`;
+        return `${botCount} bots, ${skillCount} skills`;
     }
   };
 

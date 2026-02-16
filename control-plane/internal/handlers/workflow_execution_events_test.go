@@ -24,7 +24,7 @@ func TestWorkflowExecutionEventHandler_CreateAndUpdate(t *testing.T) {
 	startPayload := WorkflowExecutionEventRequest{
 		ExecutionID: "exec_child",
 		RunID:       "run_123",
-		ReasonerID:  "understand_query_deeply",
+		BotID:  "understand_query_deeply",
 		AgentNodeID: "deep_research",
 		Status:      "running",
 		InputData: map[string]interface{}{
@@ -58,7 +58,7 @@ func TestWorkflowExecutionEventHandler_CreateAndUpdate(t *testing.T) {
 	completePayload := WorkflowExecutionEventRequest{
 		ExecutionID: "exec_child",
 		RunID:       "run_123",
-		ReasonerID:  "understand_query_deeply",
+		BotID:  "understand_query_deeply",
 		AgentNodeID: "deep_research",
 		Status:      "succeeded",
 		Result:      resultPayload,

@@ -68,7 +68,7 @@ export function TechnicalDetailsPanel({ execution }: TechnicalDetailsPanelProps)
             value={execution.session_id}
           />
           <DetailItem
-            label="Playground Request ID"
+            label="Bot Request ID"
             value={execution.agents_request_id}
           />
           <DetailItem

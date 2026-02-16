@@ -18,8 +18,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ExecuteReasonerRequest represents a request to execute a reasoner
-type ExecuteReasonerRequest struct {
+// ExecuteBotRequest represents a request to execute a bot
+type ExecuteBotRequest struct {
 	Input   map[string]interface{} `json:"input" binding:"required"`
 	Context map[string]interface{} `json:"context,omitempty"`
 }
@@ -33,16 +33,16 @@ func persistWorkflowExecution(ctx context.Context, storageProvider storage.Stora
 	}
 }
 
-// ExecuteReasonerResponse represents the response from executing a reasoner
-type ExecuteReasonerResponse struct {
+// ExecuteBotResponse represents the response from executing a bot
+type ExecuteBotResponse struct {
 	Result    interface{} `json:"result"`
 	NodeID    string      `json:"node_id"`
 	Duration  int64       `json:"duration_ms"`
 	Timestamp string      `json:"timestamp"`
 }
 
-// ExecuteReasonerHandler handles execution of reasoners with full tracking
-func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
+// ExecuteBotHandler handles execution of bots with full tracking
+func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		startTime := time.Now()
@@ -77,27 +77,27 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		// Generate Execution ID
 		executionID := utils.GenerateExecutionID()
 
-		// Parse reasoner ID from URL
-		reasonerID := c.Param("reasoner_id")
-		if reasonerID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "reasoner_id is required"})
+		// Parse bot ID from URL
+		botID := c.Param("bot_id")
+		if botID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 			return
 		}
 
-		// Split node_id and reasoner_name
-		parts := strings.Split(reasonerID, ".")
+		// Split node_id and bot_name
+		parts := strings.Split(botID, ".")
 		if len(parts) != 2 {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "reasoner_id must be in format 'node_id.reasoner_name'",
+				"error": "bot_id must be in format 'node_id.bot_name'",
 			})
 			return
 		}
 
 		nodeID := parts[0]
-		reasonerName := parts[1]
+		botName := parts[1]
 
 		// Parse request body
-		var req ExecuteReasonerRequest
+		var req ExecuteBotRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -112,18 +112,18 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 			return
 		}
 
-		// Check if reasoner exists on the node
-		reasonerExists := false
-		for _, reasoner := range targetNode.Reasoners {
-			if reasoner.ID == reasonerName {
-				reasonerExists = true
+		// Check if bot exists on the node
+		botExists := false
+		for _, bot := range targetNode.Bots {
+			if bot.ID == botName {
+				botExists = true
 				break
 			}
 		}
 
-		if !reasonerExists {
+		if !botExists {
 			c.JSON(http.StatusNotFound, gin.H{
-				"error": fmt.Sprintf("reasoner '%s' not found on node '%s'", reasonerName, nodeID),
+				"error": fmt.Sprintf("bot '%s' not found on node '%s'", botName, nodeID),
 			})
 			return
 		}
@@ -134,7 +134,7 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 			ExecutionID:         executionID,
 			AgentsRequestID: agentsRequestID,
 			AgentNodeID:         nodeID,
-			ReasonerID:          reasonerName,
+			BotID:          botName,
 			Status:              "running",
 			StartedAt:           startTime,
 			CreatedAt:           startTime,
@@ -180,14 +180,14 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		workflowExecution.InputSize = len(inputJSON)
 
 		// Prepare request to agent node with workflow context propagation
-		agentURL := fmt.Sprintf("%s/reasoners/%s", targetNode.BaseURL, reasonerName)
+		agentURL := fmt.Sprintf("%s/bots/%s", targetNode.BaseURL, botName)
 		agentBody := inputJSON
 
 		if targetNode.DeploymentType == "serverless" {
 			target := &parsedTarget{
 				NodeID:     nodeID,
-				TargetName: reasonerName,
-				TargetType: "reasoner",
+				TargetName: botName,
+				TargetType: "bot",
 			}
 			var parentPtr, sessionPtr, actorPtr *string
 			if parentExecutionID != "" {
@@ -211,7 +211,7 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 				RunID:             workflowID,
 				ParentExecutionID: parentPtr,
 				AgentNodeID:       nodeID,
-				ReasonerID:        reasonerName,
+				BotID:        botName,
 				NodeID:            nodeID,
 				Status:            types.ExecutionStatusRunning,
 				StartedAt:         now,
@@ -381,7 +381,7 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		c.Header("X-Duration-MS", fmt.Sprintf("%d", duration))
 
 		// Return successful response
-		c.JSON(http.StatusOK, ExecuteReasonerResponse{
+		c.JSON(http.StatusOK, ExecuteBotResponse{
 			Result:    result,
 			NodeID:    nodeID,
 			Duration:  duration,
@@ -446,7 +446,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		skillName := parts[1]
 
 		// Parse request body
-		var req ExecuteReasonerRequest
+		var req ExecuteBotRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -483,7 +483,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 			ExecutionID:         executionID,
 			AgentsRequestID: agentsRequestID,
 			AgentNodeID:         nodeID,
-			ReasonerID:          skillName, // For skills, ReasonerID will store skillName
+			BotID:          skillName, // For skills, BotID will store skillName
 			Status:              "running",
 			StartedAt:           startTime,
 			CreatedAt:           startTime,
@@ -664,7 +664,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		c.Header("X-Duration-MS", fmt.Sprintf("%d", duration))
 
 		// Return successful response
-		c.JSON(http.StatusOK, ExecuteReasonerResponse{
+		c.JSON(http.StatusOK, ExecuteBotResponse{
 			Result:    result,
 			NodeID:    nodeID,
 			Duration:  duration,

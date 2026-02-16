@@ -38,7 +38,7 @@ func TestDIDServiceRegisterAgentAndResolve(t *testing.T) {
 
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-alpha",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner.fn"}},
+		Bots:   []types.BotDefinition{{ID: "bot.fn"}},
 		Skills:      []types.SkillDefinition{{ID: "skill.fn", Tags: []string{"analysis"}}},
 	}
 
@@ -46,7 +46,7 @@ func TestDIDServiceRegisterAgentAndResolve(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, resp.Success)
 	require.NotEmpty(t, resp.IdentityPackage.AgentDID.DID)
-	require.Contains(t, resp.IdentityPackage.ReasonerDIDs, "reasoner.fn")
+	require.Contains(t, resp.IdentityPackage.BotDIDs, "bot.fn")
 	require.Contains(t, resp.IdentityPackage.SkillDIDs, "skill.fn")
 
 	storedRegistry, err := registry.GetRegistry(agentsID)
@@ -63,10 +63,10 @@ func TestDIDServiceRegisterAgentAndResolve(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, agentIdentity.DID, resolved.DID)
 
-	reasonerIdentity := resp.IdentityPackage.ReasonerDIDs["reasoner.fn"]
-	resolvedReasoner, err := service.ResolveDID(reasonerIdentity.DID)
+	botIdentity := resp.IdentityPackage.BotDIDs["bot.fn"]
+	resolvedBot, err := service.ResolveDID(botIdentity.DID)
 	require.NoError(t, err)
-	require.Equal(t, reasonerIdentity.DID, resolvedReasoner.DID)
+	require.Equal(t, botIdentity.DID, resolvedBot.DID)
 
 	skillIdentity := resp.IdentityPackage.SkillDIDs["skill.fn"]
 	resolvedSkill, err := service.ResolveDID(skillIdentity.DID)
@@ -155,7 +155,7 @@ func TestDIDService_RegisterAgent_ExistingAgent_NoChanges(t *testing.T) {
 	// Register agent first time
 	req1 := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-existing",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -166,7 +166,7 @@ func TestDIDService_RegisterAgent_ExistingAgent_NoChanges(t *testing.T) {
 	// Register same agent again with same components
 	req2 := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-existing",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -183,7 +183,7 @@ func TestDIDService_PartialRegisterAgent_NewComponents(t *testing.T) {
 	// Register agent with initial components
 	req1 := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-partial",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -194,9 +194,9 @@ func TestDIDService_PartialRegisterAgent_NewComponents(t *testing.T) {
 	// Partial registration with new components
 	partialReq := &types.PartialDIDRegistrationRequest{
 		AgentNodeID:    "agent-partial",
-		NewReasonerIDs: []string{"reasoner2"},
+		NewBotIDs: []string{"bot2"},
 		NewSkillIDs:    []string{"skill2"},
-		AllReasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}, {ID: "reasoner2"}},
+		AllBots:   []types.BotDefinition{{ID: "bot1"}, {ID: "bot2"}},
 		AllSkills:      []types.SkillDefinition{{ID: "skill1"}, {ID: "skill2"}},
 	}
 
@@ -204,9 +204,9 @@ func TestDIDService_PartialRegisterAgent_NewComponents(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, resp2.Success)
 	require.Contains(t, resp2.Message, "Partial registration successful")
-	require.Len(t, resp2.IdentityPackage.ReasonerDIDs, 1) // Only new ones
+	require.Len(t, resp2.IdentityPackage.BotDIDs, 1) // Only new ones
 	require.Len(t, resp2.IdentityPackage.SkillDIDs, 1)     // Only new ones
-	require.Contains(t, resp2.IdentityPackage.ReasonerDIDs, "reasoner2")
+	require.Contains(t, resp2.IdentityPackage.BotDIDs, "bot2")
 	require.Contains(t, resp2.IdentityPackage.SkillDIDs, "skill2")
 }
 
@@ -224,8 +224,8 @@ func TestDIDService_PartialRegisterAgent_DisabledSystem(t *testing.T) {
 
 	partialReq := &types.PartialDIDRegistrationRequest{
 		AgentNodeID:    "agent-test",
-		NewReasonerIDs: []string{"reasoner1"},
-		AllReasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		NewBotIDs: []string{"bot1"},
+		AllBots:   []types.BotDefinition{{ID: "bot1"}},
 		AllSkills:      []types.SkillDefinition{},
 	}
 
@@ -242,7 +242,7 @@ func TestDIDService_DeregisterComponents_Success(t *testing.T) {
 	// Register agent with multiple components
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-deregister",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}, {ID: "reasoner2"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}, {ID: "bot2"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}, {ID: "skill2"}},
 	}
 
@@ -253,7 +253,7 @@ func TestDIDService_DeregisterComponents_Success(t *testing.T) {
 	// Deregister some components
 	deregReq := &types.ComponentDeregistrationRequest{
 		AgentNodeID:         "agent-deregister",
-		ReasonerIDsToRemove: []string{"reasoner1"},
+		BotIDsToRemove: []string{"bot1"},
 		SkillIDsToRemove:    []string{"skill1"},
 	}
 
@@ -265,8 +265,8 @@ func TestDIDService_DeregisterComponents_Success(t *testing.T) {
 	// Verify components were removed
 	existingAgent, err := service.GetExistingAgentDID("agent-deregister")
 	require.NoError(t, err)
-	require.NotContains(t, existingAgent.Reasoners, "reasoner1")
-	require.Contains(t, existingAgent.Reasoners, "reasoner2")
+	require.NotContains(t, existingAgent.Bots, "bot1")
+	require.Contains(t, existingAgent.Bots, "bot2")
 	require.NotContains(t, existingAgent.Skills, "skill1")
 	require.Contains(t, existingAgent.Skills, "skill2")
 }
@@ -277,7 +277,7 @@ func TestDIDService_DeregisterComponents_NotFound(t *testing.T) {
 	// Register agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-deregister-notfound",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -287,7 +287,7 @@ func TestDIDService_DeregisterComponents_NotFound(t *testing.T) {
 	// Try to deregister non-existent components
 	deregReq := &types.ComponentDeregistrationRequest{
 		AgentNodeID:         "agent-deregister-notfound",
-		ReasonerIDsToRemove: []string{"nonexistent-reasoner"},
+		BotIDsToRemove: []string{"nonexistent-bot"},
 		SkillIDsToRemove:    []string{"nonexistent-skill"},
 	}
 
@@ -302,7 +302,7 @@ func TestDIDService_DeregisterComponents_AgentNotFound(t *testing.T) {
 
 	deregReq := &types.ComponentDeregistrationRequest{
 		AgentNodeID:         "nonexistent-agent",
-		ReasonerIDsToRemove: []string{"reasoner1"},
+		BotIDsToRemove: []string{"bot1"},
 		SkillIDsToRemove:    []string{"skill1"},
 	}
 
@@ -318,7 +318,7 @@ func TestDIDService_PerformDifferentialAnalysis_NoChanges(t *testing.T) {
 	// Register agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-diff",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -326,15 +326,15 @@ func TestDIDService_PerformDifferentialAnalysis_NoChanges(t *testing.T) {
 	require.NoError(t, err)
 
 	// Perform differential analysis with same components
-	result, err := service.PerformDifferentialAnalysis("agent-diff", []string{"reasoner1"}, []string{"skill1"})
+	result, err := service.PerformDifferentialAnalysis("agent-diff", []string{"bot1"}, []string{"skill1"})
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.False(t, result.RequiresUpdate)
-	require.Empty(t, result.NewReasonerIDs)
-	require.Empty(t, result.RemovedReasonerIDs)
+	require.Empty(t, result.NewBotIDs)
+	require.Empty(t, result.RemovedBotIDs)
 	require.Empty(t, result.NewSkillIDs)
 	require.Empty(t, result.RemovedSkillIDs)
-	require.Len(t, result.UpdatedReasonerIDs, 1)
+	require.Len(t, result.UpdatedBotIDs, 1)
 	require.Len(t, result.UpdatedSkillIDs, 1)
 }
 
@@ -344,7 +344,7 @@ func TestDIDService_PerformDifferentialAnalysis_NewComponents(t *testing.T) {
 	// Register agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-diff-new",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -352,15 +352,15 @@ func TestDIDService_PerformDifferentialAnalysis_NewComponents(t *testing.T) {
 	require.NoError(t, err)
 
 	// Perform differential analysis with new components
-	result, err := service.PerformDifferentialAnalysis("agent-diff-new", []string{"reasoner1", "reasoner2"}, []string{"skill1", "skill2"})
+	result, err := service.PerformDifferentialAnalysis("agent-diff-new", []string{"bot1", "bot2"}, []string{"skill1", "skill2"})
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.True(t, result.RequiresUpdate)
-	require.Len(t, result.NewReasonerIDs, 1)
-	require.Contains(t, result.NewReasonerIDs, "reasoner2")
+	require.Len(t, result.NewBotIDs, 1)
+	require.Contains(t, result.NewBotIDs, "bot2")
 	require.Len(t, result.NewSkillIDs, 1)
 	require.Contains(t, result.NewSkillIDs, "skill2")
-	require.Empty(t, result.RemovedReasonerIDs)
+	require.Empty(t, result.RemovedBotIDs)
 	require.Empty(t, result.RemovedSkillIDs)
 }
 
@@ -370,7 +370,7 @@ func TestDIDService_PerformDifferentialAnalysis_RemovedComponents(t *testing.T) 
 	// Register agent with multiple components
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-diff-removed",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}, {ID: "reasoner2"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}, {ID: "bot2"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}, {ID: "skill2"}},
 	}
 
@@ -378,14 +378,14 @@ func TestDIDService_PerformDifferentialAnalysis_RemovedComponents(t *testing.T) 
 	require.NoError(t, err)
 
 	// Perform differential analysis with fewer components
-	result, err := service.PerformDifferentialAnalysis("agent-diff-removed", []string{"reasoner1"}, []string{"skill1"})
+	result, err := service.PerformDifferentialAnalysis("agent-diff-removed", []string{"bot1"}, []string{"skill1"})
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.True(t, result.RequiresUpdate)
-	require.Empty(t, result.NewReasonerIDs)
+	require.Empty(t, result.NewBotIDs)
 	require.Empty(t, result.NewSkillIDs)
-	require.Len(t, result.RemovedReasonerIDs, 1)
-	require.Contains(t, result.RemovedReasonerIDs, "reasoner2")
+	require.Len(t, result.RemovedBotIDs, 1)
+	require.Contains(t, result.RemovedBotIDs, "bot2")
 	require.Len(t, result.RemovedSkillIDs, 1)
 	require.Contains(t, result.RemovedSkillIDs, "skill2")
 }
@@ -393,7 +393,7 @@ func TestDIDService_PerformDifferentialAnalysis_RemovedComponents(t *testing.T) 
 func TestDIDService_PerformDifferentialAnalysis_AgentNotFound(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
-	result, err := service.PerformDifferentialAnalysis("nonexistent-agent", []string{"reasoner1"}, []string{"skill1"})
+	result, err := service.PerformDifferentialAnalysis("nonexistent-agent", []string{"bot1"}, []string{"skill1"})
 	require.Error(t, err)
 	require.Nil(t, result)
 	require.Contains(t, err.Error(), "failed to get existing agent")
@@ -405,7 +405,7 @@ func TestDIDService_GetExistingAgentDID_Success(t *testing.T) {
 	// Register agent
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-get-existing",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
@@ -419,7 +419,7 @@ func TestDIDService_GetExistingAgentDID_Success(t *testing.T) {
 	require.NotNil(t, existingAgent)
 	require.Equal(t, "agent-get-existing", existingAgent.AgentNodeID)
 	require.Equal(t, regResp.IdentityPackage.AgentDID.DID, existingAgent.DID)
-	require.Len(t, existingAgent.Reasoners, 1)
+	require.Len(t, existingAgent.Bots, 1)
 	require.Len(t, existingAgent.Skills, 1)
 }
 
@@ -457,7 +457,7 @@ func TestDIDService_ListAllAgentDIDs_Success(t *testing.T) {
 	// Register multiple agents
 	req1 := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-list-1",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{},
 	}
 
@@ -466,7 +466,7 @@ func TestDIDService_ListAllAgentDIDs_Success(t *testing.T) {
 
 	req2 := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-list-2",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{},
 	}
 
@@ -498,21 +498,21 @@ func TestDIDService_ListAllAgentDIDs_DisabledSystem(t *testing.T) {
 	_ = ctx
 }
 
-func TestDIDService_RegisterAgent_EmptyReasonerID(t *testing.T) {
+func TestDIDService_RegisterAgent_EmptyBotID(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
-	// Register agent with empty reasoner ID (should be skipped)
+	// Register agent with empty bot ID (should be skipped)
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-empty-reasoner",
-		Reasoners:   []types.ReasonerDefinition{{ID: ""}, {ID: "reasoner1"}},
+		AgentNodeID: "agent-empty-bot",
+		Bots:   []types.BotDefinition{{ID: ""}, {ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
 	resp, err := service.RegisterAgent(req)
 	require.NoError(t, err)
 	require.True(t, resp.Success)
-	require.Len(t, resp.IdentityPackage.ReasonerDIDs, 1) // Only non-empty reasoner
-	require.Contains(t, resp.IdentityPackage.ReasonerDIDs, "reasoner1")
+	require.Len(t, resp.IdentityPackage.BotDIDs, 1) // Only non-empty bot
+	require.Contains(t, resp.IdentityPackage.BotDIDs, "bot1")
 }
 
 func TestDIDService_RegisterAgent_EmptySkillID(t *testing.T) {
@@ -521,7 +521,7 @@ func TestDIDService_RegisterAgent_EmptySkillID(t *testing.T) {
 	// Register agent with empty skill ID (should be skipped)
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-empty-skill",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: ""}, {ID: "skill1"}},
 	}
 
@@ -546,7 +546,7 @@ func TestDIDService_RegisterAgent_DisabledSystem(t *testing.T) {
 
 	req := &types.DIDRegistrationRequest{
 		AgentNodeID: "agent-disabled",
-		Reasoners:   []types.ReasonerDefinition{{ID: "reasoner1"}},
+		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{},
 	}
 

@@ -45,7 +45,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
 			"did_status":     "inactive",
-			"reasoner_count": 0,
+			"bot_count": 0,
 			"skill_count":    0,
 			"last_updated":   "",
 		})
@@ -58,7 +58,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
 			"did_status":     "inactive",
-			"reasoner_count": 0,
+			"bot_count": 0,
 			"skill_count":    0,
 			"error":          fmt.Sprintf("Failed to get af server ID: %v", err),
 		})
@@ -71,7 +71,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
 			"did_status":     "inactive",
-			"reasoner_count": 0,
+			"bot_count": 0,
 			"skill_count":    0,
 			"last_updated":   "",
 		})
@@ -84,7 +84,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
 			"did_status":     "inactive",
-			"reasoner_count": 0,
+			"bot_count": 0,
 			"skill_count":    0,
 			"last_updated":   "",
 		})
@@ -103,7 +103,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 		"agents_server_id": registry.AgentsServerID,
 		"public_key_jwk":       agentInfo.PublicKeyJWK,
 		"derivation_path":      agentInfo.DerivationPath,
-		"reasoners":            agentInfo.Reasoners,
+		"bots":            agentInfo.Bots,
 		"skills":               agentInfo.Skills,
 		"status":               status,
 		"registered_at":        agentInfo.RegisteredAt.Format(time.RFC3339),
@@ -697,14 +697,14 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 					"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.AgentNodeID),
 				})
 
-				// Add component DIDs (reasoners and skills)
-				for reasonerName, reasonerInfo := range agentDID.Reasoners {
+				// Add component DIDs (bots and skills)
+				for botName, botInfo := range agentDID.Bots {
 					componentDIDs = append(componentDIDs, gin.H{
-						"did":            reasonerInfo.DID,
-						"type":           "reasoner",
-						"name":           reasonerName,
-						"capabilities":   reasonerInfo.Capabilities,
-						"exposure_level": reasonerInfo.ExposureLevel,
+						"did":            botInfo.DID,
+						"type":           "bot",
+						"name":           botName,
+						"capabilities":   botInfo.Capabilities,
+						"exposure_level": botInfo.ExposureLevel,
 					})
 				}
 

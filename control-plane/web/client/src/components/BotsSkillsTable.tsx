@@ -19,13 +19,13 @@ import {
   Identification,
 } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
-import type { ReasonerDefinition, SkillDefinition } from "@/types/playground";
-import type { ReasonerDIDInfo, SkillDIDInfo } from "@/types/did";
+import type { BotDefinition, SkillDefinition } from "@/types/playground";
+import type { BotDIDInfo, SkillDIDInfo } from "@/types/did";
 
-interface ReasonersSkillsTableProps {
-  reasoners: ReasonerDefinition[];
+interface BotsSkillsTableProps {
+  bots: BotDefinition[];
   skills: SkillDefinition[];
-  reasonerDIDs?: Record<string, ReasonerDIDInfo>;
+  botDIDs?: Record<string, BotDIDInfo>;
   skillDIDs?: Record<string, SkillDIDInfo>;
   agentDID?: string;
   agentStatus?: {
@@ -39,7 +39,7 @@ interface ReasonersSkillsTableProps {
 interface TableItem {
   id: string;
   name: string;
-  type: "reasoner" | "skill" | "agent";
+  type: "bot" | "skill" | "agent";
   did?: string;
   status: "active" | "inactive" | "error";
   exposure_level?: string;
@@ -48,16 +48,16 @@ interface TableItem {
   memory_retention?: string;
 }
 
-export function ReasonersSkillsTable({
-  reasoners,
+export function BotsSkillsTable({
+  bots,
   skills,
-  reasonerDIDs = {},
+  botDIDs = {},
   skillDIDs = {},
   agentDID,
   agentStatus,
   nodeId,
   className,
-}: ReasonersSkillsTableProps) {
+}: BotsSkillsTableProps) {
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const navigate = useNavigate();
@@ -70,7 +70,7 @@ export function ReasonersSkillsTable({
 
   const componentStatus: "active" | "inactive" = isAgentActive ? "active" : "inactive";
 
-  // Combine agent DID, reasoners and skills into a unified table format
+  // Combine agent DID, bots and skills into a unified table format
   const tableItems: TableItem[] = [
     // Add agent DID as first row if available
     ...(agentDID ? [{
@@ -80,16 +80,16 @@ export function ReasonersSkillsTable({
       did: agentDID,
       status: componentStatus,
     }] : []),
-    ...reasoners.map((reasoner): TableItem => ({
-      id: reasoner.id,
-      name: reasoner.id,
-      type: "reasoner",
-      did: reasonerDIDs[reasoner.id]?.did,
+    ...bots.map((bot): TableItem => ({
+      id: bot.id,
+      name: bot.id,
+      type: "bot",
+      did: botDIDs[bot.id]?.did,
       status: componentStatus,
-      exposure_level: reasonerDIDs[reasoner.id]?.exposure_level,
-      capabilities: reasonerDIDs[reasoner.id]?.capabilities,
-      memory_retention: reasoner.memory_config?.memory_retention,
-      tags: reasoner.tags,
+      exposure_level: botDIDs[bot.id]?.exposure_level,
+      capabilities: botDIDs[bot.id]?.capabilities,
+      memory_retention: bot.memory_config?.memory_retention,
+      tags: bot.tags,
     })),
     ...skills.map((skill): TableItem => ({
       id: skill.id,
@@ -112,10 +112,10 @@ export function ReasonersSkillsTable({
     }
   };
 
-  const handleReasonerClick = (reasonerId: string) => {
+  const handleBotClick = (botId: string) => {
     if (nodeId) {
-      const fullReasonerId = `${nodeId}.${reasonerId}`;
-      navigate(`/reasoners/${fullReasonerId}`);
+      const fullBotId = `${nodeId}.${botId}`;
+      navigate(`/bots/${fullBotId}`);
     }
   };
 
@@ -125,8 +125,8 @@ export function ReasonersSkillsTable({
       return;
     }
 
-    if (item.type === "reasoner" && nodeId) {
-      handleReasonerClick(item.id);
+    if (item.type === "bot" && nodeId) {
+      handleBotClick(item.id);
     }
   };
 
@@ -143,9 +143,9 @@ export function ReasonersSkillsTable({
     }
   };
 
-  const getTypeIcon = (type: "reasoner" | "skill" | "agent") => {
+  const getTypeIcon = (type: "bot" | "skill" | "agent") => {
     switch (type) {
-      case "reasoner":
+      case "bot":
         return <Function className="w-4 h-4 text-accent-primary" />;
       case "skill":
         return <Tools className="w-4 h-4 text-accent-secondary" />;
@@ -176,7 +176,7 @@ export function ReasonersSkillsTable({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Function className="w-5 h-5 text-muted-foreground" />
-            Reasoners & Skills
+            Bots & Skills
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -185,7 +185,7 @@ export function ReasonersSkillsTable({
               <Function className="w-8 h-8 opacity-50" />
               <Tools className="w-8 h-8 opacity-50" />
             </div>
-            <p className="text-sm">No reasoners or skills available</p>
+            <p className="text-sm">No bots or skills available</p>
           </div>
         </CardContent>
       </Card>
@@ -198,7 +198,7 @@ export function ReasonersSkillsTable({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Function className="w-5 h-5 text-muted-foreground" />
-            Reasoners & Skills
+            Bots & Skills
             <Badge variant="outline" className="ml-2 text-xs">
               {filteredItems.length}
             </Badge>
@@ -207,11 +207,11 @@ export function ReasonersSkillsTable({
             <SearchBar
               value={searchTerm}
               onChange={setSearchTerm}
-              placeholder="Search reasoners and skills..."
+              placeholder="Search bots and skills..."
               size="sm"
               wrapperClassName="w-64"
               inputClassName="border border-border bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring"
-              clearButtonAriaLabel="Clear reasoner and skill search"
+              clearButtonAriaLabel="Clear bot and skill search"
             />
             {copyFeedback && (
               <div className="text-sm text-status-success bg-status-success-bg border border-status-success-border rounded-md px-3 py-1">
@@ -238,10 +238,10 @@ export function ReasonersSkillsTable({
                 key={`${item.type}-${item.id}`}
                 className={cn(
                   "border-border-secondary hover:bg-bg-hover transition-colors duration-150",
-                  item.type === "reasoner" && nodeId && "cursor-pointer"
+                  item.type === "bot" && nodeId && "cursor-pointer"
                 )}
                 onClick={(event) => handleRowClick(item, event)}
-                title={item.type === "reasoner" && nodeId ? `Click to view ${item.name} details` : undefined}
+                title={item.type === "bot" && nodeId ? `Click to view ${item.name} details` : undefined}
               >
                 <TableCell>
                   <div className="flex items-center justify-center">
@@ -258,7 +258,7 @@ export function ReasonersSkillsTable({
                       variant="outline"
                       className={cn(
                         "text-xs",
-                        item.type === "reasoner"
+                        item.type === "bot"
                           ? "bg-accent-primary/10 text-accent-primary border-accent-primary/20"
                           : item.type === "skill"
                           ? "bg-accent-secondary/10 text-accent-secondary border-accent-secondary/20"

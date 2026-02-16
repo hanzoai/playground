@@ -26,7 +26,7 @@ func NewIdentityHandlers(storage storage.StorageProvider) *IdentityHandlers {
 
 // DIDSearchResult represents a search result for DIDs
 type DIDSearchResult struct {
-	Type           string `json:"type"` // "agent", "reasoner", "skill"
+	Type           string `json:"type"` // "agent", "bot", "skill"
 	DID            string `json:"did"`
 	Name           string `json:"name"`
 	ParentDID      string `json:"parent_did,omitempty"`
@@ -39,7 +39,7 @@ type DIDSearchResult struct {
 // DIDStatsResponse represents DID statistics
 type DIDStatsResponse struct {
 	TotalAgents    int `json:"total_agents"`
-	TotalReasoners int `json:"total_reasoners"`
+	TotalBots int `json:"total_bots"`
 	TotalSkills    int `json:"total_skills"`
 	TotalDIDs      int `json:"total_dids"`
 }
@@ -51,17 +51,17 @@ type AgentDIDResponse struct {
 	Status         string             `json:"status"`
 	DerivationPath string             `json:"derivation_path"`
 	CreatedAt      string             `json:"created_at"`
-	ReasonerCount  int                `json:"reasoner_count"`
+	BotCount  int                `json:"bot_count"`
 	SkillCount     int                `json:"skill_count"`
-	Reasoners      []ComponentDIDInfo `json:"reasoners,omitempty"`
+	Bots      []ComponentDIDInfo `json:"bots,omitempty"`
 	Skills         []ComponentDIDInfo `json:"skills,omitempty"`
 }
 
-// ComponentDIDInfo represents a reasoner or skill DID
+// ComponentDIDInfo represents a bot or skill DID
 type ComponentDIDInfo struct {
 	DID            string `json:"did"`
 	Name           string `json:"name"`
-	Type           string `json:"type"` // "reasoner" or "skill"
+	Type           string `json:"type"` // "bot" or "skill"
 	DerivationPath string `json:"derivation_path"`
 	CreatedAt      string `json:"created_at"`
 }
@@ -79,7 +79,7 @@ type VCSearchResult struct {
 	Status       string `json:"status"`
 	CreatedAt    string `json:"created_at"`
 	DurationMS   *int   `json:"duration_ms,omitempty"`
-	ReasonerName string `json:"reasoner_name,omitempty"`
+	BotName string `json:"bot_name,omitempty"`
 	AgentName    string `json:"agent_name,omitempty"`
 	Verified     bool   `json:"verified"`
 }
@@ -105,13 +105,13 @@ func (h *IdentityHandlers) GetDIDStats(c *gin.Context) {
 		return
 	}
 
-	// Count reasoners and skills
-	reasonerCount := 0
+	// Count bots and skills
+	botCount := 0
 	skillCount := 0
 	for i := range componentDIDs {
 		comp := componentDIDs[i]
-		if comp.ComponentType == "reasoner" {
-			reasonerCount++
+		if comp.ComponentType == "bot" {
+			botCount++
 		} else if comp.ComponentType == "skill" {
 			skillCount++
 		}
@@ -119,7 +119,7 @@ func (h *IdentityHandlers) GetDIDStats(c *gin.Context) {
 
 	stats := DIDStatsResponse{
 		TotalAgents:    len(agentDIDs),
-		TotalReasoners: reasonerCount,
+		TotalBots: botCount,
 		TotalSkills:    skillCount,
 		TotalDIDs:      len(agentDIDs) + len(componentDIDs),
 	}
@@ -132,7 +132,7 @@ func (h *IdentityHandlers) GetDIDStats(c *gin.Context) {
 func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 	ctx := c.Request.Context()
 	query := strings.ToLower(c.Query("q"))
-	didType := c.DefaultQuery("type", "all") // "all", "agent", "reasoner", "skill"
+	didType := c.DefaultQuery("type", "all") // "all", "agent", "bot", "skill"
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
@@ -162,8 +162,8 @@ func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 		}
 	}
 
-	// Search components if type is "all", "reasoner", or "skill"
-	if didType == "all" || didType == "reasoner" || didType == "skill" {
+	// Search components if type is "all", "bot", or "skill"
+	if didType == "all" || didType == "bot" || didType == "skill" {
 		componentDIDs, err := h.storage.ListComponentDIDs(ctx, "")
 		if err == nil {
 			for i := range componentDIDs {
@@ -244,11 +244,11 @@ func (h *IdentityHandlers) ListAgents(c *gin.Context) {
 	for i := range agentDIDs {
 		agent := agentDIDs[i]
 		components := componentsByAgent[agent.DID]
-		reasonerCount := 0
+		botCount := 0
 		skillCount := 0
 		for _, comp := range components {
-			if comp.ComponentType == "reasoner" {
-				reasonerCount++
+			if comp.ComponentType == "bot" {
+				botCount++
 			} else if comp.ComponentType == "skill" {
 				skillCount++
 			}
@@ -260,7 +260,7 @@ func (h *IdentityHandlers) ListAgents(c *gin.Context) {
 			Status:         string(agent.Status),
 			DerivationPath: agent.DerivationPath,
 			CreatedAt:      agent.RegisteredAt.Format("2006-01-02T15:04:05Z"),
-			ReasonerCount:  reasonerCount,
+			BotCount:  botCount,
 			SkillCount:     skillCount,
 		})
 	}
@@ -329,7 +329,7 @@ func (h *IdentityHandlers) GetAgentDetails(c *gin.Context) {
 		return
 	}
 
-	var reasoners []ComponentDIDInfo
+	var bots []ComponentDIDInfo
 	var skills []ComponentDIDInfo
 
 	for i := range componentDIDs {
@@ -343,26 +343,26 @@ func (h *IdentityHandlers) GetAgentDetails(c *gin.Context) {
 			CreatedAt:      comp.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		}
 
-		if comp.ComponentType == "reasoner" {
-			reasoners = append(reasoners, info)
+		if comp.ComponentType == "bot" {
+			bots = append(bots, info)
 		} else if comp.ComponentType == "skill" {
 			skills = append(skills, info)
 		}
 	}
 
-	// Apply pagination to reasoners
-	totalReasoners := len(reasoners)
+	// Apply pagination to bots
+	totalBots := len(bots)
 	start := offset
 	end := offset + limit
 
-	if start > totalReasoners {
-		start = totalReasoners
+	if start > totalBots {
+		start = totalBots
 	}
-	if end > totalReasoners {
-		end = totalReasoners
+	if end > totalBots {
+		end = totalBots
 	}
 
-	paginatedReasoners := reasoners[start:end]
+	paginatedBots := bots[start:end]
 
 	response := AgentDIDResponse{
 		DID:            agentDID.DID,
@@ -370,18 +370,18 @@ func (h *IdentityHandlers) GetAgentDetails(c *gin.Context) {
 		Status:         string(agentDID.Status),
 		DerivationPath: agentDID.DerivationPath,
 		CreatedAt:      agentDID.RegisteredAt.Format("2006-01-02T15:04:05Z"),
-		ReasonerCount:  len(reasoners),
+		BotCount:  len(bots),
 		SkillCount:     len(skills),
-		Reasoners:      paginatedReasoners,
+		Bots:      paginatedBots,
 		Skills:         skills,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"agent":              response,
-		"total_reasoners":    totalReasoners,
-		"reasoners_limit":    limit,
-		"reasoners_offset":   offset,
-		"reasoners_has_more": end < totalReasoners,
+		"total_bots":    totalBots,
+		"bots_limit":    limit,
+		"bots_offset":   offset,
+		"bots_has_more": end < totalBots,
 	})
 }
 

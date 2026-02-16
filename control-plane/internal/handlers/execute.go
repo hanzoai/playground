@@ -206,7 +206,7 @@ func (c *executionController) handleSync(ctx *gin.Context) {
 		return
 	}
 
-	// Emit execution started event with full reasoner context
+	// Emit execution started event with full bot context
 	c.publishExecutionStartedEvent(plan)
 
 	resultBody, elapsed, asyncAccepted, callErr := c.callAgent(reqCtx, plan)
@@ -216,7 +216,7 @@ func (c *executionController) handleSync(ctx *gin.Context) {
 		logger.Logger.Info().
 			Str("execution_id", plan.exec.ExecutionID).
 			Str("agent", plan.target.NodeID).
-			Str("reasoner", plan.target.TargetName).
+			Str("bot", plan.target.TargetName).
 			Msg("agent returned async acknowledgment, waiting for completion")
 
 		// Wait for agent to call back and complete the execution
@@ -333,7 +333,7 @@ func (c *executionController) handleAsync(ctx *gin.Context) {
 		return
 	}
 
-	// Emit execution started event with full reasoner context
+	// Emit execution started event with full bot context
 	c.publishExecutionStartedEvent(plan)
 
 	pool := getAsyncWorkerPool()
@@ -554,10 +554,10 @@ func (c *executionController) handleStatusUpdate(ctx *gin.Context) {
 }
 
 func (c *executionController) publishExecutionEvent(exec *types.Execution, status string, data map[string]interface{}) {
-	c.publishExecutionEventWithReasonerInfo(exec, status, data, nil, nil)
+	c.publishExecutionEventWithBotInfo(exec, status, data, nil, nil)
 }
 
-func (c *executionController) publishExecutionEventWithReasonerInfo(exec *types.Execution, status string, data map[string]interface{}, agent *types.AgentNode, reasonerID *string) {
+func (c *executionController) publishExecutionEventWithBotInfo(exec *types.Execution, status string, data map[string]interface{}, agent *types.AgentNode, botID *string) {
 	if exec == nil {
 		return
 	}
@@ -579,13 +579,13 @@ func (c *executionController) publishExecutionEventWithReasonerInfo(exec *types.
 		data = make(map[string]interface{})
 	}
 
-	// Add reasoner_id to the event data
-	rID := exec.ReasonerID
-	if reasonerID != nil && *reasonerID != "" {
-		rID = *reasonerID
+	// Add bot_id to the event data
+	rID := exec.BotID
+	if botID != nil && *botID != "" {
+		rID = *botID
 	}
 	if rID != "" {
-		data["reasoner_id"] = rID
+		data["bot_id"] = rID
 	}
 
 	// Add node_id to the event data
@@ -593,12 +593,12 @@ func (c *executionController) publishExecutionEventWithReasonerInfo(exec *types.
 		data["node_id"] = exec.NodeID
 	}
 
-	// Add reasoner definitions if agent info is available
+	// Add bot definitions if agent info is available
 	if agent != nil {
-		// Find the specific reasoner being executed
-		for _, r := range agent.Reasoners {
+		// Find the specific bot being executed
+		for _, r := range agent.Bots {
 			if r.ID == rID {
-				data["reasoner"] = map[string]interface{}{
+				data["bot"] = map[string]interface{}{
 					"id":            r.ID,
 					"input_schema":  r.InputSchema,
 					"output_schema": r.OutputSchema,
@@ -620,17 +620,17 @@ func (c *executionController) publishExecutionEventWithReasonerInfo(exec *types.
 			}
 		}
 
-		// Include all reasoners on this agent node for back-population
-		if len(agent.Reasoners) > 0 {
-			reasonerList := make([]map[string]interface{}, 0, len(agent.Reasoners))
-			for _, r := range agent.Reasoners {
-				reasonerList = append(reasonerList, map[string]interface{}{
+		// Include all bots on this agent node for back-population
+		if len(agent.Bots) > 0 {
+			botList := make([]map[string]interface{}, 0, len(agent.Bots))
+			for _, r := range agent.Bots {
+				botList = append(botList, map[string]interface{}{
 					"id":            r.ID,
 					"input_schema":  r.InputSchema,
 					"output_schema": r.OutputSchema,
 				})
 			}
-			data["agent_reasoners"] = reasonerList
+			data["agent_bots"] = botList
 		}
 
 		// Include all skills on this agent node for back-population
@@ -670,7 +670,7 @@ func (c *executionController) publishExecutionEventWithReasonerInfo(exec *types.
 	events.GlobalExecutionEventBus.Publish(event)
 }
 
-// publishExecutionStartedEvent emits the ExecutionStarted event with full reasoner context
+// publishExecutionStartedEvent emits the ExecutionStarted event with full bot context
 func (c *executionController) publishExecutionStartedEvent(plan *preparedExecution) {
 	if plan == nil || plan.exec == nil {
 		return
@@ -685,7 +685,7 @@ func (c *executionController) publishExecutionStartedEvent(plan *preparedExecuti
 		data["input_size"] = len(plan.exec.InputPayload)
 	}
 
-	c.publishExecutionEventWithReasonerInfo(
+	c.publishExecutionEventWithBotInfo(
 		plan.exec,
 		string(types.ExecutionStatusRunning),
 		data,
@@ -851,7 +851,7 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 		RunID:             runID,
 		ParentExecutionID: headers.parentExecutionID,
 		AgentNodeID:       agent.ID,
-		ReasonerID:        target.TargetName,
+		BotID:        target.TargetName,
 		NodeID:            target.NodeID,
 		Status:            types.ExecutionStatusRunning,
 		InputPayload:      json.RawMessage(storedPayload),
@@ -961,7 +961,7 @@ func (c *executionController) callAgent(ctx context.Context, plan *preparedExecu
 		logger.Logger.Info().
 			Str("execution_id", plan.exec.ExecutionID).
 			Str("agent", plan.target.NodeID).
-			Str("reasoner", plan.target.TargetName).
+			Str("bot", plan.target.TargetName).
 			Msg("agent acknowledged async execution")
 		return nil, time.Since(start), true, nil
 	}
@@ -974,7 +974,7 @@ func (c *executionController) callAgent(ctx context.Context, plan *preparedExecu
 	if plan.agent.DeploymentType == "serverless" {
 		logger.Logger.Debug().
 			Str("agent", plan.target.NodeID).
-			Str("reasoner", plan.target.TargetName).
+			Str("bot", plan.target.TargetName).
 			Str("url", url).
 			Int("status", resp.StatusCode).
 			Msgf("serverless response: %s", truncateForLog(body))
@@ -1026,7 +1026,7 @@ func (c *executionController) completeExecution(ctx context.Context, plan *prepa
 			if inputPayload := decodeJSON(plan.exec.InputPayload); inputPayload != nil {
 				eventData["input"] = inputPayload
 			}
-			c.publishExecutionEventWithReasonerInfo(updated, string(types.ExecutionStatusSucceeded), eventData, plan.agent, &plan.target.TargetName)
+			c.publishExecutionEventWithBotInfo(updated, string(types.ExecutionStatusSucceeded), eventData, plan.agent, &plan.target.TargetName)
 			return nil
 		}
 		lastErr = err
@@ -1082,7 +1082,7 @@ func (c *executionController) failExecution(ctx context.Context, plan *preparedE
 			if inputPayload := decodeJSON(plan.exec.InputPayload); inputPayload != nil {
 				eventData["input"] = inputPayload
 			}
-			c.publishExecutionEventWithReasonerInfo(updated, string(types.ExecutionStatusFailed), eventData, plan.agent, &plan.target.TargetName)
+			c.publishExecutionEventWithBotInfo(updated, string(types.ExecutionStatusFailed), eventData, plan.agent, &plan.target.TargetName)
 			return nil
 		}
 		lastErr = err
@@ -1152,7 +1152,7 @@ func parseTarget(value string) (*parsedTarget, error) {
 	}
 	parts := strings.Split(value, ".")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("target must be in format 'node_id.reasoner_name'")
+		return nil, fmt.Errorf("target must be in format 'node_id.bot_name'")
 	}
 	return &parsedTarget{
 		NodeID:     parts[0],
@@ -1161,9 +1161,9 @@ func parseTarget(value string) (*parsedTarget, error) {
 }
 
 func determineTargetType(agent *types.AgentNode, name string) (string, error) {
-	for _, reasoner := range agent.Reasoners {
-		if reasoner.ID == name {
-			return "reasoner", nil
+	for _, bot := range agent.Bots {
+		if bot.ID == name {
+			return "bot", nil
 		}
 	}
 	for _, skill := range agent.Skills {
@@ -1193,7 +1193,7 @@ func buildAgentURL(agent *types.AgentNode, target *parsedTarget) string {
 	if target.TargetType == "skill" {
 		return fmt.Sprintf("%s/skills/%s", base, target.TargetName)
 	}
-	return fmt.Sprintf("%s/reasoners/%s", base, target.TargetName)
+	return fmt.Sprintf("%s/bots/%s", base, target.TargetName)
 }
 
 func buildServerlessPayload(target *parsedTarget, exec *types.Execution, headers executionHeaders, input map[string]interface{}) map[string]interface{} {
@@ -1222,7 +1222,7 @@ func buildServerlessPayload(target *parsedTarget, exec *types.Execution, headers
 	payload := map[string]interface{}{
 		"path":              fmt.Sprintf("/execute/%s", target.TargetName),
 		"target":            target.TargetName,
-		"reasoner":          target.TargetName,
+		"bot":          target.TargetName,
 		"input":             input,
 		"execution_context": execCtx,
 	}
@@ -1370,7 +1370,7 @@ func (c *executionController) buildWorkflowExecutionRecord(ctx context.Context, 
 		startTime = time.Now().UTC()
 	}
 
-	workflowName := fmt.Sprintf("%s.%s", exec.NodeID, exec.ReasonerID)
+	workflowName := fmt.Sprintf("%s.%s", exec.NodeID, exec.BotID)
 	runIDCopy := runID
 	workflowExec := &types.WorkflowExecution{
 		WorkflowID:          runID,
@@ -1384,7 +1384,7 @@ func (c *executionController) buildWorkflowExecutionRecord(ctx context.Context, 
 		ParentExecutionID:   exec.ParentExecutionID,
 		RootWorkflowID:      rootWorkflowID,
 		WorkflowDepth:       depth,
-		ReasonerID:          exec.ReasonerID,
+		BotID:          exec.BotID,
 		Status:              string(exec.Status),
 		WorkflowName:        &workflowName,
 		StartedAt:           startTime,

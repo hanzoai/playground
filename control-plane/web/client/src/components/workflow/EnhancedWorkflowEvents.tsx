@@ -184,7 +184,7 @@ export function EnhancedWorkflowEvents({
         if (searchableQuery) {
           const baseText = [
             event.agent_name,
-            event.reasoner_id,
+            event.bot_id,
             event.execution_id,
             event.status,
           ]
@@ -284,7 +284,7 @@ export function EnhancedWorkflowEvents({
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-border">
         <div className="flex flex-wrap items-center gap-3">
           <Input
-            placeholder="Search by agent, reasoner, execution, or note content"
+            placeholder="Search by agent, bot, execution, or note content"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-72"
@@ -429,7 +429,7 @@ export function EnhancedWorkflowEvents({
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm font-semibold text-foreground">
-                          {event.agent_name || event.reasoner_id || 'Workflow step'}
+                          {event.agent_name || event.bot_id || 'Workflow step'}
                         </h3>
                         <Badge variant="outline" className="text-body-small uppercase tracking-wide">
                           {statusLabel}

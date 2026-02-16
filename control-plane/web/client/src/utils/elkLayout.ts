@@ -95,7 +95,7 @@ const convertNodesToElk = (nodes: Node[]): ElkNode[] => {
   return nodes.map((node) => {
     // Calculate node dimensions (same logic as in the original DAG)
     const nodeData = node.data as any;
-    const taskText = nodeData.task_name || nodeData.reasoner_id || '';
+    const taskText = nodeData.task_name || nodeData.bot_id || '';
     const agentText = nodeData.agent_name || nodeData.agent_node_id || '';
 
     const minWidth = 200;

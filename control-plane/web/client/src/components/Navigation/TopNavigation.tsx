@@ -26,21 +26,21 @@ export function TopNavigation() {
       string,
       { label: string; href: string; parent?: string }
     > = {
-      reasoners: { label: "Reasoners", href: "/reasoners/all" },
-      "reasoners/all": {
-        label: "All Reasoners",
-        href: "/reasoners/all",
-        parent: "reasoners",
+      bots: { label: "Bots", href: "/bots/all" },
+      "bots/all": {
+        label: "All Bots",
+        href: "/bots/all",
+        parent: "bots",
       },
-      "reasoners/executions": {
+      "bots/executions": {
         label: "Recent Executions",
-        href: "/reasoners/executions",
-        parent: "reasoners",
+        href: "/bots/executions",
+        parent: "bots",
       },
-      "reasoners/workflows": {
+      "bots/workflows": {
         label: "Workflows",
-        href: "/reasoners/workflows",
-        parent: "reasoners",
+        href: "/bots/workflows",
+        parent: "bots",
       },
       nodes: { label: "Agent Nodes", href: "/nodes" },
       packages: { label: "Packages", href: "/packages" },
@@ -66,43 +66,43 @@ export function TopNavigation() {
       if (routeMappings[routeKey]) {
         const mapping = routeMappings[routeKey];
 
-        // For reasoners/all, we want to show just "Reasoners" in breadcrumb
-        if (routeKey === "reasoners/all") {
-          // Replace the previous "Reasoners" breadcrumb if it exists
-          const existingReasonersIndex = breadcrumbs.findIndex(
-            (b) => b.label === "Reasoners"
+        // For bots/all, we want to show just "Bots" in breadcrumb
+        if (routeKey === "bots/all") {
+          // Replace the previous "Bots" breadcrumb if it exists
+          const existingBotsIndex = breadcrumbs.findIndex(
+            (b) => b.label === "Bots"
           );
-          if (existingReasonersIndex !== -1) {
-            breadcrumbs[existingReasonersIndex] = {
-              label: "Reasoners",
-              href: "/reasoners/all",
+          if (existingBotsIndex !== -1) {
+            breadcrumbs[existingBotsIndex] = {
+              label: "Bots",
+              href: "/bots/all",
             };
           } else {
-            breadcrumbs.push({ label: "Reasoners", href: "/reasoners/all" });
+            breadcrumbs.push({ label: "Bots", href: "/bots/all" });
           }
-          return; // Skip adding "All Reasoners" as a separate breadcrumb
+          return; // Skip adding "All Bots" as a separate breadcrumb
         }
 
         breadcrumbs.push({ label: mapping.label, href: mapping.href });
       } else {
-        // Handle dynamic routes (like reasoner detail pages)
+        // Handle dynamic routes (like bot detail pages)
         let label =
           segment.charAt(0).toUpperCase() + segment.slice(1).replace("-", " ");
         const href = currentPath;
 
-        // Special handling for reasoner detail pages
+        // Special handling for bot detail pages
         if (
-          pathSegments[index - 1] === "reasoners" &&
+          pathSegments[index - 1] === "bots" &&
           segment !== "all" &&
           segment !== "executions" &&
           segment !== "workflows"
         ) {
-          // This is a reasoner detail page - decode the reasoner ID and format it nicely
+          // This is a bot detail page - decode the bot ID and format it nicely
           try {
             const decodedId = decodeURIComponent(segment);
             const parts = decodedId.split(".");
             if (parts.length >= 2) {
-              label = parts[parts.length - 1]; // Use the reasoner name part
+              label = parts[parts.length - 1]; // Use the bot name part
             } else {
               label = decodedId;
             }
@@ -110,12 +110,12 @@ export function TopNavigation() {
             label = segment;
           }
 
-          // Ensure the parent "Reasoners" breadcrumb points to /reasoners/all
-          const reasonersIndex = breadcrumbs.findIndex(
-            (b) => b.label === "Reasoners"
+          // Ensure the parent "Bots" breadcrumb points to /bots/all
+          const botsIndex = breadcrumbs.findIndex(
+            (b) => b.label === "Bots"
           );
-          if (reasonersIndex !== -1) {
-            breadcrumbs[reasonersIndex].href = "/reasoners/all";
+          if (botsIndex !== -1) {
+            breadcrumbs[botsIndex].href = "/bots/all";
           }
         }
         // Handle node detail pages

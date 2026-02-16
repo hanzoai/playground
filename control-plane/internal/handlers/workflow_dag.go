@@ -31,7 +31,7 @@ type WorkflowDAGNode struct {
 	WorkflowID        string                `json:"workflow_id"`
 	ExecutionID       string                `json:"execution_id"`
 	AgentNodeID       string                `json:"agent_node_id"`
-	ReasonerID        string                `json:"reasoner_id"`
+	BotID        string                `json:"bot_id"`
 	Status            string                `json:"status"`
 	StartedAt         string                `json:"started_at"`
 	CompletedAt       *string               `json:"completed_at,omitempty"`
@@ -68,7 +68,7 @@ type WorkflowDAGLightweightNode struct {
 	ExecutionID       string  `json:"execution_id"`
 	ParentExecutionID *string `json:"parent_execution_id,omitempty"`
 	AgentNodeID       string  `json:"agent_node_id"`
-	ReasonerID        string  `json:"reasoner_id"`
+	BotID        string  `json:"bot_id"`
 	Status            string  `json:"status"`
 	StartedAt         string  `json:"started_at"`
 	CompletedAt       *string `json:"completed_at,omitempty"`
@@ -366,8 +366,8 @@ func buildExecutionDAG(executions []*types.Execution) (WorkflowDAGNode, []Workfl
 
 	status := deriveOverallStatus(executions)
 	workflowName := ""
-	if rootExec != nil && rootExec.ReasonerID != "" {
-		workflowName = rootExec.ReasonerID
+	if rootExec != nil && rootExec.BotID != "" {
+		workflowName = rootExec.BotID
 	}
 
 	var sessionID, actorID *string
@@ -458,8 +458,8 @@ func buildLightweightExecutionDAG(executions []*types.Execution) ([]WorkflowDAGL
 
 	status := deriveOverallStatus(executions)
 	workflowName := ""
-	if rootExec != nil && rootExec.ReasonerID != "" {
-		workflowName = rootExec.ReasonerID
+	if rootExec != nil && rootExec.BotID != "" {
+		workflowName = rootExec.BotID
 	}
 
 	var sessionID, actorID *string
@@ -483,7 +483,7 @@ func executionToDAGNode(exec *types.Execution, depth int) WorkflowDAGNode {
 		WorkflowID:        exec.RunID,
 		ExecutionID:       exec.ExecutionID,
 		AgentNodeID:       exec.AgentNodeID,
-		ReasonerID:        exec.ReasonerID,
+		BotID:        exec.BotID,
 		Status:            types.NormalizeExecutionStatus(exec.Status),
 		StartedAt:         started,
 		CompletedAt:       completed,
@@ -529,7 +529,7 @@ func executionToLightweightNode(exec *types.Execution, depth int) WorkflowDAGLig
 		ExecutionID:       exec.ExecutionID,
 		ParentExecutionID: exec.ParentExecutionID,
 		AgentNodeID:       exec.AgentNodeID,
-		ReasonerID:        exec.ReasonerID,
+		BotID:        exec.BotID,
 		Status:            types.NormalizeExecutionStatus(exec.Status),
 		StartedAt:         started,
 		CompletedAt:       completed,

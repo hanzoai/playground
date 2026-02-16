@@ -51,9 +51,9 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 
 	components := []storage.ComponentDIDRequest{
 		{
-			ComponentDID:    "did:reasoner:1",
-			ComponentType:   "reasoner",
-			ComponentName:   "reasoner.fn",
+			ComponentDID:    "did:bot:1",
+			ComponentType:   "bot",
+			ComponentName:   "bot.fn",
 			PublicKeyJWK:    "{}",
 			DerivationIndex: 1,
 		},
@@ -76,10 +76,10 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 	require.NotNil(t, loaded)
 	require.Contains(t, loaded.AgentNodes, "agent-1")
 
-	// Validate reasoner lookup
-	reasonerID, err := registry.FindDIDByComponent(agentsID, "reasoner", "reasoner.fn")
+	// Validate bot lookup
+	botID, err := registry.FindDIDByComponent(agentsID, "bot", "bot.fn")
 	require.NoError(t, err)
-	require.Equal(t, "did:reasoner:1", reasonerID.DID)
+	require.Equal(t, "did:bot:1", botID.DID)
 
 	// Validate skill lookup
 	skillID, err := registry.FindDIDByComponent(agentsID, "skill", "skill.fn")
@@ -96,7 +96,7 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 	packageResult, err := registry.GetAgentDIDs(agentsID, "agent-1")
 	require.NoError(t, err)
 	require.Equal(t, "did:agent:1", packageResult.AgentDID.DID)
-	require.Contains(t, packageResult.ReasonerDIDs, "reasoner.fn")
+	require.Contains(t, packageResult.BotDIDs, "bot.fn")
 	require.Contains(t, packageResult.SkillDIDs, "skill.fn")
 
 	registries, err := registry.ListRegistries()

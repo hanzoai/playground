@@ -41,7 +41,7 @@ func TestExecuteAsyncHandler_QueueSaturation(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -78,7 +78,7 @@ func TestExecuteAsyncHandler_QueueSaturation(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/execute/async/:target", ExecuteAsyncHandler(store, payloads, nil, 90*time.Second))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.reasoner-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.bot-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -124,7 +124,7 @@ func TestExecuteAsyncHandler_WithWebhook(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -140,7 +140,7 @@ func TestExecuteAsyncHandler_WithWebhook(t *testing.T) {
 			"secret": "test-secret"
 		}
 	}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.reasoner-a", strings.NewReader(reqBody))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.bot-a", strings.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -173,7 +173,7 @@ func TestExecuteAsyncHandler_InvalidWebhook(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -190,7 +190,7 @@ func TestExecuteAsyncHandler_InvalidWebhook(t *testing.T) {
 			"url": "` + longURL + `"
 		}
 	}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.reasoner-a", strings.NewReader(reqBody))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/async/node-1.bot-a", strings.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -219,7 +219,7 @@ func TestHandleSync_AsyncAcknowledgment(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -228,7 +228,7 @@ func TestHandleSync_AsyncAcknowledgment(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.reasoner-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.bot-a", strings.NewReader(`{"input":{"foo":"bar"}}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 
@@ -303,7 +303,7 @@ func TestCallAgent_HTTP202Response(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -318,7 +318,7 @@ func TestCallAgent_HTTP202Response(t *testing.T) {
 		agent:       agent,
 		target: &parsedTarget{
 			NodeID:     "node-1",
-			TargetName: "reasoner-a",
+			TargetName: "bot-a",
 		},
 	}
 
@@ -342,7 +342,7 @@ func TestCallAgent_ErrorResponse(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -357,7 +357,7 @@ func TestCallAgent_ErrorResponse(t *testing.T) {
 		agent:       agent,
 		target: &parsedTarget{
 			NodeID:     "node-1",
-			TargetName: "reasoner-a",
+			TargetName: "bot-a",
 		},
 	}
 
@@ -383,7 +383,7 @@ func TestCallAgent_Timeout(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -400,7 +400,7 @@ func TestCallAgent_Timeout(t *testing.T) {
 		agent:       agent,
 		target: &parsedTarget{
 			NodeID:     "node-1",
-			TargetName: "reasoner-a",
+			TargetName: "bot-a",
 		},
 	}
 
@@ -435,7 +435,7 @@ func TestCallAgent_ReadResponseError(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -450,7 +450,7 @@ func TestCallAgent_ReadResponseError(t *testing.T) {
 		agent:       agent,
 		target: &parsedTarget{
 			NodeID:     "node-1",
-			TargetName: "reasoner-a",
+			TargetName: "bot-a",
 		},
 	}
 
@@ -477,7 +477,7 @@ func TestCallAgent_HeaderPropagation(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -499,7 +499,7 @@ func TestCallAgent_HeaderPropagation(t *testing.T) {
 		agent:       agent,
 		target: &parsedTarget{
 			NodeID:     "node-1",
-			TargetName: "reasoner-a",
+			TargetName: "bot-a",
 		},
 	}
 

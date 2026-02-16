@@ -9,7 +9,7 @@ interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -107,7 +107,7 @@ export function ExecutionPanel({ execution, onClose, isOpen, task_name, agent_na
 
           <div className="space-y-2">
             <h3 className="text-heading-3 text-foreground">
-              {task_name || execution.reasoner_id}
+              {task_name || execution.bot_id}
             </h3>
             <p className="text-body-small">
               {agent_name || execution.agent_node_id}
@@ -253,18 +253,18 @@ export function ExecutionPanel({ execution, onClose, isOpen, task_name, agent_na
             </div>
 
             <div className="space-y-1">
-              <div className="text-body-small">Reasoner ID</div>
+              <div className="text-body-small">Bot ID</div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono text-foreground">
-                  {execution.reasoner_id}
+                  {execution.bot_id}
                 </code>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(execution.reasoner_id, 'reasoner')}
+                  onClick={() => copyToClipboard(execution.bot_id, 'bot')}
                   className="h-6 w-6 p-0"
                 >
-                  {copiedField === 'reasoner' ? (
+                  {copiedField === 'bot' ? (
                     <CheckmarkFilled className="h-3 w-3 text-status-success" />
                   ) : (
                     <Copy className="h-3 w-3" />

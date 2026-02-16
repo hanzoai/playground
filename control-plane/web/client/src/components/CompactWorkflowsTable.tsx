@@ -111,7 +111,7 @@ function WorkflowHoverCard({
             </div>
             <div>
               <span className="text-muted-foreground">Root Task:</span>
-              <div className="font-medium">{workflow.root_reasoner}</div>
+              <div className="font-medium">{workflow.root_bot}</div>
             </div>
           </div>
 
@@ -228,11 +228,11 @@ export function CompactWorkflowsTable({
   const searchFields = [
     "display_name",    // Workflow name
     "agent_name",      // Agent name
-    "current_task",    // Last reasoner
+    "current_task",    // Last bot
     "workflow_id",     // Workflow ID
     "run_id",          // Run ID
     "status",          // Status
-    "root_reasoner",   // Root task
+    "root_bot",   // Root task
   ];
 
   // Filter workflows based on search query
@@ -478,7 +478,7 @@ export function CompactWorkflowsTable({
     },
     {
       key: "current_task",
-      header: "Last Reasoner",
+      header: "Last Bot",
       sortable: false,
       align: "left" as const,
       render: (workflow: WorkflowSummary) => (
@@ -567,7 +567,7 @@ export function CompactWorkflowsTable({
       {/* Search */}
       <FastTableSearch
         onSearch={handleSearch}
-        placeholder="Search workflows by name, agent, reasoner, status..."
+        placeholder="Search workflows by name, agent, bot, status..."
         resultCount={filteredWorkflows.length}
         totalCount={workflows.length}
         disabled={loading}

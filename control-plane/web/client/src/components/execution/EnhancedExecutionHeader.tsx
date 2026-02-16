@@ -271,7 +271,7 @@ export function EnhancedExecutionHeader({
         {/* Main Header */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-heading-2">{execution.reasoner_id}</h1>
+            <h1 className="text-heading-2">{execution.bot_id}</h1>
             <StatusIndicator
               status={normalizedStatus}
               animated={normalizedStatus === 'running'}

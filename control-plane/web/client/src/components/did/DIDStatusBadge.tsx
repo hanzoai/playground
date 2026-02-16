@@ -83,7 +83,7 @@ export function DIDStatusBadge({
 
 interface DIDCountBadgeProps {
   count: number;
-  type: "reasoners" | "skills";
+  type: "bots" | "skills";
   className?: string;
 }
 
@@ -93,8 +93,8 @@ export function DIDCountBadge({
   className = "",
 }: DIDCountBadgeProps) {
   const typeConfig = {
-    reasoners: {
-      label: count === 1 ? "Reasoner" : "Reasoners",
+    bots: {
+      label: count === 1 ? "Bot" : "Bots",
       icon: Cognitive,
       color: "bg-blue-500/10 text-blue-500 border-blue-500/20 font-medium",
     },
@@ -181,7 +181,7 @@ export function DIDIdentityBadge({
 
 interface CompositeDIDStatusProps {
   status: AgentDIDStatus;
-  reasonerCount: number;
+  botCount: number;
   skillCount: number;
   did?: string;
   compact?: boolean;
@@ -190,7 +190,7 @@ interface CompositeDIDStatusProps {
 
 export function CompositeDIDStatus({
   status,
-  reasonerCount,
+  botCount,
   skillCount,
   did,
   compact = false,
@@ -200,9 +200,9 @@ export function CompositeDIDStatus({
     return (
       <div className={`inline-flex items-center gap-1 ${className}`}>
         <DIDStatusBadge status={status} size="sm" />
-        {(reasonerCount > 0 || skillCount > 0) && (
+        {(botCount > 0 || skillCount > 0) && (
           <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-950/20 dark:text-gray-400 dark:border-gray-700">
-            {reasonerCount + skillCount} DIDs
+            {botCount + skillCount} DIDs
           </Badge>
         )}
       </div>
@@ -212,7 +212,7 @@ export function CompositeDIDStatus({
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <DIDStatusBadge status={status} />
-      <DIDCountBadge count={reasonerCount} type="reasoners" />
+      <DIDCountBadge count={botCount} type="bots" />
       <DIDCountBadge count={skillCount} type="skills" />
       {did && <DIDIdentityBadge did={did} />}
     </div>

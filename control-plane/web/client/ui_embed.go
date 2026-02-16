@@ -47,7 +47,7 @@ func RegisterUIRoutes(router *gin.Engine) {
 		}
 
 		// Check if it's a static asset by looking for common web asset file extensions
-		// This prevents reasoner IDs with dots (like "deepresearchagent.meta_research_methodology_reasoner")
+		// This prevents bot IDs with dots (like "deepresearchagent.meta_research_methodology_bot")
 		// from being treated as static assets
 		pathLower := strings.ToLower(path)
 		isStaticAsset := strings.HasSuffix(pathLower, ".js") ||

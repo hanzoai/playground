@@ -340,32 +340,32 @@ func TestObservabilityForwarder_TransformNodeEvent(t *testing.T) {
 	require.Equal(t, nodeEvent.Data, data["payload"])
 }
 
-// Test event transformation - reasoner events
-func TestObservabilityForwarder_TransformReasonerEvent(t *testing.T) {
+// Test event transformation - bot events
+func TestObservabilityForwarder_TransformBotEvent(t *testing.T) {
 	store := newMockObservabilityStore()
 	forwarder := NewObservabilityForwarder(store, ObservabilityForwarderConfig{}).(*observabilityForwarder)
 
-	reasonerEvent := events.ReasonerEvent{
-		Type:       events.ReasonerOnline,
-		ReasonerID: "reasoner-123",
+	botEvent := events.BotEvent{
+		Type:       events.BotOnline,
+		BotID: "bot-123",
 		NodeID:     "node-456",
 		Status:     "online",
 		Timestamp:  time.Now(),
 		Data:       map[string]interface{}{"version": "1.0"},
 	}
 
-	obsEvent := forwarder.transformReasonerEvent(reasonerEvent)
+	obsEvent := forwarder.transformBotEvent(botEvent)
 
-	require.Equal(t, "reasoner_online", obsEvent.EventType)
-	require.Equal(t, "reasoner", obsEvent.EventSource)
+	require.Equal(t, "bot_online", obsEvent.EventType)
+	require.Equal(t, "bot", obsEvent.EventSource)
 	require.NotEmpty(t, obsEvent.Timestamp)
 
 	data, ok := obsEvent.Data.(map[string]interface{})
 	require.True(t, ok)
-	require.Equal(t, "reasoner-123", data["reasoner_id"])
+	require.Equal(t, "bot-123", data["bot_id"])
 	require.Equal(t, "node-456", data["node_id"])
 	require.Equal(t, "online", data["status"])
-	require.Equal(t, reasonerEvent.Data, data["payload"])
+	require.Equal(t, botEvent.Data, data["payload"])
 }
 
 // Test backoff computation
@@ -878,8 +878,8 @@ func TestObservabilityForwarder_FiltersNodeHeartbeats(t *testing.T) {
 	}
 }
 
-// Test heartbeat event filtering - reasoner events
-func TestObservabilityForwarder_FiltersReasonerHeartbeats(t *testing.T) {
+// Test heartbeat event filtering - bot events
+func TestObservabilityForwarder_FiltersBotHeartbeats(t *testing.T) {
 	var receivedEvents []types.ObservabilityEvent
 	var mu sync.Mutex
 
@@ -917,9 +917,9 @@ func TestObservabilityForwarder_FiltersReasonerHeartbeats(t *testing.T) {
 	defer forwarder.Stop(ctx)
 
 	// Publish a mix of events including heartbeats
-	events.PublishReasonerOnline("reasoner-1", "node-1", nil)
+	events.PublishBotOnline("bot-1", "node-1", nil)
 	events.PublishHeartbeat() // Should be filtered
-	events.PublishReasonerOffline("reasoner-1", "node-1", nil)
+	events.PublishBotOffline("bot-1", "node-1", nil)
 	events.PublishHeartbeat() // Should be filtered
 
 	// Wait for batch

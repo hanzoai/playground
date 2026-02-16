@@ -25,7 +25,7 @@ func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
 		WorkflowID:   "workflow-alpha",
 		SessionID:    &sessionID,
 		AgentNodeID:  "agent-1",
-		ReasonerID:   "reasoner.alpha",
+		BotID:   "bot.alpha",
 		InputData:    json.RawMessage(`{"prompt":"hello"}`),
 		OutputData:   json.RawMessage(`{"result":"world"}`),
 		InputSize:    6,
@@ -52,7 +52,7 @@ func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
 	require.Equal(t, exec.ID, stored.ID)
 	require.Equal(t, exec.WorkflowID, stored.WorkflowID)
 	require.Equal(t, exec.AgentNodeID, stored.AgentNodeID)
-	require.Equal(t, exec.ReasonerID, stored.ReasonerID)
+	require.Equal(t, exec.BotID, stored.BotID)
 	require.Equal(t, exec.Status, stored.Status)
 	require.Equal(t, exec.InputSize, stored.InputSize)
 	require.Equal(t, exec.OutputSize, stored.OutputSize)
@@ -87,7 +87,7 @@ func TestLocalStorageQueryExecutionsAppliesFilters(t *testing.T) {
 			WorkflowID:  "workflow-shared",
 			SessionID:   &sessionA,
 			AgentNodeID: "agent-A",
-			ReasonerID:  "reasoner.alpha",
+			BotID:  "bot.alpha",
 			InputData:   json.RawMessage(`{"seed":1}`),
 			OutputData:  json.RawMessage(`{"out":1}`),
 			InputSize:   10,
@@ -100,7 +100,7 @@ func TestLocalStorageQueryExecutionsAppliesFilters(t *testing.T) {
 			WorkflowID:  "workflow-shared",
 			SessionID:   &sessionB,
 			AgentNodeID: "agent-B",
-			ReasonerID:  "reasoner.beta",
+			BotID:  "bot.beta",
 			InputData:   json.RawMessage(`{"seed":2}`),
 			OutputData:  json.RawMessage(`{"out":2}`),
 			InputSize:   11,
@@ -143,7 +143,7 @@ func TestLocalStorageStoreExecutionHonoursContextCancellation(t *testing.T) {
 	cancelledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 
-	err := ls.StoreExecution(cancelledCtx, &types.AgentExecution{WorkflowID: "wf", AgentNodeID: "agent", ReasonerID: "r", CreatedAt: time.Now()})
+	err := ls.StoreExecution(cancelledCtx, &types.AgentExecution{WorkflowID: "wf", AgentNodeID: "agent", BotID: "r", CreatedAt: time.Now()})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "context cancelled")
 }

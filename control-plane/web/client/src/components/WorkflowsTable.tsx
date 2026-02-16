@@ -173,7 +173,7 @@ function WorkflowHoverCard({
             </div>
             <div>
               <span className="text-muted-foreground">Root Task:</span>
-              <div className="font-medium">{workflow.root_reasoner}</div>
+              <div className="font-medium">{workflow.root_bot}</div>
             </div>
           </div>
 
@@ -522,7 +522,7 @@ export function WorkflowsTable({
                 Workflow
               </div>
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Last Reasoner
+                Last Bot
               </div>
               <SortableHeaderCell
                 label="Nodes"

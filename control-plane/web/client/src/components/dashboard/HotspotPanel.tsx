@@ -19,7 +19,7 @@ interface HotspotPanelProps {
 }
 
 /**
- * Panel showing top error contributors by reasoner.
+ * Panel showing top error contributors by bot.
  * Displays failure rate, contribution percentage, and top error messages.
  */
 export function HotspotPanel({ hotspots, className }: HotspotPanelProps) {
@@ -52,7 +52,7 @@ export function HotspotPanel({ hotspots, className }: HotspotPanelProps) {
           <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border/70">
             {hotspots.slice(0, 5).map((hotspot, index) => (
               <HotspotRow
-                key={hotspot.reasoner_id}
+                key={hotspot.bot_id}
                 hotspot={hotspot}
                 rank={index + 1}
                 maxFailed={maxFailed}
@@ -92,7 +92,7 @@ function HotspotRow({ hotspot, rank, maxFailed }: HotspotRowProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="font-medium text-foreground truncate">
-              {hotspot.reasoner_id}
+              {hotspot.bot_id}
             </p>
           </div>
           <Badge

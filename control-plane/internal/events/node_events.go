@@ -29,7 +29,7 @@ const (
 	NodeStatusRefreshed      NodeEventType = "node_status_refreshed"
 	BulkStatusUpdate         NodeEventType = "bulk_status_update"
 
-	// System state snapshot - periodic inventory of all agents and reasoners
+	// System state snapshot - periodic inventory of all agents and bots
 	SystemStateSnapshot NodeEventType = "system_state_snapshot"
 )
 
@@ -472,7 +472,7 @@ func PublishNodeHealthChangedEnhanced(nodeID string, oldHealth, newHealth string
 	GlobalNodeEventBus.Publish(event)
 }
 
-// PublishSystemStateSnapshot publishes a system state snapshot event containing all agents and their reasoners
+// PublishSystemStateSnapshot publishes a system state snapshot event containing all agents and their bots
 func PublishSystemStateSnapshot(data interface{}) {
 	event := NodeEvent{
 		Type:      SystemStateSnapshot,

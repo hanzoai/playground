@@ -92,7 +92,7 @@ export function ExecutionStatusBar({
               <StatusIcon status={status} />
               <div>
                 <h1 className="font-semibold text-foreground">
-                  {execution.reasoner_id}
+                  {execution.bot_id}
                 </h1>
                 <div className="flex items-center gap-2 text-body-small">
                   <span>ID:</span>

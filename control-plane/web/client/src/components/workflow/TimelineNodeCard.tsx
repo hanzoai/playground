@@ -14,7 +14,7 @@ interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -131,7 +131,7 @@ export function TimelineNodeCard({
   }, [forceExpanded, isExpanded]);
 
   const agentName = humanizeText(node.agent_name || node.agent_node_id);
-  const reasonerName = humanizeText(node.task_name || node.reasoner_id);
+  const botName = humanizeText(node.task_name || node.bot_id);
   const hasNotes = notes.length > 0;
   const compactPreview = getCompactNotesPreview(notes);
   const compactTags = getCompactTags(notes);
@@ -177,9 +177,9 @@ export function TimelineNodeCard({
             {getStatusDot(node.status)}
           </div>
 
-          {/* Reasoner Name */}
+          {/* Bot Name */}
           <span className={`font-medium truncate ${hasNotes ? 'text-text-primary' : 'text-text-secondary'}`}>
-            {reasonerName}
+            {botName}
           </span>
 
           <span className="text-text-tertiary">•</span>
@@ -368,7 +368,7 @@ export function TimelineNodeCardSkeleton({
           {/* Status dot skeleton */}
           <Skeleton className="h-2 w-2 rounded-full flex-shrink-0" />
 
-          {/* Reasoner name skeleton */}
+          {/* Bot name skeleton */}
           <Skeleton className="h-4 w-20" />
 
           {/* Separator */}

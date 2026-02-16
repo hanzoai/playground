@@ -5,7 +5,7 @@ interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -60,7 +60,7 @@ export function WorkflowDAGWithSidebar({
                 className="p-3 text-left border border-border rounded-lg hover:bg-muted transition-colors"
               >
                 <div className="text-sm font-medium text-foreground">
-                  {node.task_name || node.reasoner_id}
+                  {node.task_name || node.bot_id}
                 </div>
                 <div className="text-body-small mt-1">
                   Status: {node.status} | Agent:{" "}
@@ -90,7 +90,7 @@ export function ExampleWorkflowDAGUsage() {
       workflow_id: "wf_123456789",
       execution_id: "exec_987654321",
       agent_node_id: "agent_001",
-      reasoner_id: "sentiment_analyzer",
+      bot_id: "sentiment_analyzer",
       status: "succeeded",
       started_at: "2024-01-15T10:30:00Z",
       completed_at: "2024-01-15T10:30:05Z",
@@ -103,7 +103,7 @@ export function ExampleWorkflowDAGUsage() {
       workflow_id: "wf_123456789",
       execution_id: "exec_987654322",
       agent_node_id: "agent_002",
-      reasoner_id: "response_generator",
+      bot_id: "response_generator",
       status: "running",
       started_at: "2024-01-15T10:30:05Z",
       duration_ms: 2000,
@@ -115,7 +115,7 @@ export function ExampleWorkflowDAGUsage() {
       workflow_id: "wf_123456789",
       execution_id: "exec_987654323",
       agent_node_id: "agent_003",
-      reasoner_id: "quality_checker",
+      bot_id: "quality_checker",
       status: "failed",
       started_at: "2024-01-15T10:30:10Z",
       completed_at: "2024-01-15T10:30:12Z",

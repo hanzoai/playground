@@ -187,9 +187,9 @@ func TestNodeEventBus_Publish(t *testing.T) {
 	}
 }
 
-// TestReasonerEventBus_Subscribe tests reasoner event bus subscription
-func TestReasonerEventBus_Subscribe(t *testing.T) {
-	bus := NewReasonerEventBus()
+// TestBotEventBus_Subscribe tests bot event bus subscription
+func TestBotEventBus_Subscribe(t *testing.T) {
+	bus := NewBotEventBus()
 	subscriberID := "test-subscriber"
 
 	ch := bus.Subscribe(subscriberID)
@@ -200,17 +200,17 @@ func TestReasonerEventBus_Subscribe(t *testing.T) {
 	require.Equal(t, 0, bus.GetSubscriberCount())
 }
 
-// TestReasonerEventBus_Publish tests reasoner event publishing
-func TestReasonerEventBus_Publish(t *testing.T) {
-	bus := NewReasonerEventBus()
+// TestBotEventBus_Publish tests bot event publishing
+func TestBotEventBus_Publish(t *testing.T) {
+	bus := NewBotEventBus()
 	subscriberID := "test-subscriber"
 
 	ch := bus.Subscribe(subscriberID)
 	defer bus.Unsubscribe(subscriberID)
 
-	event := ReasonerEvent{
-		Type:       ReasonerOnline,
-		ReasonerID: "reasoner-1",
+	event := BotEvent{
+		Type:       BotOnline,
+		BotID: "bot-1",
 		NodeID:     "node-1",
 		Status:     "online",
 		Timestamp:  time.Now(),
@@ -221,7 +221,7 @@ func TestReasonerEventBus_Publish(t *testing.T) {
 	select {
 	case received := <-ch:
 		require.Equal(t, event.Type, received.Type)
-		require.Equal(t, event.ReasonerID, received.ReasonerID)
+		require.Equal(t, event.BotID, received.BotID)
 	case <-time.After(1 * time.Second):
 		t.Fatal("event not received within timeout")
 	}
@@ -261,11 +261,11 @@ func TestNodeEvent_ToJSON(t *testing.T) {
 	require.Contains(t, jsonStr, "node_online")
 }
 
-// TestReasonerEvent_ToJSON tests reasoner event JSON serialization
-func TestReasonerEvent_ToJSON(t *testing.T) {
-	event := ReasonerEvent{
-		Type:       ReasonerOnline,
-		ReasonerID: "reasoner-json",
+// TestBotEvent_ToJSON tests bot event JSON serialization
+func TestBotEvent_ToJSON(t *testing.T) {
+	event := BotEvent{
+		Type:       BotOnline,
+		BotID: "bot-json",
 		NodeID:     "node-1",
 		Status:     "online",
 		Timestamp:  time.Now(),
@@ -274,8 +274,8 @@ func TestReasonerEvent_ToJSON(t *testing.T) {
 
 	jsonStr, err := event.ToJSON()
 	require.NoError(t, err)
-	require.Contains(t, jsonStr, "reasoner-json")
-	require.Contains(t, jsonStr, "reasoner_online")
+	require.Contains(t, jsonStr, "bot-json")
+	require.Contains(t, jsonStr, "bot_online")
 }
 
 // TestGlobalEventBuses tests global event bus instances
@@ -290,10 +290,10 @@ func TestGlobalEventBuses(t *testing.T) {
 	ch2 := GlobalNodeEventBus.Subscribe("global-test-2")
 	defer GlobalNodeEventBus.Unsubscribe("global-test-2")
 
-	// Test global reasoner event bus
-	require.NotNil(t, GlobalReasonerEventBus)
-	ch3 := GlobalReasonerEventBus.Subscribe("global-test-3")
-	defer GlobalReasonerEventBus.Unsubscribe("global-test-3")
+	// Test global bot event bus
+	require.NotNil(t, GlobalBotEventBus)
+	ch3 := GlobalBotEventBus.Subscribe("global-test-3")
+	defer GlobalBotEventBus.Unsubscribe("global-test-3")
 
 	// Verify all channels are functional
 	require.NotNil(t, ch1)

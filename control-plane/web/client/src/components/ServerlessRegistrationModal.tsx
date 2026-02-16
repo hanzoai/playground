@@ -31,7 +31,7 @@ export function ServerlessRegistrationModal({
   const [success, setSuccess] = useState<{
     nodeId: string;
     version: string;
-    reasonersCount: number;
+    botsCount: number;
     skillsCount: number;
   } | null>(null);
 
@@ -63,7 +63,7 @@ export function ServerlessRegistrationModal({
         setSuccess({
           nodeId: response.node.id,
           version: response.node.version,
-          reasonersCount: response.node.reasoners_count,
+          botsCount: response.node.bots_count,
           skillsCount: response.node.skills_count,
         });
 
@@ -141,7 +141,7 @@ export function ServerlessRegistrationModal({
                   <div className="text-sm space-y-1">
                     <div>Agent ID: <span className="font-mono">{success.nodeId}</span></div>
                     <div>Version: {success.version}</div>
-                    <div>Reasoners: {success.reasonersCount} | Skills: {success.skillsCount}</div>
+                    <div>Bots: {success.botsCount} | Skills: {success.skillsCount}</div>
                   </div>
                 </AlertDescription>
               </Alert>
@@ -152,7 +152,7 @@ export function ServerlessRegistrationModal({
                 <Server className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <div className="text-body-small">
                   <div className="font-semibold mb-1">Automatic Discovery</div>
-                  <div>The system will call your agent's <code className="bg-muted-foreground/10 px-1 rounded">/discover</code> endpoint to automatically detect all reasoners and skills.</div>
+                  <div>The system will call your agent's <code className="bg-muted-foreground/10 px-1 rounded">/discover</code> endpoint to automatically detect all bots and skills.</div>
                 </div>
               </div>
             </div>

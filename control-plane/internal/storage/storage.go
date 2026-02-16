@@ -19,7 +19,7 @@ type RunSummaryAggregation struct {
 	LatestStarted    time.Time
 	RootExecutionID  *string
 	RootAgentNodeID  *string
-	RootReasonerID   *string
+	RootBotID   *string
 	SessionID        *string
 	ActorID          *string
 	MaxDepth         int
@@ -115,9 +115,9 @@ type StorageProvider interface {
 	SetConfig(ctx context.Context, key string, value interface{}) error
 	GetConfig(ctx context.Context, key string) (interface{}, error)
 
-	// Reasoner Performance and History
-	GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error)
-	GetReasonerExecutionHistory(ctx context.Context, reasonerID string, page, limit int) (*types.ReasonerExecutionHistory, error)
+	// Bot Performance and History
+	GetBotPerformanceMetrics(ctx context.Context, botID string) (*types.BotPerformanceMetrics, error)
+	GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error)
 
 	// Agent Configuration Management
 	StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error

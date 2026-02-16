@@ -93,7 +93,7 @@ export function EnhancedWorkflowWebhooks({
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-foreground truncate">
-                        {node.agent_name || node.reasoner_id || 'Unnamed node'}
+                        {node.agent_name || node.bot_id || 'Unnamed node'}
                       </span>
                       <Badge
                         variant="outline"

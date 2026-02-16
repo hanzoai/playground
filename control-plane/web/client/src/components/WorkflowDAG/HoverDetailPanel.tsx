@@ -149,7 +149,7 @@ export const HoverDetailPanel = memo(({ node, position, visible }: HoverDetailPa
     node.agent_node_id
   );
 
-  const taskName = humanizeText(taskNameField || node.reasoner_id || "Unknown Task");
+  const taskName = humanizeText(taskNameField || node.bot_id || "Unknown Task");
   const agentName = humanizeText(agentNameField || node.agent_node_id || "Unknown Agent");
 
   return (

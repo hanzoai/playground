@@ -32,7 +32,7 @@ type ObservabilityWebhookConfigResponse struct {
 // ObservabilityEvent is the normalized envelope for all events sent to the webhook.
 type ObservabilityEvent struct {
 	EventType   string      `json:"event_type"`   // e.g., "execution.completed", "node.online"
-	EventSource string      `json:"event_source"` // "execution", "node", "reasoner"
+	EventSource string      `json:"event_source"` // "execution", "node", "bot"
 	Timestamp   string      `json:"timestamp"`    // RFC3339
 	Data        interface{} `json:"data"`         // Event-specific payload
 }

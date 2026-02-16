@@ -170,10 +170,10 @@ func (m *MockStorageProvider) SetConfig(ctx context.Context, key string, value i
 func (m *MockStorageProvider) GetConfig(ctx context.Context, key string) (interface{}, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error) {
+func (m *MockStorageProvider) GetBotPerformanceMetrics(ctx context.Context, botID string) (*types.BotPerformanceMetrics, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) GetReasonerExecutionHistory(ctx context.Context, reasonerID string, page, limit int) (*types.ReasonerExecutionHistory, error) {
+func (m *MockStorageProvider) GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error) {
 	return nil, nil
 }
 func (m *MockStorageProvider) StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
@@ -298,7 +298,7 @@ func TestBatchExecutionStatusHandler(t *testing.T) {
 					ExecutionID: "exec-1",
 					WorkflowID:  "workflow-1",
 					AgentNodeID: "agent-1",
-					ReasonerID:  "reasoner-1",
+					BotID:  "bot-1",
 					Status:      string(types.ExecutionStatusSucceeded),
 					StartedAt:   time.Now(),
 					CompletedAt: &time.Time{},
@@ -308,16 +308,16 @@ func TestBatchExecutionStatusHandler(t *testing.T) {
 					ExecutionID: "exec-2",
 					WorkflowID:  "workflow-2",
 					AgentNodeID: "agent-1",
-					ReasonerID:  "reasoner-2",
+					BotID:  "bot-2",
 					Status:      "running",
 					StartedAt:   time.Now(),
 				}
 
 				agent := &types.AgentNode{
 					ID: "agent-1",
-					Reasoners: []types.Reasoner{
-						{ID: "reasoner-1"},
-						{ID: "reasoner-2"},
+					Bots: []types.Bot{
+						{ID: "bot-1"},
+						{ID: "bot-2"},
 					},
 				}
 

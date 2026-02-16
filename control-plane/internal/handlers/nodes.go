@@ -522,7 +522,7 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 			// Create DID registration request from node data
 			didReq := &types.DIDRegistrationRequest{
 				AgentNodeID: newNode.ID,
-				Reasoners:   newNode.Reasoners,
+				Bots:   newNode.Bots,
 				Skills:      newNode.Skills,
 			}
 
@@ -1198,14 +1198,14 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 		var discoveryData struct {
 			NodeID    string `json:"node_id"`
 			Version   string `json:"version"`
-			Reasoners []struct {
+			Bots []struct {
 				ID           string                 `json:"id"`
 				Name         string                 `json:"name"`
 				Description  string                 `json:"description"`
 				InputSchema  map[string]interface{} `json:"input_schema"`
 				OutputSchema map[string]interface{} `json:"output_schema"`
 				Tags         []string               `json:"tags"`
-			} `json:"reasoners"`
+			} `json:"bots"`
 			Skills []struct {
 				ID           string                 `json:"id"`
 				Name         string                 `json:"name"`
@@ -1235,12 +1235,12 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 
 		logger.Logger.Info().Msgf("✅ Discovered serverless agent: %s (version: %s)", discoveryData.NodeID, discoveryData.Version)
 
-		// Convert discovered reasoners to AgentNode format
-		reasoners := make([]types.ReasonerDefinition, len(discoveryData.Reasoners))
-		for i, r := range discoveryData.Reasoners {
+		// Convert discovered bots to AgentNode format
+		bots := make([]types.BotDefinition, len(discoveryData.Bots))
+		for i, r := range discoveryData.Bots {
 			inputSchemaBytes, _ := json.Marshal(r.InputSchema)
 			outputSchemaBytes, _ := json.Marshal(r.OutputSchema)
-			reasoners[i] = types.ReasonerDefinition{
+			bots[i] = types.BotDefinition{
 				ID:           r.ID,
 				InputSchema:  json.RawMessage(inputSchemaBytes),
 				OutputSchema: json.RawMessage(outputSchemaBytes),
@@ -1268,7 +1268,7 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 			Version:         discoveryData.Version,
 			DeploymentType:  "serverless",
 			InvocationURL:   &executionURL,
-			Reasoners:       reasoners,
+			Bots:       bots,
 			Skills:          skills,
 			RegisteredAt:    time.Now().UTC(),
 			LastHeartbeat:   time.Now().UTC(),
@@ -1305,7 +1305,7 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 		if didService != nil {
 			didReq := &types.DIDRegistrationRequest{
 				AgentNodeID: newNode.ID,
-				Reasoners:   newNode.Reasoners,
+				Bots:   newNode.Bots,
 				Skills:      newNode.Skills,
 			}
 
@@ -1331,7 +1331,7 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 				"version":         newNode.Version,
 				"deployment_type": newNode.DeploymentType,
 				"invocation_url":  newNode.InvocationURL,
-				"reasoners_count": len(newNode.Reasoners),
+				"bots_count": len(newNode.Bots),
 				"skills_count":    len(newNode.Skills),
 			},
 		})

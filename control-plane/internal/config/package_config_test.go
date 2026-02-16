@@ -27,9 +27,9 @@ dependencies:
   python: ["agents>=1.0.0"]
 
 capabilities:
-  reasoners:
-    - name: "test_reasoner"
-      description: "Test reasoner"
+  bots:
+    - name: "test_bot"
+      description: "Test bot"
   skills:
     - name: "test_skill"
       description: "Test skill"

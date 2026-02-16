@@ -23,7 +23,7 @@ A Playground agent created with `af init`.
 
 ## Test the Agent
 
-### Echo Reasoner (No AI Required)
+### Echo Bot (No AI Required)
 ```bash
 curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
   -H "Content-Type: application/json" \
@@ -36,7 +36,7 @@ curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
 2. Set your API key: `export OPENAI_API_KEY=sk-...`
    - Or use `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, etc. for other providers
    - LiteLLM auto-detects the provider from the model name
-3. Uncomment the `analyze_sentiment` reasoner in `reasoners.py`
+3. Uncomment the `analyze_sentiment bot in `bots.py`
 4. Restart the agent
 
 ```bash
@@ -48,7 +48,7 @@ curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_analyze_senti
 ## Project Structure
 
 - `main.py` - Agent configuration and startup
-- `reasoners.py` - Reasoner definitions (AI-powered functions)
+- `bots.py` - Bot definitions (AI-powered functions)
 - `requirements.txt` - Python dependencies
 - `.env.example` - Environment variable examples
 

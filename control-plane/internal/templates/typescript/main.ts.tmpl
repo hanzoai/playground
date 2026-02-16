@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Agent } from '@playground/sdk';
-import { reasonersRouter } from './reasoners.js';
+import { botsRouter } from './bots.js'';
 
 async function main() {
   const agent = new Agent({
@@ -21,7 +21,7 @@ async function main() {
     // },
   });
 
-  agent.includeRouter(reasonersRouter);
+  agent.includeRouter(botsRouter);
 
   await agent.serve();
   // eslint-disable-next-line no-console

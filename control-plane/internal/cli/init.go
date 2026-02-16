@@ -216,7 +216,7 @@ directory structure and essential files.
 
 This command sets up a new project, including:
 - Language-specific project structure (Python, Go, or TypeScript)
-- Basic agent implementation with example reasoner
+- Basic agent implementation with example bot
 - README.md and .gitignore files
 - Configuration for connecting to the Agents control plane
 
@@ -419,15 +419,15 @@ Example:
 			if language == "python" {
 				fmt.Println("  2. Set API key: export OPENAI_API_KEY=sk-...")
 				fmt.Println("     (or ANTHROPIC_API_KEY, GOOGLE_API_KEY, etc.)")
-				fmt.Println("  3. Uncomment analyze_sentiment in reasoners.py")
+				fmt.Println("  3. Uncomment analyze_sentiment in bots.py")
 			} else if language == "go" {
 				fmt.Println("  2. Set API key: export OPENAI_API_KEY=sk-...")
 				fmt.Println("     (or OPENROUTER_API_KEY for OpenRouter)")
-				fmt.Println("  3. Uncomment analyze_sentiment in reasoners.go")
+				fmt.Println("  3. Uncomment analyze_sentiment in bots.go")
 			} else if language == "typescript" {
 				fmt.Println("  2. Set API key: export OPENAI_API_KEY=sk-...")
 				fmt.Println("     (or OPENROUTER_API_KEY for OpenRouter)")
-				fmt.Println("  3. Uncomment analyzeSentiment in reasoners.ts")
+				fmt.Println("  3. Uncomment analyzeSentiment in bots.ts")
 			}
 
 			fmt.Println("  4. Restart your agent")

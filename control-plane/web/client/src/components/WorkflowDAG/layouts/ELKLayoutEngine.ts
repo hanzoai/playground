@@ -140,7 +140,7 @@ export class ELKLayoutEngine {
    * Calculate node width based on content
    */
   private calculateNodeWidth(nodeData: any): number {
-    const taskText = nodeData.task_name || nodeData.reasoner_id || '';
+    const taskText = nodeData.task_name || nodeData.bot_id || '';
     const agentText = nodeData.agent_name || nodeData.agent_node_id || '';
 
     const minWidth = 200;

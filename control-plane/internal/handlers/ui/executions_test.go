@@ -86,7 +86,7 @@ func TestListExecutionsHandler(t *testing.T) {
 				WorkflowID:  "workflow-1",
 				SessionID:   stringPtrForExecutions("session-1"),
 				AgentNodeID: "test-agent",
-				ReasonerID:  "test-reasoner",
+				BotID:  "test-bot",
 				Status:      string(types.ExecutionStatusSucceeded),
 				DurationMS:  1000,
 				InputSize:   100,
@@ -97,7 +97,7 @@ func TestListExecutionsHandler(t *testing.T) {
 				ID:           2,
 				WorkflowID:   "workflow-2",
 				AgentNodeID:  "test-agent",
-				ReasonerID:   "test-reasoner-2",
+				BotID:   "test-bot-2",
 				Status:       "failed",
 				DurationMS:   500,
 				InputSize:    50,
@@ -231,7 +231,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 			WorkflowID:  "workflow-1",
 			SessionID:   stringPtrForExecutions("session-1"),
 			AgentNodeID: "test-agent",
-			ReasonerID:  "test-reasoner",
+			BotID:  "test-bot",
 			InputData:   inputData,
 			OutputData:  outputData,
 			InputSize:   100,
@@ -262,7 +262,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 		assert.Equal(t, "workflow-1", response.WorkflowID)
 		assert.Equal(t, "session-1", *response.SessionID)
 		assert.Equal(t, "test-agent", response.AgentNodeID)
-		assert.Equal(t, "test-reasoner", response.ReasonerID)
+		assert.Equal(t, "test-bot", response.BotID)
 		assert.Equal(t, string(types.ExecutionStatusSucceeded), response.Status)
 		assert.Equal(t, 1000, response.DurationMS)
 		// UserID and NodeID are not directly part of ExecutionDetailsResponse in pkg/types,
@@ -382,7 +382,7 @@ func TestGetExecutionDetailsHandler_FallbacksToPayloadStore(t *testing.T) {
 		ID:          123,
 		WorkflowID:  "workflow-1",
 		AgentNodeID: "agent-1",
-		ReasonerID:  "reasoner-1",
+		BotID:  "bot-1",
 		InputData:   json.RawMessage("{}"),
 		OutputData:  json.RawMessage("{}"),
 		InputSize:   0,

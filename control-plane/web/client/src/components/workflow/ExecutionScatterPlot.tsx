@@ -56,8 +56,8 @@ export function ExecutionScatterPlot({
         z: 1,
         id: node.execution_id,
         status: node.status,
-        agent: node.agent_name || node.reasoner_id || "Unknown",
-        label: node.agent_name || node.reasoner_id || "Unknown",
+        agent: node.agent_name || node.bot_id || "Unknown",
+        label: node.agent_name || node.bot_id || "Unknown",
         startedAt: node.started_at,
         formattedDuration: formatDuration(Number(node.duration_ms) || 0),
       }))

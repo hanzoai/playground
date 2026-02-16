@@ -6,13 +6,13 @@ export interface AgentDIDInfo {
   agents_server_id: string;
   public_key_jwk: any;
   derivation_path: string;
-  reasoners: Record<string, ReasonerDIDInfo>;
+  bots: Record<string, BotDIDInfo>;
   skills: Record<string, SkillDIDInfo>;
   status: AgentDIDStatus;
   registered_at: string;
 }
 
-export interface ReasonerDIDInfo {
+export interface BotDIDInfo {
   did: string;
   function_name: string;
   public_key_jwk: any;
@@ -74,7 +74,7 @@ export interface WorkflowVC {
 
 export interface DIDIdentityPackage {
   agent_did: DIDIdentity;
-  reasoner_dids: Record<string, DIDIdentity>;
+  bot_dids: Record<string, DIDIdentity>;
   skill_dids: Record<string, DIDIdentity>;
   agents_server_id: string;
 }
@@ -156,11 +156,11 @@ export interface VCProof {
 // Request/Response types for API calls
 export interface DIDRegistrationRequest {
   agent_node_id: string;
-  reasoners: ReasonerDefinition[];
+  bots: BotDefinition[];
   skills: SkillDefinition[];
 }
 
-export interface ReasonerDefinition {
+export interface BotDefinition {
   function_name: string;
   capabilities: string[];
   exposure_level: string;
@@ -222,7 +222,7 @@ export interface SecurityAnalysis {
 
 export interface ComplianceChecks {
   w3c_compliance: boolean;
-  playground_standard_compliance: boolean;
+  bot_standard_compliance: boolean;
   audit_trail_integrity: boolean;
   data_integrity_checks: boolean;
   issues: VerificationIssue[];
@@ -316,7 +316,7 @@ export interface ExecutionVCInfo {
 export interface DIDStatusSummary {
   has_did: boolean;
   did_status: AgentDIDStatus;
-  reasoner_count: number;
+  bot_count: number;
   skill_count: number;
   last_updated: string;
 }

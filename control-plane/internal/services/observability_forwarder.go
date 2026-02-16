@@ -150,7 +150,7 @@ func (f *observabilityForwarder) Start(ctx context.Context) error {
 	f.wg.Add(3)
 	go f.subscribeExecutionEvents()
 	go f.subscribeNodeEvents()
-	go f.subscribeReasonerEvents()
+	go f.subscribeBotEvents()
 
 	// Start system state snapshot publisher if interval is positive
 	if f.cfg.SnapshotInterval > 0 {
@@ -411,13 +411,13 @@ func (f *observabilityForwarder) subscribeNodeEvents() {
 	}
 }
 
-// subscribeReasonerEvents listens to the reasoner event bus.
-func (f *observabilityForwarder) subscribeReasonerEvents() {
+// subscribeBotEvents listens to the bot event bus.
+func (f *observabilityForwarder) subscribeBotEvents() {
 	defer f.wg.Done()
 
-	subscriberID := fmt.Sprintf("observability-forwarder-reasoner-%s", uuid.New().String()[:8])
-	ch := events.GlobalReasonerEventBus.Subscribe(subscriberID)
-	defer events.GlobalReasonerEventBus.Unsubscribe(subscriberID)
+	subscriberID := fmt.Sprintf("observability-forwarder-bot-%s", uuid.New().String()[:8])
+	ch := events.GlobalBotEventBus.Subscribe(subscriberID)
+	defer events.GlobalBotEventBus.Unsubscribe(subscriberID)
 
 	for {
 		select {
@@ -431,12 +431,12 @@ func (f *observabilityForwarder) subscribeReasonerEvents() {
 			if event.Type == events.Heartbeat {
 				continue
 			}
-			f.enqueueEvent(f.transformReasonerEvent(event))
+			f.enqueueEvent(f.transformBotEvent(event))
 		}
 	}
 }
 
-// publishSystemStateSnapshots periodically publishes a snapshot of all agents and their reasoners.
+// publishSystemStateSnapshots periodically publishes a snapshot of all agents and their bots.
 func (f *observabilityForwarder) publishSystemStateSnapshots() {
 	defer f.wg.Done()
 
@@ -495,10 +495,10 @@ func (f *observabilityForwarder) publishSnapshot() {
 			inactiveCount++
 		}
 
-		// Build reasoner list
-		reasoners := make([]map[string]interface{}, 0, len(agent.Reasoners))
-		for _, r := range agent.Reasoners {
-			reasoners = append(reasoners, map[string]interface{}{
+		// Build bot list
+		bots := make([]map[string]interface{}, 0, len(agent.Bots))
+		for _, r := range agent.Bots {
+			bots = append(bots, map[string]interface{}{
 				"id":            r.ID,
 				"input_schema":  r.InputSchema,
 				"output_schema": r.OutputSchema,
@@ -524,7 +524,7 @@ func (f *observabilityForwarder) publishSnapshot() {
 			"lifecycle_status": string(agent.LifecycleStatus),
 			"last_heartbeat":   agent.LastHeartbeat.Format(time.RFC3339),
 			"registered_at":    agent.RegisteredAt.Format(time.RFC3339),
-			"reasoners":        reasoners,
+			"bots":        bots,
 			"skills":           skills,
 		})
 	}
@@ -799,9 +799,9 @@ func (f *observabilityForwarder) transformNodeEvent(e events.NodeEvent) types.Ob
 	}
 }
 
-func (f *observabilityForwarder) transformReasonerEvent(e events.ReasonerEvent) types.ObservabilityEvent {
+func (f *observabilityForwarder) transformBotEvent(e events.BotEvent) types.ObservabilityEvent {
 	data := map[string]interface{}{
-		"reasoner_id": e.ReasonerID,
+		"bot_id": e.BotID,
 		"node_id":     e.NodeID,
 		"status":      e.Status,
 	}
@@ -811,7 +811,7 @@ func (f *observabilityForwarder) transformReasonerEvent(e events.ReasonerEvent) 
 
 	return types.ObservabilityEvent{
 		EventType:   string(e.Type),
-		EventSource: "reasoner",
+		EventSource: "bot",
 		Timestamp:   e.Timestamp.Format(time.RFC3339),
 		Data:        data,
 	}

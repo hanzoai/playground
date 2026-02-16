@@ -224,7 +224,7 @@ export function ExecutionDetailPage() {
               onClick={execution.session_id ? navigateToSession : undefined}
             />
             <MetadataRow
-              label="Playground Request ID"
+              label="Bot Request ID"
               value={execution.agents_request_id || '—'}
               copyValue={execution.agents_request_id || undefined}
             />

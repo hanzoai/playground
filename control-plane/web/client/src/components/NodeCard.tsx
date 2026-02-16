@@ -89,10 +89,10 @@ const NodeCard = memo(
     const isVeryStale = isRunning && minutesSinceHeartbeat > 5;
 
     // Calculate importance score for visual weight
-    const reasonerCount = nodeSummary.reasoner_count ?? 0;
+    const botCount = nodeSummary.bot_count ?? 0;
     const skillCount = nodeSummary.skill_count ?? 0;
     const mcpSummary = nodeSummary.mcp_summary;
-    const importanceScore = reasonerCount + skillCount;
+    const importanceScore = botCount + skillCount;
     const isHighImportance = importanceScore >= 8;
 
     // Convert MCP service status to MCPHealthStatus with defensive checks
@@ -307,8 +307,8 @@ const NodeCard = memo(
         aria-label={`Navigate to details for node ${
           nodeSummary.id
         }. Status: ${getStatusText()}. ${
-          nodeSummary.reasoner_count
-        } reasoners, ${nodeSummary.skill_count} skills.`}
+          nodeSummary.bot_count
+        } bots, ${nodeSummary.skill_count} skills.`}
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-start justify-between gap-3">
@@ -365,7 +365,7 @@ const NodeCard = memo(
                   <Identification className="h-3.5 w-3.5" />
                   <CompositeDIDStatus
                     status={didStatus.did_status}
-                    reasonerCount={didStatus.reasoner_count}
+                    botCount={didStatus.bot_count}
                     skillCount={didStatus.skill_count}
                     compact={true}
                     className="text-xs"
@@ -420,7 +420,7 @@ const NodeCard = memo(
           <div className="flex items-center gap-1.5">
             <Code className="h-4 w-4" />
             <span>
-              {reasonerCount} reasoner{reasonerCount === 1 ? "" : "s"}
+              {botCount} bot{botCount === 1 ? "" : "s"}
             </span>
           </div>
           <div className="flex items-center gap-1.5">

@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAdminRESTListReasoners(t *testing.T) {
+func TestAdminRESTListBots(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -32,7 +32,7 @@ func TestAdminRESTListReasoners(t *testing.T) {
 	localStore := storage.NewLocalStorage(storage.LocalStorageConfig{})
 	if err := localStore.Initialize(ctx, cfg); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "fts5") {
-			t.Skip("sqlite3 compiled without FTS5; skipping reasoner aggregation test")
+			t.Skip("sqlite3 compiled without FTS5; skipping bot aggregation test")
 		}
 		require.NoError(t, err)
 	}
@@ -44,7 +44,7 @@ func TestAdminRESTListReasoners(t *testing.T) {
 		HealthStatus:  types.HealthStatusActive,
 		Version:       "1.0.0",
 		LastHeartbeat: time.Now().UTC(),
-		Reasoners: []types.ReasonerDefinition{
+		Bots: []types.BotDefinition{
 			{ID: "reason", InputSchema: schema, OutputSchema: schema},
 			{ID: "another", InputSchema: schema, OutputSchema: schema},
 		},
@@ -58,23 +58,23 @@ func TestAdminRESTListReasoners(t *testing.T) {
 
 	// Make request
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/reasoners", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/bots", nil)
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
 
 	var resp struct {
-		Reasoners []struct {
-			ReasonerID  string `json:"reasoner_id"`
+		Bots []struct {
+			BotID  string `json:"bot_id"`
 			AgentNodeID string `json:"agent_node_id"`
 			LastHB      string `json:"last_heartbeat"`
-		} `json:"reasoners"`
+		} `json:"bots"`
 		Count int `json:"count"`
 	}
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
 	require.Equal(t, 2, resp.Count)
-	require.Len(t, resp.Reasoners, 2)
-	require.Equal(t, "node-1.reason", resp.Reasoners[0].ReasonerID)
-	require.Equal(t, "node-1", resp.Reasoners[0].AgentNodeID)
-	require.NotEmpty(t, resp.Reasoners[0].LastHB)
+	require.Len(t, resp.Bots, 2)
+	require.Equal(t, "node-1.reason", resp.Bots[0].BotID)
+	require.Equal(t, "node-1", resp.Bots[0].AgentNodeID)
+	require.NotEmpty(t, resp.Bots[0].LastHB)
 }

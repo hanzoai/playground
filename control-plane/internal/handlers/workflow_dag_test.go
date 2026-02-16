@@ -19,7 +19,7 @@ func TestBuildExecutionDAG_Simple(t *testing.T) {
 			RunID:       "run-1",
 			Status:      "succeeded",
 			StartedAt:   time.Now(),
-			ReasonerID:  "reasoner-1",
+			BotID:  "bot-1",
 		},
 	}
 
@@ -32,7 +32,7 @@ func TestBuildExecutionDAG_Simple(t *testing.T) {
 	require.Empty(t, dag.Children)
 	require.Len(t, timeline, 1)
 	require.Equal(t, "succeeded", status)
-	require.Equal(t, "reasoner-1", workflowName)
+	require.Equal(t, "bot-1", workflowName)
 	require.Nil(t, sessionID)
 	require.Nil(t, actorID)
 	require.Equal(t, 0, maxDepth)
@@ -49,7 +49,7 @@ func TestBuildExecutionDAG_WithParentChild(t *testing.T) {
 			Status:            "succeeded",
 			StartedAt:         time.Now(),
 			ParentExecutionID: nil,
-			ReasonerID:        "reasoner-1",
+			BotID:        "bot-1",
 		},
 		{
 			ExecutionID:       childID,
@@ -57,7 +57,7 @@ func TestBuildExecutionDAG_WithParentChild(t *testing.T) {
 			Status:            "succeeded",
 			StartedAt:         time.Now().Add(1 * time.Second),
 			ParentExecutionID: &parentID,
-			ReasonerID:        "reasoner-2",
+			BotID:        "bot-2",
 		},
 	}
 
@@ -252,7 +252,7 @@ func TestBuildLightweightExecutionDAG_Simple(t *testing.T) {
 			RunID:       "run-1",
 			Status:      "succeeded",
 			StartedAt:   time.Now(),
-			ReasonerID:  "reasoner-1",
+			BotID:  "bot-1",
 		},
 	}
 
@@ -262,7 +262,7 @@ func TestBuildLightweightExecutionDAG_Simple(t *testing.T) {
 	require.Equal(t, "exec-1", timeline[0].ExecutionID)
 	require.Equal(t, 0, timeline[0].WorkflowDepth)
 	require.Equal(t, "succeeded", status)
-	require.Equal(t, "reasoner-1", workflowName)
+	require.Equal(t, "bot-1", workflowName)
 	require.Nil(t, sessionID)
 	require.Nil(t, actorID)
 	require.Equal(t, 0, maxDepth)
@@ -484,7 +484,7 @@ func TestBuildExecutionDAG_WithSessionAndActor(t *testing.T) {
 			ParentExecutionID: nil,
 			SessionID:         &sessionID,
 			ActorID:           &actorID,
-			ReasonerID:        "reasoner-1",
+			BotID:        "bot-1",
 		},
 	}
 
@@ -556,7 +556,7 @@ func TestBuildLightweightExecutionDAG_ComplexHierarchy(t *testing.T) {
 			Status:            "succeeded",
 			StartedAt:         time.Now(),
 			ParentExecutionID: nil,
-			ReasonerID:        "reasoner-1",
+			BotID:        "bot-1",
 		},
 		{
 			ExecutionID:       level1ID,
@@ -578,7 +578,7 @@ func TestBuildLightweightExecutionDAG_ComplexHierarchy(t *testing.T) {
 
 	require.Len(t, timeline, 3)
 	require.Equal(t, "succeeded", status)
-	require.Equal(t, "reasoner-1", workflowName)
+	require.Equal(t, "bot-1", workflowName)
 	require.Equal(t, 2, maxDepth)
 
 	// Verify depth calculation
@@ -600,7 +600,7 @@ func TestExecutionToDAGNode(t *testing.T) {
 		ExecutionID:       "exec-1",
 		RunID:             "run-1",
 		AgentNodeID:       "agent-1",
-		ReasonerID:        "reasoner-1",
+		BotID:        "bot-1",
 		Status:            "succeeded",
 		StartedAt:         now,
 		CompletedAt:       &completed,
@@ -613,7 +613,7 @@ func TestExecutionToDAGNode(t *testing.T) {
 	require.Equal(t, "exec-1", node.ExecutionID)
 	require.Equal(t, "run-1", node.WorkflowID)
 	require.Equal(t, "agent-1", node.AgentNodeID)
-	require.Equal(t, "reasoner-1", node.ReasonerID)
+	require.Equal(t, "bot-1", node.BotID)
 	require.Equal(t, "succeeded", node.Status)
 	require.Equal(t, 2, node.WorkflowDepth)
 	require.NotNil(t, node.CompletedAt)
@@ -629,7 +629,7 @@ func TestExecutionToLightweightNode(t *testing.T) {
 		ExecutionID:       "exec-1",
 		RunID:             "run-1",
 		AgentNodeID:       "agent-1",
-		ReasonerID:        "reasoner-1",
+		BotID:        "bot-1",
 		Status:            "succeeded",
 		StartedAt:         now,
 		CompletedAt:       &completed,
@@ -641,7 +641,7 @@ func TestExecutionToLightweightNode(t *testing.T) {
 
 	require.Equal(t, "exec-1", node.ExecutionID)
 	require.Equal(t, "agent-1", node.AgentNodeID)
-	require.Equal(t, "reasoner-1", node.ReasonerID)
+	require.Equal(t, "bot-1", node.BotID)
 	require.Equal(t, "succeeded", node.Status)
 	require.Equal(t, 2, node.WorkflowDepth)
 	require.NotNil(t, node.CompletedAt)

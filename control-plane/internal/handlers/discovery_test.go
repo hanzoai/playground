@@ -46,7 +46,7 @@ func TestDiscoveryCapabilities_Defaults(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 
 	assert.Equal(t, 2, resp.TotalAgents)
-	assert.Equal(t, 2, resp.TotalReasoners)
+	assert.Equal(t, 2, resp.TotalBots)
 	assert.Equal(t, 2, resp.TotalSkills)
 	assert.Equal(t, 100, resp.Pagination.Limit)
 	assert.Equal(t, 0, resp.Pagination.Offset)
@@ -54,9 +54,9 @@ func TestDiscoveryCapabilities_Defaults(t *testing.T) {
 
 	if assert.Len(t, resp.Capabilities, 2) {
 		assert.Equal(t, "agent-alpha", resp.Capabilities[0].AgentID)
-		assert.NotEmpty(t, resp.Capabilities[0].Reasoners[0].InvocationTarget)
-		assert.NotNil(t, resp.Capabilities[0].Reasoners[0].Description)
-		assert.Nil(t, resp.Capabilities[0].Reasoners[0].InputSchema)
+		assert.NotEmpty(t, resp.Capabilities[0].Bots[0].InvocationTarget)
+		assert.NotNil(t, resp.Capabilities[0].Bots[0].Description)
+		assert.Nil(t, resp.Capabilities[0].Bots[0].InputSchema)
 	}
 }
 
@@ -68,7 +68,7 @@ func TestDiscoveryCapabilities_WithFiltersAndSchemas(t *testing.T) {
 	router := gin.New()
 	router.GET("/api/v1/discovery/capabilities", DiscoveryCapabilitiesHandler(lister))
 
-	url := "/api/v1/discovery/capabilities?node_id=agent-beta&reasoner=*research*&tags=ml*&include_input_schema=true&include_output_schema=true&include_examples=true&include_descriptions=false&health_status=active&limit=1&offset=0"
+	url := "/api/v1/discovery/capabilities?node_id=agent-beta&bot=*research*&tags=ml*&include_input_schema=true&include_output_schema=true&include_examples=true&include_descriptions=false&health_status=active&limit=1&offset=0"
 	req := httptest.NewRequest(http.MethodGet, url, nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -79,18 +79,18 @@ func TestDiscoveryCapabilities_WithFiltersAndSchemas(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 
 	assert.Equal(t, 1, resp.TotalAgents)
-	assert.Equal(t, 1, resp.TotalReasoners)
+	assert.Equal(t, 1, resp.TotalBots)
 	assert.Equal(t, 0, resp.TotalSkills)
 	assert.Equal(t, 1, len(resp.Capabilities))
 
-	reasoners := resp.Capabilities[0].Reasoners
-	if assert.Len(t, reasoners, 1) {
-		assert.Equal(t, "deep_research", reasoners[0].ID)
-		assert.Nil(t, reasoners[0].Description)
-		assert.NotNil(t, reasoners[0].InputSchema)
-		assert.NotNil(t, reasoners[0].OutputSchema)
-		assert.NotNil(t, reasoners[0].Examples)
-		assert.Equal(t, "agent-beta:deep_research", reasoners[0].InvocationTarget)
+	bots := resp.Capabilities[0].Bots
+	if assert.Len(t, bots, 1) {
+		assert.Equal(t, "deep_research", bots[0].ID)
+		assert.Nil(t, bots[0].Description)
+		assert.NotNil(t, bots[0].InputSchema)
+		assert.NotNil(t, bots[0].OutputSchema)
+		assert.NotNil(t, bots[0].Examples)
+		assert.Equal(t, "agent-beta:deep_research", bots[0].InvocationTarget)
 	}
 
 	assert.Empty(t, resp.Capabilities[0].Skills)
@@ -119,7 +119,7 @@ func TestDiscoveryCapabilities_Formats(t *testing.T) {
 	require.Equal(t, http.StatusOK, compactRec.Code)
 	var compactResp CompactDiscoveryResponse
 	require.NoError(t, json.Unmarshal(compactRec.Body.Bytes(), &compactResp))
-	assert.Equal(t, 2, len(compactResp.Reasoners)) // skill filter does not affect reasoners
+	assert.Equal(t, 2, len(compactResp.Bots)) // skill filter does not affect bots
 	assert.Equal(t, 1, len(compactResp.Skills))
 }
 
@@ -166,7 +166,7 @@ func buildDiscoveryAgents() []*types.AgentNode {
 			DeploymentType: "long_running",
 			HealthStatus:   types.HealthStatusActive,
 			LastHeartbeat:  now,
-			Reasoners: []types.ReasonerDefinition{
+			Bots: []types.BotDefinition{
 				{
 					ID:           "summarize",
 					InputSchema:  deepInput,
@@ -197,7 +197,7 @@ func buildDiscoveryAgents() []*types.AgentNode {
 			DeploymentType: "long_running",
 			HealthStatus:   types.HealthStatusActive,
 			LastHeartbeat:  now,
-			Reasoners: []types.ReasonerDefinition{
+			Bots: []types.BotDefinition{
 				{
 					ID:           "deep_research",
 					InputSchema:  deepInput,

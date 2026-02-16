@@ -8,7 +8,7 @@ type ExecutionRecordModel struct {
 	RunID             string     `gorm:"column:run_id;not null;index"`
 	ParentExecutionID *string    `gorm:"column:parent_execution_id;index"`
 	AgentNodeID       string     `gorm:"column:agent_node_id;not null;index"`
-	ReasonerID        string     `gorm:"column:reasoner_id;not null;index"`
+	BotID        string     `gorm:"column:bot_id;not null;index"`
 	NodeID            string     `gorm:"column:node_id;not null;index"`
 	Status            string     `gorm:"column:status;not null;index"`
 	InputPayload      []byte     `gorm:"column:input_payload"`
@@ -33,7 +33,7 @@ type AgentExecutionModel struct {
 	WorkflowID   string    `gorm:"column:workflow_id;not null;index"`
 	SessionID    *string   `gorm:"column:session_id;index"`
 	AgentNodeID  string    `gorm:"column:agent_node_id;not null;index"`
-	ReasonerID   string    `gorm:"column:reasoner_id;not null;index"`
+	BotID   string    `gorm:"column:bot_id;not null;index"`
 	InputData    []byte    `gorm:"column:input_data"`
 	OutputData   []byte    `gorm:"column:output_data"`
 	InputSize    int       `gorm:"column:input_size"`
@@ -56,7 +56,7 @@ type AgentNodeModel struct {
 	Version             string     `gorm:"column:version;not null"`
 	DeploymentType      string     `gorm:"column:deployment_type;default:'long_running';index"`
 	InvocationURL       *string    `gorm:"column:invocation_url"`
-	Reasoners           []byte     `gorm:"column:reasoners"`
+	Bots           []byte     `gorm:"column:bots"`
 	Skills              []byte     `gorm:"column:skills"`
 	CommunicationConfig []byte     `gorm:"column:communication_config"`
 	HealthStatus        string     `gorm:"column:health_status;not null;index"`
@@ -116,7 +116,7 @@ type WorkflowExecutionModel struct {
 	ParentExecutionID     *string    `gorm:"column:parent_execution_id;index"`
 	RootWorkflowID        *string    `gorm:"column:root_workflow_id;index"`
 	WorkflowDepth         int        `gorm:"column:workflow_depth;default:0"`
-	ReasonerID            string     `gorm:"column:reasoner_id;not null"`
+	BotID            string     `gorm:"column:bot_id;not null"`
 	InputData             []byte     `gorm:"column:input_data"`
 	OutputData            []byte     `gorm:"column:output_data"`
 	InputSize             int        `gorm:"column:input_size"`
@@ -278,7 +278,7 @@ type AgentDIDModel struct {
 	AgentsServerID string    `gorm:"column:agents_server_id;not null;index"`
 	PublicKeyJWK       string    `gorm:"column:public_key_jwk;not null"`
 	DerivationPath     string    `gorm:"column:derivation_path;not null"`
-	Reasoners          string    `gorm:"column:reasoners;default:'{}'"`
+	Bots          string    `gorm:"column:bots;default:'{}'"`
 	Skills             string    `gorm:"column:skills;default:'{}'"`
 	Status             string    `gorm:"column:status;not null;default:'active'"`
 	RegisteredAt       time.Time `gorm:"column:registered_at;autoCreateTime"`

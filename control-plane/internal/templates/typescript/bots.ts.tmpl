@@ -1,14 +1,14 @@
 import { AgentRouter } from '@playground/sdk';
 import { z } from 'zod';
 
-// Group related reasoners with a router
-export const reasonersRouter = new AgentRouter({ prefix: 'demo', tags: ['example'] });
+// Group related bots with a router
+export const botsRouter = new AgentRouter({ prefix: 'demo', tags: ['example'] });
 
-reasonersRouter.reasoner<{ message: string }, { original: string; echoed: string; length: number }>(
+botsRouter.bot<{ message: string }, { original: string; echoed: string; length: number }>(
   'echo',
   async (ctx) => {
     /**
-     * Simple echo reasoner - works without AI configured.
+     * Simple echo bot - works without AI configured.
      *
      * Example usage:
      * curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
@@ -32,7 +32,7 @@ reasonersRouter.reasoner<{ message: string }, { original: string; echoed: string
 // });
 // type SentimentResult = z.infer<typeof sentimentSchema>;
 //
-// reasonersRouter.reasoner<{ text: string }, SentimentResult & { text: string }>(
+// botsRouter.bot<{ text: string }, SentimentResult & { text: string }>(
 //   'analyzeSentiment',
 //   async (ctx) => {
 //     /**

@@ -10,7 +10,7 @@ interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -97,7 +97,7 @@ export function ExecutionHeader({
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base font-semibold text-foreground mb-2">
-              {node.task_name || node.reasoner_id}
+              {node.task_name || node.bot_id}
             </CardTitle>
 
             {/* Agent Information */}

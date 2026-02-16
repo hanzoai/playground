@@ -58,7 +58,7 @@ func TestStorageParity_CreateExecutionRecord(t *testing.T) {
 				ExecutionID: "exec-parity-1",
 				RunID:       "run-parity-1",
 				AgentNodeID: "agent-1",
-				ReasonerID:  "reasoner-1",
+				BotID:  "bot-1",
 				NodeID:      "node-1",
 				Status:      string(types.ExecutionStatusPending),
 				StartedAt:   time.Now().UTC(),
@@ -74,7 +74,7 @@ func TestStorageParity_CreateExecutionRecord(t *testing.T) {
 			require.Equal(t, exec.ExecutionID, retrieved.ExecutionID)
 			require.Equal(t, exec.RunID, retrieved.RunID)
 			require.Equal(t, exec.AgentNodeID, retrieved.AgentNodeID)
-			require.Equal(t, exec.ReasonerID, retrieved.ReasonerID)
+			require.Equal(t, exec.BotID, retrieved.BotID)
 		})
 	}
 }
@@ -89,7 +89,7 @@ func TestStorageParity_UpdateExecutionRecord(t *testing.T) {
 		ExecutionID: "exec-update-parity",
 		RunID:       "run-update-parity",
 		AgentNodeID: "agent-1",
-		ReasonerID:  "reasoner-1",
+		BotID:  "bot-1",
 		NodeID:      "node-1",
 		Status:      string(types.ExecutionStatusPending),
 		StartedAt:   time.Now().UTC(),
@@ -129,7 +129,7 @@ func TestStorageParity_QueryExecutionRecords(t *testing.T) {
 			ExecutionID: "exec-query-1",
 			RunID:       "run-query-1",
 			AgentNodeID: "agent-1",
-			ReasonerID:  "reasoner-1",
+			BotID:  "bot-1",
 			NodeID:      "node-1",
 			Status:      string(types.ExecutionStatusSucceeded),
 			StartedAt:   time.Now().UTC(),
@@ -138,7 +138,7 @@ func TestStorageParity_QueryExecutionRecords(t *testing.T) {
 			ExecutionID: "exec-query-2",
 			RunID:       "run-query-1",
 			AgentNodeID: "agent-1",
-			ReasonerID:  "reasoner-2",
+			BotID:  "bot-2",
 			NodeID:      "node-2",
 			Status:      string(types.ExecutionStatusFailed),
 			StartedAt:   time.Now().UTC(),
@@ -147,7 +147,7 @@ func TestStorageParity_QueryExecutionRecords(t *testing.T) {
 			ExecutionID: "exec-query-3",
 			RunID:       "run-query-2",
 			AgentNodeID: "agent-2",
-			ReasonerID:  "reasoner-1",
+			BotID:  "bot-1",
 			NodeID:      "node-3",
 			Status:      string(types.ExecutionStatusSucceeded),
 			StartedAt:   time.Now().UTC(),
@@ -206,7 +206,7 @@ func TestStorageParity_StoreWorkflowExecution(t *testing.T) {
 		AgentsRequestID: "req-1",
 		RunID:               &runID,
 		AgentNodeID:         "agent-1",
-		ReasonerID:          "reasoner-1",
+		BotID:          "bot-1",
 		Status:              string(types.ExecutionStatusPending),
 		StartedAt:           time.Now().UTC(),
 		CreatedAt:           time.Now().UTC(),
@@ -235,7 +235,7 @@ func TestStorageParity_TransactionRollback(t *testing.T) {
 		ExecutionID: "exec-rollback",
 		RunID:       "run-rollback",
 		AgentNodeID: "agent-1",
-		ReasonerID:  "reasoner-1",
+		BotID:  "bot-1",
 		NodeID:      "node-1",
 		Status:      string(types.ExecutionStatusPending),
 		StartedAt:   time.Now().UTC(),

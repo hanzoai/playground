@@ -556,8 +556,8 @@ func TestDeadLetterQueue_LargePayload(t *testing.T) {
 func TestDeadLetterQueue_MultipleEventTypes(t *testing.T) {
 	ls, ctx := setupObservabilityTestStorage(t)
 
-	eventTypes := []string{"execution_created", "execution_completed", "node_online", "node_offline", "reasoner_updated"}
-	eventSources := []string{"execution", "execution", "node", "node", "reasoner"}
+	eventTypes := []string{"execution_created", "execution_completed", "node_online", "node_offline", "bot_updated"}
+	eventSources := []string{"execution", "execution", "node", "node", "bot"}
 
 	for i, eventType := range eventTypes {
 		event := &types.ObservabilityEvent{

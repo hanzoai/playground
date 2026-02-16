@@ -319,7 +319,7 @@ func TestIntegration_HeartbeatFiltering(t *testing.T) {
 	// Publish mix of real events and heartbeats
 	events.PublishNodeOnline("node-filter-1", nil)
 	events.PublishNodeHeartbeat() // Should be filtered
-	events.PublishReasonerOnline("reasoner-1", "node-1", nil)
+	events.PublishBotOnline("bot-1", "node-1", nil)
 	events.PublishHeartbeat() // Should be filtered
 	events.PublishNodeOffline("node-filter-1", nil)
 	events.PublishNodeHeartbeat() // Should be filtered
@@ -332,7 +332,7 @@ func TestIntegration_HeartbeatFiltering(t *testing.T) {
 
 	// Verify no heartbeat events
 	for _, event := range receivedEvents {
-		require.NotEqual(t, "heartbeat", event.EventType, "reasoner heartbeat should be filtered")
+		require.NotEqual(t, "heartbeat", event.EventType, "bot heartbeat should be filtered")
 		require.NotEqual(t, "node_heartbeat", event.EventType, "node heartbeat should be filtered")
 	}
 

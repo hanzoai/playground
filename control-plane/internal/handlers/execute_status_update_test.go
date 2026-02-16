@@ -23,7 +23,7 @@ func TestUpdateExecutionStatusHandler_Success(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -34,7 +34,7 @@ func TestUpdateExecutionStatusHandler_Success(t *testing.T) {
 		ExecutionID: "exec-1",
 		RunID:        "run-1",
 		AgentNodeID:  "node-1",
-		ReasonerID:   "reasoner-a",
+		BotID:   "bot-a",
 		Status:       types.ExecutionStatusRunning,
 		StartedAt:    time.Now().UTC(),
 		CreatedAt:    time.Now().UTC(),
@@ -81,7 +81,7 @@ func TestUpdateExecutionStatusHandler_Failed(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)
@@ -134,7 +134,7 @@ func TestUpdateExecutionStatusHandler_WithWebhook(t *testing.T) {
 	agent := &types.AgentNode{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
-		Reasoners: []types.ReasonerDefinition{{ID: "reasoner-a"}},
+		Bots: []types.BotDefinition{{ID: "bot-a"}},
 	}
 
 	store := newTestExecutionStorage(agent)

@@ -63,7 +63,7 @@ export function ExecutionCard({ execution, onViewDetails, compact = false }: Exe
           </StatusBadge>
           <div className="flex flex-col">
             <span className="font-medium text-sm">{execution.workflow_name || execution.workflow_id}</span>
-            <span className="text-body-small">{execution.reasoner_id}</span>
+            <span className="text-body-small">{execution.bot_id}</span>
           </div>
         </div>
         <div className="flex items-center space-x-4 text-body-small">
@@ -134,8 +134,8 @@ export function ExecutionCard({ execution, onViewDetails, compact = false }: Exe
               <div className="font-medium">{execution.agent_node_id}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Reasoner</div>
-              <div className="font-medium">{execution.reasoner_id}</div>
+              <div className="text-muted-foreground">Bot</div>
+              <div className="font-medium">{execution.bot_id}</div>
             </div>
             <div>
               <div className="text-muted-foreground">Duration</div>

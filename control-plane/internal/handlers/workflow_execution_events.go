@@ -11,13 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// WorkflowExecutionEventRequest describes the payload emitted by agents when a reasoner
+// WorkflowExecutionEventRequest describes the payload emitted by agents when a bot
 // starts, completes, or fails inside an existing workflow run.
 type WorkflowExecutionEventRequest struct {
 	ExecutionID       string                 `json:"execution_id" binding:"required"`
 	WorkflowID        string                 `json:"workflow_id"`
 	RunID             string                 `json:"run_id"`
-	ReasonerID        string                 `json:"reasoner_id"`
+	BotID        string                 `json:"bot_id"`
 	Type              string                 `json:"type"`
 	AgentNodeID       string                 `json:"agent_node_id"`
 	Status            string                 `json:"status"`
@@ -81,7 +81,7 @@ func buildExecutionRecordFromEvent(req *WorkflowExecutionEventRequest, now time.
 		agentNodeID = req.Type
 	}
 
-	reasonerID := firstNonEmpty(req.ReasonerID, req.Type, "reasoner")
+	botID := firstNonEmpty(req.BotID, req.Type, "bot")
 	status := types.NormalizeExecutionStatus(req.Status)
 	inputPayload := marshalJSON(req.InputData)
 	resultPayload := marshalJSON(req.Result)
@@ -92,7 +92,7 @@ func buildExecutionRecordFromEvent(req *WorkflowExecutionEventRequest, now time.
 		ParentExecutionID: req.ParentExecutionID,
 		AgentNodeID:       agentNodeID,
 		NodeID:            agentNodeID,
-		ReasonerID:        reasonerID,
+		BotID:        botID,
 		Status:            status,
 		InputPayload:      inputPayload,
 		ResultPayload:     resultPayload,
@@ -134,8 +134,8 @@ func applyEventToExecution(current *types.Execution, req *WorkflowExecutionEvent
 		current.AgentNodeID = firstNonEmpty(req.AgentNodeID, req.Type)
 		current.NodeID = current.AgentNodeID
 	}
-	if current.ReasonerID == "" {
-		current.ReasonerID = firstNonEmpty(req.ReasonerID, req.Type, "reasoner")
+	if current.BotID == "" {
+		current.BotID = firstNonEmpty(req.BotID, req.Type, "bot")
 	}
 	if req.RunID != "" || req.WorkflowID != "" {
 		current.RunID = firstNonEmpty(req.RunID, req.WorkflowID, current.RunID)

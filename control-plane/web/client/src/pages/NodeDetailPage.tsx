@@ -12,7 +12,7 @@ import {
   MCPToolExplorer,
   MCPToolTester,
 } from "@/components/mcp";
-import { ReasonersSkillsTable } from "@/components/ReasonersSkillsTable";
+import { BotsSkillsTable } from "@/components/BotsSkillsTable";
 import { StatusRefreshButton } from "@/components/status";
 import {
   AgentControlButton,
@@ -634,7 +634,7 @@ function NodeDetailPageContent() {
   const mcpServers: MCPServerHealthForUI[] =
     mcpHealth?.mcp_servers || node.mcp_servers || [];
 
-  const reasonerCount = node.reasoners?.length ?? 0;
+  const botCount = node.bots?.length ?? 0;
   const skillCount = node.skills?.length ?? 0;
 
   const agentStatusForTable = liveStatus
@@ -655,7 +655,7 @@ function NodeDetailPageContent() {
   );
 
   const headerMetadata: Array<{ label: string; value: string }> = [
-    { label: "Reasoners", value: String(reasonerCount) },
+    { label: "Bots", value: String(botCount) },
     { label: "Skills", value: String(skillCount) },
     {
       label: "MCP",
@@ -926,10 +926,10 @@ function NodeDetailPageContent() {
                 </CardContent>
               </Card>
 
-              <ReasonersSkillsTable
-                reasoners={node.reasoners ?? []}
+              <BotsSkillsTable
+                bots={node.bots ?? []}
                 skills={node.skills ?? []}
-                reasonerDIDs={didInfo?.reasoners}
+                botDIDs={didInfo?.bots}
                 skillDIDs={didInfo?.skills}
                 agentDID={didInfo?.did}
                 agentStatus={agentStatusForTable}

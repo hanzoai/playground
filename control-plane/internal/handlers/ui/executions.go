@@ -130,7 +130,7 @@ type ExecutionSummary struct {
 	WorkflowID   string               `json:"workflow_id"`
 	SessionID    *string              `json:"session_id,omitempty"`
 	AgentNodeID  string               `json:"agent_node_id"`
-	ReasonerID   string               `json:"reasoner_id"`
+	BotID   string               `json:"bot_id"`
 	Status       string               `json:"status"`
 	DurationMS   int                  `json:"duration_ms"`
 	InputSize    int                  `json:"input_size"`
@@ -164,7 +164,7 @@ type ExecutionDetailsResponse struct {
 	ParentWorkflowID    *string                        `json:"parent_workflow_id,omitempty"`
 	RootWorkflowID      *string                        `json:"root_workflow_id,omitempty"`
 	WorkflowDepth       *int                           `json:"workflow_depth,omitempty"`
-	ReasonerID          string                         `json:"reasoner_id"`
+	BotID          string                         `json:"bot_id"`
 	InputData           interface{}                    `json:"input_data"`
 	OutputData          interface{}                    `json:"output_data"`
 	InputSize           int                            `json:"input_size"`
@@ -507,7 +507,7 @@ func (h *ExecutionHandler) GetEnhancedExecutionsHandler(c *gin.Context) {
 			ExecutionID:     exec.ExecutionID,
 			WorkflowID:      exec.RunID,
 			Status:          types.NormalizeExecutionStatus(exec.Status),
-			TaskName:        exec.ReasonerID,
+			TaskName:        exec.BotID,
 			WorkflowName:    exec.RunID,
 			AgentName:       exec.AgentNodeID,
 			RelativeTime:    formatRelativeTimeString(now, startedAt),
@@ -662,7 +662,7 @@ func (h *ExecutionHandler) toExecutionSummary(exec *types.Execution) ExecutionSu
 		WorkflowID:   exec.RunID,
 		SessionID:    exec.SessionID,
 		AgentNodeID:  exec.AgentNodeID,
-		ReasonerID:   exec.ReasonerID,
+		BotID:   exec.BotID,
 		Status:       types.NormalizeExecutionStatus(exec.Status),
 		DurationMS:   duration,
 		InputSize:    len(exec.InputPayload),
@@ -712,7 +712,7 @@ func (h *ExecutionHandler) toExecutionDetails(ctx context.Context, exec *types.E
 		ParentWorkflowID:    exec.ParentExecutionID,
 		RootWorkflowID:      nil,
 		WorkflowDepth:       nil,
-		ReasonerID:          exec.ReasonerID,
+		BotID:          exec.BotID,
 		InputData:           inputData,
 		OutputData:          outputData,
 		InputSize:           inputSize,
@@ -865,8 +865,8 @@ func sanitizeExecutionSortField(field string) string {
 	switch strings.ToLower(strings.TrimSpace(field)) {
 	case "status":
 		return "status"
-	case "task_name", "reasoner", "reasoner_id":
-		return "reasoner_id"
+	case "task_name", "bot", "bot_id":
+		return "bot_id"
 	case "duration_ms":
 		return "duration_ms"
 	case "duration":
@@ -908,8 +908,8 @@ func (h *ExecutionHandler) groupExecutionSummaries(summaries []ExecutionSummary,
 			bucket = summary.Status
 		case "agent", "agent_node_id":
 			bucket = summary.AgentNodeID
-		case "reasoner", "reasoner_id":
-			bucket = summary.ReasonerID
+		case "bot", "bot_id":
+			bucket = summary.BotID
 		default:
 			bucket = "ungrouped"
 		}

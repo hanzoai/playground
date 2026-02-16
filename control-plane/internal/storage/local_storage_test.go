@@ -52,7 +52,7 @@ func TestLocalStorageStoreWorkflowExecutionPersistsLifecycleFields(t *testing.T)
 	execID := "exec_test"
 	agentsRequestID := "req_test"
 	agentID := "agent_1"
-	reasonerID := "reasoner.alpha"
+	botID := "bot.alpha"
 
 	exec := &types.WorkflowExecution{
 		WorkflowID:          workflowID,
@@ -60,7 +60,7 @@ func TestLocalStorageStoreWorkflowExecutionPersistsLifecycleFields(t *testing.T)
 		AgentsRequestID: agentsRequestID,
 		RunID:               &runID,
 		AgentNodeID:         agentID,
-		ReasonerID:          reasonerID,
+		BotID:          botID,
 		Status:              string(types.ExecutionStatusPending),
 		StartedAt:           now,
 		CreatedAt:           now,

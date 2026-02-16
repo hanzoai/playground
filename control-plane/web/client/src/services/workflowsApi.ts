@@ -83,7 +83,7 @@ interface ApiWorkflowRunSummary {
   status: string;
   display_name: string;
   current_task: string;
-  root_reasoner: string;
+  root_bot: string;
   agent_id?: string | null;
   session_id?: string | null;
   actor_id?: string | null;
@@ -105,7 +105,7 @@ interface ApiWorkflowExecution {
   parent_execution_id?: string | null;
   parent_workflow_id?: string | null;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string | null;
@@ -209,8 +209,8 @@ function mapApiRunToWorkflowSummary(run: ApiWorkflowRunSummary): WorkflowSummary
     workflow_id: run.workflow_id,
     root_execution_id: run.root_execution_id ?? undefined,
     status: normalizedStatus,
-    root_reasoner: run.root_reasoner || run.display_name,
-    current_task: run.current_task || run.root_reasoner || run.display_name,
+    root_bot: run.root_bot || run.display_name,
+    current_task: run.current_task || run.root_bot || run.display_name,
     total_executions: run.total_executions,
     max_depth: run.max_depth,
     started_at: run.started_at,

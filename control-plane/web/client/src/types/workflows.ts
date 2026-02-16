@@ -7,7 +7,7 @@ export interface WorkflowSummary {
   workflow_id: string;
   root_execution_id?: string;
   status: CanonicalStatus;
-  root_reasoner: string;
+  root_bot: string;
   current_task: string;
   total_executions: number;
   max_depth: number;
@@ -89,7 +89,7 @@ export interface WorkflowTimelineNode {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -120,7 +120,7 @@ export interface WorkflowDAGLightweightNode {
   execution_id: string;
   parent_execution_id?: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;

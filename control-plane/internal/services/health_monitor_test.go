@@ -1280,7 +1280,7 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 		HealthStatus:    types.HealthStatusActive,
 		LifecycleStatus: types.AgentStatusReady,
 		LastHeartbeat:   time.Now(),
-		Reasoners:       []types.ReasonerDefinition{},
+		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 	require.NoError(t, provider.RegisterAgent(ctx, node))
@@ -1436,7 +1436,7 @@ func TestIntegration_ProperInactiveWhenHeartbeatsStop(t *testing.T) {
 		HealthStatus:    types.HealthStatusActive,
 		LifecycleStatus: types.AgentStatusReady,
 		LastHeartbeat:   time.Now(),
-		Reasoners:       []types.ReasonerDefinition{},
+		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 	require.NoError(t, provider.RegisterAgent(ctx, node))
@@ -1519,7 +1519,7 @@ func TestIntegration_RecoveryAfterGenuineOutage(t *testing.T) {
 		HealthStatus:    types.HealthStatusActive,
 		LifecycleStatus: types.AgentStatusReady,
 		LastHeartbeat:   time.Now(),
-		Reasoners:       []types.ReasonerDefinition{},
+		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 	require.NoError(t, provider.RegisterAgent(ctx, node))

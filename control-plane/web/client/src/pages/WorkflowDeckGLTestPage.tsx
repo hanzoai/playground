@@ -208,7 +208,7 @@ export function WorkflowDeckGLTestPage() {
             {hoveredNode && (
               <div className="absolute bottom-4 left-4 max-w-sm rounded-2xl bg-black/60 border border-white/10 backdrop-blur px-4 py-3 text-xs text-slate-100 shadow-lg">
                 <div className="text-sm font-semibold text-white">
-                  {hoveredNode.reasoner_id || hoveredNode.execution_id}
+                  {hoveredNode.bot_id || hoveredNode.execution_id}
                 </div>
                 <div className="grid grid-cols-2 gap-y-1 mt-2 text-[11px] text-slate-300">
                   <span className="uppercase tracking-wide text-slate-400">

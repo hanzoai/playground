@@ -44,7 +44,7 @@ interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
   agent_node_id: string;
-  reasoner_id: string;
+  bot_id: string;
   status: string;
   started_at: string;
   completed_at?: string;
@@ -94,7 +94,7 @@ function mapLightweightNode(
     workflow_id: workflowId,
     execution_id: node.execution_id,
     agent_node_id: node.agent_node_id,
-    reasoner_id: node.reasoner_id,
+    bot_id: node.bot_id,
     status: node.status,
     started_at: node.started_at,
     completed_at: node.completed_at,
@@ -548,7 +548,7 @@ function decorateEdgesWithStatus(
       };
 
       const agentLabel = data.agent_name || data.agent_node_id || "";
-      const taskLabel = data.task_name || data.reasoner_id || "";
+      const taskLabel = data.task_name || data.bot_id || "";
       const statusLabel = data.status || "";
       const searchableSource =
         `${agentLabel} ${taskLabel} ${data.execution_id} ${statusLabel}`.toLowerCase();

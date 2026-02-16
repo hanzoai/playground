@@ -679,7 +679,7 @@ export function buildDeckGraph(
       const y = layerIndex * verticalSpacing;
       const z = 0; // Keep flat for now
 
-      const agentId = node.agent_node_id || node.reasoner_id || "agent";
+      const agentId = node.agent_node_id || node.bot_id || "agent";
       const colorInfo =
         agentColors.get(agentId) ??
         getAgentColor(agentId, agentColors.size + 1);
