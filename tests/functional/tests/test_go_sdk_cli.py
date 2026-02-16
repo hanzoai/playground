@@ -6,7 +6,7 @@ import time
 import httpx
 import pytest
 
-from utils import get_go_agent_binary, run_go_agent, unique_node_id
+from utils import get_go_bot_binary, run_go_bot, unique_node_id
 
 
 async def _wait_for_registration(client, node_id: str, timeout: float = 30.0):
@@ -21,8 +21,8 @@ async def _wait_for_registration(client, node_id: str, timeout: float = 30.0):
     raise AssertionError(f"Node {node_id} not registered after {timeout}s (last status={last_status})")
 
 
-async def _wait_for_workflow_run(client, run_id: str, *, expected_reasoners: set[str], timeout: float = 45.0):
-    """Poll workflow run detail endpoint until expected reasoners appear."""
+async def _wait_for_workflow_run(client, run_id: str, *, expected_bots: set[str], timeout: float = 45.0):
+    """Poll workflow run detail endpoint until expected bots appear."""
     # Give the database a moment to commit the executions
     await asyncio.sleep(0.5)
 
@@ -34,8 +34,8 @@ async def _wait_for_workflow_run(client, run_id: str, *, expected_reasoners: set
             body = resp.json()
             last_body = body
             executions = body.get("executions", [])
-            reasoners = {node.get("reasoner_id") for node in executions}
-            if expected_reasoners.issubset(reasoners):
+            bots = {node.get("bot_id") for node in executions}
+            if expected_bots.issubset(bots):
                 return executions
         await asyncio.sleep(1)
     raise AssertionError(
@@ -44,17 +44,17 @@ async def _wait_for_workflow_run(client, run_id: str, *, expected_reasoners: set
 
 
 async def _wait_for_workflow_run_completed(
-    client, run_id: str, *, expected_reasoners: set[str], timeout: float = 45.0
+    client, run_id: str, *, expected_bots: set[str], timeout: float = 45.0
 ):
-    """Poll workflow run detail endpoint until expected reasoners appear and are terminal."""
-    timeline = await _wait_for_workflow_run(client, run_id, expected_reasoners=expected_reasoners, timeout=timeout)
+    """Poll workflow run detail endpoint until expected bots appear and are terminal."""
+    timeline = await _wait_for_workflow_run(client, run_id, expected_bots=expected_bots, timeout=timeout)
 
     deadline = time.time() + timeout
     last_body = None
     while time.time() < deadline:
-        reasoners = {node.get("reasoner_id") for node in timeline}
+        bots = {node.get("bot_id") for node in timeline}
         statuses = {node.get("status") for node in timeline}
-        if expected_reasoners.issubset(reasoners) and statuses == {"succeeded"}:
+        if expected_bots.issubset(bots) and statuses == {"succeeded"}:
             return timeline
 
         await asyncio.sleep(1)
@@ -69,7 +69,7 @@ async def _wait_for_workflow_run_completed(
     )
 
 
-async def _wait_for_agent_health(url: str, timeout: float = 20.0):
+async def _wait_for_bot_health(url: str, timeout: float = 20.0):
     deadline = time.time() + timeout
     async with httpx.AsyncClient(timeout=5.0) as client:
         while time.time() < deadline:
@@ -80,7 +80,7 @@ async def _wait_for_agent_health(url: str, timeout: float = 20.0):
             except httpx.HTTPError:
                 pass
             await asyncio.sleep(0.5)
-    raise AssertionError(f"Agent did not become healthy at {url}")
+    raise AssertionError(f"Bot did not become healthy at {url}")
 
 
 async def _resolve_workflow_id_from_execution(client, execution_id: str, timeout: float = 15.0) -> str:
@@ -107,29 +107,35 @@ async def test_go_sdk_cli_and_control_plane(async_http_client, control_plane_url
     """
     Verify Go SDK hello-world example works as both CLI and control-plane node:
     - CLI invocation prints greeting without control-plane dependency.
-    - Server mode registers and executes via control plane while nested reasoners call each other locally,
+    - Server mode registers and executes via control plane while nested bots call each other locally,
       still producing parent/child workflow edges in the control plane DAG.
     """
-    node_id = unique_node_id("go-hello-agent")
+    node_id = unique_node_id("go-hello-bot")
 
     binary = None
     try:
-        binary = get_go_agent_binary("hello")
+        binary = get_go_bot_binary("hello")
     except FileNotFoundError:
-        pytest.skip("Go agent binary not built; ensure go_agents are compiled in test image")
+        pytest.skip("Go bot binary not built; ensure go_bots are compiled in test image")
 
-    # Start Go agent server pointed at control plane.
+    # Start Go bot server pointed at control plane.
     env_server = {
         **os.environ,
-        "AGENTS_URL": control_plane_url,
-        "AGENT_NODE_ID": node_id,
-        "AGENT_LISTEN_ADDR": ":8001",
-        # Control plane reaches the agent via docker network name.
-        "AGENT_PUBLIC_URL": "http://test-runner:8001",
+        "PLAYGROUND_URL": control_plane_url,
+        "HANZO_NODE_ID": node_id,
+        "HANZO_LISTEN_ADDR": ":8001",
+        # Control plane reaches the bot via docker network name.
+        "HANZO_PUBLIC_URL": "http://test-runner:8001",
     }
-    async with run_go_agent("hello", args=["serve"], env=env_server):
+    # Preserve fallback for older Go SDK binaries
+    env_server.setdefault("AGENTS_URL", control_plane_url)
+    env_server.setdefault("AGENT_NODE_ID", node_id)
+    env_server.setdefault("AGENT_LISTEN_ADDR", ":8001")
+    env_server.setdefault("AGENT_PUBLIC_URL", "http://test-runner:8001")
+
+    async with run_go_bot("hello", args=["serve"], env=env_server):
         await _wait_for_registration(async_http_client, node_id)
-        await _wait_for_agent_health("http://127.0.0.1:8001/health")
+        await _wait_for_bot_health("http://127.0.0.1:8001/health")
 
         # Execute via control plane to build a workflow DAG: demo_echo -> say_hello -> add_emoji.
         payload = {"input": {"message": "Hello, Playground!"}}
@@ -151,18 +157,19 @@ async def test_go_sdk_cli_and_control_plane(async_http_client, control_plane_url
         timeline = await _wait_for_workflow_run_completed(
             async_http_client,
             workflow_id,
-            expected_reasoners={"demo_echo", "say_hello", "add_emoji"},
+            expected_bots={"demo_echo", "say_hello", "add_emoji"},
             timeout=30.0,
         )
-        id_by_reasoner = {node["reasoner_id"]: node["execution_id"] for node in timeline}
-        parent_by_reasoner = {node["reasoner_id"]: node.get("parent_execution_id") for node in timeline}
+        id_by_bot = {node["bot_id"]: node["execution_id"] for node in timeline}
+        parent_by_bot = {node["bot_id"]: node.get("parent_execution_id") for node in timeline}
 
-        assert parent_by_reasoner.get("demo_echo") in (None, "", "null")
-        assert parent_by_reasoner.get("say_hello") == id_by_reasoner["demo_echo"]
-        assert parent_by_reasoner.get("add_emoji") == id_by_reasoner["say_hello"]
+        assert parent_by_bot.get("demo_echo") in (None, "", "null")
+        assert parent_by_bot.get("say_hello") == id_by_bot["demo_echo"]
+        assert parent_by_bot.get("add_emoji") == id_by_bot["say_hello"]
 
         # CLI invocation should still work without control plane.
-        env_cli = {k: v for k, v in os.environ.items() if k not in {"AGENTS_URL", "AGENT_PUBLIC_URL"}}
+        env_cli = {k: v for k, v in os.environ.items() if k not in {"PLAYGROUND_URL", "AGENTS_URL", "HANZO_PUBLIC_URL", "AGENT_PUBLIC_URL"}}
+        env_cli["HANZO_NODE_ID"] = f"{node_id}-cli"
         env_cli["AGENT_NODE_ID"] = f"{node_id}-cli"
         cli_proc = await asyncio.create_subprocess_exec(
             binary,
@@ -184,23 +191,28 @@ async def test_go_sdk_local_calls_emit_workflow_events(async_http_client, contro
     Ensure Go SDK local composition (CallLocal) still emits workflow events so the control plane builds a full DAG.
     """
     try:
-        get_go_agent_binary("hello")
+        get_go_bot_binary("hello")
     except FileNotFoundError:
-        pytest.skip("Go agent binary not built; ensure go_agents are compiled in test image")
+        pytest.skip("Go bot binary not built; ensure go_bots are compiled in test image")
 
     node_id = unique_node_id("go-local-dag")
 
     env_server = {
         **os.environ,
-        "AGENTS_URL": control_plane_url,
-        "AGENT_NODE_ID": node_id,
-        "AGENT_LISTEN_ADDR": ":8001",
-        "AGENT_PUBLIC_URL": "http://test-runner:8001",
+        "PLAYGROUND_URL": control_plane_url,
+        "HANZO_NODE_ID": node_id,
+        "HANZO_LISTEN_ADDR": ":8001",
+        "HANZO_PUBLIC_URL": "http://test-runner:8001",
     }
+    # Preserve fallback for older Go SDK binaries
+    env_server.setdefault("AGENTS_URL", control_plane_url)
+    env_server.setdefault("AGENT_NODE_ID", node_id)
+    env_server.setdefault("AGENT_LISTEN_ADDR", ":8001")
+    env_server.setdefault("AGENT_PUBLIC_URL", "http://test-runner:8001")
 
-    async with run_go_agent("hello", args=["serve"], env=env_server):
+    async with run_go_bot("hello", args=["serve"], env=env_server):
         await _wait_for_registration(async_http_client, node_id)
-        await _wait_for_agent_health("http://127.0.0.1:8001/health")
+        await _wait_for_bot_health("http://127.0.0.1:8001/health")
 
         payload = {"input": {"message": "Local DAG"}}
         resp = await async_http_client.post(
@@ -216,18 +228,18 @@ async def test_go_sdk_local_calls_emit_workflow_events(async_http_client, contro
         timeline = await _wait_for_workflow_run_completed(
             async_http_client,
             workflow_id,
-            expected_reasoners={"demo_echo", "say_hello", "add_emoji"},
+            expected_bots={"demo_echo", "say_hello", "add_emoji"},
             timeout=30.0,
         )
 
         assert len(timeline) == 3
-        id_by_reasoner = {node["reasoner_id"]: node["execution_id"] for node in timeline}
-        parent_by_reasoner = {node["reasoner_id"]: node.get("parent_execution_id") for node in timeline}
+        id_by_bot = {node["bot_id"]: node["execution_id"] for node in timeline}
+        parent_by_bot = {node["bot_id"]: node.get("parent_execution_id") for node in timeline}
 
-        assert parent_by_reasoner.get("demo_echo") in (None, "", "null")
-        assert parent_by_reasoner.get("say_hello") == id_by_reasoner["demo_echo"]
-        assert parent_by_reasoner.get("add_emoji") == id_by_reasoner["say_hello"]
+        assert parent_by_bot.get("demo_echo") in (None, "", "null")
+        assert parent_by_bot.get("say_hello") == id_by_bot["demo_echo"]
+        assert parent_by_bot.get("add_emoji") == id_by_bot["say_hello"]
 
         for node in timeline:
-            assert node.get("agent_node_id") == node_id
+            assert node.get("node_id") == node_id or node.get("agent_node_id") == node_id
             assert node.get("workflow_depth") in (0, 1, 2)

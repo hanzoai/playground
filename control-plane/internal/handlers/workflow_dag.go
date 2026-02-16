@@ -30,7 +30,7 @@ func newExecutionGraphService(storageProvider storage.StorageProvider) *executio
 type WorkflowDAGNode struct {
 	WorkflowID        string                `json:"workflow_id"`
 	ExecutionID       string                `json:"execution_id"`
-	AgentNodeID       string                `json:"agent_node_id"`
+	NodeID       string                `json:"node_id"`
 	BotID        string                `json:"bot_id"`
 	Status            string                `json:"status"`
 	StartedAt         string                `json:"started_at"`
@@ -67,7 +67,7 @@ type SessionWorkflowsResponse struct {
 type WorkflowDAGLightweightNode struct {
 	ExecutionID       string  `json:"execution_id"`
 	ParentExecutionID *string `json:"parent_execution_id,omitempty"`
-	AgentNodeID       string  `json:"agent_node_id"`
+	NodeID       string  `json:"node_id"`
 	BotID        string  `json:"bot_id"`
 	Status            string  `json:"status"`
 	StartedAt         string  `json:"started_at"`
@@ -482,7 +482,7 @@ func executionToDAGNode(exec *types.Execution, depth int) WorkflowDAGNode {
 	return WorkflowDAGNode{
 		WorkflowID:        exec.RunID,
 		ExecutionID:       exec.ExecutionID,
-		AgentNodeID:       exec.AgentNodeID,
+		NodeID:       exec.NodeID,
 		BotID:        exec.BotID,
 		Status:            types.NormalizeExecutionStatus(exec.Status),
 		StartedAt:         started,
@@ -528,7 +528,7 @@ func executionToLightweightNode(exec *types.Execution, depth int) WorkflowDAGLig
 	return WorkflowDAGLightweightNode{
 		ExecutionID:       exec.ExecutionID,
 		ParentExecutionID: exec.ParentExecutionID,
-		AgentNodeID:       exec.AgentNodeID,
+		NodeID:       exec.NodeID,
 		BotID:        exec.BotID,
 		Status:            types.NormalizeExecutionStatus(exec.Status),
 		StartedAt:         started,

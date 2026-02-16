@@ -19,6 +19,6 @@ type RegistryStorage interface {
 }
 
 type ConfigStorage interface {
-	LoadAgentsConfig(path string) (*domain.AgentsConfig, error)
-	SaveAgentsConfig(path string, config *domain.AgentsConfig) error
+	LoadPlaygroundConfig(path string) (*domain.PlaygroundConfig, error)
+	SavePlaygroundConfig(path string, config *domain.PlaygroundConfig) error
 }

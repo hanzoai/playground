@@ -74,7 +74,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// RegisterNode registers or updates the agent node with the control plane.
+// RegisterNode registers or updates the bot node with the control plane.
 func (c *Client) RegisterNode(ctx context.Context, payload types.NodeRegistrationRequest) (*types.NodeRegistrationResponse, error) {
 	payload.LastHeartbeat = payload.LastHeartbeat.UTC()
 	payload.RegisteredAt = payload.RegisteredAt.UTC()

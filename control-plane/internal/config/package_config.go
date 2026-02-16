@@ -37,7 +37,7 @@ type AgentsPackageConfig struct {
 	Author          string              `yaml:"author"`
 	Type            string              `yaml:"type"`
 	Main            string              `yaml:"main"`
-	AgentNode       AgentNodeConfig     `yaml:"agent_node"`
+	Node       NodeConfig     `yaml:"agent_node"`
 	Dependencies    DependenciesConfig  `yaml:"dependencies"`
 	Capabilities    CapabilitiesConfig  `yaml:"capabilities"`
 	Runtime         RuntimeConfig       `yaml:"runtime"`
@@ -46,7 +46,7 @@ type AgentsPackageConfig struct {
 	Metadata        MetadataConfig      `yaml:"metadata"`
 }
 
-type AgentNodeConfig struct {
+type NodeConfig struct {
 	NodeID      string `yaml:"node_id"`
 	DefaultPort int    `yaml:"default_port"`
 }

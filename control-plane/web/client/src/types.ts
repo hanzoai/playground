@@ -1,10 +1,10 @@
-export interface AgentNode {
+export interface Node {
   id: string;
   base_url: string;
   version: string;
   health_status: string;
   deployment_type?: string; // "long_running" or "serverless"
-  invocation_url?: string; // For serverless agents
+  invocation_url?: string; // For serverless bots
 }
 
 export interface Execution {

@@ -77,12 +77,12 @@ export function ExecutionIdentityPanel({
   return (
     <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
       <div className="p-6 space-y-6">
-        {/* Agent Identity */}
+        {/* Bot Identity */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
-              Agent Identity
+              Bot Identity
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -90,17 +90,17 @@ export function ExecutionIdentityPanel({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-body-small">Agent Node ID</label>
+                    <label className="text-body-small">Node ID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-sm text-foreground bg-muted/30 px-2 py-1 rounded">
-                        {execution.agent_node_id}
+                        {execution.node_id}
                       </code>
                       <CopyButton
-                        value={execution.agent_node_id}
+                        value={execution.node_id}
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 p-0 [&_svg]:h-3 [&_svg]:w-3"
-                        tooltip="Copy agent node ID"
+                        tooltip="Copy hanzo node ID"
                       />
                     </div>
                   </div>
@@ -110,7 +110,7 @@ export function ExecutionIdentityPanel({
                   <div>
                     <label className="text-body-small">Decentralized Identifier (DID)</label>
                     <div className="flex items-center gap-2 mt-1">
-                      <DIDDisplay nodeId={execution.agent_node_id} variant="full" />
+                      <DIDDisplay nodeId={execution.node_id} variant="full" />
                     </div>
                   </div>
                 </div>
@@ -294,7 +294,7 @@ export function ExecutionIdentityPanel({
                       )}
                     </div>
                     {callerAgent && (
-                      <p className="text-body-small mt-1">Agent node: {callerAgent}</p>
+                      <p className="text-body-small mt-1">node: {callerAgent}</p>
                     )}
                   </div>
                   <div>
@@ -314,7 +314,7 @@ export function ExecutionIdentityPanel({
                       )}
                     </div>
                     {targetAgent && (
-                      <p className="text-body-small mt-1">Agent node: {targetAgent}</p>
+                      <p className="text-body-small mt-1">node: {targetAgent}</p>
                     )}
                   </div>
                   <div>

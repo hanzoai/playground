@@ -16,7 +16,7 @@ import (
 func NewNodesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "nodes",
-		Short: "Manage agent nodes",
+		Short: "Manage hanzo nodes",
 	}
 
 	cmd.AddCommand(newRegisterServerlessCommand())
@@ -31,17 +31,26 @@ type registerServerlessOptions struct {
 	jsonOutput    bool
 }
 
+// envFallback returns the value of the primary env var, falling back to the
+// secondary env var when the primary is empty.
+func envFallback(primary, fallback string) string {
+	if v := os.Getenv(primary); v != "" {
+		return v
+	}
+	return os.Getenv(fallback)
+}
+
 func newRegisterServerlessCommand() *cobra.Command {
 	opts := &registerServerlessOptions{
-		serverURL: os.Getenv("AGENTS_SERVER"),
-		token:     os.Getenv("AGENTS_TOKEN"),
+		serverURL: envFallback("PLAYGROUND_SERVER", "AGENTS_SERVER"),
+		token:     envFallback("PLAYGROUND_TOKEN", "AGENTS_TOKEN"),
 		timeout:   15 * time.Second,
 	}
 
 	cmd := &cobra.Command{
 		Use:   "register-serverless --url <invocation-url>",
-		Short: "Register a serverless agent by its invocation URL (Lambda/Cloud Functions/Cloud Run)",
-		Long:  "Registers a serverless agent with the control plane by calling its /discover endpoint and storing the invocation URL for on-demand execution.",
+		Short: "Register a serverless bot by its invocation URL (Lambda/Cloud Functions/Cloud Run)",
+		Long:  "Registers a serverless bot with the control plane by calling its /discover endpoint and storing the invocation URL for on-demand execution.",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			if opts.invocationURL == "" {
 				return fmt.Errorf("--url is required")
@@ -100,17 +109,17 @@ func newRegisterServerlessCommand() *cobra.Command {
 			}
 
 			if nodeID != "" {
-				fmt.Printf("Registered serverless agent: %s\n", nodeID)
+				fmt.Printf("Registered serverless bot: %s\n", nodeID)
 			} else {
-				fmt.Println("Registered serverless agent")
+				fmt.Println("Registered serverless bot")
 			}
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&opts.invocationURL, "url", "", "Invocation URL for the serverless function (required)")
-	cmd.Flags().StringVar(&opts.serverURL, "server", opts.serverURL, "Control plane URL (default: http://localhost:8080 or $AGENTS_SERVER)")
-	cmd.Flags().StringVar(&opts.token, "token", opts.token, "Bearer token for the control plane (default: $AGENTS_TOKEN)")
+	cmd.Flags().StringVar(&opts.serverURL, "server", opts.serverURL, "Control plane URL (default: http://localhost:8080 or $PLAYGROUND_SERVER)")
+	cmd.Flags().StringVar(&opts.token, "token", opts.token, "Bearer token for the control plane (default: $PLAYGROUND_TOKEN)")
 	cmd.Flags().DurationVar(&opts.timeout, "timeout", opts.timeout, "HTTP timeout for discovery/registration")
 	cmd.Flags().BoolVar(&opts.jsonOutput, "json", false, "Print raw JSON response")
 

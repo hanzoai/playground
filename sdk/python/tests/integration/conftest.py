@@ -18,7 +18,7 @@ import requests
 import uvicorn
 
 if TYPE_CHECKING:
-    from playground.agent import Agent
+    from playground.bot import Agent
 
 
 def _find_free_port() -> int:

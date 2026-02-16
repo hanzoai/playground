@@ -18,9 +18,9 @@ func NewLocalConfigStorage(fs interfaces.FileSystemAdapter) interfaces.ConfigSto
 	return &LocalConfigStorage{fs: fs}
 }
 
-func (s *LocalConfigStorage) LoadAgentsConfig(path string) (*domain.AgentsConfig, error) {
+func (s *LocalConfigStorage) LoadPlaygroundConfig(path string) (*domain.PlaygroundConfig, error) {
 	if !s.fs.Exists(path) {
-		return &domain.AgentsConfig{
+		return &domain.PlaygroundConfig{
 			HomeDir:     filepath.Dir(path),
 			Environment: make(map[string]string),
 			MCP: domain.MCPConfig{
@@ -34,7 +34,7 @@ func (s *LocalConfigStorage) LoadAgentsConfig(path string) (*domain.AgentsConfig
 		return nil, err
 	}
 
-	var config domain.AgentsConfig
+	var config domain.PlaygroundConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *LocalConfigStorage) LoadAgentsConfig(path string) (*domain.AgentsConfig
 	return &config, nil
 }
 
-func (s *LocalConfigStorage) SaveAgentsConfig(path string, config *domain.AgentsConfig) error {
+func (s *LocalConfigStorage) SavePlaygroundConfig(path string, config *domain.PlaygroundConfig) error {
 	data, err := yaml.Marshal(config)
 	if err != nil {
 		return err

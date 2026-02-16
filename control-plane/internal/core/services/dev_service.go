@@ -200,8 +200,8 @@ func (ds *DefaultDevService) startDevProcess(packagePath string, port int, optio
 	if port > 0 {
 		env = append(env, fmt.Sprintf("PORT=%d", port))
 	}
-	env = append(env, "AGENTS_SERVER_URL=http://localhost:8080")
-	env = append(env, "AGENTS_DEV_MODE=true")
+	env = append(env, "PLAYGROUND_SERVER_URL=http://localhost:8080")
+	env = append(env, "PLAYGROUND_DEV_MODE=true")
 
 	// Load environment variables from package .env file
 	if envVars, err := ds.loadDevEnvFile(packagePath); err == nil {

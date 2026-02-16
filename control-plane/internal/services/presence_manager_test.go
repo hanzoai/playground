@@ -294,20 +294,20 @@ func TestPresenceManager_RecoverFromDatabase_WithNodes(t *testing.T) {
 	recentHeartbeat := time.Now().Add(-1 * time.Second)
 	staleHeartbeat := time.Now().Add(-1 * time.Hour)
 
-	agent1 := &types.AgentNode{
+	agent1 := &types.Node{
 		ID:            "agent-recent",
 		BaseURL:       "http://localhost:8001",
 		LastHeartbeat: recentHeartbeat,
 	}
-	agent2 := &types.AgentNode{
+	agent2 := &types.Node{
 		ID:            "agent-stale",
 		BaseURL:       "http://localhost:8002",
 		LastHeartbeat: staleHeartbeat,
 	}
 
-	err := provider.RegisterAgent(ctx, agent1)
+	err := provider.RegisterNode(ctx, agent1)
 	require.NoError(t, err)
-	err = provider.RegisterAgent(ctx, agent2)
+	err = provider.RegisterNode(ctx, agent2)
 	require.NoError(t, err)
 
 	// Recover from database
@@ -339,13 +339,13 @@ func TestPresenceManager_RecoverFromDatabase_PreservesHeartbeatTimestamps(t *tes
 
 	// Create an agent with a specific heartbeat time
 	heartbeatTime := time.Now().Add(-30 * time.Second)
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:            "agent-with-timestamp",
 		BaseURL:       "http://localhost:8001",
 		LastHeartbeat: heartbeatTime,
 	}
 
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Recover from database
@@ -367,13 +367,13 @@ func TestPresenceManager_RecoverFromDatabase_SkipsNilNodes(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a valid agent
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:            "valid-agent",
 		BaseURL:       "http://localhost:8001",
 		LastHeartbeat: time.Now(),
 	}
 
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Recover from database - should not panic on nil nodes

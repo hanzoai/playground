@@ -18,7 +18,7 @@ import (
 )
 
 func TestCheckStorageHealthOverride(t *testing.T) {
-	srv := &AgentsServer{
+	srv := &PlaygroundServer{
 		storageHealthOverride: func(context.Context) gin.H {
 			return gin.H{"status": "healthy"}
 		},
@@ -31,7 +31,7 @@ func TestCheckStorageHealthOverride(t *testing.T) {
 }
 
 func TestCheckStorageHealthWithoutStorage(t *testing.T) {
-	srv := &AgentsServer{}
+	srv := &PlaygroundServer{}
 	result := srv.checkStorageHealth(context.Background())
 	if status, ok := result["status"].(string); !ok || status != "healthy" {
 		t.Fatalf("expected default healthy status when storage nil, got %+v", result)
@@ -39,7 +39,7 @@ func TestCheckStorageHealthWithoutStorage(t *testing.T) {
 }
 
 func TestCheckStorageHealthContextError(t *testing.T) {
-	srv := &AgentsServer{}
+	srv := &PlaygroundServer{}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -108,7 +108,7 @@ func (c *fakeCache) Publish(channel string, message interface{}) error {
 
 func TestCheckCacheHealthHealthy(t *testing.T) {
 	cache := newFakeCache()
-	srv := &AgentsServer{cache: cache}
+	srv := &PlaygroundServer{cache: cache}
 
 	result := srv.checkCacheHealth(context.Background())
 	if status, ok := result["status"].(string); !ok || status != "healthy" {
@@ -119,7 +119,7 @@ func TestCheckCacheHealthHealthy(t *testing.T) {
 func TestCheckCacheHealthSetError(t *testing.T) {
 	cache := newFakeCache()
 	cache.setErr = context.DeadlineExceeded
-	srv := &AgentsServer{cache: cache}
+	srv := &PlaygroundServer{cache: cache}
 
 	result := srv.checkCacheHealth(context.Background())
 	if status, ok := result["status"].(string); !ok || status != "unhealthy" {
@@ -130,7 +130,7 @@ func TestCheckCacheHealthSetError(t *testing.T) {
 func TestCheckCacheHealthGetError(t *testing.T) {
 	cache := newFakeCache()
 	cache.getErr = context.DeadlineExceeded
-	srv := &AgentsServer{cache: cache}
+	srv := &PlaygroundServer{cache: cache}
 
 	result := srv.checkCacheHealth(context.Background())
 	if status, ok := result["status"].(string); !ok || status != "unhealthy" {
@@ -140,7 +140,7 @@ func TestCheckCacheHealthGetError(t *testing.T) {
 
 func TestHealthCheckHandlerHealthy(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	srv := &AgentsServer{
+	srv := &PlaygroundServer{
 		storageHealthOverride: func(context.Context) gin.H { return gin.H{"status": "healthy"} },
 		cacheHealthOverride:   func(context.Context) gin.H { return gin.H{"status": "healthy"} },
 	}
@@ -167,7 +167,7 @@ func TestHealthCheckHandlerHealthy(t *testing.T) {
 
 func TestHealthCheckHandlerCacheOptional(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	srv := &AgentsServer{
+	srv := &PlaygroundServer{
 		storageHealthOverride: func(context.Context) gin.H { return gin.H{"status": "healthy"} },
 	}
 
@@ -195,7 +195,7 @@ func TestHealthCheckHandlerCacheOptional(t *testing.T) {
 
 func TestHealthCheckHandlerUnhealthyStorage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	srv := &AgentsServer{
+	srv := &PlaygroundServer{
 		storageHealthOverride: func(context.Context) gin.H { return gin.H{"status": "unhealthy"} },
 		cacheHealthOverride:   func(context.Context) gin.H { return gin.H{"status": "healthy"} },
 	}
@@ -214,7 +214,7 @@ func TestHealthCheckHandlerUnhealthyStorage(t *testing.T) {
 
 func TestHealthCheckHandlerWithoutStorage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	srv := &AgentsServer{}
+	srv := &PlaygroundServer{}
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -228,13 +228,13 @@ func TestHealthCheckHandlerWithoutStorage(t *testing.T) {
 	}
 }
 
-func TestGenerateAgentsServerIDDeterministic(t *testing.T) {
+func TestGeneratePlaygroundServerIDDeterministic(t *testing.T) {
 	dir1 := filepath.Join("/tmp", "agents-test-1")
 	dir2 := filepath.Join("/tmp", "agents-test-2")
 
-	id1 := generateAgentsServerID(dir1)
-	id1Again := generateAgentsServerID(dir1)
-	id2 := generateAgentsServerID(dir2)
+	id1 := generatePlaygroundServerID(dir1)
+	id1Again := generatePlaygroundServerID(dir1)
+	id2 := generatePlaygroundServerID(dir2)
 
 	if id1 != id1Again {
 		t.Fatal("expected deterministic ID for same path")
@@ -246,7 +246,7 @@ func TestGenerateAgentsServerIDDeterministic(t *testing.T) {
 
 func TestUnregisterAgentFromMonitoring_NoNodeID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	srv := &AgentsServer{}
+	srv := &PlaygroundServer{}
 
 	router := gin.New()
 	router.DELETE("/nodes/:node_id/monitoring", srv.unregisterAgentFromMonitoring)
@@ -262,7 +262,7 @@ func TestUnregisterAgentFromMonitoring_NoNodeID(t *testing.T) {
 
 func TestUnregisterAgentFromMonitoring_NoMonitor(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	srv := &AgentsServer{}
+	srv := &PlaygroundServer{}
 
 	router := gin.New()
 	router.DELETE("/nodes/:node_id/monitoring", srv.unregisterAgentFromMonitoring)
@@ -307,7 +307,7 @@ func TestSyncPackagesFromRegistry(t *testing.T) {
 	}
 
 	if len(storage.getCalls) == 0 {
-		t.Fatalf("expected GetAgentPackage to be called, got %d", len(storage.getCalls))
+		t.Fatalf("expected GetBotPackage to be called, got %d", len(storage.getCalls))
 	}
 }
 

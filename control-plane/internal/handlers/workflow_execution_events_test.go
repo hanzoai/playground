@@ -18,14 +18,14 @@ import (
 func TestWorkflowExecutionEventHandler_CreateAndUpdate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	storage := newTestExecutionStorage(&types.AgentNode{ID: "deep_research"})
+	storage := newTestExecutionStorage(&types.Node{ID: "deep_research"})
 	handler := WorkflowExecutionEventHandler(storage)
 
 	startPayload := WorkflowExecutionEventRequest{
 		ExecutionID: "exec_child",
 		RunID:       "run_123",
 		BotID:  "understand_query_deeply",
-		AgentNodeID: "deep_research",
+		NodeID: "deep_research",
 		Status:      "running",
 		InputData: map[string]interface{}{
 			"arg": "value",
@@ -59,7 +59,7 @@ func TestWorkflowExecutionEventHandler_CreateAndUpdate(t *testing.T) {
 		ExecutionID: "exec_child",
 		RunID:       "run_123",
 		BotID:  "understand_query_deeply",
-		AgentNodeID: "deep_research",
+		NodeID: "deep_research",
 		Status:      "succeeded",
 		Result:      resultPayload,
 		DurationMS:  &duration,

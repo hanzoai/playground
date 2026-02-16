@@ -17,14 +17,13 @@ func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	sessionID := "session-1"
 	userID := "user-1"
-	nodeID := "node-1"
 	errMsg := "example failure"
 	usd := 1.23
 
-	exec := &types.AgentExecution{
+	exec := &types.BotExecution{
 		WorkflowID:   "workflow-alpha",
 		SessionID:    &sessionID,
-		AgentNodeID:  "agent-1",
+		NodeID:       "agent-1",
 		BotID:   "bot.alpha",
 		InputData:    json.RawMessage(`{"prompt":"hello"}`),
 		OutputData:   json.RawMessage(`{"result":"world"}`),
@@ -34,7 +33,6 @@ func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
 		Status:       "succeeded",
 		ErrorMessage: &errMsg,
 		UserID:       &userID,
-		NodeID:       &nodeID,
 		Metadata: types.ExecutionMetadata{
 			Cost: &types.CostMetadata{USD: &usd, Currency: "USD"},
 			Custom: map[string]interface{}{
@@ -51,7 +49,7 @@ func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, exec.ID, stored.ID)
 	require.Equal(t, exec.WorkflowID, stored.WorkflowID)
-	require.Equal(t, exec.AgentNodeID, stored.AgentNodeID)
+	require.Equal(t, exec.NodeID, stored.NodeID)
 	require.Equal(t, exec.BotID, stored.BotID)
 	require.Equal(t, exec.Status, stored.Status)
 	require.Equal(t, exec.InputSize, stored.InputSize)
@@ -63,8 +61,7 @@ func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
 	require.Equal(t, errMsg, *stored.ErrorMessage)
 	require.NotNil(t, stored.UserID)
 	require.Equal(t, userID, *stored.UserID)
-	require.NotNil(t, stored.NodeID)
-	require.Equal(t, nodeID, *stored.NodeID)
+	require.Equal(t, "agent-1", stored.NodeID)
 	require.WithinDuration(t, exec.CreatedAt, stored.CreatedAt, time.Second)
 
 	require.NotNil(t, stored.Metadata.Cost)
@@ -82,11 +79,11 @@ func TestLocalStorageQueryExecutionsAppliesFilters(t *testing.T) {
 	sessionA := "session-a"
 	sessionB := "session-b"
 
-	executions := []*types.AgentExecution{
+	executions := []*types.BotExecution{
 		{
 			WorkflowID:  "workflow-shared",
 			SessionID:   &sessionA,
-			AgentNodeID: "agent-A",
+			NodeID: "agent-A",
 			BotID:  "bot.alpha",
 			InputData:   json.RawMessage(`{"seed":1}`),
 			OutputData:  json.RawMessage(`{"out":1}`),
@@ -99,7 +96,7 @@ func TestLocalStorageQueryExecutionsAppliesFilters(t *testing.T) {
 		{
 			WorkflowID:  "workflow-shared",
 			SessionID:   &sessionB,
-			AgentNodeID: "agent-B",
+			NodeID: "agent-B",
 			BotID:  "bot.beta",
 			InputData:   json.RawMessage(`{"seed":2}`),
 			OutputData:  json.RawMessage(`{"out":2}`),
@@ -125,11 +122,11 @@ func TestLocalStorageQueryExecutionsAppliesFilters(t *testing.T) {
 	require.Len(t, filtered, 1)
 	require.Equal(t, statusRunning, filtered[0].Status)
 
-	agentNode := "agent-B"
-	filtered, err = ls.QueryExecutions(ctx, types.ExecutionFilters{AgentNodeID: &agentNode})
+	node := "agent-B"
+	filtered, err = ls.QueryExecutions(ctx, types.ExecutionFilters{NodeID: &node})
 	require.NoError(t, err)
 	require.Len(t, filtered, 1)
-	require.Equal(t, "agent-B", filtered[0].AgentNodeID)
+	require.Equal(t, "agent-B", filtered[0].NodeID)
 
 	limitResults, err := ls.QueryExecutions(ctx, types.ExecutionFilters{Limit: 1, Offset: 1})
 	require.NoError(t, err)
@@ -143,7 +140,7 @@ func TestLocalStorageStoreExecutionHonoursContextCancellation(t *testing.T) {
 	cancelledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 
-	err := ls.StoreExecution(cancelledCtx, &types.AgentExecution{WorkflowID: "wf", AgentNodeID: "agent", BotID: "r", CreatedAt: time.Now()})
+	err := ls.StoreExecution(cancelledCtx, &types.BotExecution{WorkflowID: "wf", NodeID: "agent", BotID: "r", CreatedAt: time.Now()})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "context cancelled")
 }

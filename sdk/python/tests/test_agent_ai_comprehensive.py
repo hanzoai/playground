@@ -1,5 +1,5 @@
 """
-Comprehensive tests for AgentAI covering critical execution paths.
+Comprehensive tests for BotAI covering critical execution paths.
 """
 
 import json
@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from playground.agent_ai import AgentAI
+from playground.bot_ai import BotAI
 from tests.helpers import StubAgent
 
 
@@ -99,7 +99,7 @@ async def test_ai_request_building_with_different_models(monkeypatch, agent_with
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response("test response")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     # Test with default model
     result = await ai.ai("test prompt")
@@ -118,7 +118,7 @@ async def test_ai_response_parsing_and_error_handling(monkeypatch, agent_with_ai
     """Test response parsing and error handling."""
     litellm_module = setup_litellm_stub(monkeypatch)
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     # Test successful response
     litellm_module.acompletion.return_value = make_chat_response("success")
@@ -145,7 +145,7 @@ async def test_ai_streaming_response(monkeypatch, agent_with_ai):
 
     litellm_module.acompletion.return_value = stream_generator()
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     result = await ai.ai("test", stream=True)
 
     # Should return a generator/async iterator
@@ -158,7 +158,7 @@ async def test_ai_multimodal_input_processing(monkeypatch, agent_with_ai):
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response("image analyzed")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     # Test with image URL
     result = await ai.ai("https://example.com/image.jpg", "What's in this image?")
@@ -175,7 +175,7 @@ async def test_ai_error_recovery_and_retry(monkeypatch, agent_with_ai):
     """Test error recovery and retry logic."""
     litellm_module = setup_litellm_stub(monkeypatch)
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     # Test retry on rate limit error
     call_count = 0
@@ -214,7 +214,7 @@ async def test_ai_with_schema_validation(monkeypatch, agent_with_ai):
         '{"name": "John", "age": 30}'
     )
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     result = await ai.ai("test", schema=TestSchema)
 
     assert isinstance(result, TestSchema)
@@ -232,7 +232,7 @@ async def test_ai_with_memory_injection(monkeypatch, agent_with_ai):
     agent_with_ai.memory.get = MagicMock(return_value={"key": "value"})
     agent_with_ai.memory.get_all = MagicMock(return_value=[{"key": "value"}])
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     result = await ai.ai("test", memory_scope=["workflow", "session"])
 
     assert result.text == "response"
@@ -246,7 +246,7 @@ async def test_ai_with_context_parameter(monkeypatch, agent_with_ai):
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response("response")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     context = {"user_id": "123", "session_id": "abc"}
 
     result = await ai.ai("test", context=context)
@@ -269,7 +269,7 @@ async def test_ai_model_limits_caching(monkeypatch, agent_with_ai):
         side_effect=original_get_model_limits
     )
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     # First call should cache limits
     await ai.ai("test")
@@ -293,7 +293,7 @@ async def test_ai_fallback_models(monkeypatch, agent_with_ai):
     litellm_module.acompletion.side_effect = fail_then_succeed
     agent_with_ai.ai_config.fallback_models = ["openai/gpt-3.5-turbo"]
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     # Should try fallback model
     result = await ai.ai("test")
@@ -307,7 +307,7 @@ async def test_ai_temperature_override(monkeypatch, agent_with_ai):
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response("response")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     await ai.ai("test", temperature=0.9)
 
     call_args = litellm_module.acompletion.call_args
@@ -320,7 +320,7 @@ async def test_ai_max_tokens_override(monkeypatch, agent_with_ai):
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response("response")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     await ai.ai("test", max_tokens=200)
 
     call_args = litellm_module.acompletion.call_args
@@ -333,7 +333,7 @@ async def test_ai_response_format_json(monkeypatch, agent_with_ai):
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response('{"key": "value"}')
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     result = await ai.ai("test", response_format="json")
 
     # Should parse JSON
@@ -348,7 +348,7 @@ async def test_ai_system_and_user_prompts(monkeypatch, agent_with_ai):
     litellm_module = setup_litellm_stub(monkeypatch)
     litellm_module.acompletion.return_value = make_chat_response("response")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     await ai.ai(system="You are a helpful assistant", user="What is 2+2?")
 
     call_args = litellm_module.acompletion.call_args

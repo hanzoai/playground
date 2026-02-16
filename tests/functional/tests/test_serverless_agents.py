@@ -1,9 +1,9 @@
 """
-End-to-end validation for serverless agent nodes across SDKs.
+End-to-end validation for serverless bot nodes across SDKs.
 
 Each test spins up a lightweight serverless handler (Python, TypeScript, Go),
 registers it through the control plane's `/nodes/register-serverless` endpoint,
-and executes a reasoner via the normal execution gateway to ensure discovery,
+and executes a bot via the normal execution gateway to ensure discovery,
 invocation, and parent/child call wiring all work without heartbeats.
 """
 
@@ -22,15 +22,21 @@ from typing import AsyncIterator, Optional, Tuple
 
 import pytest
 import uvicorn
-from playground import Agent
+from playground import Bot
 from playground.async_config import AsyncConfig
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from utils import run_go_agent, unique_node_id
+from utils import run_go_bot, unique_node_id
 
-TEST_BIND_HOST = os.environ.get("TEST_AGENT_BIND_HOST", "0.0.0.0")
-TEST_CALLBACK_HOST = os.environ.get("TEST_AGENT_CALLBACK_HOST", "test-runner")
+TEST_BIND_HOST = os.environ.get(
+    "TEST_BOT_BIND_HOST",
+    os.environ.get("TEST_AGENT_BIND_HOST", "0.0.0.0"),
+)
+TEST_CALLBACK_HOST = os.environ.get(
+    "TEST_BOT_CALLBACK_HOST",
+    os.environ.get("TEST_AGENT_CALLBACK_HOST", "test-runner"),
+)
 
 
 def _get_free_port(host: str = TEST_BIND_HOST) -> int:
@@ -64,7 +70,7 @@ async def _register_serverless(_async_http_client, invocation_url: str, *, retri
     """
     Register a serverless function using the CLI exactly as documented.
 
-    The control plane Docker image already builds and installs the CLI as `af`,
+    The control plane Docker image already builds and installs the CLI as `playground`,
     so we treat a missing CLI as a hard failure rather than silently falling
     back to the HTTP API. Retries help absorb the control plane coming online.
     """
@@ -76,31 +82,33 @@ async def _register_serverless(_async_http_client, invocation_url: str, *, retri
         last_error = cli_result
         await asyncio.sleep(0.5)
 
-    raise AssertionError(f"af nodes register-serverless failed: {last_error}")
+    raise AssertionError(f"playground nodes register-serverless failed: {last_error}")
 
 
 async def _register_serverless_via_cli(invocation_url: str):
-    bin_override = os.environ.get("AF_BIN") or os.environ.get("AGENTS_CLI")
+    bin_override = os.environ.get("PLAYGROUND_CLI") or os.environ.get("AF_BIN") or os.environ.get("AGENTS_CLI")
     candidates = [bin_override] if bin_override else []
-    candidates.extend(["af", "playground"])
+    candidates.extend(["playground", "af"])
 
-    af_bin: Optional[str] = None
+    cli_bin: Optional[str] = None
     for candidate in candidates:
         if not candidate:
             continue
         path = shutil.which(candidate)
         if path:
-            af_bin = path
+            cli_bin = path
             break
 
-    if not af_bin:
+    if not cli_bin:
         return {"ok": False, "error": "missing-cli", "candidates": candidates}
 
     env = os.environ.copy()
-    env.setdefault("AGENTS_SERVER", env.get("CONTROL_PLANE_URL", "http://localhost:8080"))
-    token = env.get("AGENTS_TOKEN")
+    env.setdefault("PLAYGROUND_SERVER", env.get("CONTROL_PLANE_URL", "http://localhost:8080"))
+    # Backward-compatible fallback
+    env.setdefault("AGENTS_SERVER", env.get("PLAYGROUND_SERVER", "http://localhost:8080"))
+    token = env.get("PLAYGROUND_TOKEN") or env.get("AGENTS_TOKEN")
 
-    cmd = [af_bin, "nodes", "register-serverless", "--url", invocation_url, "--json"]
+    cmd = [cli_bin, "nodes", "register-serverless", "--url", invocation_url, "--json"]
     if token:
         cmd.extend(["--token", token])
 
@@ -134,11 +142,11 @@ async def _register_serverless_via_cli(invocation_url: str):
 
 
 @asynccontextmanager
-async def run_python_serverless_agent(node_id: str, control_plane_url: str) -> AsyncIterator[str]:
+async def run_python_serverless_bot(node_id: str, control_plane_url: str) -> AsyncIterator[str]:
     """
-    Start a lightweight FastAPI wrapper that delegates to Agent.handle_serverless.
+    Start a lightweight FastAPI wrapper that delegates to Bot.handle_serverless.
     """
-    app = Agent(
+    bot = Bot(
         node_id=node_id,
         playground_server=control_plane_url,
         auto_register=False,
@@ -146,9 +154,9 @@ async def run_python_serverless_agent(node_id: str, control_plane_url: str) -> A
         async_config=AsyncConfig(enable_async_execution=False, fallback_to_sync=True),
     )
 
-    @app.reasoner()
+    @bot.bot()
     async def hello(name: str = "Playground") -> dict:  # type: ignore[return-type]
-        ctx = app.ctx
+        ctx = bot.ctx
         return {
             "greeting": f"Hello, {name}!",
             "run_id": getattr(ctx, "workflow_id", None),
@@ -156,21 +164,21 @@ async def run_python_serverless_agent(node_id: str, control_plane_url: str) -> A
             "parent_execution_id": getattr(ctx, "parent_execution_id", None),
         }
 
-    @app.reasoner()
+    @bot.bot()
     async def relay(target: str, message: str = "ping") -> dict:  # type: ignore[return-type]
-        downstream = await app.call(target, name=message)
-        return {"downstream": downstream, "parent_execution_id": getattr(app.ctx, "execution_id", None)}
+        downstream = await bot.call(target, name=message)
+        return {"downstream": downstream, "parent_execution_id": getattr(bot.ctx, "execution_id", None)}
 
     fastapi_app = FastAPI()
 
     @fastapi_app.get("/discover")
     async def discover():
-        return await asyncio.to_thread(app.handle_serverless, {"path": "/discover"})
+        return await asyncio.to_thread(bot.handle_serverless, {"path": "/discover"})
 
     async def _handle(request: Request, override_path: Optional[str] = None):
         payload = await request.json()
         path = override_path or payload.get("path") or "/execute"
-        result = await asyncio.to_thread(app.handle_serverless, {"path": path, **payload})
+        result = await asyncio.to_thread(bot.handle_serverless, {"path": path, **payload})
         status = result.get("statusCode", 200)
         body = result.get("body", result)
         return JSONResponse(content=body, status_code=status)
@@ -212,7 +220,7 @@ async def run_python_serverless_agent(node_id: str, control_plane_url: str) -> A
 
 
 @asynccontextmanager
-async def run_ts_serverless_agent(node_id: str, control_plane_url: str) -> AsyncIterator[Tuple[str, asyncio.subprocess.Process]]:
+async def run_ts_serverless_bot(node_id: str, control_plane_url: str) -> AsyncIterator[Tuple[str, asyncio.subprocess.Process]]:
     port = _get_free_port()
     env = os.environ.copy()
     env.update(
@@ -220,11 +228,13 @@ async def run_ts_serverless_agent(node_id: str, control_plane_url: str) -> Async
             "TS_AGENT_ID": node_id,
             "TS_AGENT_PORT": str(port),
             "TS_AGENT_BIND_HOST": TEST_BIND_HOST,
+            "PLAYGROUND_SERVER": control_plane_url,
+            # Backward-compatible fallback
             "AGENTS_SERVER": control_plane_url,
         }
     )
     env.setdefault("NODE_PATH", "/usr/local/lib/node_modules:/usr/lib/node_modules")
-    script_path = Path(__file__).resolve().parent.parent / "ts_agents" / "serverless-agent.mjs"
+    script_path = Path(__file__).resolve().parent.parent / "ts_bots" / "serverless-agent.mjs"
 
     process = await asyncio.create_subprocess_exec(
         "node",
@@ -248,31 +258,35 @@ async def run_ts_serverless_agent(node_id: str, control_plane_url: str) -> Async
 
 
 @asynccontextmanager
-async def run_go_serverless_agent(node_id: str, control_plane_url: str) -> AsyncIterator[str]:
+async def run_go_serverless_bot(node_id: str, control_plane_url: str) -> AsyncIterator[str]:
     port = _get_free_port()
     env = {
         **os.environ,
+        "HANZO_NODE_ID": node_id,
+        "PLAYGROUND_URL": control_plane_url,
+        "PORT": str(port),
+        "PLAYGROUND_TOKEN": os.environ.get("PLAYGROUND_TOKEN", os.environ.get("AGENTS_TOKEN", "")),
+        # Backward-compatible fallback for older Go SDK binaries
         "AGENT_NODE_ID": node_id,
         "AGENTS_URL": control_plane_url,
-        "PORT": str(port),
         "AGENTS_TOKEN": os.environ.get("AGENTS_TOKEN", ""),
     }
 
-    async with run_go_agent("serverless", env=env) as proc:
+    async with run_go_bot("serverless", env=env) as proc:
         await _wait_for_port("127.0.0.1", port, process=proc.process)
         yield f"http://{TEST_CALLBACK_HOST}:{port}"
 
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_python_serverless_agent_registers_and_executes(async_http_client, control_plane_url):
+async def test_python_serverless_bot_registers_and_executes(async_http_client, control_plane_url):
     node_id = unique_node_id("py-svless")
 
-    async with run_python_serverless_agent(node_id, control_plane_url) as invocation_url:
+    async with run_python_serverless_bot(node_id, control_plane_url) as invocation_url:
         await _register_serverless(async_http_client, invocation_url)
 
         resp = await async_http_client.post(
-            f"/api/v1/reasoners/{node_id}.hello",
+            f"/api/v1/bots/{node_id}.hello",
             json={"input": {"name": "Lambda"}},
             timeout=30.0,
         )
@@ -280,7 +294,7 @@ async def test_python_serverless_agent_registers_and_executes(async_http_client,
         body = resp.json()
         result = body.get("result", {})
         assert result.get("greeting") == "Hello, Lambda!"
-        assert result.get("execution_id"), "execution_id should propagate to serverless reasoner"
+        assert result.get("execution_id"), "execution_id should propagate to serverless bot"
 
 
 @pytest.mark.functional
@@ -289,33 +303,33 @@ async def test_serverless_python_chain_calls(async_http_client, control_plane_ur
     child_id = unique_node_id("py-svless-child")
     parent_id = unique_node_id("py-svless-parent")
 
-    async with run_python_serverless_agent(child_id, control_plane_url) as child_url:
+    async with run_python_serverless_bot(child_id, control_plane_url) as child_url:
         await _register_serverless(async_http_client, child_url)
 
-        async with run_python_serverless_agent(parent_id, control_plane_url) as parent_url:
+        async with run_python_serverless_bot(parent_id, control_plane_url) as parent_url:
             await _register_serverless(async_http_client, parent_url)
 
             resp = await async_http_client.post(
-                f"/api/v1/reasoners/{parent_id}.relay",
+                f"/api/v1/bots/{parent_id}.relay",
                 json={"input": {"target": f"{child_id}.hello", "message": "hi-child"}},
                 timeout=40.0,
             )
             assert resp.status_code == 200, resp.text
             result = resp.json().get("result", {})
             assert result.get("downstream", {}).get("greeting") == "Hello, hi-child!"
-            assert result.get("parent_execution_id"), "parent execution id should be set on relay reasoner"
+            assert result.get("parent_execution_id"), "parent execution id should be set on relay bot"
 
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_typescript_serverless_agent(async_http_client, control_plane_url):
+async def test_typescript_serverless_bot(async_http_client, control_plane_url):
     node_id = unique_node_id("ts-svless")
 
-    async with run_ts_serverless_agent(node_id, control_plane_url) as (invocation_url, process):
+    async with run_ts_serverless_bot(node_id, control_plane_url) as (invocation_url, process):
         await _register_serverless(async_http_client, invocation_url)
 
         resp = await async_http_client.post(
-            f"/api/v1/reasoners/{node_id}.hello",
+            f"/api/v1/bots/{node_id}.hello",
             json={"input": {"name": "TS Lambda"}},
             timeout=30.0,
         )
@@ -338,17 +352,17 @@ async def test_typescript_serverless_chain(async_http_client, control_plane_url)
     child_id = unique_node_id("ts-svless-child")
     parent_id = unique_node_id("ts-svless-parent")
 
-    async with run_ts_serverless_agent(child_id, control_plane_url) as (child_url, child_process):
+    async with run_ts_serverless_bot(child_id, control_plane_url) as (child_url, child_process):
         await _register_serverless(async_http_client, child_url)
 
-        async with run_ts_serverless_agent(parent_id, control_plane_url) as (
+        async with run_ts_serverless_bot(parent_id, control_plane_url) as (
             parent_url,
             parent_process,
         ):
             await _register_serverless(async_http_client, parent_url)
 
             resp = await async_http_client.post(
-                f"/api/v1/reasoners/{parent_id}.relay",
+                f"/api/v1/bots/{parent_id}.relay",
                 json={"input": {"target": f"{child_id}.hello", "name": "ts-child"}},
                 timeout=40.0,
             )
@@ -377,14 +391,14 @@ async def test_typescript_serverless_chain(async_http_client, control_plane_url)
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_go_serverless_agent(async_http_client, control_plane_url):
+async def test_go_serverless_bot(async_http_client, control_plane_url):
     node_id = unique_node_id("go-svless")
 
-    async with run_go_serverless_agent(node_id, control_plane_url) as invocation_url:
+    async with run_go_serverless_bot(node_id, control_plane_url) as invocation_url:
         await _register_serverless(async_http_client, invocation_url)
 
         resp = await async_http_client.post(
-            f"/api/v1/reasoners/{node_id}.hello",
+            f"/api/v1/bots/{node_id}.hello",
             json={"input": {"name": "gopher"}},
             timeout=30.0,
         )
@@ -400,14 +414,14 @@ async def test_go_serverless_chain(async_http_client, control_plane_url):
     child_id = unique_node_id("go-svless-child")
     parent_id = unique_node_id("go-svless-parent")
 
-    async with run_go_serverless_agent(child_id, control_plane_url) as child_url:
+    async with run_go_serverless_bot(child_id, control_plane_url) as child_url:
         await _register_serverless(async_http_client, child_url)
 
-        async with run_go_serverless_agent(parent_id, control_plane_url) as parent_url:
+        async with run_go_serverless_bot(parent_id, control_plane_url) as parent_url:
             await _register_serverless(async_http_client, parent_url)
 
             resp = await async_http_client.post(
-                f"/api/v1/reasoners/{parent_id}.relay",
+                f"/api/v1/bots/{parent_id}.relay",
                 json={"input": {"target": f"{child_id}.hello", "message": "gopher-child"}},
                 timeout=40.0,
             )

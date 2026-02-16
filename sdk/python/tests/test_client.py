@@ -7,7 +7,7 @@ import pytest
 import requests
 
 from playground.client import PlaygroundClient
-from playground.types import AgentStatus, HeartbeatData
+from playground.types import BotStatus, HeartbeatData
 
 
 @pytest.fixture(autouse=True)
@@ -106,11 +106,11 @@ def test_execute_sync_injects_run_id(monkeypatch):
     monkeypatch.setattr(client_mod.requests, "get", fake_get)
 
     client = PlaygroundClient(base_url="http://example.com")
-    result = client.execute_sync("node.reasoner", {"payload": 1})
+    result = client.execute_sync("node.bot", {"payload": 1})
 
     assert result["status"] == "succeeded"
     post_url, post_headers = captured["post"]
-    assert post_url.endswith("/api/v1/execute/async/node.reasoner")
+    assert post_url.endswith("/api/v1/execute/async/node.bot")
     assert post_headers["Content-Type"] == "application/json"
     assert post_headers["X-Run-ID"].startswith("run_")
     get_url, get_headers = captured["get"]
@@ -150,7 +150,7 @@ def test_execute_sync_respects_parent_header(monkeypatch):
 
     client = PlaygroundClient(base_url="http://example.com")
     result = client.execute_sync(
-        "node.reasoner",
+        "node.bot",
         {"payload": 1},
         headers={"X-Run-ID": "run-parent", "X-Parent-Execution-ID": "exec-parent"},
     )
@@ -183,7 +183,7 @@ def test_execute_async_uses_httpx(monkeypatch):
     install_httpx_stub(monkeypatch, on_request=on_request)
 
     client = PlaygroundClient(base_url="http://example.com")
-    result = asyncio.run(client.execute("node.reasoner", {"payload": 1}))
+    result = asyncio.run(client.execute("node.bot", {"payload": 1}))
 
     assert result["result"] == {"async": True}
     assert calls[0][0] == "POST"
@@ -247,7 +247,7 @@ async def test_execute_async_falls_back_to_requests(monkeypatch):
     monkeypatch.setattr(requests.Session, "request", fake_session_request)
 
     client = PlaygroundClient(base_url="http://example.com")
-    result = await client.execute("node.reasoner", {"payload": 1})
+    result = await client.execute("node.bot", {"payload": 1})
 
     assert result["status"] == "succeeded"
     assert captured["post"]["Content-Type"] == "application/json"
@@ -272,7 +272,7 @@ async def test_async_heartbeat(monkeypatch):
     )
 
     client = PlaygroundClient(base_url="http://example.com")
-    heartbeat = HeartbeatData(status=AgentStatus.READY, mcp_servers=[], timestamp="now")
+    heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
 
     assert await client.send_enhanced_heartbeat("node", heartbeat) is True
     assert calls and calls[0][1].endswith("/nodes/node/heartbeat")
@@ -295,7 +295,7 @@ def test_sync_heartbeat(monkeypatch):
     monkeypatch.setattr(client_mod.requests, "post", fake_post)
 
     client = PlaygroundClient(base_url="http://example.com")
-    heartbeat = HeartbeatData(status=AgentStatus.READY, mcp_servers=[], timestamp="now")
+    heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
 
     assert client.send_enhanced_heartbeat_sync("node", heartbeat) is True
     assert client.notify_graceful_shutdown_sync("node") is True
@@ -346,7 +346,7 @@ def test_register_node_and_health(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_register_agent(monkeypatch):
+async def test_register_bot(monkeypatch):
     posted = []
 
     def on_request(method, url, **kwargs):
@@ -356,8 +356,8 @@ async def test_register_agent(monkeypatch):
     install_httpx_stub(monkeypatch, on_request=on_request)
 
     client = PlaygroundClient(base_url="http://example.com")
-    metadata = {"agent_default": True, "reasoner_overrides": {"foo": False}}
-    ok, payload = await client.register_agent(
+    metadata = {"agent_default": True, "bot_overrides": {"foo": False}}
+    ok, payload = await client.register_bot(
         "node-1", [], [], base_url="http://agent", vc_metadata=metadata
     )
     assert ok is True
@@ -366,6 +366,6 @@ async def test_register_agent(monkeypatch):
     assert posted[0][1].endswith("/nodes/register")
     body = posted[0][2]
     assert (
-        body["metadata"]["custom"]["vc_generation"]["reasoner_overrides"]["foo"]
+        body["metadata"]["custom"]["vc_generation"]["bot_overrides"]["foo"]
         is False
     )

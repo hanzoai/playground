@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type express from 'express';
-import type { Agent } from '../agent/Agent.js';
+import { Bot } from '../agent/Bot.js';
 
 export interface ExecutionMetadata {
   executionId: string;
@@ -21,14 +21,14 @@ export class ExecutionContext {
   readonly metadata: ExecutionMetadata;
   readonly req: express.Request;
   readonly res: express.Response;
-  readonly agent: Agent;
+  readonly agent: Bot;
 
   constructor(params: {
     input: any;
     metadata: ExecutionMetadata;
     req: express.Request;
     res: express.Response;
-    agent: Agent;
+    agent: Bot;
   }) {
     this.input = params.input;
     this.metadata = params.metadata;

@@ -80,12 +80,12 @@ func TestListExecutionsHandler(t *testing.T) {
 
 		// Mock data
 		now := time.Now()
-		executions := []*types.AgentExecution{
+		executions := []*types.BotExecution{
 			{
 				ID:          1,
 				WorkflowID:  "workflow-1",
 				SessionID:   stringPtrForExecutions("session-1"),
-				AgentNodeID: "test-agent",
+				NodeID: "test-agent",
 				BotID:  "test-bot",
 				Status:      string(types.ExecutionStatusSucceeded),
 				DurationMS:  1000,
@@ -96,7 +96,7 @@ func TestListExecutionsHandler(t *testing.T) {
 			{
 				ID:           2,
 				WorkflowID:   "workflow-2",
-				AgentNodeID:  "test-agent",
+				NodeID:  "test-agent",
 				BotID:   "test-bot-2",
 				Status:       "failed",
 				DurationMS:   500,
@@ -108,7 +108,7 @@ func TestListExecutionsHandler(t *testing.T) {
 		}
 
 		expectedFilters := types.ExecutionFilters{
-			AgentNodeID: stringPtrForExecutions("test-agent"),
+			NodeID: stringPtrForExecutions("test-agent"),
 			Limit:       10,
 			Offset:      0,
 		}
@@ -137,7 +137,7 @@ func TestListExecutionsHandler(t *testing.T) {
 		assert.Equal(t, int64(1), exec1.ID)
 		assert.Equal(t, "workflow-1", exec1.WorkflowID)
 		assert.Equal(t, "session-1", *exec1.SessionID)
-		assert.Equal(t, "test-agent", exec1.AgentNodeID)
+		assert.Equal(t, "test-agent", exec1.NodeID)
 		assert.Equal(t, string(types.ExecutionStatusSucceeded), exec1.Status)
 
 		mockStorage.AssertExpectations(t)
@@ -146,10 +146,10 @@ func TestListExecutionsHandler(t *testing.T) {
 	t.Run("with_pagination_and_filters", func(t *testing.T) {
 		router, mockStorage := setupExecutionTestRouter()
 
-		executions := []*types.AgentExecution{}
+		executions := []*types.BotExecution{}
 
 		expectedFilters := types.ExecutionFilters{
-			AgentNodeID: stringPtrForExecutions("test-agent"),
+			NodeID: stringPtrForExecutions("test-agent"),
 			Status:      stringPtrForExecutions(string(types.ExecutionStatusSucceeded)),
 			WorkflowID:  stringPtrForExecutions("workflow-1"),
 			Limit:       5,
@@ -195,12 +195,12 @@ func TestListExecutionsHandler(t *testing.T) {
 		router, mockStorage := setupExecutionTestRouter()
 
 		expectedFilters := types.ExecutionFilters{
-			AgentNodeID: stringPtrForExecutions("test-agent"),
+			NodeID: stringPtrForExecutions("test-agent"),
 			Limit:       10,
 			Offset:      0,
 		}
 
-		mockStorage.On("QueryExecutions", mock.AnythingOfType("context.Context"), expectedFilters).Return([]*types.AgentExecution(nil), assert.AnError)
+		mockStorage.On("QueryExecutions", mock.AnythingOfType("context.Context"), expectedFilters).Return([]*types.BotExecution(nil), assert.AnError)
 
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions", nil)
 		w := httptest.NewRecorder()
@@ -226,11 +226,11 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 		inputData := json.RawMessage(`{"input": "test"}`)
 		outputData := json.RawMessage(`{"output": "result"}`)
 
-		execution := &types.AgentExecution{
+		execution := &types.BotExecution{
 			ID:          123,
 			WorkflowID:  "workflow-1",
 			SessionID:   stringPtrForExecutions("session-1"),
-			AgentNodeID: "test-agent",
+			NodeID: "test-agent",
 			BotID:  "test-bot",
 			InputData:   inputData,
 			OutputData:  outputData,
@@ -261,12 +261,12 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 		assert.Equal(t, int64(123), response.ID)
 		assert.Equal(t, "workflow-1", response.WorkflowID)
 		assert.Equal(t, "session-1", *response.SessionID)
-		assert.Equal(t, "test-agent", response.AgentNodeID)
+		assert.Equal(t, "test-agent", response.NodeID)
 		assert.Equal(t, "test-bot", response.BotID)
 		assert.Equal(t, string(types.ExecutionStatusSucceeded), response.Status)
 		assert.Equal(t, 1000, response.DurationMS)
 		// UserID and NodeID are not directly part of ExecutionDetailsResponse in pkg/types,
-		// they are part of AgentExecution. Remove these assertions if not applicable to the response struct.
+		// they are part of BotExecution. Remove these assertions if not applicable to the response struct.
 		// assert.Equal(t, "user-1", *response.UserID)
 		// assert.Equal(t, "node-1", *response.NodeID)
 
@@ -327,7 +327,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 	t.Run("execution_not_found", func(t *testing.T) {
 		router, mockStorage := setupExecutionTestRouter()
 
-		mockStorage.On("GetExecution", mock.AnythingOfType("context.Context"), int64(123)).Return((*types.AgentExecution)(nil), assert.AnError)
+		mockStorage.On("GetExecution", mock.AnythingOfType("context.Context"), int64(123)).Return((*types.BotExecution)(nil), assert.AnError)
 
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions/123", nil)
 		w := httptest.NewRecorder()
@@ -346,9 +346,9 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 	t.Run("execution_belongs_to_different_agent", func(t *testing.T) {
 		router, mockStorage := setupExecutionTestRouter()
 
-		execution := &types.AgentExecution{
+		execution := &types.BotExecution{
 			ID:          123,
-			AgentNodeID: "different-agent",
+			NodeID: "different-agent",
 		}
 
 		mockStorage.On("GetExecution", mock.AnythingOfType("context.Context"), int64(123)).Return(execution, nil)
@@ -378,10 +378,10 @@ func TestGetExecutionDetailsHandler_FallbacksToPayloadStore(t *testing.T) {
 	payloadBytes := []byte("{\"foo\":\"bar\"}")
 	payloadStore.payloads[uri] = payloadBytes
 
-	execution := &types.AgentExecution{
+	execution := &types.BotExecution{
 		ID:          123,
 		WorkflowID:  "workflow-1",
-		AgentNodeID: "agent-1",
+		NodeID: "agent-1",
 		BotID:  "bot-1",
 		InputData:   json.RawMessage("{}"),
 		OutputData:  json.RawMessage("{}"),

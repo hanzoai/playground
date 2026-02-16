@@ -98,7 +98,7 @@ If you need to manually trigger a staging release (e.g., with different options)
 
 ```bash
 # Binary (using --staging flag)
-curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
+curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
 
 # Or directly from GitHub
 curl -fsSL https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh | bash -s -- --staging
@@ -151,7 +151,7 @@ Production releases are **manually triggered** via GitHub Actions workflow dispa
 
 ```bash
 # Binary (recommended)
-curl -fsSL https://playground.ai/install.sh | bash
+curl -fsSL https://hanzo.bot/install.sh | bash
 
 # Python
 pip install playground
@@ -194,28 +194,28 @@ playground-X.Y.Z.tar.gz             # Python source distribution
 
 ```bash
 # Latest stable version
-curl -fsSL https://playground.ai/install.sh | bash
+curl -fsSL https://hanzo.bot/install.sh | bash
 
 # Specific version
-VERSION=v0.1.28 curl -fsSL https://playground.ai/install.sh | bash
+VERSION=v0.1.28 curl -fsSL https://hanzo.bot/install.sh | bash
 ```
 
 ### Staging Install
 
 ```bash
 # Latest prerelease version (using --staging flag)
-curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
+curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
 
 # Or using environment variable
-STAGING=1 curl -fsSL https://playground.ai/install.sh | bash
+STAGING=1 curl -fsSL https://hanzo.bot/install.sh | bash
 
 # Specific prerelease version
-VERSION=v0.1.28-rc.4 curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
+VERSION=v0.1.28-rc.4 curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
 ```
 
 **Key differences when using `--staging`:**
-- Installs to `~/.hanzo/agents-staging/bin` (separate from production)
-- Creates `af-staging` symlink instead of `af`
+- Installs to `~/.hanzo/playground-staging/bin` (separate from production)
+- Creates `playground-staging` symlink instead of `playground`
 - Fetches the latest prerelease from GitHub API
 
 ---
@@ -255,7 +255,7 @@ After merging a PR or pushing to `main`:
 3. Test staging install:
    ```bash
    curl -fsSL https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh | bash -s -- --staging
-   ~/.hanzo/agents-staging/bin/playground --version
+   ~/.hanzo/playground-staging/bin/playground --version
    ```
 
 ### Multiple Staging Releases
@@ -279,8 +279,8 @@ All previous staging artifacts remain available.
    - [ ] Docker image tagged `vX.Y.Z` and `latest`
 3. Test `install.sh`:
    ```bash
-   curl -fsSL https://playground.ai/install.sh | bash
-   ~/.hanzo/agents/bin/playground --version
+   curl -fsSL https://hanzo.bot/install.sh | bash
+   ~/.hanzo/playground/bin/playground --version
    ```
 
 ---
@@ -337,8 +337,8 @@ git push origin :refs/tags/v0.1.19
 ## Hosting Install Scripts
 
 The install scripts need to be accessible at:
-- `https://playground.ai/install.sh` (handles both production and staging via `--staging` flag)
-- `https://playground.ai/uninstall.sh`
+- `https://hanzo.bot/install.sh` (handles both production and staging via `--staging` flag)
+- `https://hanzo.bot/uninstall.sh`
 
 **Options:**
 

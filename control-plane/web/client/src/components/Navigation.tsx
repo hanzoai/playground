@@ -13,9 +13,9 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
   const developerItems = [
     {
       id: "nodes",
-      label: "Agent Nodes",
+      label: "Nodes",
       icon: Network_3,
-      description: "Monitor and manage AI agent nodes",
+      description: "Monitor and manage AI hanzo nodes",
       disabled: false,
     },
     {
@@ -59,14 +59,14 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
     },
     {
       id: "agents",
-      label: "My Agents",
+      label: "My Bots",
       icon: Network_3,
       description: "Your configured and running agents",
       disabled: false,
     },
     {
       id: "packages",
-      label: "Agent Store",
+      label: "Bot Store",
       icon: Package,
       description: "Browse and install agent packages",
       disabled: false,

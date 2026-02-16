@@ -18,7 +18,7 @@ def mock_agent():
     """Create a mock agent for testing."""
     agent = MagicMock()
     agent.node_id = "test-agent"
-    agent.reasoners = []
+    agent.bots = []
     agent.skills = []
     agent.base_url = "http://localhost:9000"
     agent._current_status = "ready"
@@ -29,11 +29,11 @@ def mock_agent():
     agent._build_callback_discovery_payload = Mock(return_value={"callbacks": []})
     agent._build_vc_metadata = Mock(return_value={"agent_default": True})
     agent._apply_discovery_response = Mock()
-    agent._register_agent_with_did = Mock()
+    agent._register_bot_with_did = Mock()
 
     # Default client mock - fails by default
     agent.client = MagicMock()
-    agent.client.register_agent_with_status = AsyncMock(return_value=(False, None))
+    agent.client.register_bot_with_status = AsyncMock(return_value=(False, None))
 
     # Default handler mock - heartbeat succeeds by default
     agent.agents_handler = MagicMock()
@@ -135,7 +135,7 @@ class TestConnectionManagerStart:
     @pytest.mark.asyncio
     async def test_start_success_connects(self, mock_agent, fast_config):
         """Test that successful start connects and starts health check."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, {"key": "value"})
         )
         manager = ConnectionManager(mock_agent, fast_config)
@@ -154,7 +154,7 @@ class TestConnectionManagerStart:
     @pytest.mark.asyncio
     async def test_start_failure_enters_degraded_mode(self, mock_agent, fast_config):
         """Test that failed start enters degraded mode and starts reconnection."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
         manager = ConnectionManager(mock_agent, fast_config)
@@ -170,15 +170,15 @@ class TestConnectionManagerStart:
     @pytest.mark.asyncio
     async def test_start_calls_client_register(self, mock_agent, fast_config):
         """Test that start calls client registration with correct args."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
         manager = ConnectionManager(mock_agent, fast_config)
 
         await manager.start()
 
-        mock_agent.client.register_agent_with_status.assert_called_once()
-        call_kwargs = mock_agent.client.register_agent_with_status.call_args.kwargs
+        mock_agent.client.register_bot_with_status.assert_called_once()
+        call_kwargs = mock_agent.client.register_bot_with_status.call_args.kwargs
         assert call_kwargs["node_id"] == "test-agent"
         assert call_kwargs["base_url"] == "http://localhost:9000"
         assert call_kwargs["suppress_errors"] is True
@@ -196,7 +196,7 @@ class TestConnectionManagerStop:
     @pytest.mark.asyncio
     async def test_stop_cancels_reconnection_task(self, mock_agent, fast_config):
         """Test that stop cancels reconnection task."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
         manager = ConnectionManager(mock_agent, fast_config)
@@ -213,7 +213,7 @@ class TestConnectionManagerStop:
     @pytest.mark.asyncio
     async def test_stop_cancels_health_check_task(self, mock_agent, fast_config):
         """Test that stop cancels health check task."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
         manager = ConnectionManager(mock_agent, fast_config)
@@ -246,7 +246,7 @@ class TestAttemptConnection:
     @pytest.mark.asyncio
     async def test_attempt_connection_success(self, mock_agent):
         """Test successful connection attempt."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, {"config": "value"})
         )
         manager = ConnectionManager(mock_agent)
@@ -259,7 +259,7 @@ class TestAttemptConnection:
     @pytest.mark.asyncio
     async def test_attempt_connection_failure(self, mock_agent):
         """Test failed connection attempt."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
         manager = ConnectionManager(mock_agent)
@@ -272,7 +272,7 @@ class TestAttemptConnection:
     @pytest.mark.asyncio
     async def test_attempt_connection_exception(self, mock_agent):
         """Test connection attempt that raises exception."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             side_effect=Exception("Network error")
         )
         manager = ConnectionManager(mock_agent)
@@ -285,7 +285,7 @@ class TestAttemptConnection:
     @pytest.mark.asyncio
     async def test_attempt_connection_timeout(self, mock_agent):
         """Test connection attempt that times out."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             side_effect=asyncio.TimeoutError()
         )
         manager = ConnectionManager(mock_agent)
@@ -304,7 +304,7 @@ class TestAttemptConnection:
             states_observed.append(manager.state)
             return True, None
 
-        mock_agent.client.register_agent_with_status = capture_state
+        mock_agent.client.register_bot_with_status = capture_state
         manager = ConnectionManager(mock_agent)
 
         await manager._attempt_connection()
@@ -331,7 +331,7 @@ class TestReconnectionLoop:
                 return False, None
             return True, None
 
-        mock_agent.client.register_agent_with_status = failing_then_success
+        mock_agent.client.register_bot_with_status = failing_then_success
         manager = ConnectionManager(mock_agent, fast_config)
 
         manager.state = ConnectionState.DISCONNECTED
@@ -347,7 +347,7 @@ class TestReconnectionLoop:
     @pytest.mark.asyncio
     async def test_reconnection_loop_respects_shutdown(self, mock_agent, fast_config):
         """Test that reconnection loop stops on shutdown."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
         manager = ConnectionManager(mock_agent, fast_config)
@@ -372,7 +372,7 @@ class TestReconnectionLoop:
             attempt += 1
             return attempt >= 2, None
 
-        mock_agent.client.register_agent_with_status = succeed_on_second
+        mock_agent.client.register_bot_with_status = succeed_on_second
         manager = ConnectionManager(mock_agent, fast_config)
         manager.state = ConnectionState.DISCONNECTED
 
@@ -394,7 +394,7 @@ class TestHealthCheckLoop:
     @pytest.mark.asyncio
     async def test_health_check_sends_heartbeat(self, mock_agent, fast_config):
         """Test that health check sends heartbeats."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
         mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
@@ -415,7 +415,7 @@ class TestHealthCheckLoop:
         self, mock_agent, fast_config
     ):
         """Test that failed health check triggers reconnection."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
         mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
@@ -428,7 +428,7 @@ class TestHealthCheckLoop:
         assert manager.state == ConnectionState.CONNECTED
 
         # Make future registrations fail so reconnection doesn't succeed immediately
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
 
@@ -444,7 +444,7 @@ class TestHealthCheckLoop:
     @pytest.mark.asyncio
     async def test_health_check_stops_on_shutdown(self, mock_agent, fast_config):
         """Test that health check loop stops on shutdown."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
         mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
@@ -473,7 +473,7 @@ class TestCallbacks:
     @pytest.mark.asyncio
     async def test_on_connected_callback_called(self, mock_agent, fast_config):
         """Test that on_connected callback is called on successful connection."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -490,7 +490,7 @@ class TestCallbacks:
     @pytest.mark.asyncio
     async def test_on_disconnected_callback_called(self, mock_agent, fast_config):
         """Test that on_disconnected callback is called on connection failure."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
 
@@ -507,7 +507,7 @@ class TestCallbacks:
     @pytest.mark.asyncio
     async def test_callback_exception_does_not_crash(self, mock_agent, fast_config):
         """Test that callback exceptions are caught and logged."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -528,7 +528,7 @@ class TestCallbacks:
         self, mock_agent, fast_config
     ):
         """Test that disconnected callback exceptions are handled."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
 
@@ -587,7 +587,7 @@ class TestForceReconnect:
     @pytest.mark.asyncio
     async def test_force_reconnect_success(self, mock_agent, fast_config):
         """Test force_reconnect successfully reconnects."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -605,7 +605,7 @@ class TestForceReconnect:
     @pytest.mark.asyncio
     async def test_force_reconnect_failure(self, mock_agent):
         """Test force_reconnect returns False on failure."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
 
@@ -621,7 +621,7 @@ class TestForceReconnect:
         self, mock_agent, fast_config
     ):
         """Test that force_reconnect cancels existing reconnection task."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
         manager = ConnectionManager(mock_agent, fast_config)
@@ -632,7 +632,7 @@ class TestForceReconnect:
         await asyncio.sleep(0.01)
 
         # Now make client succeed
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -655,7 +655,7 @@ class TestConnectionLifecycle:
     @pytest.mark.asyncio
     async def test_full_lifecycle_connect_disconnect(self, mock_agent, fast_config):
         """Test full lifecycle: start connected, stop."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
         mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
@@ -682,7 +682,7 @@ class TestConnectionLifecycle:
             attempts += 1
             return attempts >= 2, None
 
-        mock_agent.client.register_agent_with_status = succeed_later
+        mock_agent.client.register_bot_with_status = succeed_later
 
         manager = ConnectionManager(mock_agent, fast_config)
 
@@ -699,7 +699,7 @@ class TestConnectionLifecycle:
     @pytest.mark.asyncio
     async def test_last_successful_connection_updated(self, mock_agent, fast_config):
         """Test that last_successful_connection is updated on connect."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -726,7 +726,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_connection_error_handled_gracefully(self, mock_agent, fast_config):
         """Test that connection errors are handled gracefully."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             side_effect=ConnectionError("Connection refused")
         )
 
@@ -742,7 +742,7 @@ class TestErrorHandling:
         self, mock_agent, fast_config
     ):
         """Test that health check errors trigger reconnection."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -778,7 +778,7 @@ class TestErrorHandling:
                 raise Exception("Unexpected error")
             return True, None
 
-        mock_agent.client.register_agent_with_status = fail_then_succeed
+        mock_agent.client.register_bot_with_status = fail_then_succeed
 
         manager = ConnectionManager(mock_agent, fast_config)
         manager.state = ConnectionState.DISCONNECTED
@@ -802,7 +802,7 @@ class TestTimeoutHandling:
     @pytest.mark.asyncio
     async def test_connection_timeout_treated_as_failure(self, mock_agent):
         """Test that connection timeout is treated as failure."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             side_effect=asyncio.TimeoutError()
         )
 
@@ -816,7 +816,7 @@ class TestTimeoutHandling:
     @pytest.mark.asyncio
     async def test_task_cancellation_during_reconnection(self, mock_agent, fast_config):
         """Test that task cancellation during reconnection is handled gracefully."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(False, None)
         )
 
@@ -853,7 +853,7 @@ class TestIntegration:
             cycle += 1
             return (cycle % 2 == 1), None
 
-        mock_agent.client.register_agent_with_status = alternate_success
+        mock_agent.client.register_bot_with_status = alternate_success
         mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
             return_value=True
         )
@@ -876,7 +876,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_rapid_start_stop_cycles(self, mock_agent, fast_config):
         """Test rapid start/stop cycles don't cause issues."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 
@@ -888,7 +888,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_connection_reuse_after_health_failure(self, mock_agent, fast_config):
         """Test that connection is properly reestablished after health failure."""
-        mock_agent.client.register_agent_with_status = AsyncMock(
+        mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
 

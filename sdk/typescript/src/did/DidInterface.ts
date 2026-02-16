@@ -32,7 +32,7 @@ export class DidInterface {
 
   async generateCredential(options: GenerateCredentialOptions = {}): Promise<ExecutionCredential> {
     if (!this.enabled) {
-      throw new Error('DID/VC features are disabled. Enable didEnabled in AgentConfig to use ctx.did.');
+      throw new Error('DID/VC features are disabled. Enable didEnabled in BotConfig to use ctx.did.');
     }
 
     const executionContext = {
@@ -58,7 +58,7 @@ export class DidInterface {
 
   exportAuditTrail(filters?: AuditTrailFilters): Promise<AuditTrailExport> {
     if (!this.enabled) {
-      throw new Error('DID/VC features are disabled. Enable didEnabled in AgentConfig to use ctx.did.');
+      throw new Error('DID/VC features are disabled. Enable didEnabled in BotConfig to use ctx.did.');
     }
     return this.client.exportAuditTrail(filters);
   }

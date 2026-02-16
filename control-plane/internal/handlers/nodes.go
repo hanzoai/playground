@@ -348,13 +348,13 @@ func processHeartbeatAsync(storageProvider storage.StorageProvider, uiService *s
 		ctx := context.Background()
 
 		// Verify node exists only when we need to update DB
-		if _, err := storageProvider.GetAgent(ctx, nodeID); err != nil {
+		if _, err := storageProvider.GetNode(ctx, nodeID); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Node %s not found during heartbeat update", nodeID)
 			return
 		}
 
 		// Update heartbeat in database
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, nodeID, cached.LastDBUpdate); err != nil {
+		if err := storageProvider.UpdateNodeHeartbeat(ctx, nodeID, cached.LastDBUpdate); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ HEARTBEAT_CONTENTION: Failed to update heartbeat for node %s - %v", nodeID, err)
 			return
 		}
@@ -367,7 +367,7 @@ func processHeartbeatAsync(storageProvider storage.StorageProvider, uiService *s
 func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *services.UIService, didService *services.DIDService, presenceManager *services.PresenceManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		var newNode types.AgentNode
+		var newNode types.Node
 
 		// Log the incoming request
 		body, _ := c.GetRawData()
@@ -472,7 +472,7 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 		newNode.CallbackDiscovery.SubmittedAt = time.Now().UTC().Format(time.RFC3339)
 
 		// Check if node with the same ID already exists
-		existingNode, err := storageProvider.GetAgent(ctx, newNode.ID)
+		existingNode, err := storageProvider.GetNode(ctx, newNode.ID)
 		isReRegistration := false
 		if err == nil && existingNode != nil {
 			isReRegistration = true
@@ -489,12 +489,12 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 			if newNode.LifecycleStatus == "" && existingNode.LifecycleStatus != "" {
 				newNode.LifecycleStatus = existingNode.LifecycleStatus
 			} else if newNode.LifecycleStatus == "" {
-				newNode.LifecycleStatus = types.AgentStatusStarting
+				newNode.LifecycleStatus = types.BotStatusStarting
 			}
 		} else {
 			// For new registrations, use provided status or default to starting
 			if newNode.LifecycleStatus == "" {
-				newNode.LifecycleStatus = types.AgentStatusStarting
+				newNode.LifecycleStatus = types.BotStatusStarting
 			}
 		}
 
@@ -507,7 +507,7 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 		newNode.Metadata.Custom["callback_discovery"] = newNode.CallbackDiscovery
 
 		// Store the new node
-		if err := storageProvider.RegisterAgent(ctx, &newNode); err != nil {
+		if err := storageProvider.RegisterNode(ctx, &newNode); err != nil {
 			logger.Logger.Error().Err(err).Msg("❌ Storage error")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store node: " + err.Error()})
 			return
@@ -521,13 +521,13 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 		if didService != nil {
 			// Create DID registration request from node data
 			didReq := &types.DIDRegistrationRequest{
-				AgentNodeID: newNode.ID,
+				NodeID: newNode.ID,
 				Bots:   newNode.Bots,
 				Skills:      newNode.Skills,
 			}
 
 			// Enhanced DID service handles differential analysis and routing automatically
-			didResponse, err := didService.RegisterAgent(didReq)
+			didResponse, err := didService.RegisterNode(didReq)
 			if err != nil {
 				// DID registration failure is now a critical error
 				logger.Logger.Error().Err(err).Msgf("❌ DID registration failed for node %s", newNode.ID)
@@ -554,7 +554,7 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 			if isReRegistration {
 				logger.Logger.Debug().Msgf("✅ Node %s re-registered with DID service: %s", newNode.ID, didResponse.Message)
 			} else {
-				logger.Logger.Debug().Msgf("✅ Node %s registered with DID: %s", newNode.ID, didResponse.IdentityPackage.AgentDID.DID)
+				logger.Logger.Debug().Msgf("✅ Node %s registered with DID: %s", newNode.ID, didResponse.IdentityPackage.NodeDID.DID)
 			}
 		}
 
@@ -588,7 +588,7 @@ func ListNodesHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		// Parse query parameters for filtering
-		filters := types.AgentFilters{}
+		filters := types.BotFilters{}
 
 		// Check for health_status filter parameter
 		if healthStatusParam := c.Query("health_status"); healthStatusParam != "" {
@@ -611,7 +611,7 @@ func ListNodesHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 		}
 
 		// Get filtered nodes from storage
-		nodes, err := storageProvider.ListAgents(ctx, filters)
+		nodes, err := storageProvider.ListNodes(ctx, filters)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get nodes"})
 			return
@@ -635,7 +635,7 @@ func GetNodeHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 			return
 		}
 
-		node, err := storageProvider.GetAgent(ctx, nodeID)
+		node, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
@@ -658,7 +658,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 		}
 
 		// We'll verify node exists conditionally during heartbeat caching
-		var existingNode *types.AgentNode
+		var existingNode *types.Node
 
 		// Try to parse enhanced heartbeat data (optional)
 		var enhancedHeartbeat struct {
@@ -691,7 +691,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 
 		if needsDBUpdate {
 			// Verify node exists only when we need to update DB
-			existingNode, err := storageProvider.GetAgent(ctx, nodeID)
+			existingNode, err := storageProvider.GetNode(ctx, nodeID)
 			if err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Node %s not found during heartbeat update", nodeID)
 				c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
@@ -707,7 +707,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 
 			// Register agent with health monitor for HTTP-based monitoring
 			if healthMonitor != nil {
-				healthMonitor.RegisterAgent(nodeID, existingNode.BaseURL)
+				healthMonitor.RegisterNode(nodeID, existingNode.BaseURL)
 			}
 
 			if presenceManager != nil {
@@ -725,7 +725,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 		// Process enhanced heartbeat data through unified status system
 		if statusManager != nil && (enhancedHeartbeat.Status != "" || len(enhancedHeartbeat.MCPServers) > 0 || enhancedHeartbeat.HealthScore != nil) {
 			// Prepare lifecycle status
-			var lifecycleStatus *types.AgentLifecycleStatus
+			var lifecycleStatus *types.BotLifecycleStatus
 			if enhancedHeartbeat.Status != "" {
 				// Validate status
 				validStatuses := map[string]bool{
@@ -736,7 +736,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 				}
 
 				if validStatuses[enhancedHeartbeat.Status] {
-					status := types.AgentLifecycleStatus(enhancedHeartbeat.Status)
+					status := types.BotLifecycleStatus(enhancedHeartbeat.Status)
 					lifecycleStatus = &status
 				}
 			}
@@ -787,13 +787,13 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 
 			// Handle health score if provided
 			if enhancedHeartbeat.HealthScore != nil {
-				update := &types.AgentStatusUpdate{
+				update := &types.BotStatusUpdate{
 					HealthScore: enhancedHeartbeat.HealthScore,
 					Source:      types.StatusSourceHeartbeat,
 					Reason:      "health score from heartbeat",
 				}
 
-				if err := statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+				if err := statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 					logger.Logger.Error().Err(err).Msgf("❌ Failed to update health score for node %s", nodeID)
 				}
 			}
@@ -809,12 +809,12 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 				}
 
 				if validStatuses[enhancedHeartbeat.Status] {
-					newStatus := types.AgentLifecycleStatus(enhancedHeartbeat.Status)
+					newStatus := types.BotLifecycleStatus(enhancedHeartbeat.Status)
 
 					// Get existing node to check current status
 					if existingNode == nil {
 						var err error
-						existingNode, err = storageProvider.GetAgent(ctx, nodeID)
+						existingNode, err = storageProvider.GetNode(ctx, nodeID)
 						if err != nil {
 							logger.Logger.Error().Err(err).Msgf("❌ Failed to get node %s for lifecycle status update", nodeID)
 							c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
@@ -823,7 +823,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 					}
 
 					if existingNode.LifecycleStatus != newStatus {
-						if err := storageProvider.UpdateAgentLifecycleStatus(ctx, nodeID, newStatus); err != nil {
+						if err := storageProvider.UpdateBotLifecycleStatus(ctx, nodeID, newStatus); err != nil {
 							logger.Logger.Error().Err(err).Msgf("❌ Failed to update lifecycle status for node %s", nodeID)
 						} else {
 							logger.Logger.Debug().Msgf("🔄 Lifecycle status updated for node %s: %s", nodeID, enhancedHeartbeat.Status)
@@ -873,10 +873,10 @@ func UpdateLifecycleStatusHandler(storageProvider storage.StorageProvider, uiSer
 
 		// Validate lifecycle status
 		validStatuses := map[string]bool{
-			string(types.AgentStatusStarting): true,
-			string(types.AgentStatusReady):    true,
-			string(types.AgentStatusDegraded): true,
-			string(types.AgentStatusOffline):  true,
+			string(types.BotStatusStarting): true,
+			string(types.BotStatusReady):    true,
+			string(types.BotStatusDegraded): true,
+			string(types.BotStatusOffline):  true,
 		}
 
 		if !validStatuses[statusUpdate.LifecycleStatus] {
@@ -885,14 +885,14 @@ func UpdateLifecycleStatusHandler(storageProvider storage.StorageProvider, uiSer
 		}
 
 		// Verify node exists
-		_, err := storageProvider.GetAgent(ctx, nodeID)
+		_, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
 
 		// Prepare status update for unified system
-		newLifecycleStatus := types.AgentLifecycleStatus(statusUpdate.LifecycleStatus)
+		newLifecycleStatus := types.BotLifecycleStatus(statusUpdate.LifecycleStatus)
 
 		// Prepare MCP status if provided
 		var mcpStatus *types.MCPStatusInfo
@@ -928,7 +928,7 @@ func UpdateLifecycleStatusHandler(storageProvider storage.StorageProvider, uiSer
 			}
 		} else {
 			// Fallback to legacy update for backward compatibility
-			if err := storageProvider.UpdateAgentLifecycleStatus(ctx, nodeID, newLifecycleStatus); err != nil {
+			if err := storageProvider.UpdateBotLifecycleStatus(ctx, nodeID, newLifecycleStatus); err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Failed to update lifecycle status for node %s", nodeID)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update lifecycle status"})
 				return
@@ -970,7 +970,7 @@ func GetNodeStatusHandler(statusManager *services.StatusManager) gin.HandlerFunc
 			return
 		}
 
-		status, err := statusManager.GetAgentStatus(ctx, nodeID)
+		status, err := statusManager.GetBotStatus(ctx, nodeID)
 		if err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to get node status")
 			c.JSON(http.StatusNotFound, gin.H{
@@ -1011,7 +1011,7 @@ func RefreshNodeStatusHandler(statusManager *services.StatusManager) gin.Handler
 		}
 
 		// Refresh the status
-		if err := statusManager.RefreshAgentStatus(ctx, nodeID); err != nil {
+		if err := statusManager.RefreshBotStatus(ctx, nodeID); err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to refresh node status")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Failed to refresh node status",
@@ -1022,7 +1022,7 @@ func RefreshNodeStatusHandler(statusManager *services.StatusManager) gin.Handler
 		}
 
 		// Get the refreshed status
-		status, err := statusManager.GetAgentStatus(ctx, nodeID)
+		status, err := statusManager.GetBotStatus(ctx, nodeID)
 		if err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to get refreshed node status")
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -1085,7 +1085,7 @@ func BulkNodeStatusHandler(statusManager *services.StatusManager, storageProvide
 		var errors []string
 
 		for _, nodeID := range request.NodeIDs {
-			status, err := statusManager.GetAgentStatus(ctx, nodeID)
+			status, err := statusManager.GetBotStatus(ctx, nodeID)
 			if err != nil {
 				logger.Logger.Warn().Err(err).Str("node_id", nodeID).Msg("⚠️ Failed to get status for node in bulk request")
 				results[nodeID] = gin.H{
@@ -1235,7 +1235,7 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 
 		logger.Logger.Info().Msgf("✅ Discovered serverless agent: %s (version: %s)", discoveryData.NodeID, discoveryData.Version)
 
-		// Convert discovered bots to AgentNode format
+		// Convert discovered bots to Node format
 		bots := make([]types.BotDefinition, len(discoveryData.Bots))
 		for i, r := range discoveryData.Bots {
 			inputSchemaBytes, _ := json.Marshal(r.InputSchema)
@@ -1248,7 +1248,7 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 			}
 		}
 
-		// Convert discovered skills to AgentNode format
+		// Convert discovered skills to Node format
 		skills := make([]types.SkillDefinition, len(discoveryData.Skills))
 		for i, s := range discoveryData.Skills {
 			inputSchemaBytes, _ := json.Marshal(s.InputSchema)
@@ -1261,7 +1261,7 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 		// Create the agent node
 		executionURL := strings.TrimSuffix(req.InvocationURL, "/") + "/execute"
 
-		newNode := types.AgentNode{
+		newNode := types.Node{
 			ID:              discoveryData.NodeID,
 			TeamID:          "default", // Default team for serverless agents
 			BaseURL:         req.InvocationURL,
@@ -1273,8 +1273,8 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 			RegisteredAt:    time.Now().UTC(),
 			LastHeartbeat:   time.Now().UTC(),
 			HealthStatus:    types.HealthStatusUnknown, // Serverless agents don't have persistent health
-			LifecycleStatus: types.AgentStatusReady,    // Serverless agents are always ready
-			Metadata: types.AgentMetadata{
+			LifecycleStatus: types.BotStatusReady,    // Serverless agents are always ready
+			Metadata: types.BotMetadata{
 				Custom: map[string]interface{}{
 					"serverless":    true,
 					"discovery_url": discoveryURL,
@@ -1283,13 +1283,13 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 		}
 
 		// Check if node already exists
-		existingNode, err := storageProvider.GetAgent(ctx, newNode.ID)
+		existingNode, err := storageProvider.GetNode(ctx, newNode.ID)
 		if err == nil && existingNode != nil {
 			logger.Logger.Warn().Msgf("⚠️ Serverless agent %s already registered, updating...", newNode.ID)
 		}
 
 		// Register the node
-		if err := storageProvider.RegisterAgent(ctx, &newNode); err != nil {
+		if err := storageProvider.RegisterNode(ctx, &newNode); err != nil {
 			logger.Logger.Error().Err(err).Msg("❌ Failed to register serverless agent")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Failed to register serverless agent",
@@ -1304,12 +1304,12 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 		// Register with DID service if available
 		if didService != nil {
 			didReq := &types.DIDRegistrationRequest{
-				AgentNodeID: newNode.ID,
+				NodeID: newNode.ID,
 				Bots:   newNode.Bots,
 				Skills:      newNode.Skills,
 			}
 
-			didResponse, err := didService.RegisterAgent(didReq)
+			didResponse, err := didService.RegisterNode(didReq)
 			if err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ DID registration failed for serverless agent %s", newNode.ID)
 				// Don't fail the registration, just log the error
@@ -1352,12 +1352,12 @@ func RefreshAllNodeStatusHandler(statusManager *services.StatusManager, storageP
 		}
 
 		// Get all nodes
-		nodes, err := storageProvider.ListAgents(ctx, types.AgentFilters{})
+		nodes, err := storageProvider.ListNodes(ctx, types.BotFilters{})
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("❌ Failed to list agents for bulk refresh")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Failed to list agents",
-				"code":    "LIST_AGENTS_FAILED",
+				"code":    "LIST_BOTS_FAILED",
 				"details": err.Error(),
 			})
 			return
@@ -1368,7 +1368,7 @@ func RefreshAllNodeStatusHandler(statusManager *services.StatusManager, storageP
 		var errors []string
 
 		for _, node := range nodes {
-			if err := statusManager.RefreshAgentStatus(ctx, node.ID); err != nil {
+			if err := statusManager.RefreshBotStatus(ctx, node.ID); err != nil {
 				logger.Logger.Warn().Err(err).Str("node_id", node.ID).Msg("⚠️ Failed to refresh status for node")
 				failed++
 				errors = append(errors, fmt.Sprintf("Node %s: %v", node.ID, err))
@@ -1421,7 +1421,7 @@ func StartNodeHandler(statusManager *services.StatusManager, storageProvider sto
 		}
 
 		// Verify node exists
-		_, err := storageProvider.GetAgent(ctx, nodeID)
+		_, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error": "Node not found",
@@ -1439,14 +1439,14 @@ func StartNodeHandler(statusManager *services.StatusManager, storageProvider sto
 		}
 
 		// Update status to starting
-		startingState := types.AgentStateStarting
-		update := &types.AgentStatusUpdate{
+		startingState := types.BotStateStarting
+		update := &types.BotStatusUpdate{
 			State:  &startingState,
 			Source: types.StatusSourceManual,
 			Reason: "manual start request",
 		}
 
-		if err := statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+		if err := statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to start node")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Failed to start node",
@@ -1481,7 +1481,7 @@ func StopNodeHandler(statusManager *services.StatusManager, storageProvider stor
 		}
 
 		// Verify node exists
-		_, err := storageProvider.GetAgent(ctx, nodeID)
+		_, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error": "Node not found",
@@ -1499,14 +1499,14 @@ func StopNodeHandler(statusManager *services.StatusManager, storageProvider stor
 		}
 
 		// Update status to stopping
-		stoppingState := types.AgentStateStopping
-		update := &types.AgentStatusUpdate{
+		stoppingState := types.BotStateStopping
+		update := &types.BotStatusUpdate{
 			State:  &stoppingState,
 			Source: types.StatusSourceManual,
 			Reason: "manual stop request",
 		}
 
-		if err := statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+		if err := statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to stop node")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Failed to stop node",

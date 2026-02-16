@@ -17,7 +17,7 @@ type Command interface {
 // ServiceContainer holds all the services that commands might need
 type ServiceContainer struct {
 	PackageService  interfaces.PackageService
-	AgentService    interfaces.AgentService
+	BotService    interfaces.BotService
 	DevService      interfaces.DevService
 	DIDService      *services.DIDService
 	VCService       *services.VCService

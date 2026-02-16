@@ -32,7 +32,7 @@ func TestNewClient(t *testing.T) {
 		{
 			name:    "nil config uses default",
 			config:  nil,
-			wantErr: true, // DefaultConfig may not have API key set
+			wantErr: true, // DefaultConfig will not have API key when env is clean
 		},
 		{
 			name: "invalid config",
@@ -47,6 +47,11 @@ func TestNewClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.config == nil {
+				// Ensure no API key env vars leak into the nil-config path.
+				restore := saveAndClearEnv(allEnvKeys)
+				defer restore()
+			}
 			client, err := NewClient(tt.config)
 			if tt.wantErr {
 				assert.Error(t, err)

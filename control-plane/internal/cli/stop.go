@@ -18,16 +18,16 @@ import (
 // NewStopCommand creates the stop command
 func NewStopCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stop <agent-node-name>",
-		Short: "Stop a running Agents agent node",
-		Long: `Stop a running Agents agent node package.
+		Use:   "stop <bot-name>",
+		Short: "Stop a running bot",
+		Long: `Stop a running bot package.
 
-The agent node process will be terminated gracefully and its status
+The bot process will be terminated gracefully and its status
 will be updated in the registry.
 
 Examples:
-  af stop email-helper
-  af stop data-analyzer`,
+  playground stop email-helper
+  playground stop data-analyzer`,
 		Args: cobra.ExactArgs(1),
 		RunE: runStopCommand,
 	}
@@ -36,61 +36,61 @@ Examples:
 }
 
 func runStopCommand(cmd *cobra.Command, args []string) error {
-	agentNodeName := args[0]
+	nodeName := args[0]
 
-	stopper := &AgentNodeStopper{
+	stopper := &NodeStopper{
 		AgentsHome: getAgentsHomeDir(),
 	}
 
-	if err := stopper.StopAgentNode(agentNodeName); err != nil {
-		return fmt.Errorf("failed to stop agent node: %w", err)
+	if err := stopper.StopNode(nodeName); err != nil {
+		return fmt.Errorf("failed to stop hanzo node: %w", err)
 	}
 
 	return nil
 }
 
-// AgentNodeStopper handles stopping agent nodes
-type AgentNodeStopper struct {
+// NodeStopper handles stopping hanzo nodes
+type NodeStopper struct {
 	AgentsHome string
 }
 
-// StopAgentNode stops a running agent node
-func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
+// StopNode stops a running hanzo node
+func (as *NodeStopper) StopNode(nodeName string) error {
 	// Load registry
 	registry, err := as.loadRegistry()
 	if err != nil {
 		return fmt.Errorf("failed to load registry: %w", err)
 	}
 
-	agentNode, exists := registry.Installed[agentNodeName]
+	node, exists := registry.Installed[nodeName]
 	if !exists {
-		return fmt.Errorf("agent node %s not installed", agentNodeName)
+		return fmt.Errorf("hanzo node %s not installed", nodeName)
 	}
 
-	if agentNode.Status != "running" {
-		fmt.Printf("⚠️  Agent node %s is not running\n", agentNodeName)
+	if node.Status != "running" {
+		fmt.Printf("⚠️  node %s is not running\n", nodeName)
 		return nil
 	}
 
-	if agentNode.Runtime.PID == nil {
-		return fmt.Errorf("no PID found for agent node %s", agentNodeName)
+	if node.Runtime.PID == nil {
+		return fmt.Errorf("no PID found for hanzo node %s", nodeName)
 	}
 
-	fmt.Printf("🛑 Stopping agent node: %s (PID: %d)\n", agentNodeName, *agentNode.Runtime.PID)
+	fmt.Printf("🛑 Stopping hanzo node: %s (PID: %d)\n", nodeName, *node.Runtime.PID)
 
 	// Find and kill the process
-	process, err := os.FindProcess(*agentNode.Runtime.PID)
+	process, err := os.FindProcess(*node.Runtime.PID)
 	if err != nil {
 		return fmt.Errorf("failed to find process: %w", err)
 	}
 
 	// Try HTTP shutdown first if port is available
 	httpShutdownSuccess := false
-	if agentNode.Runtime.Port != nil {
-		fmt.Printf("🛑 Attempting graceful HTTP shutdown for agent %s on port %d\n", agentNodeName, *agentNode.Runtime.Port)
+	if node.Runtime.Port != nil {
+		fmt.Printf("🛑 Attempting graceful HTTP shutdown for bot %s on port %d\n", nodeName, *node.Runtime.Port)
 
-		// Construct agent base URL
-		baseURL := fmt.Sprintf("http://localhost:%d", *agentNode.Runtime.Port)
+		// Construct bot base URL
+		baseURL := fmt.Sprintf("http://localhost:%d", *node.Runtime.Port)
 		shutdownURL := fmt.Sprintf("%s/shutdown", baseURL)
 
 		// Create shutdown request
@@ -104,23 +104,23 @@ func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
 			req, err := http.NewRequest("POST", shutdownURL, bytes.NewReader(bodyBytes))
 			if err == nil {
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("User-Agent", "Agents-CLI/1.0")
+				req.Header.Set("User-Agent", "Playground-CLI/1.0")
 
 				client := &http.Client{Timeout: 10 * time.Second}
 				resp, err := client.Do(req)
 				if err == nil {
 					defer resp.Body.Close()
 					if resp.StatusCode == 200 {
-						fmt.Printf("✅ HTTP shutdown request accepted for agent %s\n", agentNodeName)
+						fmt.Printf("✅ HTTP shutdown request accepted for bot %s\n", nodeName)
 						httpShutdownSuccess = true
 
 						// Wait a moment for graceful shutdown
 						time.Sleep(3 * time.Second)
 					} else {
-						fmt.Printf("⚠️ HTTP shutdown returned status %d for agent %s\n", resp.StatusCode, agentNodeName)
+						fmt.Printf("⚠️ HTTP shutdown returned status %d for bot %s\n", resp.StatusCode, nodeName)
 					}
 				} else {
-					fmt.Printf("⚠️ HTTP shutdown request failed for agent %s: %v\n", agentNodeName, err)
+					fmt.Printf("⚠️ HTTP shutdown request failed for bot %s: %v\n", nodeName, err)
 				}
 			}
 		}
@@ -128,7 +128,7 @@ func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
 
 	// If HTTP shutdown failed or not available, fall back to process signals
 	if !httpShutdownSuccess {
-		fmt.Printf("🔄 Falling back to process signal shutdown for agent %s\n", agentNodeName)
+		fmt.Printf("🔄 Falling back to process signal shutdown for bot %s\n", nodeName)
 
 		// Send SIGTERM for graceful shutdown
 		if err := process.Signal(os.Interrupt); err != nil {
@@ -143,7 +143,7 @@ func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
 			// Check if process is still running
 			if err := process.Signal(syscall.Signal(0)); err == nil {
 				// Process still running, force kill
-				fmt.Printf("⚠️ Process still running, force killing agent %s\n", agentNodeName)
+				fmt.Printf("⚠️ Process still running, force killing bot %s\n", nodeName)
 				if err := process.Kill(); err != nil {
 					return fmt.Errorf("failed to force kill process: %w", err)
 				}
@@ -152,23 +152,23 @@ func (as *AgentNodeStopper) StopAgentNode(agentNodeName string) error {
 	}
 
 	// Update registry
-	agentNode.Status = "stopped"
-	agentNode.Runtime.Port = nil
-	agentNode.Runtime.PID = nil
-	agentNode.Runtime.StartedAt = nil
-	registry.Installed[agentNodeName] = agentNode
+	node.Status = "stopped"
+	node.Runtime.Port = nil
+	node.Runtime.PID = nil
+	node.Runtime.StartedAt = nil
+	registry.Installed[nodeName] = node
 
 	if err := as.saveRegistry(registry); err != nil {
 		return fmt.Errorf("failed to update registry: %w", err)
 	}
 
-	fmt.Printf("✅ Agent node %s stopped successfully\n", agentNodeName)
+	fmt.Printf("✅ node %s stopped successfully\n", nodeName)
 
 	return nil
 }
 
 // loadRegistry loads the installation registry
-func (as *AgentNodeStopper) loadRegistry() (*packages.InstallationRegistry, error) {
+func (as *NodeStopper) loadRegistry() (*packages.InstallationRegistry, error) {
 	registryPath := filepath.Join(as.AgentsHome, "installed.yaml")
 
 	registry := &packages.InstallationRegistry{
@@ -185,7 +185,7 @@ func (as *AgentNodeStopper) loadRegistry() (*packages.InstallationRegistry, erro
 }
 
 // saveRegistry saves the installation registry
-func (as *AgentNodeStopper) saveRegistry(registry *packages.InstallationRegistry) error {
+func (as *NodeStopper) saveRegistry(registry *packages.InstallationRegistry) error {
 	registryPath := filepath.Join(as.AgentsHome, "installed.yaml")
 
 	data, err := yaml.Marshal(registry)

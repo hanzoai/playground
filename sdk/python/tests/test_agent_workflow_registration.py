@@ -1,7 +1,7 @@
 import pytest
 
-from playground.agent_workflow import AgentWorkflow
-from playground.agent_registry import set_current_agent, clear_current_agent
+from playground.bot_workflow import BotWorkflow
+from playground.bot_registry import set_current_bot, clear_current_bot
 from playground.decorators import _execute_with_tracking
 from playground.execution_context import (
     ExecutionContext,
@@ -51,9 +51,9 @@ class DummyWorkflowHandler:
         self.updates = []
 
     async def _ensure_execution_registered(
-        self, context, reasoner_name, parent_context
+        self, context, bot_name, parent_context
     ):
-        self.ensure_calls.append((context, reasoner_name, parent_context))
+        self.ensure_calls.append((context, bot_name, parent_context))
         context.execution_id = "exec-child"
         context.registered = True
         return context
@@ -65,13 +65,13 @@ class DummyWorkflowHandler:
 @pytest.mark.asyncio
 async def test_child_execution_registration():
     agent = DummyAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
 
     parent = ExecutionContext(
         workflow_id="wf-1",
         execution_id="exec-parent",
         agent_instance=agent,
-        reasoner_name="parent",
+        bot_name="parent",
         run_id="run-1",
         registered=True,
     )
@@ -79,7 +79,7 @@ async def test_child_execution_registration():
     child = parent.create_child_context()
     assert not child.registered
 
-    await workflow._ensure_execution_registered(child, "child_reasoner", parent)
+    await workflow._ensure_execution_registered(child, "child_bot", parent)
 
     assert child.registered is True
     assert child.execution_id == "exec-registered"
@@ -99,13 +99,13 @@ async def test_execute_with_tracking_registers_child_context():
     handler = DummyWorkflowHandler()
     agent.workflow_handler = handler
 
-    set_current_agent(agent)
+    set_current_bot(agent)
 
     parent_context = ExecutionContext(
         workflow_id="wf-parent",
         execution_id="exec-parent",
         agent_instance=agent,
-        reasoner_name="parent",
+        bot_name="parent",
         run_id="run-123",
         registered=True,
     )
@@ -117,16 +117,16 @@ async def test_execute_with_tracking_registers_child_context():
     agent._current_execution_context = parent_context
     token = set_execution_context(parent_context)
 
-    async def child_reasoner(value: int) -> int:
+    async def child_bot(value: int) -> int:
         return value * 2
 
-    result = await _execute_with_tracking(child_reasoner, 21)
+    result = await _execute_with_tracking(child_bot, 21)
 
     assert result == 42
     assert len(handler.ensure_calls) == 1
 
-    registered_context, reasoner_name, parent = handler.ensure_calls[0]
-    assert reasoner_name == "child_reasoner"
+    registered_context, bot_name, parent = handler.ensure_calls[0]
+    assert bot_name == "child_bot"
     assert parent is parent_context
     assert registered_context.run_id == "run-123"
     assert registered_context.parent_execution_id == parent_context.execution_id
@@ -148,4 +148,4 @@ async def test_execute_with_tracking_registers_child_context():
 
     reset_execution_context(token)
     agent._current_execution_context = None
-    clear_current_agent()
+    clear_current_bot()

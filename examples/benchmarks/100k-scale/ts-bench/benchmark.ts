@@ -4,7 +4,7 @@
  * Measures: registration time, memory footprint, cold start, request latency
  */
 
-import { Agent } from '@playground/sdk';
+import { Bot } from '@playground/sdk';
 
 interface BenchmarkResult {
   metric: string;
@@ -84,7 +84,7 @@ async function benchmarkRegistration(
 
     const start = performance.now();
 
-    const agent = new Agent({
+    const bot =new Bot({
       nodeId: `bench-${i}`,
       version: '1.0.0',
       port: 0, // Random port
@@ -93,7 +93,7 @@ async function benchmarkRegistration(
 
     for (let j = 0; j < numHandlers; j++) {
       const idx = j;
-      agent.reasoner(`handler-${j}`, async (ctx) => {
+      bot.bot(`handler-${j}`, async (ctx) => {
         return { id: idx, processed: true };
       });
     }
@@ -129,7 +129,7 @@ async function benchmarkMemory(
 
     const memBefore = getMemoryUsageMB();
 
-    const agent = new Agent({
+    const bot =new Bot({
       nodeId: `mem-bench-${i}`,
       version: '1.0.0',
       port: 0,
@@ -138,7 +138,7 @@ async function benchmarkMemory(
 
     for (let j = 0; j < numHandlers; j++) {
       const idx = j;
-      agent.reasoner(`handler-${j}`, async (ctx) => {
+      bot.bot(`handler-${j}`, async (ctx) => {
         return { id: idx };
       });
     }
@@ -176,7 +176,7 @@ async function benchmarkColdStart(
 
     const start = performance.now();
 
-    const agent = new Agent({
+    const bot =new Bot({
       nodeId: `cold-${i}`,
       version: '1.0.0',
       port: 0,
@@ -184,7 +184,7 @@ async function benchmarkColdStart(
     });
 
     // Register one handler to be "ready"
-    agent.reasoner('ping', async () => ({ pong: true }));
+    bot.bot('ping', async () => ({ pong: true }));
 
     const elapsed = performance.now() - start;
 

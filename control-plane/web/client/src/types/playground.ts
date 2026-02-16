@@ -1,4 +1,4 @@
-export interface AgentNode {
+export interface Node {
   id: string;
   base_url: string;
   version: string;
@@ -8,14 +8,14 @@ export interface AgentNode {
   last_heartbeat?: string;
   registered_at?: string;
   deployment_type?: string; // "long_running" or "serverless"
-  invocation_url?: string; // For serverless agents
+  invocation_url?: string; // For serverless bots
   mcp_summary?: MCPSummaryForUI;
   mcp_servers?: MCPServerHealthForUI[];
   bots?: BotDefinition[];
   skills?: SkillDefinition[];
 }
 
-export interface AgentNodeSummary {
+export interface NodeSummary {
   id: string;
   base_url: string;
   version: string;
@@ -24,15 +24,15 @@ export interface AgentNodeSummary {
   lifecycle_status: LifecycleStatus;
   last_heartbeat?: string;
   deployment_type?: string; // "long_running" or "serverless"
-  invocation_url?: string; // For serverless agents
+  invocation_url?: string; // For serverless bots
   mcp_summary?: MCPSummaryForUI;
   bot_count: number;
   skill_count: number;
 }
 
-export interface AgentNodeDetailsForUI extends AgentNode {}
+export interface NodeDetailsForUI extends Node {}
 
-export interface AgentNodeDetailsForUIWithPackage extends AgentNode {
+export interface NodeDetailsForUIWithPackage extends Node {
   package_info?: {
     package_id: string;
   };
@@ -122,14 +122,14 @@ export interface ConfigSchemaResponse {
   };
 }
 
-export type AgentState = 'active' | 'inactive' | 'starting' | 'stopping' | 'error';
+export type BotState = 'active' | 'inactive' | 'starting' | 'stopping' | 'error';
 
-export interface AgentStatus {
+export interface BotStatus {
   status: string;
-  state?: AgentState;
+  state?: BotState;
   state_transition?: {
-    from: AgentState;
-    to: AgentState;
+    from: BotState;
+    to: BotState;
     reason?: string;
   };
   health_score?: number;
@@ -143,7 +143,7 @@ export interface AgentStatus {
   };
 }
 
-export interface AgentStatusUpdate {
+export interface BotStatusUpdate {
   status: string;
   health_status?: string;
   lifecycle_status?: string;
@@ -233,9 +233,9 @@ export interface MCPErrorDetails {
   code?: string;
 }
 
-export type AgentConfigurationStatus = 'configured' | 'not_configured' | 'partially_configured' | 'unknown';
+export type BotConfigurationStatus = 'configured' | 'not_configured' | 'partially_configured' | 'unknown';
 
-export interface AgentPackage {
+export interface BotPackage {
   id: string;
   package_id?: string;
   name: string;
@@ -244,15 +244,15 @@ export interface AgentPackage {
   author?: string;
   tags?: string[];
   installed_at?: string;
-  configuration_status?: AgentConfigurationStatus;
+  configuration_status?: BotConfigurationStatus;
   configuration_schema?: ConfigurationSchema;
 }
 
-export type AgentLifecycleState = 'running' | 'stopped' | 'starting' | 'stopping' | 'error' | 'unknown';
+export type BotLifecycleState = 'running' | 'stopped' | 'starting' | 'stopping' | 'error' | 'unknown';
 
-export interface AgentLifecycleInfo {
+export interface BotLifecycleInfo {
   id: string;
-  status: AgentLifecycleState;
+  status: BotLifecycleState;
   started_at?: string;
   last_updated?: string;
   error_message?: string;
@@ -277,7 +277,7 @@ export interface SkillDefinition {
   tags?: string[];
 }
 
-export type AgentConfiguration = Record<string, any>;
+export type BotConfiguration = Record<string, any>;
 
 export type ConfigFieldType = 'text' | 'secret' | 'number' | 'boolean' | 'select';
 

@@ -5,7 +5,7 @@ export interface WorkflowMetadata {
   runId?: string;
   workflowId?: string;
   agentNodeId?: string;
-  reasonerId?: string;
+  botId?: string;
 }
 
 export interface WorkflowProgressOptions {

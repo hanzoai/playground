@@ -3,7 +3,7 @@ import type { AgentDIDInfo, DIDStatusSummary } from '../types/did';
 import { getAgentDIDInfo, getDIDStatusSummary } from '../services/didApi';
 
 /**
- * Hook for managing DID information for an agent node
+ * Hook for managing DID information for an hanzo node
  */
 export function useDIDInfo(nodeId: string) {
   const [didInfo, setDIDInfo] = useState<AgentDIDInfo | null>(null);

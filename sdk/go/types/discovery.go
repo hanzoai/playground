@@ -13,26 +13,27 @@ type DiscoveryPagination struct {
 type DiscoveryResponse struct {
 	DiscoveredAt   time.Time           `json:"discovered_at"`
 	TotalAgents    int                 `json:"total_agents"`
-	TotalReasoners int                 `json:"total_reasoners"`
+	TotalBots int                 `json:"total_bots"`
 	TotalSkills    int                 `json:"total_skills"`
 	Pagination     DiscoveryPagination `json:"pagination"`
-	Capabilities   []AgentCapability   `json:"capabilities"`
+	Capabilities   []NodeCapability  `json:"capabilities"`
 }
 
-// AgentCapability represents an individual agent and its capabilities.
-type AgentCapability struct {
+// NodeCapability represents an individual node and its capabilities.
+// The AgentID JSON field is retained for backward wire compatibility.
+type NodeCapability struct {
 	AgentID        string               `json:"agent_id"`
 	BaseURL        string               `json:"base_url"`
 	Version        string               `json:"version"`
 	HealthStatus   string               `json:"health_status"`
 	DeploymentType string               `json:"deployment_type"`
 	LastHeartbeat  time.Time            `json:"last_heartbeat"`
-	Reasoners      []ReasonerCapability `json:"reasoners"`
+	Bots           []BotCapability      `json:"bots"`
 	Skills         []SkillCapability    `json:"skills"`
 }
 
-// ReasonerCapability contains metadata for a reasoner.
-type ReasonerCapability struct {
+// BotCapability contains metadata for a bot.
+type BotCapability struct {
 	ID               string                   `json:"id"`
 	Description      *string                  `json:"description,omitempty"`
 	Tags             []string                 `json:"tags,omitempty"`
@@ -54,7 +55,7 @@ type SkillCapability struct {
 // CompactDiscoveryResponse is returned when requesting the compact format.
 type CompactDiscoveryResponse struct {
 	DiscoveredAt time.Time           `json:"discovered_at"`
-	Reasoners    []CompactCapability `json:"reasoners"`
+	Bots    []CompactCapability `json:"bots"`
 	Skills       []CompactCapability `json:"skills"`
 }
 

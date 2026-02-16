@@ -284,13 +284,13 @@ export function EnhancedWorkflowData({
   }, [navigate, activeNode]);
 
   const handleOpenBotPage = useCallback(() => {
-    const agentNodeId =
-      activeNode?.agent_node_id || activeDetails?.agent_node_id;
+    const nodeId =
+      activeNode?.node_id || activeDetails?.node_id;
     const botId = activeNode?.bot_id || activeDetails?.bot_id;
 
-    if (!agentNodeId || !botId) return;
+    if (!nodeId || !botId) return;
 
-    const fullBotId = `${agentNodeId}.${botId}`;
+    const fullBotId = `${nodeId}.${botId}`;
     navigate(`/bots/${encodeURIComponent(fullBotId)}`);
   }, [navigate, activeNode, activeDetails]);
 

@@ -107,7 +107,7 @@ def test_discover_capabilities_json(responses):
     payload = {
         "discovered_at": "2025-01-01T00:00:00Z",
         "total_agents": 1,
-        "total_reasoners": 1,
+        "total_bots": 1,
         "total_skills": 0,
         "pagination": {"limit": 5, "offset": 2, "has_more": False},
         "capabilities": [
@@ -118,7 +118,7 @@ def test_discover_capabilities_json(responses):
                 "health_status": "active",
                 "deployment_type": "long_running",
                 "last_heartbeat": "2025-01-01T00:00:00Z",
-                "reasoners": [
+                "bots": [
                     {"id": "r1", "invocation_target": "agent-1:r1", "tags": ["ml"]}
                 ],
                 "skills": [],
@@ -154,7 +154,7 @@ def test_discover_capabilities_json(responses):
 def test_discover_capabilities_compact_and_xml(responses):
     compact_payload = {
         "discovered_at": "2025-01-01T00:00:00Z",
-        "reasoners": [{"id": "r1", "agent_id": "a1", "target": "a1:r1"}],
+        "bots": [{"id": "r1", "agent_id": "a1", "target": "a1:r1"}],
         "skills": [],
     }
     responses.add(
@@ -175,7 +175,7 @@ def test_discover_capabilities_compact_and_xml(responses):
 
     compact = client.discover_capabilities(format="compact")
     assert compact.compact is not None
-    assert compact.compact.reasoners[0].id == "r1"
+    assert compact.compact.bots[0].id == "r1"
 
     xml = client.discover_capabilities(format="xml")
     assert xml.xml.startswith("<discovery")

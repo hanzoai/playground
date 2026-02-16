@@ -1,8 +1,8 @@
-{{- if .Values.demoPythonAgent.enabled -}}
+{{- if .Values.demoPythonBot.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "playground.fullname" . }}-demo-python-agent
+  name: {{ include "playground.fullname" . }}-demo-python-bot
   labels:
     {{- include "playground.labels" . | nindent 4 }}
 spec:
@@ -10,12 +10,12 @@ spec:
   selector:
     matchLabels:
       {{- include "playground.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: demo-python-agent
+      app.kubernetes.io/component: demo-python-bot
   template:
     metadata:
       labels:
         {{- include "playground.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: demo-python-agent
+        app.kubernetes.io/component: demo-python-bot
     spec:
       initContainers:
         - name: wait-control-plane
@@ -28,30 +28,30 @@ spec:
               until curl -sf "http://{{ include "playground.controlPlane.fullname" . }}:{{ .Values.controlPlane.service.port }}/api/v1/health" >/dev/null;
               do echo "waiting for control plane"; sleep 2; done
       containers:
-        - name: demo-python-agent
-          image: "{{ .Values.demoPythonAgent.image.repository }}:{{ .Values.demoPythonAgent.image.tag }}"
-          imagePullPolicy: {{ .Values.demoPythonAgent.image.pullPolicy }}
+        - name: demo-python-bot
+          image: "{{ .Values.demoPythonBot.image.repository }}:{{ .Values.demoPythonBot.image.tag }}"
+          imagePullPolicy: {{ .Values.demoPythonBot.image.pullPolicy }}
           command:
             - sh
             - -c
             - >
               python -m pip install --no-cache-dir --upgrade pip &&
-              python -m pip install --no-cache-dir {{ .Values.demoPythonAgent.pipPackage | quote }} &&
+              python -m pip install --no-cache-dir {{ .Values.demoPythonBot.pipPackage | quote }} &&
               python /app/main.py
           ports:
             - name: http
-              containerPort: {{ .Values.demoPythonAgent.service.port }}
+              containerPort: {{ .Values.demoPythonBot.service.port }}
           env:
-            - name: AGENTS_URL
+            - name: PLAYGROUND_URL
               value: "http://{{ include "playground.controlPlane.fullname" . }}:{{ .Values.controlPlane.service.port }}"
-            - name: AGENT_NODE_ID
-              value: {{ .Values.demoPythonAgent.nodeId | quote }}
+            - name: HANZO_NODE_ID
+              value: {{ .Values.demoPythonBot.nodeId | quote }}
             - name: PORT
-              value: {{ .Values.demoPythonAgent.service.port | quote }}
-            - name: AGENT_CALLBACK_URL
-              value: "http://{{ include "playground.fullname" . }}-demo-python-agent:{{ .Values.demoPythonAgent.service.port }}"
+              value: {{ .Values.demoPythonBot.service.port | quote }}
+            - name: HANZO_CALLBACK_URL
+              value: "http://{{ include "playground.fullname" . }}-demo-python-bot:{{ .Values.demoPythonBot.service.port }}"
             {{- if .Values.apiAuth.enabled }}
-            - name: AGENTS_TOKEN
+            - name: PLAYGROUND_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.apiAuth.secretName" . }}
@@ -75,6 +75,6 @@ spec:
       volumes:
         - name: app
           configMap:
-            name: {{ include "playground.fullname" . }}-demo-python-agent
+            name: {{ include "playground.fullname" . }}-demo-python-bot
 {{- end }}
 

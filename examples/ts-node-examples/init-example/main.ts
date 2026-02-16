@@ -1,17 +1,17 @@
 import 'dotenv/config';
-import { Agent } from '@playground/sdk';
-import { reasonersRouter } from './reasoners.js';
+import { Bot } from '@playground/sdk';
+import { botsRouter } from './bots.js';
 
 
 async function main() {
-  const agent = new Agent({
-    nodeId: process.env.AGENT_ID ?? "init-example",
-    playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
+  const bot = new Bot({
+    nodeId: process.env.HANZO_NODE_ID ?? "init-example",
+    playgroundUrl: process.env.PLAYGROUND_URL ?? 'http://localhost:8080',
     port: Number(process.env.PORT ?? 8005),
-    publicUrl: process.env.AGENT_CALLBACK_URL,
+    publicUrl: process.env.HANZO_CALLBACK_URL,
     version: '1.0.0',
     devMode: true,
-    apiKey: process.env.AGENTS_API_KEY,
+    apiKey: process.env.PLAYGROUND_API_KEY,
     aiConfig: {
       provider: 'openai',
       model: 'gpt-4o',
@@ -19,10 +19,10 @@ async function main() {
     },
   });
 
-  agent.includeRouter(reasonersRouter);
+  bot.includeRouter(botsRouter);
 
-  await agent.serve();
-  console.log(`Agent "${agent.config.nodeId}" listening on http://localhost:${agent.config.port}`);
+  await bot.serve();
+  console.log(`Bot "${bot.config.nodeId}" listening on http://localhost:${bot.config.port}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

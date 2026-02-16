@@ -2,9 +2,9 @@
 Functional tests covering the README and docs Quick Start flows.
 
 These tests make sure both public entry points stay accurate by:
-1. Spinning up the router-based `demo_echo` agent that ships with `af init`
-2. Running the OpenRouter-powered summarization agent from the README
-3. Driving both agents entirely through the control plane APIs (`/execute`, `/reasoners`)
+1. Spinning up the router-based `demo_echo` bot that ships with `playground init`
+2. Running the OpenRouter-powered summarization bot from the README
+3. Driving both bots entirely through the control plane APIs (`/execute`, `/bots`)
 """
 
 import os
@@ -14,17 +14,17 @@ from typing import Optional, Tuple
 
 import pytest
 
-from agents.docs_quick_start_agent import (
-    AGENT_SPEC as DOCS_QUICK_START_SPEC,
-    create_agent as create_docs_quick_start_agent,
+from bots.docs_quick_start_agent import (
+    BOT_SPEC as DOCS_QUICK_START_SPEC,
+    create_bot as create_docs_quick_start_bot,
 )
-from agents.quick_start_agent import create_agent as create_readme_quick_start_agent
-from utils import run_agent_server
+from bots.quick_start_agent import create_bot as create_readme_quick_start_bot
+from utils import run_bot_server
 
 
 QUICK_START_URL = os.environ.get("TEST_QUICK_START_URL")
 README_NODE_ID = "researcher"
-DOCS_NODE_ID = "my-agent"
+DOCS_NODE_ID = "my-bot"
 DEMO_MESSAGE = "Hello, Playground!"
 
 EXAMPLE_DOMAIN_HTML = """<!doctype html>
@@ -79,19 +79,19 @@ async def test_docs_quick_start_demo_echo_flow(async_http_client):
     node_id = DOCS_NODE_ID
     assert node_id == DOCS_QUICK_START_SPEC.default_node_id
 
-    agent = create_docs_quick_start_agent(node_id=node_id)
+    bot = create_docs_quick_start_bot(node_id=node_id)
 
-    async with run_agent_server(agent):
+    async with run_bot_server(bot):
         nodes_response = await async_http_client.get(f"/api/v1/nodes/{node_id}")
         assert nodes_response.status_code == 200, nodes_response.text
 
         node_data = nodes_response.json()
         assert node_data["id"] == node_id
 
-        reasoner_ids = [r.get("id") for r in node_data.get("reasoners", [])]
+        bot_ids = [r.get("id") for r in node_data.get("bots", [])]
         assert any(
-            rid in {"demo_echo", "echo"} for rid in reasoner_ids
-        ), f"Reasoner IDs {reasoner_ids} did not include demo_echo/echo"
+            rid in {"demo_echo", "echo"} for rid in bot_ids
+        ), f"Bot IDs {bot_ids} did not include demo_echo/echo"
 
         execution_request = {"input": {"message": DEMO_MESSAGE}}
 
@@ -115,7 +115,7 @@ async def test_docs_quick_start_demo_echo_flow(async_http_client):
         assert result["echoed"] == DEMO_MESSAGE
         assert result["length"] == len(DEMO_MESSAGE)
 
-        print("✓ Docs Quick Start demo_echo flow succeeded")
+        print("Docs Quick Start demo_echo flow succeeded")
 
 
 @pytest.mark.functional
@@ -128,7 +128,7 @@ async def test_readme_quick_start_summarize_flow(
     """
     Validate the README Quick Start instructions end-to-end.
 
-    This spins up the canonical README agent (fetch_url + summarize), registers it
+    This spins up the canonical README bot (fetch_url + summarize), registers it
     as `researcher`, submits a request through `/api/v1/execute/researcher.summarize`,
     and ensures the summarization result matches the documentation.
     """
@@ -143,20 +143,20 @@ async def test_readme_quick_start_summarize_flow(
         content_server, content_thread, target_url = _start_example_domain_server()
 
     node_id = README_NODE_ID
-    agent = create_readme_quick_start_agent(openrouter_config, node_id=node_id)
+    bot = create_readme_quick_start_bot(openrouter_config, node_id=node_id)
 
-    async with run_agent_server(agent):
-        nodes_response = await async_http_client.get(f"/api/v1/nodes/{agent.node_id}")
+    async with run_bot_server(bot):
+        nodes_response = await async_http_client.get(f"/api/v1/nodes/{bot.node_id}")
         assert nodes_response.status_code == 200, nodes_response.text
 
         node_data = nodes_response.json()
-        assert node_data["id"] == agent.node_id
-        assert "summarize" in [r["id"] for r in node_data.get("reasoners", [])]
+        assert node_data["id"] == bot.node_id
+        assert "summarize" in [r["id"] for r in node_data.get("bots", [])]
 
         execution_request = {"input": {"url": target_url}}
 
         execution_response = await async_http_client.post(
-            f"/api/v1/execute/{agent.node_id}.summarize",
+            f"/api/v1/execute/{bot.node_id}.summarize",
             json=execution_request,
             timeout=90.0,
         )
@@ -178,7 +178,7 @@ async def test_readme_quick_start_summarize_flow(
 
         assert result_data["duration_ms"] > 0
 
-        print("✓ README Quick Start summarize flow succeeded")
+        print("README Quick Start summarize flow succeeded")
 
     if content_server:
         content_server.shutdown()

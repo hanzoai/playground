@@ -4,13 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Badge } from '../ui/badge';
 import { ChevronLeft, ChevronRight, Check, Settings, Package, Info } from '@/components/ui/icon-bridge';
 import { ConfigurationForm } from './ConfigurationForm';
-import type { ConfigurationSchema, AgentConfiguration, AgentPackage } from '../../types/playground';
+import type { ConfigurationSchema, BotConfiguration, BotPackage } from '../../types/playground';
 
 interface ConfigurationWizardProps {
-  package: AgentPackage;
+  package: BotPackage;
   schema: ConfigurationSchema;
-  initialValues?: AgentConfiguration;
-  onComplete: (configuration: AgentConfiguration) => Promise<void>;
+  initialValues?: BotConfiguration;
+  onComplete: (configuration: BotConfiguration) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -24,7 +24,7 @@ export const ConfigurationWizard: React.FC<ConfigurationWizardProps> = ({
   const fields = schema.fields ?? [];
   const [currentStep, setCurrentStep] = useState(0);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [configuration, setConfiguration] = useState<AgentConfiguration>(initialValues || {});
+  const [configuration, setConfiguration] = useState<BotConfiguration>(initialValues || {});
 
   const steps = [
     {
@@ -56,7 +56,7 @@ export const ConfigurationWizard: React.FC<ConfigurationWizardProps> = ({
     }
   };
 
-  const handleConfigurationSubmit = async (config: AgentConfiguration) => {
+  const handleConfigurationSubmit = async (config: BotConfiguration) => {
     setConfiguration(config);
     handleNext();
   };

@@ -342,7 +342,7 @@ export function useMCPHealthSSE(nodeId: string | null) {
 }
 
 /**
- * Specialized hook for agent node events including status changes
+ * Specialized hook for hanzo node events including status changes
  */
 export function useNodeEventsSSE() {
   const url = '/api/ui/v1/nodes/events';

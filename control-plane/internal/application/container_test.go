@@ -18,7 +18,7 @@ func TestCreateServiceContainerWithoutDID(t *testing.T) {
 
 	container := CreateServiceContainer(cfg, agentsHome)
 
-	if container.PackageService == nil || container.AgentService == nil || container.DevService == nil {
+	if container.PackageService == nil || container.BotService == nil || container.DevService == nil {
 		t.Fatalf("expected core services to be initialised")
 	}
 	if container.DIDService != nil || container.VCService != nil {

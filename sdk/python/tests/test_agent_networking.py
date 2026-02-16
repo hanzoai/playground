@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from playground import agent as agent_mod
-from playground.agent import (
+from playground.bot import (
     ExecutionContext,
     _build_callback_candidates,
     _normalize_candidate,
@@ -95,7 +95,7 @@ def test_build_callback_candidates_prefers_env(monkeypatch):
     monkeypatch.setattr(agent_mod, "_detect_container_ip", lambda: "203.0.113.10")
     monkeypatch.setattr(agent_mod, "_detect_local_ip", lambda: "10.0.0.5")
     monkeypatch.setattr(agent_mod.socket, "gethostname", lambda: "agent-host")
-    monkeypatch.setenv("AGENT_CALLBACK_URL", "https://env.example")
+    monkeypatch.setenv("HANZO_CALLBACK_URL", "https://env.example")
     monkeypatch.setenv("RAILWAY_SERVICE_NAME", "playground")
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", "prod")
 
@@ -108,7 +108,7 @@ def test_build_callback_candidates_prefers_env(monkeypatch):
 
 
 def test_resolve_callback_url_uses_first_candidate(monkeypatch):
-    monkeypatch.setenv("AGENT_CALLBACK_URL", "http://from-env:7777")
+    monkeypatch.setenv("HANZO_CALLBACK_URL", "http://from-env:7777")
     resolved = _resolve_callback_url(None, 7777)
     assert resolved == "http://from-env:7777"
 
@@ -142,9 +142,9 @@ def test_apply_discovery_response_updates_candidates(monkeypatch):
     assert "http://fallback:9000" in agent.callback_candidates
 
 
-def test_register_agent_with_did_enables_vc(monkeypatch):
+def test_register_bot_with_did_enables_vc(monkeypatch):
     agent, _ = create_test_agent(monkeypatch)
-    agent.reasoners = [
+    agent.bots = [
         {
             "id": "double",
             "input_schema": {"type": "object"},
@@ -159,7 +159,7 @@ def test_register_agent_with_did_enables_vc(monkeypatch):
         }
     ]
 
-    result = agent._register_agent_with_did()
+    result = agent._register_bot_with_did()
     assert result is True
     assert agent.did_enabled is True
     assert agent.vc_generator.is_enabled() is True
@@ -183,18 +183,18 @@ def test_populate_execution_context_with_did(monkeypatch):
     assert execution.agent_node_did == "did:agent:1"
 
 
-def test_reasoner_and_skill_vc_metadata(monkeypatch):
+def test_bot_and_skill_vc_metadata(monkeypatch):
     agent, _ = create_test_agent(monkeypatch)
 
-    @agent.reasoner(vc_enabled=False)
-    async def sample_reasoner(text: str) -> dict:
+    @agent.bot(vc_enabled=False)
+    async def sample_bot(text: str) -> dict:
         return {"text": text}
 
     @agent.skill(vc_enabled=False)
     def sample_skill(amount: int) -> int:
         return amount
 
-    assert agent.reasoners[-1]["vc_enabled"] is False
+    assert agent.bots[-1]["vc_enabled"] is False
     assert agent.skills[-1]["vc_enabled"] is False
 
 
@@ -204,22 +204,22 @@ def test_vc_policy_overrides_precedence(monkeypatch):
     if agent.vc_generator:
         agent.vc_generator.set_enabled(True)
 
-    @agent.reasoner(name="critical", vc_enabled=True)
-    async def critical_reasoner(text: str) -> dict:
+    @agent.bot(name="critical", vc_enabled=True)
+    async def critical_bot(text: str) -> dict:
         return {"text": text}
 
     @agent.skill(name="bulk", vc_enabled=True)
     def bulk_skill(amount: int) -> int:
         return amount
 
-    assert agent._should_generate_vc("critical", agent._reasoner_vc_overrides) is True
-    assert agent._should_generate_vc("fallback", agent._reasoner_vc_overrides) is False
+    assert agent._should_generate_vc("critical", agent._bot_vc_overrides) is True
+    assert agent._should_generate_vc("fallback", agent._bot_vc_overrides) is False
     assert agent._should_generate_vc("bulk", agent._skill_vc_overrides) is True
 
     metadata = agent._build_vc_metadata()
     assert metadata["agent_default"] is False
-    assert metadata["reasoner_overrides"]["critical"] is True
-    assert metadata["effective_reasoners"].get("critical") is True
+    assert metadata["bot_overrides"]["critical"] is True
+    assert metadata["effective_bots"].get("critical") is True
 
 
 @pytest.mark.asyncio

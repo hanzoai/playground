@@ -2,17 +2,17 @@ import asyncio
 import httpx
 import pytest
 
-from playground.agent import Agent
+from playground.bot import Agent
 from playground.client import PlaygroundClient
 
 
 @pytest.mark.asyncio
-async def test_reasoner_async_mode_sends_status(monkeypatch):
+async def test_bot_async_mode_sends_status(monkeypatch):
     agent = Agent(
         node_id="test-agent", agents_server="http://control", auto_register=False
     )
 
-    @agent.reasoner()
+    @agent.bot()
     async def echo(value: int) -> dict:
         await asyncio.sleep(0)
         return {"value": value}
@@ -36,7 +36,7 @@ async def test_reasoner_async_mode_sends_status(monkeypatch):
         transport=httpx.ASGITransport(app=agent), base_url="http://agent"
     ) as client:
         response = await client.post(
-            "/reasoners/echo",
+            "/bots/echo",
             json={"value": 7},
             headers={"X-Execution-ID": "exec-123"},
         )

@@ -25,7 +25,7 @@ type ExecutionEvent struct {
 	Type        ExecutionEventType `json:"type"`
 	ExecutionID string             `json:"execution_id"`
 	WorkflowID  string             `json:"workflow_id"`
-	AgentNodeID string             `json:"agent_node_id"`
+	NodeID string             `json:"node_id"`
 	Status      string             `json:"status"`
 	Timestamp   time.Time          `json:"timestamp"`
 	Data        interface{}        `json:"data,omitempty"`
@@ -109,12 +109,12 @@ var GlobalExecutionEventBus = NewExecutionEventBus()
 // Helper functions for common event types
 
 // PublishExecutionCreated publishes an execution created event
-func PublishExecutionCreated(executionID, workflowID, agentNodeID string, data interface{}) {
+func PublishExecutionCreated(executionID, workflowID, nodeID string, data interface{}) {
 	event := ExecutionEvent{
 		Type:        ExecutionCreated,
 		ExecutionID: executionID,
 		WorkflowID:  workflowID,
-		AgentNodeID: agentNodeID,
+		NodeID: nodeID,
 		Status:      "created",
 		Timestamp:   time.Now(),
 		Data:        data,
@@ -123,12 +123,12 @@ func PublishExecutionCreated(executionID, workflowID, agentNodeID string, data i
 }
 
 // PublishExecutionStarted publishes an execution started event
-func PublishExecutionStarted(executionID, workflowID, agentNodeID string, data interface{}) {
+func PublishExecutionStarted(executionID, workflowID, nodeID string, data interface{}) {
 	event := ExecutionEvent{
 		Type:        ExecutionStarted,
 		ExecutionID: executionID,
 		WorkflowID:  workflowID,
-		AgentNodeID: agentNodeID,
+		NodeID: nodeID,
 		Status:      "running",
 		Timestamp:   time.Now(),
 		Data:        data,
@@ -137,12 +137,12 @@ func PublishExecutionStarted(executionID, workflowID, agentNodeID string, data i
 }
 
 // PublishExecutionUpdated publishes an execution updated event
-func PublishExecutionUpdated(executionID, workflowID, agentNodeID, status string, data interface{}) {
+func PublishExecutionUpdated(executionID, workflowID, nodeID, status string, data interface{}) {
 	event := ExecutionEvent{
 		Type:        ExecutionUpdated,
 		ExecutionID: executionID,
 		WorkflowID:  workflowID,
-		AgentNodeID: agentNodeID,
+		NodeID: nodeID,
 		Status:      status,
 		Timestamp:   time.Now(),
 		Data:        data,
@@ -151,12 +151,12 @@ func PublishExecutionUpdated(executionID, workflowID, agentNodeID, status string
 }
 
 // PublishExecutionCompleted publishes an execution completed event
-func PublishExecutionCompleted(executionID, workflowID, agentNodeID string, data interface{}) {
+func PublishExecutionCompleted(executionID, workflowID, nodeID string, data interface{}) {
 	event := ExecutionEvent{
 		Type:        ExecutionCompleted,
 		ExecutionID: executionID,
 		WorkflowID:  workflowID,
-		AgentNodeID: agentNodeID,
+		NodeID: nodeID,
 		Status:      string(types.ExecutionStatusSucceeded),
 		Timestamp:   time.Now(),
 		Data:        data,
@@ -165,12 +165,12 @@ func PublishExecutionCompleted(executionID, workflowID, agentNodeID string, data
 }
 
 // PublishExecutionFailed publishes an execution failed event
-func PublishExecutionFailed(executionID, workflowID, agentNodeID string, data interface{}) {
+func PublishExecutionFailed(executionID, workflowID, nodeID string, data interface{}) {
 	event := ExecutionEvent{
 		Type:        ExecutionFailed,
 		ExecutionID: executionID,
 		WorkflowID:  workflowID,
-		AgentNodeID: agentNodeID,
+		NodeID: nodeID,
 		Status:      "failed",
 		Timestamp:   time.Now(),
 		Data:        data,

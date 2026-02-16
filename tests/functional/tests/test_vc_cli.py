@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import pytest
 
-from utils import run_agent_server, unique_node_id
+from utils import run_bot_server, unique_node_id
 
 
 async def _wait_for_vc_chain(
@@ -38,9 +38,9 @@ async def _wait_for_vc_chain(
 
 
 async def _run_vc_verify(vc_file: Path, *, expect_success: bool = True) -> Dict[str, Any]:
-    """Execute `af vc verify` and parse the JSON payload."""
+    """Execute `playground vc verify` and parse the JSON payload."""
     process = await asyncio.create_subprocess_exec(
-        "af",
+        "playground",
         "vc",
         "verify",
         str(vc_file),
@@ -48,7 +48,7 @@ async def _run_vc_verify(vc_file: Path, *, expect_success: bool = True) -> Dict[
         stderr=asyncio.subprocess.PIPE,
         env={
             **os.environ,
-            "AGENTS_HOME": os.environ.get("AGENTS_HOME", "/tmp/playground-cli"),
+            "PLAYGROUND_HOME": os.environ.get("PLAYGROUND_HOME", os.environ.get("AGENTS_HOME", "/tmp/playground-cli")),
         },
     )
     stdout, stderr = await process.communicate()
@@ -66,25 +66,25 @@ async def _run_vc_verify(vc_file: Path, *, expect_success: bool = True) -> Dict[
     if expect_success:
         assert (
             process.returncode == 0
-        ), f"`af vc verify` failed unexpectedly: rc={process.returncode}, stderr={stderr_text}, stdout={stdout_text}"
+        ), f"`playground vc verify` failed unexpectedly: rc={process.returncode}, stderr={stderr_text}, stdout={stdout_text}"
     else:
         assert (
             process.returncode != 0
-        ), "`af vc verify` succeeded unexpectedly when tampering should fail"
+        ), "`playground vc verify` succeeded unexpectedly when tampering should fail"
 
     return payload
 
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_vc_cli_verifies_workflow_chain(make_test_agent, async_http_client, tmp_path):
+async def test_vc_cli_verifies_workflow_chain(make_test_bot, async_http_client, tmp_path):
     """
     Validate the documentation workflow (docs/core-concepts/identity-and-trust) that exports
-    a workflow VC chain and verifies it offline via `af vc verify`.
+    a workflow VC chain and verifies it offline via `playground vc verify`.
     """
-    agent = make_test_agent(node_id=unique_node_id("vc-cli-agent"))
+    bot = make_test_bot(node_id=unique_node_id("vc-cli-bot"))
 
-    @agent.reasoner()
+    @bot.bot()
     async def attest_event(event_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Return a deterministic payload so hashing + VC generation is stable."""
         return {
@@ -93,9 +93,9 @@ async def test_vc_cli_verifies_workflow_chain(make_test_agent, async_http_client
             "fingerprint": f"{event_type}:{sorted(payload.keys())}",
         }
 
-    async with run_agent_server(agent):
+    async with run_bot_server(bot):
         response = await async_http_client.post(
-            f"/api/v1/reasoners/{agent.node_id}.attest_event",
+            f"/api/v1/bots/{bot.node_id}.attest_event",
             json={
                 "input": {
                     "event_type": "vc_cli_test",

@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: playground-demo-python-agent
+  name: playground-demo-python-bot
 data:
   main.py: |
     import os
 
-    from playground import Agent
+    from playground import Bot
 
-    app = Agent(
-        node_id=os.getenv("AGENT_NODE_ID", "demo-python-agent"),
-        playground_server=os.getenv("AGENTS_URL", "http://localhost:8080"),
+    app = Bot(
+        node_id=os.getenv("HANZO_NODE_ID", "demo-python-bot"),
+        playground_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
         dev_mode=True,
     )
 

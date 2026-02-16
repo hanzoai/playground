@@ -24,7 +24,7 @@ from typing import Any
 # Add SDK to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'sdk', 'python'))
 
-from playground import Agent
+from playground import Bot
 
 
 @dataclass
@@ -75,7 +75,7 @@ def benchmark_agent_init(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         start = time.perf_counter()
 
-        agent = Agent(
+        bot = Bot(
             node_id=f"init-bench-{i}",
             playground_server="http://localhost:8080",
             auto_register=False,
@@ -107,7 +107,7 @@ def benchmark_handler_registration(num_handlers: int, iterations: int, warmup: i
         time.sleep(0.01)
 
         # Create Agent OUTSIDE the measurement
-        agent = Agent(
+        bot = Bot(
             node_id=f"handler-bench-{i}",
             playground_server="http://localhost:8080",
             auto_register=False,
@@ -120,7 +120,7 @@ def benchmark_handler_registration(num_handlers: int, iterations: int, warmup: i
         for j in range(num_handlers):
             idx = j
 
-            @agent.reasoner(f"handler-{j}")
+            @agent.bot(f"handler-{j}")
             async def handler(input_data: dict, _idx=idx) -> dict:
                 return {"id": _idx, "processed": True}
 
@@ -152,7 +152,7 @@ def benchmark_agent_memory(iterations: int, warmup: int, verbose: bool) -> list[
 
         tracemalloc.start()
 
-        agent = Agent(
+        bot = Bot(
             node_id=f"agent-mem-{i}",
             playground_server="http://localhost:8080",
             auto_register=False,
@@ -189,7 +189,7 @@ def benchmark_handler_memory(num_handlers: int, iterations: int, warmup: int, ve
         time.sleep(0.05)
 
         # Create Agent BEFORE starting memory tracking
-        agent = Agent(
+        bot = Bot(
             node_id=f"handler-mem-{i}",
             playground_server="http://localhost:8080",
             auto_register=False,
@@ -206,7 +206,7 @@ def benchmark_handler_memory(num_handlers: int, iterations: int, warmup: int, ve
         for j in range(num_handlers):
             idx = j
 
-            @agent.reasoner(f"handler-{j}")
+            @agent.bot(f"handler-{j}")
             async def handler(input_data: dict, _idx=idx) -> dict:
                 return {"id": _idx}
 
@@ -240,14 +240,14 @@ def benchmark_cold_start(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         start = time.perf_counter()
 
-        agent = Agent(
+        bot = Bot(
             node_id=f"cold-{i}",
             playground_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
 
-        @agent.reasoner("ping")
+        @agent.bot("ping")
         async def ping(input_data: dict) -> dict:
             return {"pong": True}
 

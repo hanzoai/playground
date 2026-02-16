@@ -19,7 +19,7 @@ type WorkflowExecutionEventRequest struct {
 	RunID             string                 `json:"run_id"`
 	BotID        string                 `json:"bot_id"`
 	Type              string                 `json:"type"`
-	AgentNodeID       string                 `json:"agent_node_id"`
+	NodeID       string                 `json:"node_id"`
 	Status            string                 `json:"status"`
 	ParentExecutionID *string                `json:"parent_execution_id"`
 	ParentWorkflowID  *string                `json:"parent_workflow_id"`
@@ -76,9 +76,9 @@ func WorkflowExecutionEventHandler(store ExecutionStore) gin.HandlerFunc {
 
 func buildExecutionRecordFromEvent(req *WorkflowExecutionEventRequest, now time.Time) *types.Execution {
 	runID := firstNonEmpty(req.RunID, req.WorkflowID, req.ExecutionID)
-	agentNodeID := req.AgentNodeID
-	if agentNodeID == "" {
-		agentNodeID = req.Type
+	nodeID := req.NodeID
+	if nodeID == "" {
+		nodeID = req.Type
 	}
 
 	botID := firstNonEmpty(req.BotID, req.Type, "bot")
@@ -90,8 +90,7 @@ func buildExecutionRecordFromEvent(req *WorkflowExecutionEventRequest, now time.
 		ExecutionID:       req.ExecutionID,
 		RunID:             runID,
 		ParentExecutionID: req.ParentExecutionID,
-		AgentNodeID:       agentNodeID,
-		NodeID:            agentNodeID,
+		NodeID:     nodeID,
 		BotID:        botID,
 		Status:            status,
 		InputPayload:      inputPayload,
@@ -130,9 +129,9 @@ func applyEventToExecution(current *types.Execution, req *WorkflowExecutionEvent
 		current.ParentExecutionID = req.ParentExecutionID
 	}
 
-	if current.AgentNodeID == "" {
-		current.AgentNodeID = firstNonEmpty(req.AgentNodeID, req.Type)
-		current.NodeID = current.AgentNodeID
+	if current.NodeID == "" {
+		current.NodeID = firstNonEmpty(req.NodeID, req.Type)
+		current.NodeID = current.NodeID
 	}
 	if current.BotID == "" {
 		current.BotID = firstNonEmpty(req.BotID, req.Type, "bot")

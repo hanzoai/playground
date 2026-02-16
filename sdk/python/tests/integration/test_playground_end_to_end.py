@@ -4,8 +4,8 @@ from typing import Any, Dict
 import httpx
 import pytest
 
-from playground.agent import Agent
-from playground.types import AgentStatus
+from playground.bot import Agent
+from playground.types import BotStatus
 
 
 async def _wait_for_node(
@@ -48,22 +48,22 @@ async def test_agent_registration_and_status_propagation(agents_server, run_agen
         callback_url="http://127.0.0.1",
     )
 
-    @agent.reasoner()
+    @agent.bot()
     async def ping() -> Dict[str, bool]:
         return {"ok": True}
 
     runtime = run_agent(agent)
 
-    await agent.agents_handler.register_with_agents_server(runtime.port)
+    await agent.agents_handler.register_with_playground_server(runtime.port)
     assert agent.agents_connected is True
 
     async with httpx.AsyncClient(
         base_url=agents_server.base_url, timeout=5.0
     ) as client:
         node = await _wait_for_node(client, agent.node_id)
-        assert any(r["id"] == "ping" for r in node.get("reasoners", []))
+        assert any(r["id"] == "ping" for r in node.get("bots", []))
 
-        agent._current_status = AgentStatus.READY
+        agent._current_status = BotStatus.READY
         await agent.agents_handler.send_enhanced_heartbeat()
 
         status = await _wait_for_status(client, agent.node_id, expected="ready")
@@ -73,22 +73,22 @@ async def test_agent_registration_and_status_propagation(agents_server, run_agen
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_reasoner_execution_roundtrip(agents_server, run_agent):
+async def test_bot_execution_roundtrip(agents_server, run_agent):
     agent = Agent(
-        node_id="integration-agent-reasoner",
+        node_id="integration-agent-bot",
         agents_server=agents_server.base_url,
         dev_mode=True,
         callback_url="http://127.0.0.1",
     )
 
-    @agent.reasoner()
+    @agent.bot()
     async def double(value: int) -> Dict[str, int]:
         return {"value": value * 2}
 
     runtime = run_agent(agent)
 
-    await agent.agents_handler.register_with_agents_server(runtime.port)
-    agent._current_status = AgentStatus.READY
+    await agent.agents_handler.register_with_playground_server(runtime.port)
+    agent._current_status = BotStatus.READY
     await agent.agents_handler.send_enhanced_heartbeat()
 
     async with httpx.AsyncClient(
@@ -98,7 +98,7 @@ async def test_reasoner_execution_roundtrip(agents_server, run_agent):
         await _wait_for_status(client, agent.node_id, expected="ready")
 
         response = await client.post(
-            f"/api/v1/reasoners/{agent.node_id}.double",
+            f"/api/v1/bots/{agent.node_id}.double",
             json={"input": {"value": 7}},
         )
 
@@ -114,7 +114,7 @@ async def test_reasoner_execution_roundtrip(agents_server, run_agent):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_app_ctx_available_during_execution(agents_server, run_agent):
-    """Verify that app.ctx is available and populated during reasoner execution."""
+    """Verify that app.ctx is available and populated during bot execution."""
     agent = Agent(
         node_id="integration-agent-ctx",
         agents_server=agents_server.base_url,
@@ -125,7 +125,7 @@ async def test_app_ctx_available_during_execution(agents_server, run_agent):
     # Verify ctx is None outside of execution
     assert agent.ctx is None, "app.ctx should be None outside of execution"
 
-    @agent.reasoner()
+    @agent.bot()
     async def get_context_info() -> Dict[str, Any]:
         """Return execution context information to verify it's populated."""
         ctx = agent.ctx
@@ -143,8 +143,8 @@ async def test_app_ctx_available_during_execution(agents_server, run_agent):
 
     runtime = run_agent(agent)
 
-    await agent.agents_handler.register_with_agents_server(runtime.port)
-    agent._current_status = AgentStatus.READY
+    await agent.agents_handler.register_with_playground_server(runtime.port)
+    agent._current_status = BotStatus.READY
     await agent.agents_handler.send_enhanced_heartbeat()
 
     async with httpx.AsyncClient(
@@ -154,7 +154,7 @@ async def test_app_ctx_available_during_execution(agents_server, run_agent):
         await _wait_for_status(client, agent.node_id, expected="ready")
 
         response = await client.post(
-            f"/api/v1/reasoners/{agent.node_id}.get_context_info",
+            f"/api/v1/bots/{agent.node_id}.get_context_info",
             json={"input": {}},
         )
 

@@ -23,7 +23,7 @@ def test_call_sync_execution(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-123"},
         status=200,
     )
@@ -36,7 +36,7 @@ def test_call_sync_execution(client):
     )
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -48,7 +48,7 @@ def test_call_async_execution(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-456"},
         status=200,
     )
@@ -61,7 +61,7 @@ def test_call_async_execution(client):
     )
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -74,7 +74,7 @@ def test_call_with_context_headers(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-789"},
         status=200,
     )
@@ -91,7 +91,7 @@ def test_call_with_context_headers(client):
         execution_id="exec-1",
         run_id="run-1",
         agent_instance=mock_agent,
-        reasoner_name="reasoner-1",
+        bot_name="bot-1",
         parent_execution_id="parent-1",
     )
 
@@ -99,7 +99,7 @@ def test_call_with_context_headers(client):
     client._current_workflow_context = context
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -111,13 +111,13 @@ def test_call_error_handling(client):
     # Mock error response from the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"error": "Network error"},
         status=500,
     )
 
     with pytest.raises(Exception):
-        client.execute_sync(target="agent.reasoner", input_data={"key": "value"})
+        client.execute_sync(target="agent.bot", input_data={"key": "value"})
 
 
 def test_call_retry_logic(client):
@@ -125,14 +125,14 @@ def test_call_retry_logic(client):
     # First call fails with 500
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"error": "Transient error"},
         status=500,
     )
     # Second call succeeds
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-retry"},
         status=200,
     )
@@ -149,7 +149,7 @@ def test_call_retry_logic(client):
     # In that case, it will raise an exception on the first 500 response
     try:
         response = client.execute_sync(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
         assert response is not None
     except Exception:
@@ -162,7 +162,7 @@ def test_call_with_webhook_config(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-webhook"},
         status=200,
     )
@@ -182,7 +182,7 @@ def test_call_with_webhook_config(client):
     # Note: execute_sync doesn't accept webhook parameter directly
     # Webhook config would be passed via input_data
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value", "webhook": webhook_config},
     )
 
@@ -194,7 +194,7 @@ def test_call_header_propagation(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-header"},
         status=200,
     )
@@ -212,12 +212,12 @@ def test_call_header_propagation(client):
         execution_id="exec-1",
         run_id="run-1",
         agent_instance=mock_agent,
-        reasoner_name="reasoner-1",
+        bot_name="bot-1",
     )
     client._current_workflow_context = context
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -229,7 +229,7 @@ def test_call_event_stream_handling(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-stream"},
         status=200,
     )
@@ -242,7 +242,7 @@ def test_call_event_stream_handling(client):
     )
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -254,13 +254,13 @@ def test_call_timeout_handling(client):
     # Mock timeout error using responses
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         body=asyncio.TimeoutError(),
     )
 
     with pytest.raises((asyncio.TimeoutError, Exception)):
         client.execute_sync(
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"key": "value"},
         )
 
@@ -270,7 +270,7 @@ def test_call_with_different_execution_modes(client):
     # Mock first call
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-mode1"},
         status=200,
     )
@@ -283,7 +283,7 @@ def test_call_with_different_execution_modes(client):
     # Mock second call
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-mode2"},
         status=200,
     )
@@ -296,14 +296,14 @@ def test_call_with_different_execution_modes(client):
 
     # Test sync mode
     response_sync = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
     assert response_sync is not None
 
     # Test async mode (both use execute_sync in current implementation)
     response_async = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
     assert response_async is not None
@@ -314,7 +314,7 @@ def test_call_result_caching(client):
     # Mock first call
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-cache1"},
         status=200,
     )
@@ -327,7 +327,7 @@ def test_call_result_caching(client):
     # Mock second call
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-cache2"},
         status=200,
     )
@@ -340,13 +340,13 @@ def test_call_result_caching(client):
 
     # First call
     response1 = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
     # Second call with same input (should use cache if enabled)
     response2 = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -359,7 +359,7 @@ def test_call_with_custom_headers(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-custom"},
         status=200,
     )
@@ -374,7 +374,7 @@ def test_call_with_custom_headers(client):
     custom_headers = {"X-Custom-Header": "custom-value"}
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
         headers=custom_headers,
     )
@@ -387,7 +387,7 @@ def test_call_context_management(client):
     # Mock the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"execution_id": "exec-context"},
         status=200,
     )
@@ -405,14 +405,14 @@ def test_call_context_management(client):
         execution_id="exec-1",
         run_id="run-1",
         agent_instance=mock_agent,
-        reasoner_name="reasoner-1",
+        bot_name="bot-1",
     )
 
     # Set context
     client._current_workflow_context = context
 
     response = client.execute_sync(
-        target="agent.reasoner",
+        target="agent.bot",
         input_data={"key": "value"},
     )
 
@@ -426,10 +426,10 @@ def test_call_error_response_handling(client):
     # Mock error response from the async execution endpoint
     responses_lib.add(
         responses_lib.POST,
-        "http://localhost:8080/api/v1/execute/async/agent.reasoner",
+        "http://localhost:8080/api/v1/execute/async/agent.bot",
         json={"error": "Internal server error"},
         status=500,
     )
 
     with pytest.raises(Exception):
-        client.execute_sync(target="agent.reasoner", input_data={"key": "value"})
+        client.execute_sync(target="agent.bot", input_data={"key": "value"})

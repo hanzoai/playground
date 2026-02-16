@@ -27,7 +27,7 @@ import (
 
 // ExecutionStore captures the storage operations required by the simplified execution handlers.
 type ExecutionStore interface {
-	GetAgent(ctx context.Context, id string) (*types.AgentNode, error)
+	GetNode(ctx context.Context, id string) (*types.Node, error)
 	CreateExecutionRecord(ctx context.Context, execution *types.Execution) error
 	GetExecutionRecord(ctx context.Context, executionID string) (*types.Execution, error)
 	UpdateExecutionRecord(ctx context.Context, executionID string, update func(*types.Execution) (*types.Execution, error)) (*types.Execution, error)
@@ -557,7 +557,7 @@ func (c *executionController) publishExecutionEvent(exec *types.Execution, statu
 	c.publishExecutionEventWithBotInfo(exec, status, data, nil, nil)
 }
 
-func (c *executionController) publishExecutionEventWithBotInfo(exec *types.Execution, status string, data map[string]interface{}, agent *types.AgentNode, botID *string) {
+func (c *executionController) publishExecutionEventWithBotInfo(exec *types.Execution, status string, data map[string]interface{}, agent *types.Node, botID *string) {
 	if exec == nil {
 		return
 	}
@@ -659,7 +659,7 @@ func (c *executionController) publishExecutionEventWithBotInfo(exec *types.Execu
 		Type:        eventType,
 		ExecutionID: exec.ExecutionID,
 		WorkflowID:  exec.RunID,
-		AgentNodeID: exec.AgentNodeID,
+		NodeID: exec.NodeID,
 		Status:      status,
 		Timestamp:   time.Now(),
 		Data:        data,
@@ -763,7 +763,7 @@ func (c *executionController) waitForExecutionCompletion(ctx context.Context, ex
 type preparedExecution struct {
 	exec              *types.Execution
 	requestBody       []byte
-	agent             *types.AgentNode
+	agent             *types.Node
 	target            *parsedTarget
 	targetType        string
 	webhookRegistered bool
@@ -800,7 +800,7 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 		}
 	}
 
-	agent, err := c.store.GetAgent(ctx, target.NodeID)
+	agent, err := c.store.GetNode(ctx, target.NodeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load agent '%s': %w", target.NodeID, err)
 	}
@@ -850,9 +850,8 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 		ExecutionID:       executionID,
 		RunID:             runID,
 		ParentExecutionID: headers.parentExecutionID,
-		AgentNodeID:       agent.ID,
-		BotID:        target.TargetName,
-		NodeID:            target.NodeID,
+		NodeID:     agent.ID,
+		BotID: target.TargetName,
 		Status:            types.ExecutionStatusRunning,
 		InputPayload:      json.RawMessage(storedPayload),
 		StartedAt:         now,
@@ -1160,7 +1159,7 @@ func parseTarget(value string) (*parsedTarget, error) {
 	}, nil
 }
 
-func determineTargetType(agent *types.AgentNode, name string) (string, error) {
+func determineTargetType(agent *types.Node, name string) (string, error) {
 	for _, bot := range agent.Bots {
 		if bot.ID == name {
 			return "bot", nil
@@ -1174,7 +1173,7 @@ func determineTargetType(agent *types.AgentNode, name string) (string, error) {
 	return "", fmt.Errorf("target '%s' not found on agent '%s'", name, agent.ID)
 }
 
-func buildAgentURL(agent *types.AgentNode, target *parsedTarget) string {
+func buildAgentURL(agent *types.Node, target *parsedTarget) string {
 	if agent == nil {
 		return ""
 	}
@@ -1379,7 +1378,7 @@ func (c *executionController) buildWorkflowExecutionRecord(ctx context.Context, 
 		RunID:               &runIDCopy,
 		SessionID:           exec.SessionID,
 		ActorID:             exec.ActorID,
-		AgentNodeID:         exec.AgentNodeID,
+		NodeID:         exec.NodeID,
 		ParentWorkflowID:    parentWorkflowID,
 		ParentExecutionID:   exec.ParentExecutionID,
 		RootWorkflowID:      rootWorkflowID,
@@ -1598,12 +1597,12 @@ func (p *asyncWorkerPool) submit(job asyncExecutionJob) bool {
 
 func getAsyncWorkerPool() *asyncWorkerPool {
 	asyncPoolOnce.Do(func() {
-		workerCount := resolveIntFromEnv("AGENTS_EXEC_ASYNC_WORKERS", runtime.NumCPU())
+		workerCount := resolveIntFromEnv("PLAYGROUND_EXEC_ASYNC_WORKERS", "AGENTS_EXEC_ASYNC_WORKERS", runtime.NumCPU())
 		if workerCount <= 0 {
 			workerCount = runtime.NumCPU()
 		}
 
-		queueCapacity := resolveIntFromEnv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", 1024)
+		queueCapacity := resolveIntFromEnv("PLAYGROUND_EXEC_ASYNC_QUEUE_CAPACITY", "AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", 1024)
 		if queueCapacity <= 0 {
 			queueCapacity = 1024
 		}
@@ -1613,15 +1612,18 @@ func getAsyncWorkerPool() *asyncWorkerPool {
 	return asyncPool
 }
 
-func resolveIntFromEnv(key string, fallback int) int {
-	raw := strings.TrimSpace(os.Getenv(key))
+func resolveIntFromEnv(primaryKey, fallbackKey string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(primaryKey))
+	if raw == "" && fallbackKey != "" {
+		raw = strings.TrimSpace(os.Getenv(fallbackKey))
+	}
 	if raw == "" {
 		return fallback
 	}
 	value, err := strconv.Atoi(raw)
 	if err != nil {
 		logger.Logger.Warn().
-			Str("key", key).
+			Str("key", primaryKey).
 			Str("value", raw).
 			Msg("invalid integer environment override; using fallback")
 		return fallback
@@ -1631,7 +1633,7 @@ func resolveIntFromEnv(key string, fallback int) int {
 
 func ensureCompletionWorker() {
 	completionOnce.Do(func() {
-		size := resolveIntFromEnv("AGENTS_EXEC_COMPLETION_QUEUE", 2048)
+		size := resolveIntFromEnv("PLAYGROUND_EXEC_COMPLETION_QUEUE", "AGENTS_EXEC_COMPLETION_QUEUE", 2048)
 		if size <= 0 {
 			size = 2048
 		}

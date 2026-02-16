@@ -22,7 +22,7 @@ import { useMainNodeExecution } from "../../hooks/useMainNodeExecution";
 interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;

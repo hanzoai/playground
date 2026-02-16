@@ -9,13 +9,13 @@ import {
 } from "@/components/ui/icon-bridge";
 import { cn } from "../../lib/utils";
 import { statusTone } from "../../lib/theme";
-import { agentColorManager } from "../../utils/agentColorManager";
+import { botColorManager } from "../../utils/botColorManager";
 import {
   getStatusLabel,
   normalizeExecutionStatus,
   type CanonicalStatus,
 } from "../../utils/status";
-import { AgentBadge } from "./AgentBadge";
+import { BotBadge } from "./BotBadge";
 import type { WorkflowDAGNode } from "./DeckGLView";
 
 interface HoverDetailPanelProps {
@@ -144,13 +144,13 @@ export const HoverDetailPanel = memo(({ node, position, visible }: HoverDetailPa
   const agentNameField = (node as any).agent_name;
   const taskNameField = (node as any).task_name;
 
-  const agentColor = agentColorManager.getAgentColor(
-    agentNameField || node.agent_node_id,
-    node.agent_node_id
+  const agentColor = botColorManager.getAgentColor(
+    agentNameField || node.node_id,
+    node.node_id
   );
 
   const taskName = humanizeText(taskNameField || node.bot_id || "Unknown Task");
-  const agentName = humanizeText(agentNameField || node.agent_node_id || "Unknown Agent");
+  const agentName = humanizeText(agentNameField || node.node_id || "Unknown Agent");
 
   return (
     <div
@@ -178,9 +178,9 @@ export const HoverDetailPanel = memo(({ node, position, visible }: HoverDetailPa
             <div className="text-sm font-semibold text-foreground leading-tight mb-2">
               {taskName}
             </div>
-            <AgentBadge
+            <BotBadge
               agentName={agentName}
-              agentId={node.agent_node_id}
+              agentId={node.node_id}
               size="sm"
               showTooltip={false}
             />

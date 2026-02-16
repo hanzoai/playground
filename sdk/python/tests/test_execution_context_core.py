@@ -14,7 +14,7 @@ def test_to_headers_includes_optional_fields():
         workflow_id="wf-1",
         execution_id="exec-1",
         agent_instance=None,
-        reasoner_name="reasoner",
+        bot_name="bot",
         parent_execution_id="parent-1",
         parent_workflow_id="wf-parent",
         session_id="sess-1",
@@ -43,7 +43,7 @@ def test_child_context_derives_from_parent():
         workflow_id="wf-1",
         execution_id="exec-1",
         agent_instance=None,
-        reasoner_name="root",
+        bot_name="root",
         depth=0,
         run_id="run-1",
     )
@@ -72,7 +72,7 @@ def test_generate_execution_id_has_unique_prefix():
 
 @pytest.mark.unit
 def test_agent_ctx_property_returns_none_outside_execution():
-    """Verify app.ctx returns None when not inside a reasoner/skill execution."""
+    """Verify app.ctx returns None when not inside a bot/skill execution."""
     from playground import Agent
 
     agent = Agent(node_id="test-ctx-agent")
@@ -94,7 +94,7 @@ def test_agent_ctx_property_returns_context_during_execution():
         execution_id="exec-test",
         run_id="run-test",
         agent_instance=agent,
-        reasoner_name="test_reasoner",
+        bot_name="test_bot",
         registered=True,
     )
 
@@ -133,7 +133,7 @@ def test_agent_ctx_property_ignores_unregistered_context():
         execution_id="exec-unregistered",
         run_id="run-unregistered",
         agent_instance=agent,
-        reasoner_name="test",
+        bot_name="test",
         registered=False,  # Not from a real request
     )
     agent._current_execution_context = unregistered_ctx

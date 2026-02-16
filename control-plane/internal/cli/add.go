@@ -43,28 +43,28 @@ func NewAddCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "add <source> [alias]",
-		Short: "Add dependencies to your Agents agent project",
-		Long: `Add dependencies to your Agents agent project.
+		Short: "Add dependencies to your playground project",
+		Long: `Add dependencies to your playground project.
 
-Supports adding MCP servers and regular agent packages with advanced configuration options.
+Supports adding MCP servers and regular bot packages with advanced configuration options.
 
 Examples:
   # Remote MCP servers (URL-based)
-  af add --mcp --url https://github.com/modelcontextprotocol/server-github
-  af add --mcp --url https://github.com/ferrislucas/iterm-mcp github-tools
+  playground add --mcp --url https://github.com/modelcontextprotocol/server-github
+  playground add --mcp --url https://github.com/ferrislucas/iterm-mcp github-tools
 
   # Local MCP servers with custom commands
-  af add --mcp my-server --run "node server.js --port {{port}}" \
+  playground add --mcp my-server --run "node server.js --port {{port}}" \
     --setup "npm install" --setup "npm run build"
 
   # Python MCP server with environment variables
-  af add --mcp python-server --run "python server.py --port {{port}}" \
+  playground add --mcp python-server --run "python server.py --port {{port}}" \
     --setup "pip install -r requirements.txt" \
     --env "PYTHONPATH={{server_dir}}" \
     --working-dir "./src"
 
   # Advanced configuration with health checks
-  af add --mcp enterprise-server \
+  playground add --mcp enterprise-server \
     --url https://github.com/company/mcp-server \
     --run "node dist/server.js --port {{port}} --config {{config_file}}" \
     --setup "npm install" --setup "npm run build" \
@@ -73,9 +73,9 @@ Examples:
     --timeout 60 --description "Enterprise MCP server" \
     --tags "enterprise" --tags "production"
 
-  # Regular agent packages (future)
-  af add github.com/agents-helpers/email-utils
-  af add github.com/openai/prompt-templates
+  # Regular bot packages (future)
+  playground add github.com/playground-helpers/email-utils
+  playground add github.com/openai/prompt-templates
 
 Template Variables:
   {{port}}        - Dynamically assigned port number
@@ -141,7 +141,7 @@ func runAddCommandWithOptions(opts *MCPAddOptions, verbose bool) error {
 func validateAgentsProject(projectDir string) error {
 	agentsYAMLPath := filepath.Join(projectDir, "agents.yaml")
 	if _, err := os.Stat(agentsYAMLPath); os.IsNotExist(err) {
-		return fmt.Errorf("not an Agents project directory (agents.yaml not found)")
+		return fmt.Errorf("not a Playground project directory (agents.yaml not found)")
 	}
 	return nil
 }
@@ -164,7 +164,7 @@ func NewMCPAddCommand(projectDir string, opts *MCPAddOptions, verboseFlag bool) 
 		// Fallback for safety, though agents.yaml should exist due to validateAgentsProject
 		appCfg, err = config.LoadConfig("agents.yaml")
 		if err != nil {
-			return nil, fmt.Errorf("failed to load af configuration: %w. Ensure agents.yaml exists", err)
+			return nil, fmt.Errorf("failed to load playground configuration: %w. Ensure agents.yaml exists", err)
 		}
 	}
 
@@ -302,8 +302,8 @@ func (cmd *MCPAddCommand) Execute() error {
 	fmt.Printf("  %s Capabilities discovery and skill generation handled by manager\n", Gray(StatusInfo))
 
 	fmt.Printf("\n%s %s\n", Blue("→"), Bold("Next steps:"))
-	fmt.Printf("  %s Start the MCP server: %s\n", Gray("1."), Cyan(fmt.Sprintf("af mcp start %s", mcpServerCfg.Alias)))
-	fmt.Printf("  %s Check status: %s\n", Gray("2."), Cyan("af mcp status"))
+	fmt.Printf("  %s Start the MCP server: %s\n", Gray("1."), Cyan(fmt.Sprintf("playground mcp start %s", mcpServerCfg.Alias)))
+	fmt.Printf("  %s Check status: %s\n", Gray("2."), Cyan("playground mcp status"))
 	fmt.Printf("  %s Use MCP tools as regular skills: %s\n", Gray("3."), Cyan(fmt.Sprintf("await app.call(\"%s_<tool_name>\", ...)", mcpServerCfg.Alias)))
 	fmt.Printf("  %s Generated skill file: %s\n", Gray("4."), Gray(fmt.Sprintf("skills/mcp_%s.py", mcpServerCfg.Alias)))
 

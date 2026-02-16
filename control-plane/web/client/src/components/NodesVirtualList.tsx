@@ -10,7 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { AgentNodeSummary } from '../types/playground';
+import type { NodeSummary } from '../types/playground';
 import { NodeCard } from './NodeCard';
 import type { DensityMode } from './DensityToggle';
 import { getStatusPriority } from './ui/status-indicator';
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { cardVariants } from "@/components/ui/card";
 
 interface NodesVirtualListProps {
-  nodes: AgentNodeSummary[];
+  nodes: NodeSummary[];
   searchQuery: string;
   isLoading: boolean;
   density?: DensityMode;
@@ -80,19 +80,19 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
       return acc;
     }, {
       running: {
-        fresh: [] as AgentNodeSummary[],
-        stale: [] as AgentNodeSummary[],
-        veryStale: [] as AgentNodeSummary[],
-        degraded: [] as AgentNodeSummary[],
+        fresh: [] as NodeSummary[],
+        stale: [] as NodeSummary[],
+        veryStale: [] as NodeSummary[],
+        degraded: [] as NodeSummary[],
       },
       offline: {
-        starting: [] as AgentNodeSummary[],
-        down: [] as AgentNodeSummary[],
+        starting: [] as NodeSummary[],
+        down: [] as NodeSummary[],
       }
     });
 
     // Sort each category by importance (capability count + recency)
-    const sortByImportance = (a: AgentNodeSummary, b: AgentNodeSummary) => {
+    const sortByImportance = (a: NodeSummary, b: NodeSummary) => {
       // First by status priority (most critical first)
       const aPriority = getStatusPriority(a.lifecycle_status, a.health_status);
       const bPriority = getStatusPriority(b.lifecycle_status, b.health_status);
@@ -135,7 +135,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
   const filteredNodes = useMemo(() => {
     if (!searchQuery) return categorizedNodes;
 
-    const filterBySearch = (nodeList: AgentNodeSummary[]) => {
+    const filterBySearch = (nodeList: NodeSummary[]) => {
       return nodeList.filter(node => {
         const query = searchQuery.toLowerCase();
         return (
@@ -191,11 +191,11 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
           <EmptyMedia variant="icon">
             <CloudOffline className="h-8 w-8" />
           </EmptyMedia>
-          <EmptyTitle>No agent nodes</EmptyTitle>
+          <EmptyTitle>No hanzo nodes</EmptyTitle>
           <EmptyDescription>
             {searchQuery
               ? `No nodes found matching "${searchQuery}". Adjust the query or reset your filters.`
-              : "Register an agent node to begin monitoring its status and workloads."
+              : "Register an hanzo node to begin monitoring its status and workloads."
             }
           </EmptyDescription>
         </EmptyHeader>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import {
   FactorGraphSchema,
   ScenarioAnalysisSchema,
@@ -10,9 +10,9 @@ import {
 } from '../schemas.js';
 import { formatContext, parseWithSchema } from '../utils.js';
 
-export const scenarioRouter = new AgentRouter({ prefix: 'scenario' });
+export const scenarioRouter = new BotRouter({ prefix: 'scenario' });
 
-scenarioRouter.reasoner<ScenarioInput, ScenarioAnalysis>(
+scenarioRouter.bot<ScenarioInput, ScenarioAnalysis>(
   'decomposeScenario',
   async (ctx) => {
     const { scenario, context = [] } = ctx.input;
@@ -82,7 +82,7 @@ RESPONSE FORMAT: Return ONLY valid JSON matching the schema. No prose, no markdo
   { inputSchema: ScenarioInputSchema, outputSchema: ScenarioAnalysisSchema }
 );
 
-scenarioRouter.reasoner(
+scenarioRouter.bot(
   'generateFactorGraph',
   async (ctx) => {
     const { scenario, scenarioAnalysis, context = [] } = ctx.input as {

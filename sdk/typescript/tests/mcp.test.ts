@@ -66,7 +66,7 @@ describe('MCP integration', () => {
   });
 
   it('registers MCP tools as skills and executes them', async () => {
-    const agent = new Agent({
+    const agent = new Bot({
       nodeId: 'mcp-agent',
       devMode: true,
       mcp: {

@@ -134,29 +134,29 @@ func (h *RecentActivityHandler) getRecentExecutions(ctx context.Context) ([]Acti
 	}
 
 	// Get all unique agent node IDs for batch lookup
-	agentNodeIDs := make(map[string]bool)
+	nodeIDs := make(map[string]bool)
 	for _, exec := range executions {
-		agentNodeIDs[exec.AgentNodeID] = true
+		nodeIDs[exec.NodeID] = true
 	}
 
 	// Batch fetch agent information
 	agentMap := make(map[string]string) // agent_node_id -> agent_name
-	for agentNodeID := range agentNodeIDs {
-		_, err := h.storage.GetAgent(ctx, agentNodeID)
+	for nodeID := range nodeIDs {
+		_, err := h.storage.GetNode(ctx, nodeID)
 		if err != nil {
 			// If agent not found, use the ID as fallback
-			agentMap[agentNodeID] = agentNodeID
+			agentMap[nodeID] = nodeID
 			continue
 		}
-		agentMap[agentNodeID] = agentNodeID // Use ID as name for now, can be enhanced later
+		agentMap[nodeID] = nodeID // Use ID as name for now, can be enhanced later
 	}
 
 	// Convert to response format
 	recentExecutions := make([]ActivityExecution, 0, len(executions))
 	for _, exec := range executions {
-		agentName := agentMap[exec.AgentNodeID]
+		agentName := agentMap[exec.NodeID]
 		if agentName == "" {
-			agentName = exec.AgentNodeID
+			agentName = exec.NodeID
 		}
 
 		// Format bot name (remove agent prefix if present)

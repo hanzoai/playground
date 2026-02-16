@@ -4,7 +4,7 @@ import types
 from typing import Any, Dict
 
 from playground.client import PlaygroundClient
-from playground.types import AgentStatus, HeartbeatData
+from playground.types import BotStatus, HeartbeatData
 
 
 class DummyResponse:
@@ -34,7 +34,7 @@ def test_send_enhanced_heartbeat_sync_success_and_failure(monkeypatch):
     monkeypatch.setattr(client_mod.requests, "post", ok_post)
 
     bc = PlaygroundClient(base_url="http://example")
-    hb = HeartbeatData(status=AgentStatus.READY, mcp_servers=[], timestamp="now")
+    hb = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
     assert bc.send_enhanced_heartbeat_sync("node1", hb) is True
 
     def bad_post(url, json, headers, timeout):
@@ -61,7 +61,7 @@ def test_notify_graceful_shutdown_sync(monkeypatch):
     assert bc.notify_graceful_shutdown_sync("node1") is False
 
 
-def test_register_agent_with_status_async(monkeypatch):
+def test_register_bot_with_status_async(monkeypatch):
     # Provide a dummy httpx module that PlaygroundClient will use
     from playground import client as client_mod
 
@@ -97,9 +97,9 @@ def test_register_agent_with_status_async(monkeypatch):
     bc = PlaygroundClient(base_url="http://example")
 
     async def run():
-        return await bc.register_agent_with_status(
+        return await bc.register_bot_with_status(
             node_id="n1",
-            reasoners=[],
+            bots=[],
             skills=[],
             base_url="http://agent",
             vc_metadata={"agent_default": False},

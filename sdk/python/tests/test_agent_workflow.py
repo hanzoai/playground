@@ -1,25 +1,25 @@
 import pytest
 
-from playground.agent_workflow import AgentWorkflow
+from playground.bot_workflow import BotWorkflow
 from playground.execution_context import ExecutionContext
-from playground.agent_registry import set_current_agent, clear_current_agent
+from playground.bot_registry import set_current_bot, clear_current_bot
 from tests.helpers import StubAgent
 
 
 @pytest.mark.asyncio
 async def test_execute_with_tracking_root_context(monkeypatch):
     agent = StubAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
 
     captured = {}
 
     async def fake_start(
-        execution_id, context, reasoner_name, input_data, parent_execution_id=None
+        execution_id, context, bot_name, input_data, parent_execution_id=None
     ):
         captured["start"] = {
             "execution_id": execution_id,
             "workflow_id": context.workflow_id,
-            "reasoner": reasoner_name,
+            "bot": bot_name,
             "parent": parent_execution_id,
             "input": input_data,
         }
@@ -40,31 +40,31 @@ async def test_execute_with_tracking_root_context(monkeypatch):
         assert isinstance(execution_context, ExecutionContext)
         return value + 1
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
         result = await workflow.execute_with_tracking(sample, (3,), {})
     finally:
-        clear_current_agent()
+        clear_current_bot()
 
     assert result == 4
     assert captured["start"]["parent"] is None
-    assert captured["start"]["reasoner"] == "sample"
+    assert captured["start"]["bot"] == "sample"
     assert captured["complete"]["result"] == 4
 
 
 @pytest.mark.asyncio
 async def test_execute_with_tracking_child_context(monkeypatch):
     agent = StubAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     parent_context = ExecutionContext.create_new(agent.node_id, "root")
     agent._current_execution_context = parent_context
 
     events = {}
 
     async def fake_start(
-        execution_id, context, reasoner_name, input_data, parent_execution_id=None
+        execution_id, context, bot_name, input_data, parent_execution_id=None
     ):
         events.setdefault("start", []).append(
             (execution_id, context, parent_execution_id)
@@ -83,7 +83,7 @@ async def test_execute_with_tracking_child_context(monkeypatch):
         try:
             await workflow.execute_with_tracking(failing, tuple(), {})
         finally:
-            clear_current_agent()
+            clear_current_bot()
 
     assert "start" in events
     exec_id, ctx, parent = events["start"][0]
@@ -95,13 +95,13 @@ async def test_execute_with_tracking_child_context(monkeypatch):
 @pytest.mark.asyncio
 async def test_notify_call_start_payload_includes_hierarchy(monkeypatch):
     agent = StubAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
         parent_context = ExecutionContext.create_new(agent.node_id, "root")
         child_context = parent_context.create_child_context()
-        child_context.reasoner_name = "child_reasoner"
+        child_context.bot_name = "child_bot"
 
         payloads = []
 
@@ -113,13 +113,13 @@ async def test_notify_call_start_payload_includes_hierarchy(monkeypatch):
         await workflow.notify_call_start(
             child_context.execution_id,
             child_context,
-            "child_reasoner",
+            "child_bot",
             {"input": "value"},
             parent_execution_id=parent_context.execution_id,
         )
 
     finally:
-        clear_current_agent()
+        clear_current_bot()
 
     assert len(payloads) == 1
     payload = payloads[0]
@@ -128,18 +128,18 @@ async def test_notify_call_start_payload_includes_hierarchy(monkeypatch):
     assert payload["parent_execution_id"] == parent_context.execution_id
     assert payload["parent_workflow_id"] == parent_context.workflow_id
     assert payload["agent_node_id"] == agent.node_id
-    assert payload["reasoner_id"] == "child_reasoner"
+    assert payload["bot_id"] == "child_bot"
     assert payload["status"] == "running"
-    assert payload["type"] == "child_reasoner"
+    assert payload["type"] == "child_bot"
     assert payload["input_data"] == {"input": "value"}
 
 
 @pytest.mark.asyncio
 async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
     agent = StubAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
         parent_context = ExecutionContext.create_new(agent.node_id, "root")
         agent._current_execution_context = parent_context
@@ -147,13 +147,13 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
         events = {}
 
         async def capture_start(
-            execution_id, context, reasoner_name, input_data, parent_execution_id=None
+            execution_id, context, bot_name, input_data, parent_execution_id=None
         ):
             events.setdefault("start", []).append(
                 {
                     "execution_id": execution_id,
                     "context": context,
-                    "reasoner_name": reasoner_name,
+                    "bot_name": bot_name,
                     "input_data": input_data,
                     "parent_execution_id": parent_execution_id,
                 }
@@ -182,15 +182,15 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
         monkeypatch.setattr(workflow, "notify_call_start", capture_start)
         monkeypatch.setattr(workflow, "notify_call_complete", capture_complete)
 
-        async def child_reasoner(
+        async def child_bot(
             value: int, execution_context: ExecutionContext = None
         ):
             assert execution_context is not None
             return {"doubled": value * 2}
 
-        result = await workflow.execute_with_tracking(child_reasoner, (7,), {})
+        result = await workflow.execute_with_tracking(child_bot, (7,), {})
     finally:
-        clear_current_agent()
+        clear_current_bot()
 
     assert result == {"doubled": 14}
     assert "start" in events and "complete" in events
@@ -201,7 +201,7 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
     assert start_event["parent_execution_id"] == parent_context.execution_id
     assert start_event["context"].parent_workflow_id == parent_context.workflow_id
     assert start_event["context"].parent_execution_id == parent_context.execution_id
-    assert start_event["reasoner_name"] == "child_reasoner"
+    assert start_event["bot_name"] == "child_bot"
     assert start_event["input_data"]["value"] == 7
     assert isinstance(
         start_event["input_data"].get("execution_context"), ExecutionContext
@@ -220,9 +220,9 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
 @pytest.mark.asyncio
 async def test_execute_with_tracking_error_emits_failure(monkeypatch):
     agent = StubAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
         parent_context = ExecutionContext.create_new(agent.node_id, "root")
         agent._current_execution_context = parent_context
@@ -230,13 +230,13 @@ async def test_execute_with_tracking_error_emits_failure(monkeypatch):
         events = {}
 
         async def capture_start(
-            execution_id, context, reasoner_name, input_data, parent_execution_id=None
+            execution_id, context, bot_name, input_data, parent_execution_id=None
         ):
             events.setdefault("start", []).append(
                 {
                     "execution_id": execution_id,
                     "context": context,
-                    "reasoner_name": reasoner_name,
+                    "bot_name": bot_name,
                     "input_data": input_data,
                     "parent_execution_id": parent_execution_id,
                 }
@@ -265,15 +265,15 @@ async def test_execute_with_tracking_error_emits_failure(monkeypatch):
         monkeypatch.setattr(workflow, "notify_call_start", capture_start)
         monkeypatch.setattr(workflow, "notify_call_error", capture_error)
 
-        async def failing_reasoner(
+        async def failing_bot(
             value: int, execution_context: ExecutionContext = None
         ):
             raise RuntimeError("expected failure")
 
         with pytest.raises(RuntimeError):
-            await workflow.execute_with_tracking(failing_reasoner, (5,), {})
+            await workflow.execute_with_tracking(failing_bot, (5,), {})
     finally:
-        clear_current_agent()
+        clear_current_bot()
 
     assert "start" in events and "error" in events
 
@@ -297,12 +297,12 @@ async def test_execute_with_tracking_error_emits_failure(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_nested_reasoners_emit_child_completion_before_parent(monkeypatch):
+async def test_nested_bots_emit_child_completion_before_parent(monkeypatch):
     agent = StubAgent()
-    workflow = AgentWorkflow(agent)
+    workflow = BotWorkflow(agent)
     agent.workflow_handler = workflow
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     agent._current_execution_context = None
 
     payloads = []
@@ -312,42 +312,42 @@ async def test_nested_reasoners_emit_child_completion_before_parent(monkeypatch)
 
     monkeypatch.setattr(workflow, "fire_and_forget_update", capture)
 
-    async def child_reasoner(execution_context: ExecutionContext = None):
+    async def child_bot(execution_context: ExecutionContext = None):
         assert execution_context is not None
         return "child-result"
 
-    async def parent_reasoner(execution_context: ExecutionContext = None):
+    async def parent_bot(execution_context: ExecutionContext = None):
         assert execution_context is not None
-        # Invoke child reasoner within the tracked context.
-        return await workflow.execute_with_tracking(child_reasoner, tuple(), {})
+        # Invoke child bot within the tracked context.
+        return await workflow.execute_with_tracking(child_bot, tuple(), {})
 
     try:
-        result = await workflow.execute_with_tracking(parent_reasoner, tuple(), {})
+        result = await workflow.execute_with_tracking(parent_bot, tuple(), {})
     finally:
-        clear_current_agent()
+        clear_current_bot()
         agent._current_execution_context = None
 
     assert result == "child-result"
     # We expect exactly four lifecycle events: parent start, child start, child complete, parent complete.
     assert len(payloads) == 4
 
-    timeline = [(payload["reasoner_id"], payload["status"]) for payload in payloads]
+    timeline = [(payload["bot_id"], payload["status"]) for payload in payloads]
 
-    assert timeline[0] == ("parent_reasoner", "running")
-    assert timeline[1] == ("child_reasoner", "running")
+    assert timeline[0] == ("parent_bot", "running")
+    assert timeline[1] == ("child_bot", "running")
 
     child_complete_index = next(
         index
         for index, entry in enumerate(timeline)
-        if entry == ("child_reasoner", "succeeded")
+        if entry == ("child_bot", "succeeded")
     )
 
     parent_complete_index = next(
         index
         for index, entry in enumerate(timeline)
-        if entry[1] == "succeeded" and entry[0].endswith("parent_reasoner")
+        if entry[1] == "succeeded" and entry[0].endswith("parent_bot")
     )
 
     assert (
         child_complete_index < parent_complete_index
-    ), "Parent reasoner completion emitted before child finished"
+    ), "Parent bot completion emitted before child finished"

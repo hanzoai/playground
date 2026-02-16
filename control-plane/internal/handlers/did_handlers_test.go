@@ -21,14 +21,14 @@ type fakeDIDService struct {
 	listFn     func() ([]string, error)
 }
 
-func (f *fakeDIDService) RegisterAgent(req *types.DIDRegistrationRequest) (*types.DIDRegistrationResponse, error) {
+func (f *fakeDIDService) RegisterNode(req *types.DIDRegistrationRequest) (*types.DIDRegistrationResponse, error) {
 	if f.registerFn != nil {
 		return f.registerFn(req)
 	}
 	return &types.DIDRegistrationResponse{
 		Success: true,
 		IdentityPackage: types.DIDIdentityPackage{
-			AgentDID: types.DIDIdentity{DID: "did:example:agent"},
+			NodeDID: types.DIDIdentity{DID: "did:example:agent"},
 		},
 		Message: "registered",
 	}, nil
@@ -41,7 +41,7 @@ func (f *fakeDIDService) ResolveDID(did string) (*types.DIDIdentity, error) {
 	return &types.DIDIdentity{DID: did, PublicKeyJWK: "{\"kty\":\"OKP\"}"}, nil
 }
 
-func (f *fakeDIDService) ListAllAgentDIDs() ([]string, error) {
+func (f *fakeDIDService) ListAllNodeDIDs() ([]string, error) {
 	if f.listFn != nil {
 		return f.listFn()
 	}
@@ -128,15 +128,15 @@ func (f *fakeVCService) ListWorkflowVCs() ([]*types.WorkflowVC, error) {
 	return []*types.WorkflowVC{}, nil
 }
 
-func TestRegisterAgentHandler_Success(t *testing.T) {
+func TestRegisterNodeHandler_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	handler := NewDIDHandlers(&fakeDIDService{}, &fakeVCService{})
 
 	router := gin.New()
-	router.POST("/api/v1/did/register", handler.RegisterAgent)
+	router.POST("/api/v1/did/register", handler.RegisterNode)
 
-	reqBody := `{"agent_node_id":"node-1"}`
+	reqBody := `{"node_id":"node-1"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/did/register", strings.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -148,7 +148,7 @@ func TestRegisterAgentHandler_Success(t *testing.T) {
 	var payload types.DIDRegistrationResponse
 	require.NoError(t, json.Unmarshal(resp.Body.Bytes(), &payload))
 	require.True(t, payload.Success)
-	require.Equal(t, "did:example:agent", payload.IdentityPackage.AgentDID.DID)
+	require.Equal(t, "did:example:agent", payload.IdentityPackage.NodeDID.DID)
 }
 
 func TestVerifyVCHandler_Success(t *testing.T) {

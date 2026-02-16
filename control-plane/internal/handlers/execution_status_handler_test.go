@@ -19,14 +19,13 @@ import (
 func TestHandleStatusUpdateMarksSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	storage := newTestExecutionStorage(&types.AgentNode{ID: "agent-1"})
+	storage := newTestExecutionStorage(&types.Node{ID: "agent-1"})
 	now := time.Now().UTC().Add(-time.Minute)
 	exec := &types.Execution{
 		ExecutionID: "exec-123",
 		RunID:       "run-123",
-		AgentNodeID: "agent-1",
-		BotID:  "bot",
 		NodeID:      "agent-1",
+		BotID:  "bot",
 		Status:      types.ExecutionStatusRunning,
 		StartedAt:   now,
 		CreatedAt:   now,

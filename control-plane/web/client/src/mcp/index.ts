@@ -112,7 +112,7 @@ export type {
   MCPNodeMetrics,
   MCPErrorDetails,
   MCPError,
-  AgentNodeDetailsForUI,
+  NodeDetailsForUI,
   MCPHealthResponse,
   MCPServerActionResponse,
   MCPToolsResponse,

@@ -5,7 +5,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Zap, GaugeCircle, Timer, Activity } from "@/components/ui/icon-bridge";
 import { ExecutionScatterPlot } from "./ExecutionScatterPlot";
-import { AgentHealthHeatmap } from "./AgentHealthHeatmap";
+import { BotHealthHeatmap } from "./BotHealthHeatmap";
 import type { WorkflowSummary, WorkflowTimelineNode } from "../../types/workflows";
 import { normalizeExecutionStatus, getStatusLabel } from "../../utils/status";
 
@@ -262,7 +262,7 @@ export function EnhancedWorkflowPerformance({
                     </h3>
                     <span className="text-body-small">Failure patterns by agent</span>
                   </div>
-                  <AgentHealthHeatmap timedNodes={timedNodes} />
+                  <BotHealthHeatmap timedNodes={timedNodes} />
                 </div>
 
                 {bottlenecks.length > 0 && (

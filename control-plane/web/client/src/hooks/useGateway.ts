@@ -9,7 +9,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { gateway } from '@/services/gatewayClient';
 import { agentsList } from '@/services/gatewayApi';
-import { useAgentStore } from '@/stores/agentStore';
+import { useBotStore } from '@/stores/botStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useActionPillStore } from '@/stores/actionPillStore';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,13 +70,13 @@ export function useGateway(tenant?: TenantContext) {
 
   // Unique client ID per session (not per page load)
   const clientId = useMemo(
-    () => `bot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    () => `playground-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     []
   );
 
-  const setAgents = useAgentStore((s) => s.setAgents);
-  const handleChatEvent = useAgentStore((s) => s.handleChatEvent);
-  const handleAgentEvent = useAgentStore((s) => s.handleAgentEvent);
+  const setAgents = useBotStore((s) => s.setAgents);
+  const handleChatEvent = useBotStore((s) => s.handleChatEvent);
+  const handleBotEvent = useBotStore((s) => s.handleBotEvent);
   const upsertBot = useCanvasStore((s) => s.upsertBot);
   const addApproval = useActionPillStore((s) => s.add);
 
@@ -89,7 +89,7 @@ export function useGateway(tenant?: TenantContext) {
       version: CLIENT_VERSION,
       platform: 'web',
       mode: 'operator',
-      displayName: 'Hanzo Bot',
+      displayName: 'Hanzo Playground',
     },
     role: 'operator',
     scopes: ['operator.admin'],
@@ -173,7 +173,7 @@ export function useGateway(tenant?: TenantContext) {
     });
 
     const unsubAgent = gateway.on('agent', (payload) => {
-      handleAgentEvent(payload as AgentEvent);
+      handleBotEvent(payload as AgentEvent);
     });
 
     const unsubApproval = gateway.on('exec.approval.requested', (payload) => {
@@ -190,7 +190,7 @@ export function useGateway(tenant?: TenantContext) {
       unsubApproval();
       // Don't disconnect on unmount — singleton persists across routes
     };
-  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleAgentEvent, addApproval, buildConnectParams]);
+  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval, buildConnectParams]);
 
   const reconnect = useCallback(() => {
     syncedRef.current = false;

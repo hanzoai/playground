@@ -21,12 +21,12 @@ _AGENT_DID_HEADER = "X-Agent-Node-DID"
 
 @dataclass
 class ExecutionContext:
-    """Captures the inbound execution metadata for a reasoner invocation."""
+    """Captures the inbound execution metadata for a bot invocation."""
 
     run_id: str
     execution_id: str
     agent_instance: Any
-    reasoner_name: str
+    bot_name: str
     agent_node_id: Optional[str] = None
     parent_execution_id: Optional[str] = None
     depth: int = 0
@@ -108,7 +108,7 @@ class ExecutionContext:
             execution_id=generate_execution_id(),
             agent_instance=self.agent_instance,
             agent_node_id=self.agent_node_id,
-            reasoner_name=self.reasoner_name,
+            bot_name=self.bot_name,
             parent_execution_id=self.execution_id,
             depth=self.depth + 1,
             session_id=self.session_id,
@@ -160,14 +160,14 @@ class ExecutionContext:
         parent_workflow_id = _read("X-Parent-Workflow-ID")
         root_workflow_id = _read("X-Root-Workflow-ID")
 
-        from .agent_registry import get_current_agent_instance
+        from .bot_registry import get_current_bot_instance
 
         return cls(
             run_id=run_id,
             execution_id=execution_id,
-            agent_instance=get_current_agent_instance(),
+            agent_instance=get_current_bot_instance(),
             agent_node_id=agent_node_id,
-            reasoner_name="unknown",
+            bot_name="unknown",
             parent_execution_id=parent_execution_id,
             session_id=session_id,
             actor_id=actor_id,
@@ -182,19 +182,19 @@ class ExecutionContext:
 
     @classmethod
     def new_root(
-        cls, agent_node_id: str, reasoner_name: str = "root"
+        cls, agent_node_id: str, bot_name: str = "root"
     ) -> "ExecutionContext":
         """Create a brand-new root execution context for manual invocation."""
 
-        from .agent_registry import get_current_agent_instance
+        from .bot_registry import get_current_bot_instance
 
         run_id = generate_run_id()
         return cls(
             run_id=run_id,
             execution_id=generate_execution_id(),
-            agent_instance=get_current_agent_instance(),
+            agent_instance=get_current_bot_instance(),
             agent_node_id=agent_node_id,
-            reasoner_name=reasoner_name,
+            bot_name=bot_name,
             parent_execution_id=None,
             workflow_id=run_id,
             root_workflow_id=run_id,
@@ -208,7 +208,7 @@ class ExecutionContext:
         """
 
         context = cls.new_root(agent_node_id, workflow_name)
-        context.reasoner_name = workflow_name
+        context.bot_name = workflow_name
         return context
 
 

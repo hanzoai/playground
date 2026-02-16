@@ -22,7 +22,7 @@ import type {
 const ITEMS_PER_PAGE = 50;
 const GRID_TEMPLATE =
     "80px minmax(200px,1fr) minmax(300px,2fr) minmax(150px,1fr) 120px 80px";
-const GRID_TEMPLATE_BOTS =
+const GRID_TEMPLATE_REASONERS =
     "minmax(200px,1fr) minmax(350px,2fr) 100px 140px";
 
 export function DIDExplorerPage() {
@@ -159,7 +159,7 @@ export function DIDExplorerPage() {
     // Handlers
     const handleAgentClick = (agent: AgentDIDResponse) => {
         setSelectedAgent(agent);
-        fetchAgentBots(agent.agent_node_id, 0);
+        fetchAgentBots(agent.node_id, 0);
     };
 
     const handleCopyDID = async (did: string) => {
@@ -327,10 +327,10 @@ export function DIDExplorerPage() {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="px-6 pt-6 pb-4">
                 <PageHeader
-                    title={selectedAgent ? selectedAgent.agent_node_id : "DID Explorer"}
+                    title={selectedAgent ? selectedAgent.node_id : "DID Explorer"}
                     description={
                         selectedAgent
-                            ? `Viewing bots for agent ${selectedAgent.agent_node_id}`
+                            ? `Viewing bots for agent ${selectedAgent.node_id}`
                             : "Explore decentralized identifiers for agents and bots"
                     }
                     aside={
@@ -388,7 +388,7 @@ export function DIDExplorerPage() {
                                     />
                                     <div>
                                         <h2 className="text-lg font-semibold">
-                                            {selectedAgent.agent_node_id}
+                                            {selectedAgent.node_id}
                                         </h2>
                                         <div className="flex items-center gap-2 mt-1">
                                             <code className="text-xs text-muted-foreground font-mono">
@@ -467,12 +467,12 @@ export function DIDExplorerPage() {
                                 onSortChange={() => {}}
                                 onLoadMore={() =>
                                     fetchAgentBots(
-                                        selectedAgent.agent_node_id,
+                                        selectedAgent.node_id,
                                         botsOffset + ITEMS_PER_PAGE,
                                     )
                                 }
                                 columns={botColumns}
-                                gridTemplate={GRID_TEMPLATE_BOTS}
+                                gridTemplate={GRID_TEMPLATE_REASONERS}
                                 emptyState={{
                                     title: "No bots found",
                                     description:
@@ -523,7 +523,7 @@ export function DIDExplorerPage() {
                                         if (result.type === "agent") {
                                             const agent = recentAgents.find(
                                                 (a) =>
-                                                    a.agent_node_id ===
+                                                    a.node_id ===
                                                     result.name,
                                             );
                                             if (agent) handleAgentClick(agent);
@@ -564,7 +564,7 @@ export function DIDExplorerPage() {
                                         <div className="flex-1 overflow-y-auto space-y-2">
                                             {recentAgents.map((agent) => (
                                                 <div
-                                                    key={agent.agent_node_id}
+                                                    key={agent.node_id}
                                                     className="bg-card border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
                                                     onClick={() =>
                                                         handleAgentClick(agent)
@@ -579,7 +579,7 @@ export function DIDExplorerPage() {
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-medium">
                                                                     {
-                                                                        agent.agent_node_id
+                                                                        agent.node_id
                                                                     }
                                                                 </p>
                                                                 <code className="text-xs text-muted-foreground font-mono truncate block">

@@ -17,7 +17,7 @@ import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
-import { AgentLegend } from "./AgentLegend";
+import { BotLegend } from "./BotLegend";
 import FloatingConnectionLine from "./FloatingConnectionLine";
 import FloatingEdge from "./FloatingEdge";
 import { LayoutControls } from "./LayoutControls";
@@ -43,7 +43,7 @@ import { formatNumberWithCommas } from "../../utils/numberFormat";
 interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -93,7 +93,7 @@ function mapLightweightNode(
   return {
     workflow_id: workflowId,
     execution_id: node.execution_id,
-    agent_node_id: node.agent_node_id,
+    node_id: node.node_id,
     bot_id: node.bot_id,
     status: node.status,
     started_at: node.started_at,
@@ -547,7 +547,7 @@ function decorateEdgesWithStatus(
         focusDistance?: number;
       };
 
-      const agentLabel = data.agent_name || data.agent_node_id || "";
+      const agentLabel = data.agent_name || data.node_id || "";
       const taskLabel = data.task_name || data.bot_id || "";
       const statusLabel = data.status || "";
       const searchableSource =
@@ -1228,7 +1228,7 @@ function decorateEdgesWithStatus(
 
               {/* Agent Legend - positioned in top-left */}
               <div className="absolute top-4 left-4 z-30">
-                <AgentLegend
+                <BotLegend
                   onAgentFilter={handleAgentFilter}
                   selectedAgent={selectedAgent}
                   compact={false}
@@ -1354,7 +1354,7 @@ function decorateEdgesWithStatus(
 
                 {/* Agent Legend */}
                 <Panel position="top-left" className="z-30">
-                  <AgentLegend
+                  <BotLegend
                     onAgentFilter={handleAgentFilter}
                     selectedAgent={selectedAgent}
                     compact={nodes.length <= 20}

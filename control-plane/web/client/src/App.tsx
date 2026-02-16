@@ -23,6 +23,8 @@ import { CredentialsPage } from "./pages/CredentialsPage";
 import { ObservabilityWebhookSettingsPage } from "./pages/ObservabilityWebhookSettingsPage";
 import { CanvasPage } from "./pages/CanvasPage";
 import { TeamPage } from "./pages/TeamPage";
+import { SpacesPage } from "./pages/SpacesPage";
+import { SpaceSettingsPage } from "./pages/SpaceSettingsPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 
@@ -33,7 +35,7 @@ function AgentsPage() {
     <div className="flex items-center justify-center h-64">
       <div className="text-center">
         <h2 className="text-heading-1 mb-2">
-          My Agents
+          My Bots
         </h2>
         <p className="text-body">
           Your configured and running agents
@@ -102,6 +104,8 @@ function AppContent() {
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
               <Route path="/settings/observability-webhook" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ObservabilityWebhookSettingsPage /></div>} />
               <Route path="/canvas" element={<CanvasPage />} />
+              <Route path="/spaces" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpacesPage /></div>} />
+              <Route path="/spaces/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpaceSettingsPage /></div>} />
               <Route path="/teams" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><TeamPage /></div>} />
               <Route path="/test/deckgl" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowDeckGLTestPage /></div>} />
             </Routes>

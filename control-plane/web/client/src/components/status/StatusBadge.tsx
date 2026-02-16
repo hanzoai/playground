@@ -1,7 +1,7 @@
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import type {
-  AgentState,
-  AgentStatus,
+  BotState,
+  BotStatus,
   HealthStatus,
   LifecycleStatus,
 } from "@/types/playground";
@@ -20,8 +20,8 @@ import {
 import type { IconComponent } from "@/components/ui/icon-bridge";
 
 interface StatusBadgeProps {
-  status?: AgentStatus;
-  state?: AgentState;
+  status?: BotStatus;
+  state?: BotState;
   healthStatus?: HealthStatus;
   lifecycleStatus?: LifecycleStatus;
   showIcon?: boolean;
@@ -38,7 +38,7 @@ type StatusConfigEntry = {
   label: string;
 };
 
-const STATE_CONFIG: Record<AgentState, StatusConfigEntry> = {
+const STATE_CONFIG: Record<BotState, StatusConfigEntry> = {
   active: {
     icon: CheckCircle,
     variant: "success",
@@ -243,13 +243,13 @@ export function StatusBadge({
 }
 
 // Specialized badge components for specific use cases
-export function AgentStateBadge({
+export function BotStateBadge({
   state,
   showIcon = true,
   size = "md",
   className = "",
 }: {
-  state: AgentState;
+  state: BotState;
   showIcon?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;

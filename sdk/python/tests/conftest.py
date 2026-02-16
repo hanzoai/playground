@@ -21,7 +21,7 @@ import respx
 import responses as responses_lib
 from freezegun import freeze_time
 
-from playground.agent import Agent
+from playground.bot import Agent
 from playground.types import AIConfig, MemoryConfig
 
 # Optional imports guarded for test envs
@@ -99,7 +99,7 @@ class _EnvPatcher:
 
     Usage:
         def test_env(env_patch):
-            env_patch.setenv("AGENT_CALLBACK_URL", "http://agent:8000")
+            env_patch.setenv("HANZO_CALLBACK_URL", "http://agent:8000")
             # ... test ...
             # Automatically restored after the test
 
@@ -175,7 +175,7 @@ def env_patch():
 
     Example:
         def test_callback_resolution(env_patch):
-            env_patch.setenv("AGENT_CALLBACK_URL", "http://host:9999")
+            env_patch.setenv("HANZO_CALLBACK_URL", "http://host:9999")
             # ... construct Agent and assert base_url resolution ...
     """
     patcher = _EnvPatcher()
@@ -351,11 +351,11 @@ class PlaygroundHTTPMocks:
     Example:
         def test_register_success(http_mocks):
             http_mocks.mock_register_node(status=201)
-            # ... call client.register_agent(...) path or register_node() ...
+            # ... call client.register_bot(...) path or register_node() ...
 
         async def test_execute_ok(http_mocks):
-            http_mocks.mock_execute("node.reasoner", json={"result": {"ok": True}})
-            # ... await client.execute("node.reasoner", {...}) ...
+            http_mocks.mock_execute("node.bot", json={"result": {"ok": True}})
+            # ... await client.execute("node.bot", {...}) ...
     """
 
     def __init__(self, base_url: str = "http://localhost:8080"):
@@ -454,7 +454,7 @@ def http_mocks() -> PlaygroundHTTPMocks:
     Example:
         def test_execute_headers_propagation(http_mocks, workflow_context):
             ctx, headers = workflow_context  # minimal by default
-            http_mocks.mock_execute("n.reasoner", json={"result": {"ok": True}})
+            http_mocks.mock_execute("n.bot", json={"result": {"ok": True}})
             # ... call PlaygroundClient.execute(...), ensure headers were passed ...
     """
     return PlaygroundHTTPMocks()
@@ -510,7 +510,7 @@ def mock_ip_detection(monkeypatch):
     Example:
         def test_local_ip_fallback(mock_ip_detection, env_patch):
             mock_ip_detection(container_ip=None, local_ip="10.0.0.2")
-            env_patch.unset("AGENT_CALLBACK_URL")
+            env_patch.unset("HANZO_CALLBACK_URL")
             ...
     """
     from playground import agent as agent_mod
@@ -541,6 +541,7 @@ def sample_agent(
             assert sample_agent.node_id == "test-node"
     """
     # Ensure no env interference unless the test asks for it
+    env_patch.unset("HANZO_CALLBACK_URL")
     env_patch.unset("AGENT_CALLBACK_URL")
     env_patch.unset("RAILWAY_SERVICE_NAME")
     env_patch.unset("RAILWAY_ENVIRONMENT")
@@ -675,7 +676,7 @@ def fake_server(monkeypatch, request):
 # - Agent.__init__ callback URL resolution is exercised via env_patch + mock_container_detection + mock_ip_detection
 # - PlaygroundClient request/header propagation is covered by http_mocks and fake_server
 # - MemoryClient serialization and HTTP fallback paths are supported by http_mocks and fake_server
-# - AgentAI model limits caching and message trimming rely on litellm_mock + sample_ai_config
+# - BotAI model limits caching and message trimming rely on litellm_mock + sample_ai_config
 # - AIConfig parameter merging and fallback logic can be tested via sample_ai_config overrides
 
 

@@ -42,10 +42,10 @@ export function TopNavigation() {
         href: "/bots/workflows",
         parent: "bots",
       },
-      nodes: { label: "Agent Nodes", href: "/nodes" },
+      nodes: { label: "Nodes", href: "/nodes" },
       packages: { label: "Packages", href: "/packages" },
       settings: { label: "Settings", href: "/settings" },
-      agents: { label: "My Agents", href: "/agents" },
+      agents: { label: "My Bots", href: "/agents" },
       canvas: { label: "Playground", href: "/canvas" },
       dashboard: { label: "Dashboard", href: "/dashboard" },
       "dashboard/enhanced": {

@@ -1,5 +1,5 @@
 import type http from 'node:http';
-import type { ReasonerDefinition } from './reasoner.js';
+import type { BotDefinition } from './bot.js';
 import type { SkillDefinition } from './skill.js';
 import type { MemoryChangeEvent, MemoryWatchHandler } from '../memory/MemoryInterface.js';
 import type { ExecutionMetadata } from '../context/ExecutionContext.js';
@@ -81,11 +81,11 @@ export interface AgentCapability {
   healthStatus: string;
   deploymentType?: string;
   lastHeartbeat?: string;
-  reasoners: ReasonerCapability[];
+  bots: BotCapability[];
   skills: SkillCapability[];
 }
 
-export interface ReasonerCapability {
+export interface BotCapability {
   id: string;
   description?: string;
   tags: string[];
@@ -106,7 +106,7 @@ export interface SkillCapability {
 export interface DiscoveryResponse {
   discoveredAt: string;
   totalAgents: number;
-  totalReasoners: number;
+  totalBots: number;
   totalSkills: number;
   pagination: DiscoveryPagination;
   capabilities: AgentCapability[];
@@ -127,7 +127,7 @@ export interface CompactCapability {
 
 export interface CompactDiscoveryResponse {
   discoveredAt: string;
-  reasoners: CompactCapability[];
+  bots: CompactCapability[];
   skills: CompactCapability[];
 }
 
@@ -146,7 +146,7 @@ export interface DiscoveryOptions {
   nodeId?: string;
   agentIds?: string[];
   nodeIds?: string[];
-  reasoner?: string;
+  bot?: string;
   skill?: string;
   tags?: string[];
   includeInputSchema?: boolean;
@@ -161,7 +161,7 @@ export interface DiscoveryOptions {
 }
 
 export interface AgentState {
-  reasoners: Map<string, ReasonerDefinition>;
+  bots: Map<string, BotDefinition>;
   skills: Map<string, SkillDefinition>;
   memoryWatchers: Array<{ pattern: string; handler: MemoryWatchHandler; scope?: string; scopeId?: string }>;
 }
@@ -182,9 +182,9 @@ export interface ServerlessEvent {
   headers?: Record<string, string | undefined>;
   queryStringParameters?: Record<string, string | undefined>;
   target?: string;
-  reasoner?: string;
+  bot?: string;
   skill?: string;
-  type?: 'reasoner' | 'skill';
+  type?: 'bot' | 'skill';
   body?: any;
   input?: any;
   executionContext?: Partial<ExecutionMetadata>;

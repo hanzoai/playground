@@ -88,7 +88,7 @@ export interface ExecutionViewState {
 export interface WorkflowTimelineNode {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -119,7 +119,7 @@ export interface WorkflowTimelineNode {
 export interface WorkflowDAGLightweightNode {
   execution_id: string;
   parent_execution_id?: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;

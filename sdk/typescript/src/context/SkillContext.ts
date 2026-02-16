@@ -1,9 +1,9 @@
 import type express from 'express';
 import { ExecutionContext } from './ExecutionContext.js';
-import type { Agent } from '../agent/Agent.js';
+import { Bot } from '../agent/Bot.js';
 import type { MemoryInterface } from '../memory/MemoryInterface.js';
 import type { WorkflowReporter } from '../workflow/WorkflowReporter.js';
-import type { DiscoveryOptions } from '../types/agent.js';
+import type { DiscoveryOptions } from '../types/bot.js';
 import type { DidInterface } from '../did/DidInterface.js';
 
 export class SkillContext<TInput = any> {
@@ -15,7 +15,7 @@ export class SkillContext<TInput = any> {
   readonly agentNodeDid?: string;
   readonly req: express.Request;
   readonly res: express.Response;
-  readonly agent: Agent;
+  readonly agent: Bot;
   readonly memory: MemoryInterface;
   readonly workflow: WorkflowReporter;
   readonly did: DidInterface;
@@ -29,7 +29,7 @@ export class SkillContext<TInput = any> {
     agentNodeDid?: string;
     req: express.Request;
     res: express.Response;
-    agent: Agent;
+    agent: Bot;
     memory: MemoryInterface;
     workflow: WorkflowReporter;
     did: DidInterface;

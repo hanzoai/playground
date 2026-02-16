@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// AgentConfiguration represents a stored configuration for an agent package
-type AgentConfiguration struct {
+// BotConfiguration represents a stored configuration for an agent package
+type BotConfiguration struct {
 	ID              int64                  `json:"id" db:"id"`
 	AgentID         string                 `json:"agent_id" db:"agent_id"`
 	PackageID       string                 `json:"package_id" db:"package_id"`
@@ -30,8 +30,8 @@ const (
 	ConfigurationStatusError    ConfigurationStatus = "error"
 )
 
-// AgentPackage represents an installed agent package
-type AgentPackage struct {
+// BotPackage represents an installed agent package
+type BotPackage struct {
 	ID                  string              `json:"id" db:"id"`
 	Name                string              `json:"name" db:"name"`
 	Version             string              `json:"version" db:"version"`

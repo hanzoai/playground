@@ -14,13 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubAgentLister struct {
-	agents []*types.AgentNode
+type stubNodeLister struct {
+	agents []*types.Node
 	err    error
 	calls  int
 }
 
-func (s *stubAgentLister) ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error) {
+func (s *stubNodeLister) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	s.calls++
 	if s.err != nil {
 		return nil, s.err
@@ -32,7 +32,7 @@ func TestDiscoveryCapabilities_Defaults(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	InvalidateDiscoveryCache()
 
-	lister := &stubAgentLister{agents: buildDiscoveryAgents()}
+	lister := &stubNodeLister{agents: buildDiscoveryAgents()}
 	router := gin.New()
 	router.GET("/api/v1/discovery/capabilities", DiscoveryCapabilitiesHandler(lister))
 
@@ -64,7 +64,7 @@ func TestDiscoveryCapabilities_WithFiltersAndSchemas(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	InvalidateDiscoveryCache()
 
-	lister := &stubAgentLister{agents: buildDiscoveryAgents()}
+	lister := &stubNodeLister{agents: buildDiscoveryAgents()}
 	router := gin.New()
 	router.GET("/api/v1/discovery/capabilities", DiscoveryCapabilitiesHandler(lister))
 
@@ -100,7 +100,7 @@ func TestDiscoveryCapabilities_Formats(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	InvalidateDiscoveryCache()
 
-	lister := &stubAgentLister{agents: buildDiscoveryAgents()}
+	lister := &stubNodeLister{agents: buildDiscoveryAgents()}
 	router := gin.New()
 	router.GET("/api/v1/discovery/capabilities", DiscoveryCapabilitiesHandler(lister))
 
@@ -127,7 +127,7 @@ func TestDiscoveryCapabilities_ValidationAndCaching(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	InvalidateDiscoveryCache()
 
-	lister := &stubAgentLister{agents: buildDiscoveryAgents()}
+	lister := &stubNodeLister{agents: buildDiscoveryAgents()}
 	router := gin.New()
 	router.GET("/api/v1/discovery/capabilities", DiscoveryCapabilitiesHandler(lister))
 
@@ -151,14 +151,14 @@ func TestDiscoveryCapabilities_ValidationAndCaching(t *testing.T) {
 	assert.Equal(t, 1, lister.calls, "expected cached agents to be reused")
 }
 
-func buildDiscoveryAgents() []*types.AgentNode {
+func buildDiscoveryAgents() []*types.Node {
 	now := time.Now().UTC()
 
 	deepInput := json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)
 	deepOutput := json.RawMessage(`{"type":"object","properties":{"findings":{"type":"array"}}}`)
 	webInput := json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"},"num_results":{"type":"integer","default":10}},"required":["query"]}`)
 
-	return []*types.AgentNode{
+	return []*types.Node{
 		{
 			ID:             "agent-alpha",
 			BaseURL:        "http://alpha:8080",
@@ -181,7 +181,7 @@ func buildDiscoveryAgents() []*types.AgentNode {
 					Tags:        []string{"math", "utility"},
 				},
 			},
-			Metadata: types.AgentMetadata{
+			Metadata: types.BotMetadata{
 				Custom: map[string]interface{}{
 					"descriptions": map[string]interface{}{
 						"summarize": "Summarize content quickly",
@@ -212,7 +212,7 @@ func buildDiscoveryAgents() []*types.AgentNode {
 					Tags:        []string{"web", "search"},
 				},
 			},
-			Metadata: types.AgentMetadata{
+			Metadata: types.BotMetadata{
 				Custom: map[string]interface{}{
 					"descriptions": map[string]interface{}{
 						"deep_research": "Performs comprehensive research",

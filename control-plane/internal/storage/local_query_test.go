@@ -69,7 +69,7 @@ func TestQueryWorkflowExecutionsFiltersAndSearch(t *testing.T) {
 			ExecutionID:         "exec-alpha",
 			AgentsRequestID: "req-1",
 			RunID:               &runID,
-			AgentNodeID:         "agent-one",
+			NodeID:         "agent-one",
 			BotID:          "bot.alpha",
 			WorkflowName:        &alphaName,
 			Status:              runningStatus,
@@ -83,7 +83,7 @@ func TestQueryWorkflowExecutionsFiltersAndSearch(t *testing.T) {
 			ExecutionID:         "exec-beta",
 			AgentsRequestID: "req-2",
 			RunID:               &runID,
-			AgentNodeID:         "agent-two",
+			NodeID:         "agent-two",
 			BotID:          "bot.beta",
 			WorkflowName:        &betaName,
 			Status:              succeededStatus,
@@ -115,7 +115,7 @@ func TestQueryWorkflowExecutionsFiltersAndSearch(t *testing.T) {
 	require.Equal(t, "exec-alpha", results[0].ExecutionID)
 
 	agentID := "agent-two"
-	results, err = ls.QueryWorkflowExecutions(ctx, types.WorkflowExecutionFilters{AgentNodeID: &agentID})
+	results, err = ls.QueryWorkflowExecutions(ctx, types.WorkflowExecutionFilters{NodeID: &agentID})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, "exec-beta", results[0].ExecutionID)
@@ -159,7 +159,7 @@ func TestQueryWorkflowDAGReturnsHierarchy(t *testing.T) {
 		ExecutionID:         "root-exec",
 		AgentsRequestID: "req-root",
 		RunID:               &runID,
-		AgentNodeID:         "agent-root",
+		NodeID:         "agent-root",
 		BotID:          "root",
 		Status:              string(types.ExecutionStatusRunning),
 		StartedAt:           now.Add(-2 * time.Minute),
@@ -174,7 +174,7 @@ func TestQueryWorkflowDAGReturnsHierarchy(t *testing.T) {
 		ExecutionID:         "child-exec",
 		AgentsRequestID: "req-child",
 		RunID:               &runID,
-		AgentNodeID:         "agent-child",
+		NodeID:         "agent-child",
 		BotID:          "child",
 		ParentExecutionID:   &parentID,
 		RootWorkflowID:      &root.WorkflowID,

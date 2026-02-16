@@ -102,7 +102,7 @@ class TestExecutionStateMemory:
         for i in range(count):
             state = ExecutionState(
                 execution_id=f"exec_{i:06d}",
-                target=f"agent.reasoner_{i}",
+                target=f"agent.bot_{i}",
                 input_data={
                     "payload": "x" * 10000,  # ~10KB
                     "nested": {"items": list(range(500))},
@@ -115,7 +115,7 @@ class TestExecutionStateMemory:
         """Input data should be cleared when execution succeeds."""
         state = ExecutionState(
             execution_id="test_exec",
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"large": "x" * 10000}
         )
         assert len(state.input_data) > 0
@@ -129,7 +129,7 @@ class TestExecutionStateMemory:
         """Input data should be cleared when execution fails."""
         state = ExecutionState(
             execution_id="test_exec",
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"large": "x" * 10000}
         )
 
@@ -142,7 +142,7 @@ class TestExecutionStateMemory:
         """Input data should be cleared when execution is cancelled."""
         state = ExecutionState(
             execution_id="test_exec",
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"large": "x" * 10000}
         )
 
@@ -155,7 +155,7 @@ class TestExecutionStateMemory:
         """Input data should be cleared when execution times out."""
         state = ExecutionState(
             execution_id="test_exec",
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"large": "x" * 10000},
             timeout=1.0
         )
@@ -321,7 +321,7 @@ class TestMemoryBenchmarkBaseline:
             for i in range(iterations):
                 state = ExecutionState(
                     execution_id=f"exec_{i:06d}",
-                    target=f"agent.reasoner_{i}",
+                    target=f"agent.bot_{i}",
                     input_data={
                         "payload": "x" * 10000,
                         "nested": {"items": list(range(500))},

@@ -12,7 +12,7 @@ var workflowExecutionLifecycleColumns = []string{
 	"run_id",
 	"session_id",
 	"actor_id",
-	"agent_node_id",
+	"node_id",
 	"parent_workflow_id",
 	"parent_execution_id",
 	"root_workflow_id",

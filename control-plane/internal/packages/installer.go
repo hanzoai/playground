@@ -37,15 +37,15 @@ type PackageMetadata struct {
 	Author          string                 `yaml:"author"`
 	Type            string                 `yaml:"type"`
 	Main            string                 `yaml:"main"`
-	AgentNode       AgentNodeConfig        `yaml:"agent_node"`
+	Node       NodeConfig        `yaml:"agent_node"`
 	Dependencies    DependencyConfig       `yaml:"dependencies"`
 	Capabilities    CapabilityConfig       `yaml:"capabilities"`
 	UserEnvironment UserEnvironmentConfig  `yaml:"user_environment"`
 	Metadata        map[string]interface{} `yaml:"metadata"`
 }
 
-// AgentNodeConfig represents agent node specific configuration
-type AgentNodeConfig struct {
+// NodeConfig represents hanzo node specific configuration
+type NodeConfig struct {
 	NodeID      string `yaml:"node_id"`
 	DefaultPort int    `yaml:"default_port"`
 }
@@ -56,7 +56,7 @@ type DependencyConfig struct {
 	System []string `yaml:"system"`
 }
 
-// CapabilityConfig represents agent node capabilities
+// CapabilityConfig represents hanzo node capabilities
 type CapabilityConfig struct {
 	Bots []FunctionInfo `yaml:"bots"`
 	Skills    []FunctionInfo `yaml:"skills"`
@@ -296,32 +296,32 @@ func (pu *PackageUninstaller) UninstallPackage(packageName string) error {
 	}
 
 	// 2. Check if package exists
-	agentNode, exists := registry.Installed[packageName]
+	node, exists := registry.Installed[packageName]
 	if !exists {
 		return fmt.Errorf("package %s is not installed", packageName)
 	}
 
 	// 3. Check if package is running
-	if agentNode.Status == "running" && !pu.Force {
+	if node.Status == "running" && !pu.Force {
 		return fmt.Errorf("package %s is currently running (use --force to stop and uninstall)", packageName)
 	}
 
 	// 4. Stop the package if it's running
-	if agentNode.Status == "running" {
-		fmt.Printf("Stopping running agent node...\n")
-		if err := pu.stopAgentNode(&agentNode); err != nil {
-			fmt.Printf("Warning: Failed to stop agent node: %v\n", err)
+	if node.Status == "running" {
+		fmt.Printf("Stopping running hanzo node...\n")
+		if err := pu.stopNode(&node); err != nil {
+			fmt.Printf("Warning: Failed to stop hanzo node: %v\n", err)
 		}
 	}
 
 	// 5. Remove package directory
-	if err := os.RemoveAll(agentNode.Path); err != nil {
+	if err := os.RemoveAll(node.Path); err != nil {
 		return fmt.Errorf("failed to remove package directory: %w", err)
 	}
 
 	// 6. Remove log file
-	if agentNode.Runtime.LogFile != "" {
-		if err := os.Remove(agentNode.Runtime.LogFile); err != nil && !os.IsNotExist(err) {
+	if node.Runtime.LogFile != "" {
+		if err := os.Remove(node.Runtime.LogFile); err != nil && !os.IsNotExist(err) {
 			fmt.Printf("Warning: Failed to remove log file: %v\n", err)
 		}
 	}
@@ -336,14 +336,14 @@ func (pu *PackageUninstaller) UninstallPackage(packageName string) error {
 	return nil
 }
 
-// stopAgentNode stops a running agent node
-func (pu *PackageUninstaller) stopAgentNode(agentNode *InstalledPackage) error {
-	if agentNode.Runtime.PID == nil {
-		return fmt.Errorf("no PID found for agent node")
+// stopNode stops a running hanzo node
+func (pu *PackageUninstaller) stopNode(node *InstalledPackage) error {
+	if node.Runtime.PID == nil {
+		return fmt.Errorf("no PID found for hanzo node")
 	}
 
 	// Find and kill the process
-	process, err := os.FindProcess(*agentNode.Runtime.PID)
+	process, err := os.FindProcess(*node.Runtime.PID)
 	if err != nil {
 		return fmt.Errorf("failed to find process: %w", err)
 	}

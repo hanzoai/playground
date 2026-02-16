@@ -6,15 +6,15 @@ This directory contains example agents demonstrating Playground's capabilities a
 
 | Use Case | Python | TypeScript | Go |
 |----------|--------|------------|-----|
-| **Getting Started** | [hello_world](python_agent_nodes/hello_world/) | [init-example](ts-node-examples/init-example/) | [go_agent_hello_world](go_agent_nodes/go_agent_hello_world/) |
-| **Basic RAG** | [hello_world_rag](python_agent_nodes/hello_world_rag/) | [discovery-memory](ts-node-examples/discovery-memory/) | - |
-| **Production RAG** | [agentic_rag](python_agent_nodes/agentic_rag/) | - | - |
-| **Documentation Q&A** | [documentation_chatbot](python_agent_nodes/documentation_chatbot/) | - | - |
-| **RAG Evaluation** | [rag_evaluation](python_agent_nodes/rag_evaluation/) | - | - |
-| **Deep Research** | [deep_research_agent](python_agent_nodes/deep_research_agent/) | - | - |
-| **Image Generation** | [image_generation_hello_world](python_agent_nodes/image_generation_hello_world/) | - | - |
-| **Multi-Agent Simulation** | [simulation_engine](python_agent_nodes/simulation_engine/) | [simulation](ts-node-examples/simulation/) | - |
-| **Serverless Deployment** | [serverless_hello](python_agent_nodes/serverless_hello/) | [serverless-hello](ts-node-examples/serverless-hello/) | - |
+| **Getting Started** | [hello_world](python_bots/hello_world/) | [init-example](ts-node-examples/init-example/) | [go_bot_hello_world](go_bots/go_bot_hello_world/) |
+| **Basic RAG** | [hello_world_rag](python_bots/hello_world_rag/) | [discovery-memory](ts-node-examples/discovery-memory/) | - |
+| **Production RAG** | [agentic_rag](python_bots/agentic_rag/) | - | - |
+| **Documentation Q&A** | [documentation_chatbot](python_bots/documentation_chatbot/) | - | - |
+| **RAG Evaluation** | [rag_evaluation](python_bots/rag_evaluation/) | - | - |
+| **Deep Research** | [deep_research](python_bots/deep_research/) | - | - |
+| **Image Generation** | [image_generation_hello_world](python_bots/image_generation_hello_world/) | - | - |
+| **Multi-Agent Simulation** | [simulation_engine](python_bots/simulation_engine/) | [simulation](ts-node-examples/simulation/) | - |
+| **Serverless Deployment** | [serverless_hello](python_bots/serverless_hello/) | [serverless-hello](ts-node-examples/serverless-hello/) | - |
 | **Verifiable Credentials** | - | [verifiable-credentials](ts-node-examples/verifiable-credentials/) | - |
 
 ## Examples by Language
@@ -23,15 +23,15 @@ This directory contains example agents demonstrating Playground's capabilities a
 
 | Example | Description | Key Features |
 |---------|-------------|--------------|
-| [hello_world](python_agent_nodes/hello_world/) | Minimal agent foundation | Skills, Reasoners, Call graphs, Pydantic schemas |
-| [hello_world_rag](python_agent_nodes/hello_world_rag/) | Simple vector memory RAG | Document ingestion, Semantic search, Memory APIs |
-| [image_generation_hello_world](python_agent_nodes/image_generation_hello_world/) | Multi-provider image generation | DALL-E, Gemini, Prompt enhancement, Vision APIs |
-| [agentic_rag](python_agent_nodes/agentic_rag/) | Production-grade document Q&A | Ensemble retrieval, Hallucination prevention, Citations |
-| [deep_research_agent](python_agent_nodes/deep_research_agent/) | Recursive research planning | Task decomposition, Web search (Tavily), Parallel execution |
-| [documentation_chatbot](python_agent_nodes/documentation_chatbot/) | Enterprise RAG system | 3-reasoner architecture, Markdown-aware chunking, Inline citations |
-| [rag_evaluation](python_agent_nodes/rag_evaluation/) | Multi-metric QA assessment | Faithfulness, Relevance, Hallucination detection, Constitutional checks. [Docs →](https://playground.ai/examples/complete-agents/rag-evaluator) |
-| [simulation_engine](python_agent_nodes/simulation_engine/) | Domain-agnostic multi-agent simulation | 100+ parallel reasoners, Scenario analysis, Sentiment modeling |
-| [serverless_hello](python_agent_nodes/serverless_hello/) | Serverless deployment pattern | Lambda/Cloud Functions handler, Cross-agent calling |
+| [hello_world](python_bots/hello_world/) | Minimal agent foundation | Skills, Reasoners, Call graphs, Pydantic schemas |
+| [hello_world_rag](python_bots/hello_world_rag/) | Simple vector memory RAG | Document ingestion, Semantic search, Memory APIs |
+| [image_generation_hello_world](python_bots/image_generation_hello_world/) | Multi-provider image generation | DALL-E, Gemini, Prompt enhancement, Vision APIs |
+| [agentic_rag](python_bots/agentic_rag/) | Production-grade document Q&A | Ensemble retrieval, Hallucination prevention, Citations |
+| [deep_research](python_bots/deep_research/) | Recursive research planning | Task decomposition, Web search (Tavily), Parallel execution |
+| [documentation_chatbot](python_bots/documentation_chatbot/) | Enterprise RAG system | 3-reasoner architecture, Markdown-aware chunking, Inline citations |
+| [rag_evaluation](python_bots/rag_evaluation/) | Multi-metric QA assessment | Faithfulness, Relevance, Hallucination detection, Constitutional checks. [Docs →](https://hanzo.bot/examples/complete-agents/rag-evaluator) |
+| [simulation_engine](python_bots/simulation_engine/) | Domain-agnostic multi-agent simulation | 100+ parallel reasoners, Scenario analysis, Sentiment modeling |
+| [serverless_hello](python_bots/serverless_hello/) | Serverless deployment pattern | Lambda/Cloud Functions handler, Cross-agent calling |
 
 ### TypeScript Examples
 
@@ -47,7 +47,7 @@ This directory contains example agents demonstrating Playground's capabilities a
 
 | Example | Description | Key Features |
 |---------|-------------|--------------|
-| [go_agent_hello_world](go_agent_nodes/go_agent_hello_world/) | Full Go SDK demonstration | CLI + Control plane, 3-reasoner chain, Environment config |
+| [go_bot_hello_world](go_bots/go_bot_hello_world/) | Full Go SDK demonstration | CLI + Control plane, 3-reasoner chain, Environment config |
 
 ## Use Case Deep Dives
 
@@ -92,7 +92,7 @@ Deploy agents to AWS Lambda, Google Cloud Functions, or other serverless platfor
 
 ```bash
 # Example: Running the Python hello_world
-cd python_agent_nodes/hello_world
+cd python_bots/hello_world
 pip install -r requirements.txt
 export OPENAI_API_KEY=your-key
 python main.py

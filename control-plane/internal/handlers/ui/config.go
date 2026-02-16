@@ -43,7 +43,7 @@ func (h *ConfigHandler) GetConfigSchemaHandler(c *gin.Context) {
 	}
 
 	// Get the agent package to retrieve the configuration schema
-	agentPackage, err := h.storage.GetAgentPackage(ctx, packageID)
+	agentPackage, err := h.storage.GetBotPackage(ctx, packageID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "package not found"})
 		return
@@ -88,7 +88,7 @@ func (h *ConfigHandler) GetConfigHandler(c *gin.Context) {
 	}
 
 	// Get the current configuration
-	config, err := h.storage.GetAgentConfiguration(ctx, agentID, packageID)
+	config, err := h.storage.GetBotConfiguration(ctx, agentID, packageID)
 	if err != nil {
 		// If configuration doesn't exist, return empty configuration
 		response := map[string]interface{}{
@@ -149,7 +149,7 @@ func (h *ConfigHandler) SetConfigHandler(c *gin.Context) {
 	}
 
 	// Validate configuration against package schema
-	validationResult, err := h.storage.ValidateAgentConfiguration(ctx, agentID, packageID, req.Configuration)
+	validationResult, err := h.storage.ValidateBotConfiguration(ctx, agentID, packageID, req.Configuration)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to validate configuration"})
 		return
@@ -170,11 +170,11 @@ func (h *ConfigHandler) SetConfigHandler(c *gin.Context) {
 	}
 
 	// Check if configuration already exists
-	existingConfig, err := h.storage.GetAgentConfiguration(ctx, agentID, packageID)
+	existingConfig, err := h.storage.GetBotConfiguration(ctx, agentID, packageID)
 
 	if err != nil {
 		// Configuration doesn't exist, create new one
-		newConfig := &types.AgentConfiguration{
+		newConfig := &types.BotConfiguration{
 			AgentID:       agentID,
 			PackageID:     packageID,
 			Configuration: req.Configuration,
@@ -182,7 +182,7 @@ func (h *ConfigHandler) SetConfigHandler(c *gin.Context) {
 			Version:       1,
 		}
 
-		if err := h.storage.StoreAgentConfiguration(ctx, newConfig); err != nil {
+		if err := h.storage.StoreBotConfiguration(ctx, newConfig); err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to store configuration"})
 			return
 		}
@@ -203,7 +203,7 @@ func (h *ConfigHandler) SetConfigHandler(c *gin.Context) {
 		existingConfig.Status = status
 		existingConfig.Version++
 
-		if err := h.storage.UpdateAgentConfiguration(ctx, existingConfig); err != nil {
+		if err := h.storage.UpdateBotConfiguration(ctx, existingConfig); err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update configuration"})
 			return
 		}

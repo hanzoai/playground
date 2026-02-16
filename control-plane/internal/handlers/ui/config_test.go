@@ -42,25 +42,25 @@ func (m *MockStorageProvider) HealthCheck(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) StoreExecution(ctx context.Context, execution *types.AgentExecution) error {
+func (m *MockStorageProvider) StoreExecution(ctx context.Context, execution *types.BotExecution) error {
 	args := m.Called(ctx, execution)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) GetExecution(ctx context.Context, id int64) (*types.AgentExecution, error) {
+func (m *MockStorageProvider) GetExecution(ctx context.Context, id int64) (*types.BotExecution, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentExecution), args.Error(1)
+	return args.Get(0).(*types.BotExecution), args.Error(1)
 }
 
-func (m *MockStorageProvider) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.AgentExecution, error) {
+func (m *MockStorageProvider) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.BotExecution, error) {
 	args := m.Called(ctx, filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentExecution), args.Error(1)
+	return args.Get(0).([]*types.BotExecution), args.Error(1)
 }
 
 func (m *MockStorageProvider) StoreWorkflowExecution(ctx context.Context, execution *types.WorkflowExecution) error {
@@ -229,43 +229,43 @@ func (m *MockStorageProvider) ListMemory(ctx context.Context, scope, scopeID str
 	return args.Get(0).([]*types.Memory), args.Error(1)
 }
 
-func (m *MockStorageProvider) RegisterAgent(ctx context.Context, agent *types.AgentNode) error {
+func (m *MockStorageProvider) RegisterNode(ctx context.Context, agent *types.Node) error {
 	args := m.Called(ctx, agent)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+func (m *MockStorageProvider) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentNode), args.Error(1)
+	return args.Get(0).(*types.Node), args.Error(1)
 }
 
-func (m *MockStorageProvider) ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error) {
+func (m *MockStorageProvider) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	args := m.Called(ctx, filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentNode), args.Error(1)
+	return args.Get(0).([]*types.Node), args.Error(1)
 }
 
-func (m *MockStorageProvider) UpdateAgentHealth(ctx context.Context, id string, status types.HealthStatus) error {
+func (m *MockStorageProvider) UpdateNodeHealth(ctx context.Context, id string, status types.HealthStatus) error {
 	args := m.Called(ctx, id, status)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) UpdateAgentHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
+func (m *MockStorageProvider) UpdateNodeHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
 	args := m.Called(ctx, id, status, expectedLastHeartbeat)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) UpdateAgentHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
+func (m *MockStorageProvider) UpdateNodeHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
 	args := m.Called(ctx, id, heartbeatTime)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) UpdateAgentLifecycleStatus(ctx context.Context, id string, status types.AgentLifecycleStatus) error {
+func (m *MockStorageProvider) UpdateBotLifecycleStatus(ctx context.Context, id string, status types.BotLifecycleStatus) error {
 	args := m.Called(ctx, id, status)
 	return args.Error(0)
 }
@@ -296,38 +296,38 @@ func (m *MockStorageProvider) GetBotExecutionHistory(ctx context.Context, botID 
 	return args.Get(0).(*types.BotExecutionHistory), args.Error(1)
 }
 
-func (m *MockStorageProvider) StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+func (m *MockStorageProvider) StoreBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	args := m.Called(ctx, config)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) GetAgentConfiguration(ctx context.Context, agentID, packageID string) (*types.AgentConfiguration, error) {
+func (m *MockStorageProvider) GetBotConfiguration(ctx context.Context, agentID, packageID string) (*types.BotConfiguration, error) {
 	args := m.Called(ctx, agentID, packageID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentConfiguration), args.Error(1)
+	return args.Get(0).(*types.BotConfiguration), args.Error(1)
 }
 
-func (m *MockStorageProvider) QueryAgentConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.AgentConfiguration, error) {
+func (m *MockStorageProvider) QueryBotConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.BotConfiguration, error) {
 	args := m.Called(ctx, filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentConfiguration), args.Error(1)
+	return args.Get(0).([]*types.BotConfiguration), args.Error(1)
 }
 
-func (m *MockStorageProvider) UpdateAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+func (m *MockStorageProvider) UpdateBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	args := m.Called(ctx, config)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) DeleteAgentConfiguration(ctx context.Context, agentID, packageID string) error {
+func (m *MockStorageProvider) DeleteBotConfiguration(ctx context.Context, agentID, packageID string) error {
 	args := m.Called(ctx, agentID, packageID)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) ValidateAgentConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
+func (m *MockStorageProvider) ValidateBotConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
 	args := m.Called(ctx, agentID, packageID, config)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -335,33 +335,33 @@ func (m *MockStorageProvider) ValidateAgentConfiguration(ctx context.Context, ag
 	return args.Get(0).(*types.ConfigurationValidationResult), args.Error(1)
 }
 
-func (m *MockStorageProvider) StoreAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+func (m *MockStorageProvider) StoreBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	args := m.Called(ctx, pkg)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) GetAgentPackage(ctx context.Context, packageID string) (*types.AgentPackage, error) {
+func (m *MockStorageProvider) GetBotPackage(ctx context.Context, packageID string) (*types.BotPackage, error) {
 	args := m.Called(ctx, packageID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentPackage), args.Error(1)
+	return args.Get(0).(*types.BotPackage), args.Error(1)
 }
 
-func (m *MockStorageProvider) QueryAgentPackages(ctx context.Context, filters types.PackageFilters) ([]*types.AgentPackage, error) {
+func (m *MockStorageProvider) QueryBotPackages(ctx context.Context, filters types.PackageFilters) ([]*types.BotPackage, error) {
 	args := m.Called(ctx, filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentPackage), args.Error(1)
+	return args.Get(0).([]*types.BotPackage), args.Error(1)
 }
 
-func (m *MockStorageProvider) UpdateAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+func (m *MockStorageProvider) UpdateBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	args := m.Called(ctx, pkg)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) DeleteAgentPackage(ctx context.Context, packageID string) error {
+func (m *MockStorageProvider) DeleteBotPackage(ctx context.Context, packageID string) error {
 	args := m.Called(ctx, packageID)
 	return args.Error(0)
 }
@@ -454,48 +454,48 @@ func (m *MockStorageProvider) ListDIDs(ctx context.Context) ([]*types.DIDRegistr
 	return args.Get(0).([]*types.DIDRegistryEntry), args.Error(1)
 }
 
-// Agents Server DID operations
-func (m *MockStorageProvider) StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
+// Playground Server DID operations
+func (m *MockStorageProvider) StorePlaygroundServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
 	args := m.Called(ctx, agentsServerID, rootDID, masterSeed, createdAt, lastKeyRotation)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error) {
+func (m *MockStorageProvider) GetPlaygroundServerDID(ctx context.Context, agentsServerID string) (*types.PlaygroundServerDIDInfo, error) {
 	args := m.Called(ctx, agentsServerID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentsServerDIDInfo), args.Error(1)
+	return args.Get(0).(*types.PlaygroundServerDIDInfo), args.Error(1)
 }
 
-func (m *MockStorageProvider) ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error) {
+func (m *MockStorageProvider) ListPlaygroundServerDIDs(ctx context.Context) ([]*types.PlaygroundServerDIDInfo, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentsServerDIDInfo), args.Error(1)
+	return args.Get(0).([]*types.PlaygroundServerDIDInfo), args.Error(1)
 }
 
 // Agent DID operations
-func (m *MockStorageProvider) StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
+func (m *MockStorageProvider) StoreNodeDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
 	args := m.Called(ctx, agentID, agentDID, agentsServerDID, publicKeyJWK, derivationIndex)
 	return args.Error(0)
 }
 
-func (m *MockStorageProvider) GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error) {
+func (m *MockStorageProvider) GetNodeDID(ctx context.Context, agentID string) (*types.NodeDIDInfo, error) {
 	args := m.Called(ctx, agentID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentDIDInfo), args.Error(1)
+	return args.Get(0).(*types.NodeDIDInfo), args.Error(1)
 }
 
-func (m *MockStorageProvider) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInfo, error) {
+func (m *MockStorageProvider) ListNodeDIDs(ctx context.Context) ([]*types.NodeDIDInfo, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentDIDInfo), args.Error(1)
+	return args.Get(0).([]*types.NodeDIDInfo), args.Error(1)
 }
 
 // Component DID operations
@@ -603,7 +603,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 		}
 		schemaBytes, _ := json.Marshal(schema)
 
-		agentPackage := &types.AgentPackage{
+		agentPackage := &types.BotPackage{
 			ID:                  "test-package",
 			Name:                "Test Package",
 			Version:             "1.0.0",
@@ -611,7 +611,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 			ConfigurationSchema: schemaBytes,
 		}
 
-		mockStorage.On("GetAgentPackage", "test-package").Return(agentPackage, nil)
+		mockStorage.On("GetBotPackage", "test-package").Return(agentPackage, nil)
 
 		// Make request
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config/schema?packageId=test-package", nil)
@@ -657,7 +657,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 
 	t.Run("Package Not Found", func(t *testing.T) {
 		router, mockStorage := setupTestRouter()
-		mockStorage.On("GetAgentPackage", "nonexistent-package").Return(nil, fmt.Errorf("package not found"))
+		mockStorage.On("GetBotPackage", "nonexistent-package").Return(nil, fmt.Errorf("package not found"))
 
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config/schema?packageId=nonexistent-package", nil)
 		w := httptest.NewRecorder()
@@ -677,7 +677,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 func TestGetConfigHandler(t *testing.T) {
 	t.Run("Success - Existing Configuration", func(t *testing.T) {
 		router, mockStorage := setupTestRouter()
-		config := &types.AgentConfiguration{
+		config := &types.BotConfiguration{
 			ID:            1,
 			AgentID:       "test-agent",
 			PackageID:     "test-package",
@@ -688,7 +688,7 @@ func TestGetConfigHandler(t *testing.T) {
 			UpdatedAt:     time.Now(),
 		}
 
-		mockStorage.On("GetAgentConfiguration", "test-agent", "test-package").Return(config, nil)
+		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(config, nil)
 
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config?packageId=test-package", nil)
 		w := httptest.NewRecorder()
@@ -711,7 +711,7 @@ func TestGetConfigHandler(t *testing.T) {
 	t.Run("Success - No Existing Configuration", func(t *testing.T) {
 		router, mockStorage := setupTestRouter()
 		// Create a fresh mock for this test
-		mockStorage.On("GetAgentConfiguration", "test-agent", "test-package").Return(nil, fmt.Errorf("configuration not found"))
+		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(nil, fmt.Errorf("configuration not found"))
 
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config?packageId=test-package", nil)
 		w := httptest.NewRecorder()
@@ -760,9 +760,9 @@ func TestSetConfigHandler(t *testing.T) {
 			Errors: []string{},
 		}
 
-		mockStorage.On("ValidateAgentConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
-		mockStorage.On("GetAgentConfiguration", "test-agent", "test-package").Return(nil, fmt.Errorf("configuration not found"))
-		mockStorage.On("StoreAgentConfiguration", mock.AnythingOfType("*types.AgentConfiguration")).Return(nil)
+		mockStorage.On("ValidateBotConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
+		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(nil, fmt.Errorf("configuration not found"))
+		mockStorage.On("StoreBotConfiguration", mock.AnythingOfType("*types.BotConfiguration")).Return(nil)
 
 		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
@@ -788,7 +788,7 @@ func TestSetConfigHandler(t *testing.T) {
 		}
 		bodyBytes, _ := json.Marshal(requestBody)
 
-		existingConfig := &types.AgentConfiguration{
+		existingConfig := &types.BotConfiguration{
 			ID:            1,
 			AgentID:       "test-agent",
 			PackageID:     "test-package",
@@ -802,9 +802,9 @@ func TestSetConfigHandler(t *testing.T) {
 			Errors: []string{},
 		}
 
-		mockStorage.On("ValidateAgentConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
-		mockStorage.On("GetAgentConfiguration", "test-agent", "test-package").Return(existingConfig, nil)
-		mockStorage.On("UpdateAgentConfiguration", mock.AnythingOfType("*types.AgentConfiguration")).Return(nil)
+		mockStorage.On("ValidateBotConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
+		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(existingConfig, nil)
+		mockStorage.On("UpdateBotConfiguration", mock.AnythingOfType("*types.BotConfiguration")).Return(nil)
 
 		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
@@ -836,7 +836,7 @@ func TestSetConfigHandler(t *testing.T) {
 			Errors: []string{"invalid_field is not allowed"},
 		}
 
-		mockStorage.On("ValidateAgentConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
+		mockStorage.On("ValidateBotConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
 
 		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")

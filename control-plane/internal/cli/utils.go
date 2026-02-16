@@ -10,11 +10,15 @@ import (
 	"github.com/fatih/color"
 )
 
-// getAgentsHomeDir returns the Agents home directory (~/.hanzo/agents) and ensures it exists
+// getAgentsHomeDir returns the Playground home directory (~/.hanzo/agents) and ensures it exists
 func getAgentsHomeDir() string {
-	if customHome := os.Getenv("AGENTS_HOME"); customHome != "" {
+	customHome := os.Getenv("PLAYGROUND_HOME")
+	if customHome == "" {
+		customHome = os.Getenv("AGENTS_HOME") // Legacy fallback
+	}
+	if customHome != "" {
 		if err := os.MkdirAll(customHome, 0755); err != nil {
-			PrintError(fmt.Sprintf("Failed to create AGENTS_HOME directory: %v", err))
+			PrintError(fmt.Sprintf("Failed to create PLAYGROUND_HOME directory: %v", err))
 			os.Exit(1)
 		}
 		ensureSubdirs(customHome)
@@ -29,9 +33,9 @@ func getAgentsHomeDir() string {
 
 	agentsHome := filepath.Join(homeDir, ".hanzo/agents")
 
-	// Ensure .agents directory exists
+	// Ensure playground home directory exists
 	if err := os.MkdirAll(agentsHome, 0755); err != nil {
-		PrintError(fmt.Sprintf("Failed to create .agents directory: %v", err))
+		PrintError(fmt.Sprintf("Failed to create playground home directory: %v", err))
 		os.Exit(1)
 	}
 

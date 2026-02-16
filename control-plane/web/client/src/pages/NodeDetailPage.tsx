@@ -15,9 +15,9 @@ import {
 import { BotsSkillsTable } from "@/components/BotsSkillsTable";
 import { StatusRefreshButton } from "@/components/status";
 import {
-  AgentControlButton,
-  type AgentState,
-} from "@/components/ui/AgentControlButton";
+  BotControlButton,
+  type BotState,
+} from "@/components/ui/BotControlButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,8 +61,8 @@ import {
 } from "@/components/ui/notification";
 import { cn } from "@/lib/utils";
 import type {
-  AgentNodeDetailsForUIWithPackage,
-  AgentStatus,
+  NodeDetailsForUIWithPackage,
+  BotStatus,
   MCPHealthResponseModeAware,
   MCPServerHealthForUI,
   MCPSummaryForUI,
@@ -89,13 +89,13 @@ function NodeDetailPageContent() {
   const showInfo = useInfoNotification();
 
   // State management
-  const [node, setNode] = useState<AgentNodeDetailsForUIWithPackage | null>(
+  const [node, setNode] = useState<NodeDetailsForUIWithPackage | null>(
     null
   );
   const [mcpHealth, setMcpHealth] = useState<MCPHealthResponseModeAware | null>(
     null
   );
-  const [liveStatus, setLiveStatus] = useState<AgentStatus | null>(null);
+  const [liveStatus, setLiveStatus] = useState<BotStatus | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -174,7 +174,7 @@ function NodeDetailPageContent() {
         ) {
           const statusData = eventData as {
             node_id: string;
-            new_status: AgentStatus;
+            new_status: BotStatus;
           };
           if (statusData.node_id === nodeId) {
             // Update live status with the new status from SSE
@@ -210,7 +210,7 @@ function NodeDetailPageContent() {
         ) {
           const refreshData = eventData as {
             node_id: string;
-            status: AgentStatus;
+            status: BotStatus;
           };
           if (refreshData.node_id === nodeId) {
             // Update live status with the refreshed status from SSE
@@ -454,14 +454,14 @@ function NodeDetailPageContent() {
 
 
   // Determine current agent state for the control button
-  const getAgentState = (): AgentState => {
+  const getBotState = (): BotState => {
     if (actionLoading === "start") return "starting";
     if (actionLoading === "stop") return "stopping";
     if (actionLoading === "reconcile") return "reconciling";
 
     // PRIORITY 1: Use live status data from the unified status system (live health checks)
     if (liveStatus) {
-      // Map unified status lifecycle_status to AgentState
+      // Map unified status lifecycle_status to BotState
       switch (liveStatus.lifecycle_status) {
         case "ready":
           // Check if MCP is degraded while lifecycle is ready
@@ -637,7 +637,7 @@ function NodeDetailPageContent() {
   const botCount = node.bots?.length ?? 0;
   const skillCount = node.skills?.length ?? 0;
 
-  const agentStatusForTable = liveStatus
+  const botStatusForTable = liveStatus
     ? {
         health_status: liveStatus.health_status ?? 'unknown',
         lifecycle_status: liveStatus.lifecycle_status ?? 'unknown'
@@ -694,7 +694,7 @@ function NodeDetailPageContent() {
           typeof status === "object" &&
           "lifecycle_status" in status
         ) {
-          setLiveStatus(status as AgentStatus);
+          setLiveStatus(status as BotStatus);
         }
         setLastUpdate(new Date());
         fetchData(false);
@@ -716,9 +716,9 @@ function NodeDetailPageContent() {
   const headerActions = (
     <div className="flex items-center gap-2">
       <div onClick={(event) => event.stopPropagation()}>
-        <AgentControlButton
+        <BotControlButton
           agentId={nodeId || ""}
-          currentState={getAgentState()}
+          currentState={getBotState()}
           onToggle={handleAgentAction}
           size="sm"
           showLabel={false}
@@ -739,7 +739,7 @@ function NodeDetailPageContent() {
           typeof status === "object" &&
           "lifecycle_status" in status
         ) {
-          setLiveStatus(status as AgentStatus);
+          setLiveStatus(status as BotStatus);
         }
         setLastUpdate(new Date());
         fetchData(false);
@@ -841,7 +841,7 @@ function NodeDetailPageContent() {
                 <CardHeader>
                   <CardTitle>Node Information</CardTitle>
                   <CardDescription>
-                    Comprehensive details about this agent node
+                    Comprehensive details about this hanzo node
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -932,7 +932,7 @@ function NodeDetailPageContent() {
                 botDIDs={didInfo?.bots}
                 skillDIDs={didInfo?.skills}
                 agentDID={didInfo?.did}
-                agentStatus={agentStatusForTable}
+                botStatus={botStatusForTable}
                 nodeId={nodeId}
                 className="w-full"
               />

@@ -99,7 +99,7 @@ func (m *mockWebhookStore) ListDueExecutionWebhooks(ctx context.Context, limit i
 	return due, nil
 }
 
-func (m *mockWebhookStore) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+func (m *mockWebhookStore) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	return nil, nil
 }
 

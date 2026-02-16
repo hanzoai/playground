@@ -47,7 +47,7 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 	agentsID := "agents-1"
 	now := time.Now().UTC().Truncate(time.Second)
 
-	require.NoError(t, provider.StoreAgentsServerDID(ctx, agentsID, "did:agents:root", []byte("seed"), now, now))
+	require.NoError(t, provider.StorePlaygroundServerDID(ctx, agentsID, "did:agents:root", []byte("seed"), now, now))
 
 	components := []storage.ComponentDIDRequest{
 		{
@@ -66,7 +66,7 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, provider.StoreAgentDIDWithComponents(ctx, "agent-1", "did:agent:1", agentsID, "{}", 0, components))
+	require.NoError(t, provider.StoreNodeDIDWithComponents(ctx, "agent-1", "did:agent:1", agentsID, "{}", 0, components))
 
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -74,7 +74,7 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 	loaded, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
 	require.NotNil(t, loaded)
-	require.Contains(t, loaded.AgentNodes, "agent-1")
+	require.Contains(t, loaded.Nodes, "agent-1")
 
 	// Validate bot lookup
 	botID, err := registry.FindDIDByComponent(agentsID, "bot", "bot.fn")
@@ -87,15 +87,15 @@ func TestDIDRegistryInitializeAndLookup(t *testing.T) {
 	require.Equal(t, "did:skill:1", skillID.DID)
 
 	// Update status and ensure it is persisted in-memory
-	require.NoError(t, registry.UpdateAgentStatus(agentsID, "agent-1", types.AgentDIDStatusActive))
+	require.NoError(t, registry.UpdateBotStatus(agentsID, "agent-1", types.HanzoDIDStatusActive))
 
 	loadedAfterUpdate, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentDIDStatusActive, loadedAfterUpdate.AgentNodes["agent-1"].Status)
+	require.Equal(t, types.HanzoDIDStatusActive, loadedAfterUpdate.Nodes["agent-1"].Status)
 
-	packageResult, err := registry.GetAgentDIDs(agentsID, "agent-1")
+	packageResult, err := registry.GetNodeDIDs(agentsID, "agent-1")
 	require.NoError(t, err)
-	require.Equal(t, "did:agent:1", packageResult.AgentDID.DID)
+	require.Equal(t, "did:agent:1", packageResult.NodeDID.DID)
 	require.Contains(t, packageResult.BotDIDs, "bot.fn")
 	require.Contains(t, packageResult.SkillDIDs, "skill.fn")
 

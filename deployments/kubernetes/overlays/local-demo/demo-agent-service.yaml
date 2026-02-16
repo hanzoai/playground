@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: playground-demo-agent
+  name: playground-demo-bot
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/component: demo-agent
+    app.kubernetes.io/component: demo-bot
   ports:
     - name: http
       port: 8001

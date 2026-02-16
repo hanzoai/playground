@@ -6,18 +6,18 @@ import uuid
 
 import pytest
 
-from agents.scoping_agent import AGENT_SPEC, create_agent as create_scoping_agent
-from utils import run_agent_server, unique_node_id
+from bots.scoping_agent import BOT_SPEC, create_bot as create_scoping_bot
+from utils import run_bot_server, unique_node_id
 
 
-async def _invoke_scoped_reasoner(
+async def _invoke_scoped_bot(
     async_http_client,
-    agent,
+    bot,
     payload: dict,
     headers: dict | None = None,
 ):
     response = await async_http_client.post(
-        f"/api/v1/reasoners/{agent.node_id}.scoped_memory",
+        f"/api/v1/bots/{bot.node_id}.scoped_memory",
         json={"input": payload},
         headers=headers or {},
         timeout=30.0,
@@ -33,18 +33,18 @@ def _random_id(prefix: str) -> str:
 @pytest.mark.functional
 @pytest.mark.asyncio
 async def test_session_scope_helper_overrides_headers(async_http_client):
-    agent = create_scoping_agent(node_id=unique_node_id(AGENT_SPEC.default_node_id))
+    bot = create_scoping_bot(node_id=unique_node_id(BOT_SPEC.default_node_id))
 
-    async with run_agent_server(agent):
+    async with run_bot_server(bot):
         key = _random_id("session-key")
         scope_id = _random_id("session")
         write_headers = {
             "X-Session-ID": _random_id("incoming-session"),
             "X-Workflow-ID": _random_id("workflow"),
         }
-        write_result = await _invoke_scoped_reasoner(
+        write_result = await _invoke_scoped_bot(
             async_http_client,
-            agent,
+            bot,
             {
                 "scope": "session",
                 "scope_id": scope_id,
@@ -61,9 +61,9 @@ async def test_session_scope_helper_overrides_headers(async_http_client):
             "X-Session-ID": _random_id("incoming-session"),
             "X-Workflow-ID": _random_id("workflow"),
         }
-        read_result = await _invoke_scoped_reasoner(
+        read_result = await _invoke_scoped_bot(
             async_http_client,
-            agent,
+            bot,
             {
                 "scope": "session",
                 "scope_id": scope_id,
@@ -81,18 +81,18 @@ async def test_session_scope_helper_overrides_headers(async_http_client):
 @pytest.mark.functional
 @pytest.mark.asyncio
 async def test_actor_scope_helper_overrides_headers(async_http_client):
-    agent = create_scoping_agent(node_id=unique_node_id(AGENT_SPEC.default_node_id))
+    bot = create_scoping_bot(node_id=unique_node_id(BOT_SPEC.default_node_id))
 
-    async with run_agent_server(agent):
+    async with run_bot_server(bot):
         key = _random_id("actor-key")
         scope_id = _random_id("actor")
         write_headers = {
             "X-Actor-ID": _random_id("incoming-actor"),
             "X-Workflow-ID": _random_id("workflow"),
         }
-        await _invoke_scoped_reasoner(
+        await _invoke_scoped_bot(
             async_http_client,
-            agent,
+            bot,
             {
                 "scope": "actor",
                 "scope_id": scope_id,
@@ -107,9 +107,9 @@ async def test_actor_scope_helper_overrides_headers(async_http_client):
             "X-Actor-ID": _random_id("incoming-actor"),
             "X-Workflow-ID": _random_id("workflow"),
         }
-        read_result = await _invoke_scoped_reasoner(
+        read_result = await _invoke_scoped_bot(
             async_http_client,
-            agent,
+            bot,
             {
                 "scope": "actor",
                 "scope_id": scope_id,
@@ -126,15 +126,15 @@ async def test_actor_scope_helper_overrides_headers(async_http_client):
 @pytest.mark.functional
 @pytest.mark.asyncio
 async def test_workflow_scope_helper_overrides_headers(async_http_client):
-    agent = create_scoping_agent(node_id=unique_node_id(AGENT_SPEC.default_node_id))
+    bot = create_scoping_bot(node_id=unique_node_id(BOT_SPEC.default_node_id))
 
-    async with run_agent_server(agent):
+    async with run_bot_server(bot):
         key = _random_id("workflow-key")
         scope_id = _random_id("manual-wf")
         write_headers = {"X-Workflow-ID": _random_id("workflow")}
-        await _invoke_scoped_reasoner(
+        await _invoke_scoped_bot(
             async_http_client,
-            agent,
+            bot,
             {
                 "scope": "workflow",
                 "scope_id": scope_id,
@@ -146,9 +146,9 @@ async def test_workflow_scope_helper_overrides_headers(async_http_client):
         )
 
         read_headers = {"X-Workflow-ID": _random_id("workflow")}
-        read_result = await _invoke_scoped_reasoner(
+        read_result = await _invoke_scoped_bot(
             async_http_client,
-            agent,
+            bot,
             {
                 "scope": "workflow",
                 "scope_id": scope_id,

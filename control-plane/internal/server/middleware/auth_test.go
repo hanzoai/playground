@@ -288,9 +288,9 @@ func TestAPIKeyAuth_MultipleSkipPaths(t *testing.T) {
 	router.GET("/public/a", func(c *gin.Context) { c.String(http.StatusOK, "a") })
 	router.GET("/public/b", func(c *gin.Context) { c.String(http.StatusOK, "b") })
 	router.GET("/public/c", func(c *gin.Context) { c.String(http.StatusOK, "c") })
-	router.GET("/private", func(c *gin.Context) { c.String(http.StatusOK, "private") })
+	router.GET("/api/v1/private", func(c *gin.Context) { c.String(http.StatusOK, "private") })
 
-	// All public paths should be accessible
+	// All public paths should be accessible (non-/api/ paths skip auth)
 	for _, path := range []string{"/public/a", "/public/b", "/public/c"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		w := httptest.NewRecorder()
@@ -298,8 +298,8 @@ func TestAPIKeyAuth_MultipleSkipPaths(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code, "path %s should be accessible", path)
 	}
 
-	// Private path should require auth
-	req := httptest.NewRequest(http.MethodGet, "/private", nil)
+	// API path should require auth
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/private", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)

@@ -1,6 +1,6 @@
 from playground.types import (
     ExecutionHeaders,
-    AgentStatus,
+    BotStatus,
     HeartbeatData,
     MCPServerHealth,
 )
@@ -30,8 +30,8 @@ def test_execution_headers_with_optional_fields():
 
 def test_heartbeat_data_to_dict():
     mcp = MCPServerHealth(alias="test", status="healthy", tool_count=2)
-    hb = HeartbeatData(status=AgentStatus.READY, mcp_servers=[mcp], timestamp="now")
+    hb = HeartbeatData(status=BotStatus.READY, mcp_servers=[mcp], timestamp="now")
     d = hb.to_dict()
-    assert d["status"] == AgentStatus.READY.value
+    assert d["status"] == BotStatus.READY.value
     assert isinstance(d["mcp_servers"], list)
     assert d["mcp_servers"][0]["alias"] == "test"

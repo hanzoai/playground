@@ -1,5 +1,5 @@
 import type {
-  AgentNodeSummary,
+  NodeSummary,
   HealthStatus,
   LifecycleStatus,
 } from "@/types/playground";
@@ -89,7 +89,7 @@ interface NodeStatusBuckets {
 }
 
 export const summarizeNodeStatuses = (
-  nodes: AgentNodeSummary[]
+  nodes: NodeSummary[]
 ): NodeStatusBuckets => {
   return nodes.reduce<NodeStatusBuckets>(
     (acc, node) => {

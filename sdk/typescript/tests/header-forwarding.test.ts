@@ -63,7 +63,7 @@ describe('header forwarding', () => {
       data: {
         discovered_at: '',
         total_agents: 0,
-        total_reasoners: 0,
+        total_bots: 0,
         total_skills: 0,
         pagination: { limit: 0, offset: 0, has_more: false },
         capabilities: []

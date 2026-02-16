@@ -39,7 +39,7 @@ func TestAdminRESTListBots(t *testing.T) {
 	t.Cleanup(func() { _ = localStore.Close(ctx) })
 
 	schema := json.RawMessage("{}")
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:            "node-1",
 		HealthStatus:  types.HealthStatusActive,
 		Version:       "1.0.0",
@@ -49,7 +49,7 @@ func TestAdminRESTListBots(t *testing.T) {
 			{ID: "another", InputSchema: schema, OutputSchema: schema},
 		},
 	}
-	require.NoError(t, localStore.RegisterAgent(ctx, node))
+	require.NoError(t, localStore.RegisterNode(ctx, node))
 
 	// Set up Gin router with admin REST routes
 	gin.SetMode(gin.TestMode)
@@ -66,7 +66,7 @@ func TestAdminRESTListBots(t *testing.T) {
 	var resp struct {
 		Bots []struct {
 			BotID  string `json:"bot_id"`
-			AgentNodeID string `json:"agent_node_id"`
+			NodeID string `json:"node_id"`
 			LastHB      string `json:"last_heartbeat"`
 		} `json:"bots"`
 		Count int `json:"count"`
@@ -75,6 +75,6 @@ func TestAdminRESTListBots(t *testing.T) {
 	require.Equal(t, 2, resp.Count)
 	require.Len(t, resp.Bots, 2)
 	require.Equal(t, "node-1.reason", resp.Bots[0].BotID)
-	require.Equal(t, "node-1", resp.Bots[0].AgentNodeID)
+	require.Equal(t, "node-1", resp.Bots[0].NodeID)
 	require.NotEmpty(t, resp.Bots[0].LastHB)
 }

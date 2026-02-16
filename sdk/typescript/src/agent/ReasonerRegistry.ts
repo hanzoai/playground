@@ -1,28 +1,28 @@
-import type { AgentRouter } from '../router/AgentRouter.js';
-import type { ReasonerDefinition, ReasonerHandler, ReasonerOptions } from '../types/reasoner.js';
+import type { BotRouter } from '../router/BotRouter.js';
+import type { BotDefinition, BotHandler, BotOptions } from '../types/bot.js';
 
-export class ReasonerRegistry {
-  private readonly reasoners = new Map<string, ReasonerDefinition>();
+export class BotRegistry {
+  private readonly bots = new Map<string, BotDefinition>();
 
   register<TInput = any, TOutput = any>(
     name: string,
-    handler: ReasonerHandler<TInput, TOutput>,
-    options?: ReasonerOptions
+    handler: BotHandler<TInput, TOutput>,
+    options?: BotOptions
   ) {
-    this.reasoners.set(name, { name, handler, options });
+    this.bots.set(name, { name, handler, options });
   }
 
-  includeRouter(router: AgentRouter) {
-    router.reasoners.forEach((reasoner) => {
-      this.reasoners.set(reasoner.name, reasoner);
+  includeRouter(router: BotRouter) {
+    router.bots.forEach((bot) => {
+      this.bots.set(bot.name, bot);
     });
   }
 
   get(name: string) {
-    return this.reasoners.get(name);
+    return this.bots.get(name);
   }
 
   all() {
-    return Array.from(this.reasoners.values());
+    return Array.from(this.bots.values());
   }
 }

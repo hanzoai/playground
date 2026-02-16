@@ -55,7 +55,7 @@ export interface ComponentDIDInfo {
 
 export interface AgentDIDResponse {
   did: string;
-  agent_node_id: string;
+  node_id: string;
   status: string;
   derivation_path: string;
   created_at: string;
@@ -113,7 +113,7 @@ export interface VCSearchResult {
   bot_id?: string;
   bot_name?: string;
   agent_name?: string;
-  agent_node_id?: string;
+  node_id?: string;
   verified: boolean;
   input_hash?: string;
   output_hash?: string;
@@ -185,7 +185,7 @@ export async function searchCredentials(filters: {
   session_id?: string;
   status?: string;
   issuer_did?: string;
-  agent_node_id?: string;
+  node_id?: string;
   execution_id?: string;
   caller_did?: string;
   target_did?: string;
@@ -207,7 +207,7 @@ export async function searchCredentials(filters: {
   if (filters.session_id) params.append("session_id", filters.session_id);
   if (filters.status) params.append("status", filters.status);
   if (filters.issuer_did) params.append("issuer_did", filters.issuer_did);
-  if (filters.agent_node_id) params.append("agent_node_id", filters.agent_node_id);
+  if (filters.node_id) params.append("node_id", filters.node_id);
   if (filters.execution_id) params.append("execution_id", filters.execution_id);
   if (filters.caller_did) params.append("caller_did", filters.caller_did);
   if (filters.target_did) params.append("target_did", filters.target_did);

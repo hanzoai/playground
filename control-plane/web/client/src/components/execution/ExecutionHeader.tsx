@@ -299,18 +299,18 @@ export function ExecutionHeader({
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-label">Agent Node</div>
+              <div className="text-label">Node</div>
               <div className="flex items-center gap-2 group">
                 <code className="font-mono text-xs text-foreground">
-                  {truncateId(execution.agent_node_id)}
+                  {truncateId(execution.node_id)}
                 </code>
                 <DIDDisplay
-                  nodeId={execution.agent_node_id}
+                  nodeId={execution.node_id}
                   variant="inline"
                   className="text-[10px]"
                 />
                 <CopyButton
-                  value={execution.agent_node_id}
+                  value={execution.node_id}
                   variant="ghost"
                   size="icon-sm"
                   className="opacity-0 group-hover:opacity-100 transition-opacity"

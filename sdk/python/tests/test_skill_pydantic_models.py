@@ -2,7 +2,7 @@
 Unit tests for Pydantic model support in skills.
 
 Tests that skills can now accept Pydantic models as parameters,
-providing the same developer experience as reasoners.
+providing the same developer experience as bots.
 """
 
 import pytest

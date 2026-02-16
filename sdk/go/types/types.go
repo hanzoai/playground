@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// ReasonerDefinition mirrors the Playground server registration contract.
-type ReasonerDefinition struct {
+// BotDefinition mirrors the Playground server registration contract.
+type BotDefinition struct {
 	ID           string          `json:"id"`
 	InputSchema  json.RawMessage `json:"input_schema"`
 	OutputSchema json.RawMessage `json:"output_schema"`
@@ -19,7 +19,7 @@ type SkillDefinition struct {
 	Tags        []string        `json:"tags,omitempty"`
 }
 
-// CommunicationConfig declares supported protocols for the agent.
+// CommunicationConfig declares supported protocols for the bot.
 type CommunicationConfig struct {
 	Protocols         []string `json:"protocols"`
 	WebSocketEndpoint string   `json:"websocket_endpoint,omitempty"`
@@ -32,7 +32,7 @@ type NodeRegistrationRequest struct {
 	TeamID               string               `json:"team_id"`
 	BaseURL              string               `json:"base_url"`
 	Version              string               `json:"version"`
-	Reasoners            []ReasonerDefinition `json:"reasoners"`
+	Bots            []BotDefinition `json:"bots"`
 	Skills               []SkillDefinition    `json:"skills"`
 	CommunicationConfig  CommunicationConfig  `json:"communication_config"`
 	HealthStatus         string               `json:"health_status"`
@@ -56,13 +56,13 @@ type NodeRegistrationResponse struct {
 	RegisteredAt      time.Time `json:"-"`
 }
 
-// NodeStatusUpdate is used for lease renewals.
+// NodeStatusUpdate is used for bot lease renewals.
 type NodeStatusUpdate struct {
 	Phase       string `json:"phase"`
 	HealthScore *int   `json:"health_score,omitempty"`
 }
 
-// LeaseResponse informs the agent how long the lease lasts.
+// LeaseResponse informs the bot how long the lease lasts.
 type LeaseResponse struct {
 	LeaseSeconds     int    `json:"lease_seconds"`
 	NextLeaseRenewal string `json:"next_lease_renewal"`
@@ -93,9 +93,9 @@ type WorkflowExecutionEvent struct {
 	ExecutionID       string                 `json:"execution_id"`
 	WorkflowID        string                 `json:"workflow_id,omitempty"`
 	RunID             string                 `json:"run_id,omitempty"`
-	ReasonerID        string                 `json:"reasoner_id,omitempty"`
+	BotID        string                 `json:"bot_id,omitempty"`
 	Type              string                 `json:"type,omitempty"`
-	AgentNodeID       string                 `json:"agent_node_id,omitempty"`
+	NodeID       string                 `json:"node_id,omitempty"`
 	Status            string                 `json:"status"`
 	ParentExecutionID *string                `json:"parent_execution_id,omitempty"`
 	ParentWorkflowID  *string                `json:"parent_workflow_id,omitempty"`

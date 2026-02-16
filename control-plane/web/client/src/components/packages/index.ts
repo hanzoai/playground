@@ -1,2 +1,2 @@
-export { AgentPackageCard } from './AgentPackageCard';
-export { AgentPackageList } from './AgentPackageList';
+export { BotPackageCard } from './BotPackageCard';
+export { BotPackageList } from './BotPackageList';

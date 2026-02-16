@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Tuple
 
-from playground.types import AgentStatus, HeartbeatData
+from playground.types import BotStatus, HeartbeatData
 
 
 class DummyPlaygroundClient:
@@ -20,10 +20,10 @@ class DummyPlaygroundClient:
         self.shutdown_calls: List[str] = []
         self.async_execution_manager = None
 
-    async def register_agent(
+    async def register_bot(
         self,
         node_id: str,
-        reasoners,
+        bots,
         skills,
         base_url: str,
         discovery=None,
@@ -34,7 +34,7 @@ class DummyPlaygroundClient:
         self.register_calls.append(
             {
                 "node_id": node_id,
-                "reasoners": reasoners,
+                "bots": bots,
                 "skills": skills,
                 "base_url": base_url,
                 "discovery": discovery,
@@ -45,22 +45,22 @@ class DummyPlaygroundClient:
         )
         return True, {"resolved_base_url": base_url}
 
-    async def register_agent_with_status(
+    async def register_bot_with_status(
         self,
         node_id: str,
-        reasoners,
+        bots,
         skills,
         base_url: str,
-        status: AgentStatus = AgentStatus.STARTING,
+        status: BotStatus = BotStatus.STARTING,
         discovery=None,
         suppress_errors: bool = False,
         vc_metadata=None,
         version: str = "1.0.0",
         agent_metadata=None,
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
-        return await self.register_agent(
+        return await self.register_bot(
             node_id=node_id,
-            reasoners=reasoners,
+            bots=bots,
             skills=skills,
             base_url=base_url,
             discovery=discovery,
@@ -104,16 +104,16 @@ class StubAgent:
             "MCP", (), {"_get_mcp_server_health": lambda self: []}
         )()
     )
-    reasoners: List[Dict[str, Any]] = field(default_factory=list)
+    bots: List[Dict[str, Any]] = field(default_factory=list)
     skills: List[Dict[str, Any]] = field(default_factory=list)
     playground_connected: bool = True
-    _current_status: AgentStatus = AgentStatus.STARTING
+    _current_status: BotStatus = BotStatus.STARTING
     callback_candidates: List[str] = field(default_factory=list)
 
     def _build_vc_metadata(self):
         return {"agent_default": True}
 
-    def _build_agent_metadata(self):
+    def _build_bot_metadata(self):
         return None
 
     def __post_init__(self):
@@ -154,7 +154,7 @@ class StubAgent:
                 },
             )()
 
-    def _register_agent_with_did(self):
+    def _register_bot_with_did(self):
         return True
 
     def _build_callback_discovery_payload(self):
@@ -252,8 +252,8 @@ def create_test_agent(
     touching external services.
     """
 
-    from playground.agent import Agent
-    from playground.agent_workflow import AgentWorkflow
+    from playground.bot import Agent
+    from playground.bot_workflow import BotWorkflow
 
     memory_store: Dict[str, Any] = {}
 
@@ -372,11 +372,11 @@ def create_test_agent(
 
             return decorator
 
-    class _FakeAgentMCP:
+    class _FakeBotMCP:
         def __init__(self, agent_instance: Any):
             self.agent = agent_instance
 
-        def _detect_agent_directory(self) -> str:
+        def _detect_bot_directory(self) -> str:
             return "."
 
         def _get_mcp_server_health(self) -> Dict[str, Any]:
@@ -404,8 +404,8 @@ def create_test_agent(
             self.api_key = api_key
             self.registered: Dict[str, Any] = {}
 
-        def register_agent(self, reasoners: List[dict], skills: List[dict]) -> bool:
-            self.registered = {"reasoners": reasoners, "skills": skills}
+        def register_bot(self, bots: List[dict], skills: List[dict]) -> bool:
+            self.registered = {"bots": bots, "skills": skills}
             return True
 
         def create_execution_context(
@@ -425,7 +425,7 @@ def create_test_agent(
                 agent_node_did=f"did:agent:{self.node_id}",
             )
 
-        def get_agent_did(self) -> str:
+        def get_bot_did(self) -> str:
             return f"did:agent:{self.node_id}"
 
     class _FakeVCGenerator:
@@ -447,12 +447,12 @@ def create_test_agent(
         self,
         execution_id: str,
         context: Any,
-        reasoner_name: str,
+        bot_name: str,
         input_data: Dict[str, Any],
         parent_execution_id: Optional[str] = None,
     ) -> None:
         events = getattr(self.agent, "_captured_workflow_events", [])
-        events.append(("start", execution_id, reasoner_name, parent_execution_id))
+        events.append(("start", execution_id, bot_name, parent_execution_id))
         self.agent._captured_workflow_events = events
 
     async def _record_call_complete(
@@ -470,7 +470,7 @@ def create_test_agent(
             (
                 "complete",
                 execution_id,
-                getattr(context, "reasoner_name", "unknown"),
+                getattr(context, "bot_name", "unknown"),
                 parent_execution_id,
             )
         )
@@ -491,7 +491,7 @@ def create_test_agent(
             (
                 "error",
                 execution_id,
-                getattr(context, "reasoner_name", "unknown"),
+                getattr(context, "bot_name", "unknown"),
                 parent_execution_id,
                 error,
             )
@@ -506,7 +506,7 @@ def create_test_agent(
     monkeypatch.setattr("playground.agent.PlaygroundClient", _playground_client_factory)
     monkeypatch.setattr("playground.agent.MemoryClient", _FakeMemoryClient)
     monkeypatch.setattr("playground.agent.MemoryEventClient", _FakeMemoryEventClient)
-    monkeypatch.setattr("playground.agent.AgentMCP", _FakeAgentMCP)
+    monkeypatch.setattr("playground.agent.BotMCP", _FakeBotMCP)
     monkeypatch.setattr("playground.agent.MCPManager", _FakeMCPManager)
     monkeypatch.setattr("playground.agent.MCPClientRegistry", _FakeMCPClientRegistry)
     monkeypatch.setattr(
@@ -515,16 +515,16 @@ def create_test_agent(
     monkeypatch.setattr("playground.agent.DIDManager", _FakeDIDManager)
     monkeypatch.setattr("playground.agent.VCGenerator", _FakeVCGenerator)
     monkeypatch.setattr(
-        AgentWorkflow, "notify_call_start", _record_call_start, raising=False
+        BotWorkflow, "notify_call_start", _record_call_start, raising=False
     )
     monkeypatch.setattr(
-        AgentWorkflow, "notify_call_complete", _record_call_complete, raising=False
+        BotWorkflow, "notify_call_complete", _record_call_complete, raising=False
     )
     monkeypatch.setattr(
-        AgentWorkflow, "notify_call_error", _record_call_error, raising=False
+        BotWorkflow, "notify_call_error", _record_call_error, raising=False
     )
     monkeypatch.setattr(
-        AgentWorkflow,
+        BotWorkflow,
         "fire_and_forget_update",
         _noop_fire_and_forget_update,
         raising=False,

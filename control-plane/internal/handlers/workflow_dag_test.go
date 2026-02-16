@@ -599,7 +599,7 @@ func TestExecutionToDAGNode(t *testing.T) {
 	exec := &types.Execution{
 		ExecutionID:       "exec-1",
 		RunID:             "run-1",
-		AgentNodeID:       "agent-1",
+		NodeID:       "agent-1",
 		BotID:        "bot-1",
 		Status:            "succeeded",
 		StartedAt:         now,
@@ -612,7 +612,7 @@ func TestExecutionToDAGNode(t *testing.T) {
 
 	require.Equal(t, "exec-1", node.ExecutionID)
 	require.Equal(t, "run-1", node.WorkflowID)
-	require.Equal(t, "agent-1", node.AgentNodeID)
+	require.Equal(t, "agent-1", node.NodeID)
 	require.Equal(t, "bot-1", node.BotID)
 	require.Equal(t, "succeeded", node.Status)
 	require.Equal(t, 2, node.WorkflowDepth)
@@ -628,7 +628,7 @@ func TestExecutionToLightweightNode(t *testing.T) {
 	exec := &types.Execution{
 		ExecutionID:       "exec-1",
 		RunID:             "run-1",
-		AgentNodeID:       "agent-1",
+		NodeID:       "agent-1",
 		BotID:        "bot-1",
 		Status:            "succeeded",
 		StartedAt:         now,
@@ -640,7 +640,7 @@ func TestExecutionToLightweightNode(t *testing.T) {
 	node := executionToLightweightNode(exec, 2)
 
 	require.Equal(t, "exec-1", node.ExecutionID)
-	require.Equal(t, "agent-1", node.AgentNodeID)
+	require.Equal(t, "agent-1", node.NodeID)
 	require.Equal(t, "bot-1", node.BotID)
 	require.Equal(t, "succeeded", node.Status)
 	require.Equal(t, 2, node.WorkflowDepth)

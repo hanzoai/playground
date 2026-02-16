@@ -11,7 +11,7 @@ before:
 builds:
   - id: playground-linux-amd64
     dir: control-plane
-    main: ./cmd/af
+    main: ./cmd/playground
     binary: playground-linux-amd64
     env:
       - CGO_ENABLED=1
@@ -30,7 +30,7 @@ builds:
 
   - id: playground-linux-arm64
     dir: control-plane
-    main: ./cmd/af
+    main: ./cmd/playground
     binary: playground-linux-arm64
     env:
       - CGO_ENABLED=1
@@ -50,7 +50,7 @@ builds:
 
   - id: playground-darwin-amd64
     dir: control-plane
-    main: ./cmd/af
+    main: ./cmd/playground
     binary: playground-darwin-amd64
     env:
       - CGO_ENABLED=1
@@ -69,7 +69,7 @@ builds:
 
   - id: playground-darwin-arm64
     dir: control-plane
-    main: ./cmd/af
+    main: ./cmd/playground
     binary: playground-darwin-arm64
     env:
       - CGO_ENABLED=1
@@ -89,7 +89,7 @@ builds:
   # Windows build disabled - focus on Linux and macOS for now
   # - id: playground-windows-amd64
   #   dir: control-plane
-  #   main: ./cmd/af
+  #   main: ./cmd/playground
   #   binary: playground
   #   env:
   #     - CGO_ENABLED=1
@@ -137,13 +137,13 @@ release:
 
     **Installation:**
     ```bash
-    curl -fsSL https://playground.ai/install.sh | bash
+    curl -fsSL https://hanzo.bot/install.sh | bash
     ```
 
     ### Version Pinning
 
     ```bash
-    VERSION={{ .Version }} curl -fsSL https://playground.ai/install.sh | bash
+    VERSION={{ .Version }} curl -fsSL https://hanzo.bot/install.sh | bash
     ```
 
     ### Manual Download

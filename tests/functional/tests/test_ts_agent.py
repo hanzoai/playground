@@ -1,7 +1,7 @@
 """
 Functional smoke test for the TypeScript SDK.
 
-Spins up a Node-based agent (using the packaged TS SDK) and executes it through
+Spins up a Node-based bot (using the packaged TS SDK) and executes it through
 the real control plane to validate registration + execution wiring.
 """
 
@@ -25,12 +25,15 @@ def _get_free_port(host: str = "0.0.0.0") -> int:
 
 
 @asynccontextmanager
-async def run_ts_agent(node_id: str):
+async def run_ts_bot(node_id: str):
     """
-    Launch the TS agent as a subprocess and ensure cleanup.
+    Launch the TS bot as a subprocess and ensure cleanup.
     """
     port = _get_free_port()
-    callback_host = os.environ.get("TEST_AGENT_CALLBACK_HOST", "test-runner")
+    callback_host = os.environ.get(
+        "TEST_BOT_CALLBACK_HOST",
+        os.environ.get("TEST_AGENT_CALLBACK_HOST", "test-runner"),
+    )
     env = os.environ.copy()
     env.update(
         {
@@ -42,8 +45,8 @@ async def run_ts_agent(node_id: str):
     )
     env.setdefault("NODE_PATH", "/usr/local/lib/node_modules:/usr/lib/node_modules")
 
-    # Resolve the agent script location relative to the tests/functional root
-    script_path = os.path.join(os.path.dirname(__file__), "..", "ts_agents", "echo-agent.mjs")
+    # Resolve the bot script location relative to the tests/functional root
+    script_path = os.path.join(os.path.dirname(__file__), "..", "ts_bots", "echo-agent.mjs")
 
     process = await asyncio.create_subprocess_exec(
         "node",
@@ -71,7 +74,7 @@ async def _wait_for_registration(http_client, node_id: str, process, timeout: fl
         if process.returncode is not None:
             stdout, stderr = await process.communicate()
             raise AssertionError(
-                f"TS agent exited early with code {process.returncode}. "
+                f"TS bot exited early with code {process.returncode}. "
                 f"stdout: {stdout.decode()} stderr: {stderr.decode()}"
             )
         try:
@@ -88,15 +91,15 @@ async def _wait_for_registration(http_client, node_id: str, process, timeout: fl
 
 async def _wait_for_port_ready(port: int, process, host: str = "127.0.0.1", timeout: float = 15.0):
     """
-    Ensure the TS agent has actually bound its HTTP listener before hitting it via the control plane.
-    This avoids a race where the agent registers/heartbeats before its server starts listening.
+    Ensure the TS bot has actually bound its HTTP listener before hitting it via the control plane.
+    This avoids a race where the bot registers/heartbeats before its server starts listening.
     """
     deadline = asyncio.get_event_loop().time() + timeout
     while asyncio.get_event_loop().time() < deadline:
         if process.returncode is not None:
             stdout, stderr = await process.communicate()
             raise AssertionError(
-                f"TS agent exited early before opening port {port}. "
+                f"TS bot exited early before opening port {port}. "
                 f"stdout: {stdout.decode()} stderr: {stderr.decode()}"
             )
         try:
@@ -107,25 +110,25 @@ async def _wait_for_port_ready(port: int, process, host: str = "127.0.0.1", time
         except (ConnectionRefusedError, OSError):
             await asyncio.sleep(0.2)
 
-    raise AssertionError(f"TS agent did not open port {host}:{port} in time")
+    raise AssertionError(f"TS bot did not open port {host}:{port} in time")
 
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_typescript_agent_registers_and_executes(async_http_client):
-    node_id = unique_node_id("ts-agent")
+async def test_typescript_bot_registers_and_executes(async_http_client):
+    node_id = unique_node_id("ts-bot")
 
-    async with run_ts_agent(node_id) as (port, process):
+    async with run_ts_bot(node_id) as (port, process):
         registration = await _wait_for_registration(async_http_client, node_id, process)
         assert registration["id"] == node_id
-        assert any(r["id"] == "echo" for r in registration.get("reasoners", []))
+        assert any(r["id"] == "echo" for r in registration.get("bots", []))
 
-        # Avoid race where control plane calls the agent before its listener is ready.
+        # Avoid race where control plane calls the bot before its listener is ready.
         await _wait_for_port_ready(port, process)
 
         # Execute via control plane
         resp = await async_http_client.post(
-            f"/api/v1/reasoners/{node_id}.echo",
+            f"/api/v1/bots/{node_id}.echo",
             json={"input": {"message": "hello-ts"}},
             timeout=30.0,
         )
@@ -134,7 +137,7 @@ async def test_typescript_agent_registers_and_executes(async_http_client):
         if resp.status_code != 200:
             async def _drain_process(proc: asyncio.subprocess.Process, timeout: float = 5.0):
                 """
-                Capture stdout/stderr without hanging the test if the agent stays alive.
+                Capture stdout/stderr without hanging the test if the bot stays alive.
                 We explicitly terminate on timeout so we don't block on a long-lived heartbeat loop.
                 """
                 try:
@@ -148,8 +151,8 @@ async def test_typescript_agent_registers_and_executes(async_http_client):
                         return await asyncio.wait_for(proc.communicate(), timeout=timeout)
 
             stdout, stderr = await _drain_process(process)
-            print("TS agent stdout:", stdout.decode("utf-8"), file=sys.stderr)
-            print("TS agent stderr:", stderr.decode("utf-8"), file=sys.stderr)
+            print("TS bot stdout:", stdout.decode("utf-8"), file=sys.stderr)
+            print("TS bot stderr:", stderr.decode("utf-8"), file=sys.stderr)
 
         assert resp.status_code == 200, resp.text
         body = resp.json()

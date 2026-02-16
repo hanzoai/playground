@@ -1,21 +1,21 @@
 -- Migration: Fix AgentField Server ID Schema Inconsistency
--- Description: Update schema to use agentfield_server_id consistently instead of organization_id
+-- Description: Update schema to use playground_server_id consistently instead of organization_id
 -- Created: 2025-01-21
 
--- Step 1: Add agentfield_server_id column to did_registry table
-ALTER TABLE did_registry ADD COLUMN agentfield_server_id TEXT;
+-- Step 1: Add playground_server_id column to did_registry table
+ALTER TABLE did_registry ADD COLUMN playground_server_id TEXT;
 
--- Step 2: Copy organization_id values to agentfield_server_id for existing records
-UPDATE did_registry SET agentfield_server_id = organization_id WHERE agentfield_server_id IS NULL;
+-- Step 2: Copy organization_id values to playground_server_id for existing records
+UPDATE did_registry SET playground_server_id = organization_id WHERE playground_server_id IS NULL;
 
--- Step 3: Make agentfield_server_id NOT NULL and add unique constraint
--- First, ensure all records have agentfield_server_id populated
-UPDATE did_registry SET agentfield_server_id = 'default' WHERE agentfield_server_id IS NULL OR agentfield_server_id = '';
+-- Step 3: Make playground_server_id NOT NULL and add unique constraint
+-- First, ensure all records have playground_server_id populated
+UPDATE did_registry SET playground_server_id = 'default' WHERE playground_server_id IS NULL OR playground_server_id = '';
 
 -- Now make it NOT NULL
 -- Note: SQLite doesn't support ALTER COLUMN, so we need to recreate the table
 CREATE TABLE did_registry_new (
-    agentfield_server_id TEXT PRIMARY KEY,
+    playground_server_id TEXT PRIMARY KEY,
     organization_id TEXT, -- Keep for backward compatibility during transition
     master_seed_encrypted BLOB NOT NULL,
     root_did TEXT NOT NULL UNIQUE,
@@ -26,8 +26,8 @@ CREATE TABLE did_registry_new (
 );
 
 -- Copy data from old table to new table
-INSERT INTO did_registry_new (agentfield_server_id, organization_id, master_seed_encrypted, root_did, agent_nodes, total_dids, created_at, last_key_rotation)
-SELECT agentfield_server_id, organization_id, master_seed_encrypted, root_did, agent_nodes, total_dids, created_at, last_key_rotation
+INSERT INTO did_registry_new (playground_server_id, organization_id, master_seed_encrypted, root_did, agent_nodes, total_dids, created_at, last_key_rotation)
+SELECT playground_server_id, organization_id, master_seed_encrypted, root_did, agent_nodes, total_dids, created_at, last_key_rotation
 FROM did_registry;
 
 -- Drop old table and rename new table
@@ -40,20 +40,20 @@ CREATE INDEX IF NOT EXISTS idx_did_registry_created_at ON did_registry(created_a
 CREATE INDEX IF NOT EXISTS idx_did_registry_last_key_rotation ON did_registry(last_key_rotation);
 CREATE INDEX IF NOT EXISTS idx_did_registry_organization_id ON did_registry(organization_id); -- For backward compatibility
 
--- Step 4: Update agent_dids table to use agentfield_server_id
-ALTER TABLE agent_dids ADD COLUMN agentfield_server_id TEXT;
+-- Step 4: Update agent_dids table to use playground_server_id
+ALTER TABLE agent_dids ADD COLUMN playground_server_id TEXT;
 
--- Copy organization_id values to agentfield_server_id for existing records
-UPDATE agent_dids SET agentfield_server_id = organization_id WHERE agentfield_server_id IS NULL;
+-- Copy organization_id values to playground_server_id for existing records
+UPDATE agent_dids SET playground_server_id = organization_id WHERE playground_server_id IS NULL;
 
--- Ensure all records have agentfield_server_id populated
-UPDATE agent_dids SET agentfield_server_id = 'default' WHERE agentfield_server_id IS NULL OR agentfield_server_id = '';
+-- Ensure all records have playground_server_id populated
+UPDATE agent_dids SET playground_server_id = 'default' WHERE playground_server_id IS NULL OR playground_server_id = '';
 
--- Recreate agent_dids table with agentfield_server_id as the foreign key
+-- Recreate agent_dids table with playground_server_id as the foreign key
 CREATE TABLE agent_dids_new (
     did TEXT PRIMARY KEY,
     agent_node_id TEXT NOT NULL,
-    agentfield_server_id TEXT NOT NULL,
+    playground_server_id TEXT NOT NULL,
     organization_id TEXT, -- Keep for backward compatibility during transition
     public_key_jwk TEXT NOT NULL, -- JSON Web Key format
     derivation_path TEXT NOT NULL,
@@ -65,12 +65,12 @@ CREATE TABLE agent_dids_new (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     -- Foreign key constraints
-    FOREIGN KEY (agentfield_server_id) REFERENCES did_registry(agentfield_server_id) ON DELETE CASCADE
+    FOREIGN KEY (playground_server_id) REFERENCES did_registry(playground_server_id) ON DELETE CASCADE
 );
 
 -- Copy data from old table to new table
-INSERT INTO agent_dids_new (did, agent_node_id, agentfield_server_id, organization_id, public_key_jwk, derivation_path, reasoners, skills, status, registered_at, created_at, updated_at)
-SELECT did, agent_node_id, agentfield_server_id, organization_id, public_key_jwk, derivation_path, reasoners, skills, status, registered_at, created_at, updated_at
+INSERT INTO agent_dids_new (did, agent_node_id, playground_server_id, organization_id, public_key_jwk, derivation_path, reasoners, skills, status, registered_at, created_at, updated_at)
+SELECT did, agent_node_id, playground_server_id, organization_id, public_key_jwk, derivation_path, reasoners, skills, status, registered_at, created_at, updated_at
 FROM agent_dids;
 
 -- Drop old table and rename new table
@@ -79,8 +79,8 @@ ALTER TABLE agent_dids_new RENAME TO agent_dids;
 
 -- Recreate indexes for performance
 CREATE INDEX IF NOT EXISTS idx_agent_dids_agent_node_id ON agent_dids(agent_node_id);
-CREATE INDEX IF NOT EXISTS idx_agent_dids_agentfield_server_id ON agent_dids(agentfield_server_id);
+CREATE INDEX IF NOT EXISTS idx_agent_dids_playground_server_id ON agent_dids(playground_server_id);
 CREATE INDEX IF NOT EXISTS idx_agent_dids_organization_id ON agent_dids(organization_id); -- For backward compatibility
 CREATE INDEX IF NOT EXISTS idx_agent_dids_status ON agent_dids(status);
 CREATE INDEX IF NOT EXISTS idx_agent_dids_registered_at ON agent_dids(registered_at);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_dids_agent_node_agentfield_server ON agent_dids(agent_node_id, agentfield_server_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_dids_agent_node_playground_server ON agent_dids(agent_node_id, playground_server_id);

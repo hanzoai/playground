@@ -18,15 +18,15 @@ import (
 // NodeEvent represents a real-time event related to an agent node.
 type NodeEvent struct {
 	Type      string      `json:"type"` // e.g., "node_registered", "node_health_changed", "node_removed"
-	Node      interface{} `json:"node"` // Can be AgentNodeSummaryForUI or full AgentNode
+	Node      interface{} `json:"node"` // Can be NodeSummaryForUI or full Node
 	Timestamp time.Time   `json:"timestamp"`
 }
 
 // UIService provides data optimized for the UI and manages SSE clients.
 type UIService struct {
 	storage       storage.StorageProvider
-	agentClient   interfaces.AgentClient
-	agentService  interfaces.AgentService // Add AgentService for robust status checking
+	nodeClient    interfaces.NodeClient
+	botService    interfaces.BotService // Add BotService for robust status checking
 	statusManager *StatusManager          // Unified status management
 	// clients map[chan NodeEvent]bool // Deprecated: Use sync.Map for concurrent access
 	clients sync.Map // Map of chan NodeEvent to bool (true if active)
@@ -41,11 +41,11 @@ type UIService struct {
 }
 
 // NewUIService creates a new UIService.
-func NewUIService(storageProvider storage.StorageProvider, agentClient interfaces.AgentClient, agentService interfaces.AgentService, statusManager *StatusManager) *UIService {
+func NewUIService(storageProvider storage.StorageProvider, nodeClient interfaces.NodeClient, botService interfaces.BotService, statusManager *StatusManager) *UIService {
 	service := &UIService{
 		storage:        storageProvider,
-		agentClient:    agentClient,
-		agentService:   agentService,
+		nodeClient:     nodeClient,
+		botService:     botService,
 		statusManager:  statusManager,
 		clients:        sync.Map{},
 		lastEventCache: make(map[string]NodeEvent),
@@ -58,13 +58,13 @@ func NewUIService(storageProvider storage.StorageProvider, agentClient interface
 	return service
 }
 
-// AgentNodeSummaryForUI is a subset of types.AgentNode for summary display.
-type AgentNodeSummaryForUI struct {
+// NodeSummaryForUI is a subset of types.Node for summary display.
+type NodeSummaryForUI struct {
 	ID              string                     `json:"id"`
 	TeamID          string                     `json:"team_id"`
 	Version         string                     `json:"version"`
 	HealthStatus    types.HealthStatus         `json:"health_status"`
-	LifecycleStatus types.AgentLifecycleStatus `json:"lifecycle_status"`
+	LifecycleStatus types.BotLifecycleStatus `json:"lifecycle_status"`
 	BotCount   int                        `json:"bot_count"`
 	SkillCount      int                        `json:"skill_count"`
 	LastHeartbeat   time.Time                  `json:"last_heartbeat"`
@@ -75,8 +75,8 @@ type AgentNodeSummaryForUI struct {
 
 // GetNodesSummary retrieves a list of node summaries with robust status checking.
 // This method ensures consistency by using the same reconciliation logic as the detailed status endpoint.
-func (s *UIService) GetNodesSummary(ctx context.Context) ([]AgentNodeSummaryForUI, int, error) {
-	nodes, err := s.storage.ListAgents(ctx, types.AgentFilters{})
+func (s *UIService) GetNodesSummary(ctx context.Context) ([]NodeSummaryForUI, int, error) {
+	nodes, err := s.storage.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("Error listing agents")
 		return nil, 0, err
@@ -88,12 +88,12 @@ func (s *UIService) GetNodesSummary(ctx context.Context) ([]AgentNodeSummaryForU
 			i+1, node.ID, node.TeamID, node.Version, node.HealthStatus, node.LastHeartbeat.Format(time.RFC3339))
 	}
 
-	summaries := make([]AgentNodeSummaryForUI, len(nodes))
+	summaries := make([]NodeSummaryForUI, len(nodes))
 	for i, node := range nodes {
-		// Use the robust status reconciliation from AgentService as single source of truth
+		// Use the robust status reconciliation from BotService as single source of truth
 		lifecycleStatus, healthStatus := s.getReconciledNodeStatus(node.ID, node)
 
-		summaries[i] = AgentNodeSummaryForUI{
+		summaries[i] = NodeSummaryForUI{
 			ID:              node.ID,
 			TeamID:          node.TeamID,
 			Version:         node.Version,
@@ -112,11 +112,11 @@ func (s *UIService) GetNodesSummary(ctx context.Context) ([]AgentNodeSummaryForU
 
 // getReconciledNodeStatus provides a single source of truth for node status by using
 // the unified status management system.
-func (s *UIService) getReconciledNodeStatus(nodeID string, node *types.AgentNode) (types.AgentLifecycleStatus, types.HealthStatus) {
+func (s *UIService) getReconciledNodeStatus(nodeID string, node *types.Node) (types.BotLifecycleStatus, types.HealthStatus) {
 	// Use StatusManager snapshot as the primary source of truth without triggering live probes
 	if s.statusManager != nil {
 		ctx := context.Background()
-		unifiedStatus, err := s.statusManager.GetAgentStatusSnapshot(ctx, nodeID, node)
+		unifiedStatus, err := s.statusManager.GetBotStatusSnapshot(ctx, nodeID, node)
 		if err == nil && unifiedStatus != nil {
 			logger.Logger.Debug().Msgf("🔧 UNIFIED: Using cached status for node %s: state=%s, health=%d",
 				nodeID, unifiedStatus.State, unifiedStatus.HealthScore)
@@ -125,11 +125,11 @@ func (s *UIService) getReconciledNodeStatus(nodeID string, node *types.AgentNode
 		logger.Logger.Warn().Err(err).Msgf("⚠️  Failed to get cached status for node %s, using fallback", nodeID)
 	}
 
-	// Fallback to AgentService if StatusManager is not available
-	if s.agentService != nil {
-		agentStatus, err := s.agentService.GetAgentStatus(nodeID)
+	// Fallback to BotService if StatusManager is not available
+	if s.botService != nil {
+		agentStatus, err := s.botService.GetBotStatus(nodeID)
 		if err == nil && agentStatus != nil {
-			// AgentService provides the authoritative running state
+			// BotService provides the authoritative running state
 			if agentStatus.IsRunning {
 				// If agent is actually running, set appropriate lifecycle status
 				if node.LifecycleStatus == "" || node.LifecycleStatus == "offline" {
@@ -147,7 +147,7 @@ func (s *UIService) getReconciledNodeStatus(nodeID string, node *types.AgentNode
 				return "offline", "inactive"
 			}
 		}
-		// If AgentService call failed, log warning but continue with fallback
+		// If BotService call failed, log warning but continue with fallback
 		logger.Logger.Warn().Err(err).Msgf("⚠️  Failed to get reconciled status for node %s, using fallback logic", nodeID)
 	}
 
@@ -175,7 +175,7 @@ func (s *UIService) getReconciledNodeStatus(nodeID string, node *types.AgentNode
 
 // NodeDetailsWithPackageInfo represents node details enhanced with package information
 type NodeDetailsWithPackageInfo struct {
-	*types.AgentNode
+	*types.Node
 	PackageInfo *PackageInfo `json:"package_info,omitempty"`
 }
 
@@ -187,22 +187,22 @@ type PackageInfo struct {
 }
 
 // GetNodeDetails retrieves full details for a specific node.
-// For now, it's the same as storage.GetAgent, but can be optimized later.
-func (s *UIService) GetNodeDetails(ctx context.Context, nodeID string) (*types.AgentNode, error) {
-	return s.storage.GetAgent(ctx, nodeID)
+// For now, it's the same as storage.GetNode, but can be optimized later.
+func (s *UIService) GetNodeDetails(ctx context.Context, nodeID string) (*types.Node, error) {
+	return s.storage.GetNode(ctx, nodeID)
 }
 
 // GetNodeDetailsWithPackageInfo retrieves full details for a specific node including package information.
 func (s *UIService) GetNodeDetailsWithPackageInfo(ctx context.Context, nodeID string) (*NodeDetailsWithPackageInfo, error) {
 	// Get base node details
-	node, err := s.storage.GetAgent(ctx, nodeID)
+	node, err := s.storage.GetNode(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create response with node details
 	response := &NodeDetailsWithPackageInfo{
-		AgentNode: node,
+		Node: node,
 	}
 
 	// Find the package that corresponds to this node by searching through package configurations
@@ -224,9 +224,9 @@ func (s *UIService) GetNodeDetailsWithPackageInfo(ctx context.Context, nodeID st
 }
 
 // findPackageByNodeID searches for the package that contains the given node_id in its configuration
-func (s *UIService) findPackageByNodeID(ctx context.Context, nodeID string) (*types.AgentPackage, error) {
+func (s *UIService) findPackageByNodeID(ctx context.Context, nodeID string) (*types.BotPackage, error) {
 	// Query all packages to find the one with matching node_id in configuration
-	packages, err := s.storage.QueryAgentPackages(ctx, types.PackageFilters{})
+	packages, err := s.storage.QueryBotPackages(ctx, types.PackageFilters{})
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +240,8 @@ func (s *UIService) findPackageByNodeID(ctx context.Context, nodeID string) (*ty
 			}
 
 			// Check if this package's configuration contains our node_id
-			if agentNode, ok := config["agent_node"].(map[string]interface{}); ok {
-				if configNodeID, ok := agentNode["node_id"].(string); ok && configNodeID == nodeID {
+			if node, ok := config["agent_node"].(map[string]interface{}); ok {
+				if configNodeID, ok := node["node_id"].(string); ok && configNodeID == nodeID {
 					return pkg, nil
 				}
 			}
@@ -331,9 +331,9 @@ func (s *UIService) countClients() int {
 	return count
 }
 
-// OnAgentRegistered is a callback for when an agent is registered.
-func (s *UIService) OnAgentRegistered(node *types.AgentNode) {
-	summary := AgentNodeSummaryForUI{
+// OnNodeRegistered is a callback for when an agent is registered.
+func (s *UIService) OnNodeRegistered(node *types.Node) {
+	summary := NodeSummaryForUI{
 		ID:              node.ID,
 		TeamID:          node.TeamID,
 		Version:         node.Version,
@@ -350,8 +350,8 @@ func (s *UIService) OnAgentRegistered(node *types.AgentNode) {
 
 // OnNodeStatusChanged is a callback for when an agent's status (health or lifecycle) changes.
 // It sends a single, consolidated event to the frontend.
-func (s *UIService) OnNodeStatusChanged(node *types.AgentNode) {
-	summary := AgentNodeSummaryForUI{
+func (s *UIService) OnNodeStatusChanged(node *types.Node) {
+	summary := NodeSummaryForUI{
 		ID:              node.ID,
 		TeamID:          node.TeamID,
 		Version:         node.Version,
@@ -369,10 +369,10 @@ func (s *UIService) OnNodeStatusChanged(node *types.AgentNode) {
 
 // OnBotStatusChanged broadcasts bot-specific status change events
 // This ensures the bots UI gets immediate updates when node status changes
-func (s *UIService) OnBotStatusChanged(node *types.AgentNode) {
+func (s *UIService) OnBotStatusChanged(node *types.Node) {
 	// Determine effective bot status based on node health and lifecycle
 	botStatus := "online"
-	if node.HealthStatus != types.HealthStatusActive || node.LifecycleStatus == types.AgentStatusOffline {
+	if node.HealthStatus != types.HealthStatusActive || node.LifecycleStatus == types.BotStatusOffline {
 		botStatus = "offline"
 	}
 
@@ -403,13 +403,13 @@ func (s *UIService) OnAgentRemoved(nodeID string) {
 
 // fetchMCPHealthForNode retrieves MCP health data for a specific node
 func (s *UIService) fetchMCPHealthForNode(ctx context.Context, nodeID string, mode domain.MCPHealthMode) (*domain.MCPSummaryForUI, []domain.MCPServerHealthForUI, error) {
-	if s.agentClient == nil {
-		// Agent client not available, return empty data
+	if s.nodeClient == nil {
+		// Node client not available, return empty data
 		return nil, nil, nil
 	}
 
-	// Fetch MCP health from agent
-	healthResponse, err := s.agentClient.GetMCPHealth(ctx, nodeID)
+	// Fetch MCP health from node
+	healthResponse, err := s.nodeClient.GetMCPHealth(ctx, nodeID)
 	if err != nil {
 		// Log error but don't fail - agent might not support MCP
 		logger.Logger.Warn().Err(err).Msgf("Failed to fetch MCP health for node %s", nodeID)
@@ -460,15 +460,15 @@ func (s *UIService) fetchMCPHealthForNode(ctx context.Context, nodeID string, mo
 }
 
 // GetNodeDetailsWithMCP retrieves full details for a specific node including MCP data
-func (s *UIService) GetNodeDetailsWithMCP(ctx context.Context, nodeID string, mode domain.MCPHealthMode) (*domain.AgentNodeDetailsForUI, error) {
+func (s *UIService) GetNodeDetailsWithMCP(ctx context.Context, nodeID string, mode domain.MCPHealthMode) (*domain.NodeDetailsForUI, error) {
 	// Get base node details
-	node, err := s.storage.GetAgent(ctx, nodeID)
+	node, err := s.storage.GetNode(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create base details
-	details := &domain.AgentNodeDetailsForUI{
+	details := &domain.NodeDetailsForUI{
 		ID:            node.ID,
 		TeamID:        node.TeamID,
 		BaseURL:       node.BaseURL,
@@ -497,8 +497,8 @@ func (s *UIService) GetNodeDetailsWithMCP(ctx context.Context, nodeID string, mo
 }
 
 // enhanceNodeSummaryWithMCP adds MCP health data to a node summary
-func (s *UIService) enhanceNodeSummaryWithMCP(summary *AgentNodeSummaryForUI) {
-	if s.agentClient == nil {
+func (s *UIService) enhanceNodeSummaryWithMCP(summary *NodeSummaryForUI) {
+	if s.nodeClient == nil {
 		return
 	}
 
@@ -631,7 +631,7 @@ func (s *UIService) cacheEvent(event NodeEvent) {
 func (s *UIService) getEventCacheKey(event NodeEvent) string {
 	switch event.Type {
 	case "node_status_changed", "node_health_changed", "node_registered":
-		if summary, ok := event.Node.(AgentNodeSummaryForUI); ok {
+		if summary, ok := event.Node.(NodeSummaryForUI); ok {
 			return fmt.Sprintf("%s:%s", event.Type, summary.ID)
 		}
 	case "mcp_health_changed":
@@ -652,8 +652,8 @@ func (s *UIService) getEventCacheKey(event NodeEvent) string {
 
 // compareStatusEvents compares two status events to see if they represent the same status
 func (s *UIService) compareStatusEvents(lastEvent, newEvent NodeEvent) bool {
-	lastSummary, lastOk := lastEvent.Node.(AgentNodeSummaryForUI)
-	newSummary, newOk := newEvent.Node.(AgentNodeSummaryForUI)
+	lastSummary, lastOk := lastEvent.Node.(NodeSummaryForUI)
+	newSummary, newOk := newEvent.Node.(NodeSummaryForUI)
 
 	if !lastOk || !newOk {
 		return false // Can't compare, allow the event
@@ -670,32 +670,32 @@ func (s *UIService) RefreshNodeStatus(ctx context.Context, nodeID string) error 
 		return fmt.Errorf("status manager not available")
 	}
 
-	return s.statusManager.RefreshAgentStatus(ctx, nodeID)
+	return s.statusManager.RefreshBotStatus(ctx, nodeID)
 }
 
 // GetUnifiedNodeStatus gets the unified status for a node
-func (s *UIService) GetUnifiedNodeStatus(ctx context.Context, nodeID string) (*types.AgentStatus, error) {
+func (s *UIService) GetUnifiedNodeStatus(ctx context.Context, nodeID string) (*types.BotStatus, error) {
 	if s.statusManager == nil {
 		return nil, fmt.Errorf("status manager not available")
 	}
 
-	return s.statusManager.GetAgentStatus(ctx, nodeID)
+	return s.statusManager.GetBotStatus(ctx, nodeID)
 }
 
 // GetNodeUnifiedStatus gets the unified status for a node (alias for GetUnifiedNodeStatus)
-func (s *UIService) GetNodeUnifiedStatus(ctx context.Context, nodeID string) (*types.AgentStatus, error) {
+func (s *UIService) GetNodeUnifiedStatus(ctx context.Context, nodeID string) (*types.BotStatus, error) {
 	return s.GetUnifiedNodeStatus(ctx, nodeID)
 }
 
 // BulkNodeStatus gets unified status for multiple nodes
-func (s *UIService) BulkNodeStatus(ctx context.Context, nodeIDs []string) (map[string]*types.AgentStatus, error) {
+func (s *UIService) BulkNodeStatus(ctx context.Context, nodeIDs []string) (map[string]*types.BotStatus, error) {
 	if s.statusManager == nil {
 		return nil, fmt.Errorf("status manager not available")
 	}
 
-	statuses := make(map[string]*types.AgentStatus)
+	statuses := make(map[string]*types.BotStatus)
 	for _, nodeID := range nodeIDs {
-		status, err := s.statusManager.GetAgentStatus(ctx, nodeID)
+		status, err := s.statusManager.GetBotStatus(ctx, nodeID)
 		if err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("Failed to get status for node")
 			continue
@@ -707,19 +707,19 @@ func (s *UIService) BulkNodeStatus(ctx context.Context, nodeIDs []string) (map[s
 }
 
 // RefreshAllNodeStatus refreshes status for all registered nodes
-func (s *UIService) RefreshAllNodeStatus(ctx context.Context) (map[string]*types.AgentStatus, error) {
+func (s *UIService) RefreshAllNodeStatus(ctx context.Context) (map[string]*types.BotStatus, error) {
 	if s.statusManager == nil {
 		return nil, fmt.Errorf("status manager not available")
 	}
 
 	// Get all registered nodes
-	nodes, err := s.storage.ListAgents(ctx, types.AgentFilters{})
+	nodes, err := s.storage.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list agents: %w", err)
 	}
 
 	// Refresh statuses concurrently to avoid request timeouts when many nodes are unreachable
-	statuses := make(map[string]*types.AgentStatus)
+	statuses := make(map[string]*types.BotStatus)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
@@ -745,13 +745,13 @@ func (s *UIService) RefreshAllNodeStatus(ctx context.Context) (map[string]*types
 			defer func() { <-sem }()
 
 			// Refresh status for each node
-			if err := s.statusManager.RefreshAgentStatus(ctx, nodeID); err != nil {
+			if err := s.statusManager.RefreshBotStatus(ctx, nodeID); err != nil {
 				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("Failed to refresh status for node")
 				return
 			}
 
 			// Get the refreshed status
-			status, err := s.statusManager.GetAgentStatus(ctx, nodeID)
+			status, err := s.statusManager.GetBotStatus(ctx, nodeID)
 			if err != nil {
 				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("Failed to get refreshed status for node")
 				return

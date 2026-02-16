@@ -1,4 +1,4 @@
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import {
   EntityDecisionSchema,
   EntityProfileSchema,
@@ -14,7 +14,7 @@ import {
   type SimulationResult
 } from '../schemas.js';
 
-export const simulationRouter = new AgentRouter({ prefix: 'simulation' });
+export const simulationRouter = new BotRouter({ prefix: 'simulation' });
 
 const scenarioTargets = {
   decompose: 'scenario_decomposeScenario',
@@ -33,7 +33,7 @@ const aggregationTargets = {
   aggregate: 'aggregation_aggregateAndAnalyze'
 } as const;
 
-simulationRouter.reasoner<RunSimulationInput, SimulationResult>(
+simulationRouter.bot<RunSimulationInput, SimulationResult>(
   'runSimulation',
   async (ctx) => {
     const scenario = ctx.input.scenario;

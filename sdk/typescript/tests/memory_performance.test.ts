@@ -60,7 +60,7 @@ describe('Memory Performance Tests', () => {
       const metrics = measureMemory('AgentCreation', 100, (n) => {
         const agents: Agent[] = [];
         for (let i = 0; i < n; i++) {
-          const agent = new Agent({
+          const agent = new Bot({
             nodeId: `test-agent-${i}`,
             devMode: true,
           });
@@ -77,15 +77,15 @@ describe('Memory Performance Tests', () => {
       expect(metrics.heapUsedMB).toBeLessThan(50);
     });
 
-    it('should handle reasoner and skill registration efficiently', () => {
-      const agent = new Agent({
+    it('should handle bot and skill registration efficiently', () => {
+      const agent = new Bot({
         nodeId: 'registration-test',
         devMode: true,
       });
 
-      const metrics = measureMemory('ReasonerRegistration', 1000, (n) => {
+      const metrics = measureMemory('BotRegistration', 1000, (n) => {
         for (let i = 0; i < n; i++) {
-          agent.reasoner(`reasoner_${i}`, async (ctx) => ({
+          agent.bot(`bot_${i}`, async (ctx) => ({
             result: ctx.input,
             index: i,
           }));
@@ -95,7 +95,7 @@ describe('Memory Performance Tests', () => {
         }
       });
 
-      console.log(`\nReasoner/Skill Registration: ${formatMemory(metrics.heapUsedMB)}`);
+      console.log(`\nBot/Skill Registration: ${formatMemory(metrics.heapUsedMB)}`);
       console.log(`  Total Registered: ${metrics.iterations * 2}`);
       console.log(`  Per Registration: ${formatMemory(metrics.heapUsedMB / (metrics.iterations * 2))}`);
 
@@ -106,14 +106,14 @@ describe('Memory Performance Tests', () => {
 
   describe('Execution Context', () => {
     it('should efficiently handle large input payloads', async () => {
-      const agent = new Agent({
+      const agent = new Bot({
         nodeId: 'payload-test',
         devMode: true,
       });
 
       const results: any[] = [];
 
-      agent.reasoner('process', async (ctx) => {
+      agent.bot('process', async (ctx) => {
         // Simulate processing large payload
         const result = {
           processed: true,
@@ -149,7 +149,7 @@ describe('Memory Performance Tests', () => {
 
   describe('Memory Watch Handlers', () => {
     it('should handle many memory watchers efficiently', () => {
-      const agent = new Agent({
+      const agent = new Bot({
         nodeId: 'watcher-test',
         devMode: true,
       });
@@ -176,11 +176,11 @@ describe('Memory Performance Tests', () => {
     it('should meet memory efficiency baseline', () => {
       const allMetrics: MemoryMetrics[] = [];
 
-      // Test 1: Agent + Reasoners
-      const agent1 = new Agent({ nodeId: 'baseline-1', devMode: true });
-      const m1 = measureMemory('Agent+Reasoners', 100, (n) => {
+      // Test 1: Agent + Bots
+      const agent1 = new Bot({ nodeId: 'baseline-1', devMode: true });
+      const m1 = measureMemory('Agent+Bots', 100, (n) => {
         for (let i = 0; i < n; i++) {
-          agent1.reasoner(`r_${i}`, async () => ({ ok: true }));
+          agent1.bot(`r_${i}`, async () => ({ ok: true }));
         }
       });
       allMetrics.push(m1);
@@ -198,7 +198,7 @@ describe('Memory Performance Tests', () => {
       allMetrics.push(m2);
 
       // Test 3: Agent with watchers
-      const agent3 = new Agent({ nodeId: 'baseline-3', devMode: true });
+      const agent3 = new Bot({ nodeId: 'baseline-3', devMode: true });
       const m3 = measureMemory('Agent+Watchers', 200, (n) => {
         for (let i = 0; i < n; i++) {
           agent3.watchMemory(`key_${i}.*`, () => {});
@@ -237,11 +237,11 @@ describe('Memory Leak Prevention', () => {
     for (let cycle = 0; cycle < 10; cycle++) {
       const agents: Agent[] = [];
       for (let i = 0; i < 50; i++) {
-        const agent = new Agent({
+        const agent = new Bot({
           nodeId: `leak-test-${cycle}-${i}`,
           devMode: true,
         });
-        agent.reasoner('test', async () => ({ ok: true }));
+        agent.bot('test', async () => ({ ok: true }));
         agents.push(agent);
       }
       // Let agents go out of scope

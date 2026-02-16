@@ -17,7 +17,7 @@ import (
 // EnvHandler provides handlers for .env file management operations.
 type EnvHandler struct {
 	storage        storage.StorageProvider
-	agentService   interfaces.AgentService
+	botService     interfaces.BotService
 	agentsHome string
 }
 
@@ -42,7 +42,7 @@ func (h *EnvHandler) DeleteEnvVarHandler(c *gin.Context) {
 		return
 	}
 
-	agentPackage, err := h.storage.GetAgentPackage(ctx, packageID)
+	agentPackage, err := h.storage.GetBotPackage(ctx, packageID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "package not found"})
 		return
@@ -86,7 +86,7 @@ func (h *EnvHandler) DeleteEnvVarHandler(c *gin.Context) {
 	for k, v := range existingVars {
 		configVars[k] = v
 	}
-	validationResult, err := h.storage.ValidateAgentConfiguration(ctx, agentID, packageID, configVars)
+	validationResult, err := h.storage.ValidateBotConfiguration(ctx, agentID, packageID, configVars)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate configuration"})
 		return
@@ -148,7 +148,7 @@ func (h *EnvHandler) PatchEnvHandler(c *gin.Context) {
 		return
 	}
 
-	agentPackage, err := h.storage.GetAgentPackage(ctx, packageID)
+	agentPackage, err := h.storage.GetBotPackage(ctx, packageID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "package not found"})
 		return
@@ -190,7 +190,7 @@ func (h *EnvHandler) PatchEnvHandler(c *gin.Context) {
 	for k, v := range existingVars {
 		configVars[k] = v
 	}
-	validationResult, err := h.storage.ValidateAgentConfiguration(ctx, agentID, packageID, configVars)
+	validationResult, err := h.storage.ValidateBotConfiguration(ctx, agentID, packageID, configVars)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate configuration"})
 		return
@@ -241,10 +241,10 @@ type EnvResponse struct {
 }
 
 // NewEnvHandler creates a new EnvHandler.
-func NewEnvHandler(storage storage.StorageProvider, agentService interfaces.AgentService, agentsHome string) *EnvHandler {
+func NewEnvHandler(storage storage.StorageProvider, botService interfaces.BotService, agentsHome string) *EnvHandler {
 	return &EnvHandler{
-		storage:        storage,
-		agentService:   agentService,
+		storage:    storage,
+		botService: botService,
 		agentsHome: agentsHome,
 	}
 }
@@ -266,7 +266,7 @@ func (h *EnvHandler) GetEnvHandler(c *gin.Context) {
 	}
 
 	// Get the agent package to resolve install path and schema
-	agentPackage, err := h.storage.GetAgentPackage(ctx, packageID)
+	agentPackage, err := h.storage.GetBotPackage(ctx, packageID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "package not found"})
 		return
@@ -370,7 +370,7 @@ func (h *EnvHandler) PutEnvHandler(c *gin.Context) {
 		return
 	}
 
-	agentPackage, err := h.storage.GetAgentPackage(ctx, packageID)
+	agentPackage, err := h.storage.GetBotPackage(ctx, packageID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "package not found"})
 		return
@@ -382,7 +382,7 @@ func (h *EnvHandler) PutEnvHandler(c *gin.Context) {
 	for k, v := range req.Variables {
 		configVars[k] = v
 	}
-	validationResult, err := h.storage.ValidateAgentConfiguration(ctx, agentID, packageID, configVars)
+	validationResult, err := h.storage.ValidateBotConfiguration(ctx, agentID, packageID, configVars)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate configuration"})
 		return

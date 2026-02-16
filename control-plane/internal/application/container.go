@@ -35,7 +35,7 @@ func CreateServiceContainer(cfg *config.Config, agentsHome string) *framework.Se
 
 	// Create services
 	packageService := services.NewPackageService(registryStorage, fileSystem, agentsHome)
-	agentService := services.NewAgentService(processManager, portManager, registryStorage, nil, agentsHome) // nil agentClient for now
+	botService := services.NewBotService(processManager, portManager, registryStorage, nil, agentsHome) // nil nodeClient for now
 	devService := services.NewDevService(processManager, portManager, fileSystem)
 
 	// Create DID services if enabled
@@ -73,7 +73,7 @@ func CreateServiceContainer(cfg *config.Config, agentsHome string) *framework.Se
 
 			// Generate af server ID based on agents home directory
 			// This ensures each agents instance has a unique ID while being deterministic
-			agentsServerID := generateAgentsServerID(agentsHome)
+			agentsServerID := generatePlaygroundServerID(agentsHome)
 			if err := didService.Initialize(agentsServerID); err != nil {
 				logger.Logger.Warn().Err(err).Msg("failed to initialize DID service")
 				didService = nil
@@ -95,7 +95,7 @@ func CreateServiceContainer(cfg *config.Config, agentsHome string) *framework.Se
 
 	return &framework.ServiceContainer{
 		PackageService:  packageService,
-		AgentService:    agentService,
+		BotService:    botService,
 		DevService:      devService,
 		DIDService:      didService,
 		VCService:       vcService,
@@ -112,9 +112,9 @@ func CreateServiceContainerWithDefaults(agentsHome string) *framework.ServiceCon
 	return CreateServiceContainer(cfg, agentsHome)
 }
 
-// generateAgentsServerID creates a deterministic af server ID based on the agents home directory.
+// generatePlaygroundServerID creates a deterministic af server ID based on the agents home directory.
 // This ensures each agents instance has a unique ID while being deterministic for the same installation.
-func generateAgentsServerID(agentsHome string) string {
+func generatePlaygroundServerID(agentsHome string) string {
 	// Use the absolute path of agents home to generate a deterministic ID
 	absPath, err := filepath.Abs(agentsHome)
 	if err != nil {

@@ -104,7 +104,7 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 		}
 
 		// Find the agent node
-		targetNode, err := storageProvider.GetAgent(ctx, nodeID)
+		targetNode, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error": fmt.Sprintf("node '%s' not found", nodeID),
@@ -114,8 +114,8 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 
 		// Check if bot exists on the node
 		botExists := false
-		for _, bot := range targetNode.Bots {
-			if bot.ID == botName {
+		for _, r := range targetNode.Bots {
+			if r.ID == botName {
 				botExists = true
 				break
 			}
@@ -133,8 +133,8 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 			WorkflowID:          workflowID,
 			ExecutionID:         executionID,
 			AgentsRequestID: agentsRequestID,
-			AgentNodeID:         nodeID,
-			BotID:          botName,
+			NodeID:         nodeID,
+			BotID:     botName,
 			Status:              "running",
 			StartedAt:           startTime,
 			CreatedAt:           startTime,
@@ -210,9 +210,8 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 				ExecutionID:       executionID,
 				RunID:             workflowID,
 				ParentExecutionID: parentPtr,
-				AgentNodeID:       nodeID,
-				BotID:        botName,
 				NodeID:            nodeID,
+				BotID:        botName,
 				Status:            types.ExecutionStatusRunning,
 				StartedAt:         now,
 				CreatedAt:         now,
@@ -453,7 +452,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		}
 
 		// Find the agent node
-		targetNode, err := storageProvider.GetAgent(ctx, nodeID)
+		targetNode, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error": fmt.Sprintf("node '%s' not found", nodeID),
@@ -482,8 +481,8 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 			WorkflowID:          workflowID,
 			ExecutionID:         executionID,
 			AgentsRequestID: agentsRequestID,
-			AgentNodeID:         nodeID,
-			BotID:          skillName, // For skills, BotID will store skillName
+			NodeID:         nodeID,
+			BotID:     skillName,
 			Status:              "running",
 			StartedAt:           startTime,
 			CreatedAt:           startTime,

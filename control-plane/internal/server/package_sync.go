@@ -17,12 +17,12 @@ import (
 )
 
 type packageStorage interface {
-	GetAgentPackage(ctx context.Context, packageID string) (*types.AgentPackage, error)
-	StoreAgentPackage(ctx context.Context, pkg *types.AgentPackage) error
+	GetBotPackage(ctx context.Context, packageID string) (*types.BotPackage, error)
+	StoreBotPackage(ctx context.Context, pkg *types.BotPackage) error
 }
 
-var storePackage = func(storageProvider packageStorage, ctx context.Context, pkg *types.AgentPackage) error {
-	return storageProvider.StoreAgentPackage(ctx, pkg)
+var storePackage = func(storageProvider packageStorage, ctx context.Context, pkg *types.BotPackage) error {
+	return storageProvider.StoreBotPackage(ctx, pkg)
 }
 
 // InstallationRegistry mirrors the structure of installed.yaml
@@ -61,7 +61,7 @@ func SyncPackagesFromRegistry(agentsHome string, storageProvider packageStorage)
 	}
 	for pkgName, pkg := range registry.Installed {
 		// Check if package exists in DB
-		_, err := storageProvider.GetAgentPackage(ctx, pkgName)
+		_, err := storageProvider.GetBotPackage(ctx, pkgName)
 		if err == nil {
 			continue // Already present
 		}
@@ -78,7 +78,7 @@ func SyncPackagesFromRegistry(agentsHome string, storageProvider packageStorage)
 		// Convert schema to JSON for storage
 		schemaJson, _ := json.Marshal(packageYaml)
 		now := time.Now()
-		agentPkg := &types.AgentPackage{
+		agentPkg := &types.BotPackage{
 			ID:                  pkgName,
 			Name:                pkg.Name,
 			Version:             pkg.Version,

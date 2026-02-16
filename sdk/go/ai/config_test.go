@@ -9,49 +9,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefaultConfig(t *testing.T) {
-	// Save original env vars
-	originalOpenAIKey := os.Getenv("OPENAI_API_KEY")
-	originalOpenRouterKey := os.Getenv("OPENROUTER_API_KEY")
-	originalBaseURL := os.Getenv("AI_BASE_URL")
-	originalModel := os.Getenv("AI_MODEL")
+// allEnvKeys lists every environment variable that DefaultConfig reads.
+var allEnvKeys = []string{
+	"HANZO_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
+	"HANZO_AI_BASE_URL", "AI_BASE_URL",
+	"HANZO_AI_MODEL", "AI_MODEL",
+}
 
-	// Clean up after test
-	defer func() {
-		if originalOpenAIKey != "" {
-			os.Setenv("OPENAI_API_KEY", originalOpenAIKey)
-		} else {
-			os.Unsetenv("OPENAI_API_KEY")
+// saveAndClearEnv snapshots the current values and unsets them all.
+// The returned function restores the original values.
+func saveAndClearEnv(keys []string) func() {
+	saved := make(map[string]string, len(keys))
+	for _, k := range keys {
+		if v, ok := os.LookupEnv(k); ok {
+			saved[k] = v
 		}
-		if originalOpenRouterKey != "" {
-			os.Setenv("OPENROUTER_API_KEY", originalOpenRouterKey)
-		} else {
-			os.Unsetenv("OPENROUTER_API_KEY")
+		os.Unsetenv(k)
+	}
+	return func() {
+		for _, k := range keys {
+			if v, ok := saved[k]; ok {
+				os.Setenv(k, v)
+			} else {
+				os.Unsetenv(k)
+			}
 		}
-		if originalBaseURL != "" {
-			os.Setenv("AI_BASE_URL", originalBaseURL)
-		} else {
-			os.Unsetenv("AI_BASE_URL")
-		}
-		if originalModel != "" {
-			os.Setenv("AI_MODEL", originalModel)
-		} else {
-			os.Unsetenv("AI_MODEL")
-		}
-	}()
+	}
+}
+
+func TestDefaultConfig(t *testing.T) {
+	restore := saveAndClearEnv(allEnvKeys)
+	defer restore()
 
 	tests := []struct {
-		name           string
-		setupEnv       func()
-		checkConfig    func(t *testing.T, cfg *Config)
+		name        string
+		setupEnv    func()
+		checkConfig func(t *testing.T, cfg *Config)
 	}{
 		{
 			name: "default OpenAI config",
 			setupEnv: func() {
-				os.Unsetenv("OPENAI_API_KEY")
-				os.Unsetenv("OPENROUTER_API_KEY")
-				os.Unsetenv("AI_BASE_URL")
-				os.Unsetenv("AI_MODEL")
 				os.Setenv("OPENAI_API_KEY", "test-openai-key")
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {
@@ -64,12 +61,21 @@ func TestDefaultConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "OpenRouter config takes precedence",
+			name: "HANZO_API_KEY takes highest priority",
+			setupEnv: func() {
+				os.Setenv("HANZO_API_KEY", "hanzo-key")
+				os.Setenv("OPENAI_API_KEY", "openai-key")
+			},
+			checkConfig: func(t *testing.T, cfg *Config) {
+				assert.Equal(t, "hanzo-key", cfg.APIKey)
+				assert.Equal(t, "https://api.openai.com/v1", cfg.BaseURL)
+			},
+		},
+		{
+			name: "OpenRouter config takes precedence over OPENAI_API_KEY",
 			setupEnv: func() {
 				os.Setenv("OPENAI_API_KEY", "openai-key")
 				os.Setenv("OPENROUTER_API_KEY", "openrouter-key")
-				os.Unsetenv("AI_BASE_URL")
-				os.Unsetenv("AI_MODEL")
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {
 				assert.Equal(t, "openrouter-key", cfg.APIKey)
@@ -77,21 +83,41 @@ func TestDefaultConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "custom base URL override",
+			name: "HANZO_AI_BASE_URL overrides OpenRouter base URL",
+			setupEnv: func() {
+				os.Setenv("OPENROUTER_API_KEY", "openrouter-key")
+				os.Setenv("HANZO_AI_BASE_URL", "https://custom.hanzo.ai/v1")
+			},
+			checkConfig: func(t *testing.T, cfg *Config) {
+				assert.Equal(t, "openrouter-key", cfg.APIKey)
+				assert.Equal(t, "https://custom.hanzo.ai/v1", cfg.BaseURL)
+			},
+		},
+		{
+			name: "custom base URL override via AI_BASE_URL",
 			setupEnv: func() {
 				os.Setenv("OPENAI_API_KEY", "test-key")
 				os.Setenv("AI_BASE_URL", "https://custom.example.com/v1")
-				os.Unsetenv("AI_MODEL")
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {
 				assert.Equal(t, "https://custom.example.com/v1", cfg.BaseURL)
 			},
 		},
 		{
-			name: "custom model override",
+			name: "HANZO_AI_MODEL takes priority over AI_MODEL",
 			setupEnv: func() {
 				os.Setenv("OPENAI_API_KEY", "test-key")
-				os.Unsetenv("AI_BASE_URL")
+				os.Setenv("HANZO_AI_MODEL", "hanzo-model")
+				os.Setenv("AI_MODEL", "fallback-model")
+			},
+			checkConfig: func(t *testing.T, cfg *Config) {
+				assert.Equal(t, "hanzo-model", cfg.Model)
+			},
+		},
+		{
+			name: "custom model override via AI_MODEL",
+			setupEnv: func() {
+				os.Setenv("OPENAI_API_KEY", "test-key")
 				os.Setenv("AI_MODEL", "gpt-3.5-turbo")
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {
@@ -102,12 +128,10 @@ func TestDefaultConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clean up env first
-			os.Unsetenv("OPENAI_API_KEY")
-			os.Unsetenv("OPENROUTER_API_KEY")
-			os.Unsetenv("AI_BASE_URL")
-			os.Unsetenv("AI_MODEL")
-
+			// Clear all env before each subtest.
+			for _, k := range allEnvKeys {
+				os.Unsetenv(k)
+			}
 			tt.setupEnv()
 
 			cfg := DefaultConfig()

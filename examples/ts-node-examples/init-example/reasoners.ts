@@ -1,14 +1,14 @@
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import { z } from 'zod';
 
-// Group related reasoners with a router
-export const reasonersRouter = new AgentRouter({ prefix: 'demo', tags: ['example'] });
+// Group related bots with a router
+export const botsRouter = new BotRouter({ prefix: 'demo', tags: ['example'] });
 
-reasonersRouter.reasoner<{ message: string }, { original: string; echoed: string; length: number }>(
+botsRouter.bot<{ message: string }, { original: string; echoed: string; length: number }>(
   'echo',
   async (ctx) => {
     /**
-     * Simple echo reasoner - works without AI configured.
+     * Simple echo bot - works without AI configured.
      *
      * Example usage:
      * curl -X POST http://localhost:8080/api/v1/execute/init-example.demo_echo \
@@ -35,7 +35,7 @@ const analyzeSentimentOutputSchema = sentimentSchema.extend({
   text: z.string()
 });
 
-reasonersRouter.reasoner<{ text: string }, SentimentResult & { text: string }>(
+botsRouter.bot<{ text: string }, SentimentResult & { text: string }>(
   'analyzeSentiment',
   async (ctx) => {
     /**
@@ -86,11 +86,11 @@ const processWithNotesOutputSchema = z.object({
   notes: z.number()
 });
 
-reasonersRouter.reasoner<{ items: string[] }, { processed: number; notes: number }>(
+botsRouter.bot<{ items: string[] }, { processed: number; notes: number }>(
   'processWithNotes',
   async (ctx) => {
     /**
-     * Example reasoner demonstrating the note() method for fire-and-forget execution logging.
+     * Example bot demonstrating the note() method for fire-and-forget execution logging.
      *
      * Example usage:
      * curl -X POST http://localhost:8080/api/v1/execute/init-example.demo_processWithNotes \

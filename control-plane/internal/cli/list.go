@@ -15,13 +15,13 @@ import (
 func NewListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List installed Agents agent node packages",
-		Long: `Display all installed Agents agent node packages with their status.
+		Short: "List installed bot packages",
+		Long: `Display all installed bot packages with their status.
 
 Shows package name, version, status (running/stopped), and port if running.
 
 Examples:
-  af list`,
+  playground list`,
 		Run: runListCommand,
 	}
 
@@ -48,12 +48,12 @@ func runListCommand(cmd *cobra.Command, args []string) {
 	}
 
 	if len(registry.Installed) == 0 {
-		fmt.Println("📦 No agent node packages installed")
-		fmt.Println("💡 Install packages with: agents install <package-path>")
+		fmt.Println("📦 No bot packages installed")
+		fmt.Println("💡 Install packages with: playground install <package-path>")
 		return
 	}
 
-	fmt.Printf("📦 Installed Agent Node Packages (%d total):\n\n", len(registry.Installed))
+	fmt.Printf("📦 Installed Bot Packages (%d total):\n\n", len(registry.Installed))
 
 	for name, pkg := range registry.Installed {
 		status := pkg.Status
@@ -76,7 +76,7 @@ func runListCommand(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("💡 Commands:")
-	fmt.Println("   af run <name>     - Start an agent node")
-	fmt.Println("   af stop <name>    - Stop a running agent node")
-	fmt.Println("   af logs <name>    - View agent node logs")
+	fmt.Println("   playground run <name>     - Start a bot")
+	fmt.Println("   playground stop <name>    - Stop a running bot")
+	fmt.Println("   playground logs <name>    - View bot logs")
 }

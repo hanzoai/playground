@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, computed_field
 from enum import Enum
 
 
-class AgentStatus(str, Enum):
+class BotStatus(str, Enum):
     """Agent lifecycle status enum matching the Go backend"""
 
     STARTING = "starting"
@@ -33,7 +33,7 @@ class MCPServerHealth:
 class HeartbeatData:
     """Enhanced heartbeat data with status and MCP information"""
 
-    status: AgentStatus
+    status: BotStatus
     mcp_servers: List[MCPServerHealth]
     timestamp: str
 
@@ -56,7 +56,7 @@ class MemoryConfig:
 
 
 @dataclass
-class ReasonerDefinition:
+class BotDefinition:
     id: str
     input_schema: Dict[str, Any]
     output_schema: Dict[str, Any]
@@ -142,7 +142,7 @@ class DiscoveryPagination:
 
 
 @dataclass
-class ReasonerCapability:
+class BotCapability:
     id: str
     description: Optional[str]
     tags: List[str]
@@ -152,7 +152,7 @@ class ReasonerCapability:
     invocation_target: str
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ReasonerCapability":
+    def from_dict(cls, data: Dict[str, Any]) -> "BotCapability":
         return cls(
             id=data.get("id", ""),
             description=data.get("description"),
@@ -184,18 +184,18 @@ class SkillCapability:
 
 
 @dataclass
-class AgentCapability:
+class BotCapability:
     agent_id: str
     base_url: str
     version: str
     health_status: str
     deployment_type: str
     last_heartbeat: str
-    reasoners: List[ReasonerCapability] = field(default_factory=list)
+    bots: List[BotCapability] = field(default_factory=list)
     skills: List[SkillCapability] = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AgentCapability":
+    def from_dict(cls, data: Dict[str, Any]) -> "BotCapability":
         return cls(
             agent_id=data.get("agent_id", ""),
             base_url=data.get("base_url", ""),
@@ -203,8 +203,8 @@ class AgentCapability:
             health_status=data.get("health_status", ""),
             deployment_type=data.get("deployment_type", ""),
             last_heartbeat=data.get("last_heartbeat", ""),
-            reasoners=[
-                ReasonerCapability.from_dict(r) for r in data.get("reasoners") or []
+            bots=[
+                BotCapability.from_dict(r) for r in data.get("bots") or []
             ],
             skills=[SkillCapability.from_dict(s) for s in data.get("skills") or []],
         )
@@ -214,21 +214,21 @@ class AgentCapability:
 class DiscoveryResponse:
     discovered_at: str
     total_agents: int
-    total_reasoners: int
+    total_bots: int
     total_skills: int
     pagination: DiscoveryPagination
-    capabilities: List[AgentCapability]
+    capabilities: List[BotCapability]
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DiscoveryResponse":
         return cls(
             discovered_at=str(data.get("discovered_at", "")),
             total_agents=int(data.get("total_agents", 0)),
-            total_reasoners=int(data.get("total_reasoners", 0)),
+            total_bots=int(data.get("total_bots", 0)),
             total_skills=int(data.get("total_skills", 0)),
             pagination=DiscoveryPagination.from_dict(data.get("pagination") or {}),
             capabilities=[
-                AgentCapability.from_dict(cap)
+                BotCapability.from_dict(cap)
                 for cap in data.get("capabilities") or []
             ],
         )
@@ -254,15 +254,15 @@ class CompactCapability:
 @dataclass
 class CompactDiscoveryResponse:
     discovered_at: str
-    reasoners: List[CompactCapability]
+    bots: List[CompactCapability]
     skills: List[CompactCapability]
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CompactDiscoveryResponse":
         return cls(
             discovered_at=str(data.get("discovered_at", "")),
-            reasoners=[
-                CompactCapability.from_dict(r) for r in data.get("reasoners") or []
+            bots=[
+                CompactCapability.from_dict(r) for r in data.get("bots") or []
             ],
             skills=[CompactCapability.from_dict(s) for s in data.get("skills") or []],
         )

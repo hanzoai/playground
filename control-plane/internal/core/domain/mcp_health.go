@@ -18,8 +18,8 @@ type MCPSummaryForUI struct {
 	ServiceStatus         string `json:"service_status"` // "ready", "degraded", "unavailable"
 }
 
-// AgentNodeDetailsForUI represents detailed agent node information including MCP data
-type AgentNodeDetailsForUI struct {
+// NodeDetailsForUI represents detailed agent node information including MCP data
+type NodeDetailsForUI struct {
 	// Embed the base agent node data
 	ID            string    `json:"id"`
 	TeamID        string    `json:"team_id"`

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from playground.agent_ai import AgentAI
+from playground.bot_ai import BotAI
 from tests.helpers import StubAgent
 
 
@@ -93,7 +93,7 @@ def test_get_rate_limiter_cached(monkeypatch, agent_with_ai):
 
     monkeypatch.setattr("playground.agent_ai.StatelessRateLimiter", DummyLimiter)
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     limiter1 = ai._get_rate_limiter()
     limiter2 = ai._get_rate_limiter()
     assert limiter1 is limiter2
@@ -112,14 +112,14 @@ async def test_ensure_model_limits_cached(monkeypatch, agent_with_ai):
     agent_with_ai.ai_config.audio_model = "openai/audio"
     agent_with_ai.ai_config.vision_model = "openai/vision"
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     await ai._ensure_model_limits_cached()
     assert calls == [None, "openai/audio", "openai/vision"]
 
 
 @pytest.mark.asyncio
 async def test_ai_simple_text(monkeypatch, agent_with_ai):
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     class DummyLimiter:
         async def execute_with_retry(self, func):
@@ -128,10 +128,10 @@ async def test_ai_simple_text(monkeypatch, agent_with_ai):
     monkeypatch.setattr(ai, "_ensure_model_limits_cached", lambda: asyncio.sleep(0))
     monkeypatch.setattr(ai, "_get_rate_limiter", lambda: DummyLimiter())
     monkeypatch.setattr(
-        "playground.agent_ai.AgentUtils.detect_input_type", lambda value: "text"
+        "playground.agent_ai.BotUtils.detect_input_type", lambda value: "text"
     )
     monkeypatch.setattr(
-        "playground.agent_ai.AgentUtils.serialize_result", lambda value: value
+        "playground.agent_ai.BotUtils.serialize_result", lambda value: value
     )
 
     result = await ai.ai("Hello world")
@@ -163,14 +163,14 @@ async def test_ai_uses_fallback_models(monkeypatch, agent_with_ai):
             return await func()
 
     limiter = StubLimiter()
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     monkeypatch.setattr(ai, "_ensure_model_limits_cached", lambda: asyncio.sleep(0))
     monkeypatch.setattr(ai, "_get_rate_limiter", lambda: limiter)
     monkeypatch.setattr(
-        "playground.agent_ai.AgentUtils.detect_input_type", lambda value: "text"
+        "playground.agent_ai.BotUtils.detect_input_type", lambda value: "text"
     )
     monkeypatch.setattr(
-        "playground.agent_ai.AgentUtils.serialize_result", lambda value: value
+        "playground.agent_ai.BotUtils.serialize_result", lambda value: value
     )
 
     result = await ai.ai("hello")
@@ -186,13 +186,13 @@ async def test_ai_skips_rate_limiter_when_disabled(monkeypatch, agent_with_ai):
     stub_module = setup_litellm_stub(monkeypatch)
     stub_module.acompletion.return_value = make_chat_response("ok")
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     monkeypatch.setattr(ai, "_ensure_model_limits_cached", lambda: asyncio.sleep(0))
     monkeypatch.setattr(
-        "playground.agent_ai.AgentUtils.detect_input_type", lambda value: "text"
+        "playground.agent_ai.BotUtils.detect_input_type", lambda value: "text"
     )
     monkeypatch.setattr(
-        "playground.agent_ai.AgentUtils.serialize_result", lambda value: value
+        "playground.agent_ai.BotUtils.serialize_result", lambda value: value
     )
 
     result = await ai.ai("hello")
@@ -202,7 +202,7 @@ async def test_ai_skips_rate_limiter_when_disabled(monkeypatch, agent_with_ai):
 
 @pytest.mark.asyncio
 async def test_ai_with_audio_uses_tts_path(monkeypatch, agent_with_ai):
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     agent_with_ai.ai_config.audio_model = "tts-1"
 
     captured = {}
@@ -222,7 +222,7 @@ async def test_ai_with_audio_uses_tts_path(monkeypatch, agent_with_ai):
 
 @pytest.mark.asyncio
 async def test_ai_with_audio_non_tts_calls_ai(monkeypatch, agent_with_ai):
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     agent_with_ai.ai_config.audio_model = "openai/gpt-4o"
 
     captured = {}
@@ -245,7 +245,7 @@ async def test_ai_with_audio_non_tts_calls_ai(monkeypatch, agent_with_ai):
 
 @pytest.mark.asyncio
 async def test_ai_with_audio_openai_direct(monkeypatch, agent_with_ai):
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
 
     async def fake_direct(*args, **kwargs):
         return "direct-audio"
@@ -258,7 +258,7 @@ async def test_ai_with_audio_openai_direct(monkeypatch, agent_with_ai):
 
 @pytest.mark.asyncio
 async def test_ai_with_multimodal_passes_modalities(monkeypatch, agent_with_ai):
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     captured = {}
 
     async def fake_ai(*args, **kwargs):
@@ -286,7 +286,7 @@ async def test_ai_with_vision_invokes_litellm(monkeypatch, agent_with_ai):
     image_item = SimpleNamespace(url="http://image", b64_json=None, revised_prompt=None)
     stub_module.aimage_generation.return_value = SimpleNamespace(data=[image_item])
 
-    ai = AgentAI(agent_with_ai)
+    ai = BotAI(agent_with_ai)
     result = await ai.ai_with_vision("A cat")
 
     stub_module.aimage_generation.assert_awaited_once()

@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-// DataDirectories holds all the standardized paths for Agents data storage
+// DataDirectories holds all the standardized paths for Playground data storage
 type DataDirectories struct {
 	AgentsHome   string
 	DataDir          string
@@ -23,11 +23,14 @@ type DataDirectories struct {
 	PayloadsDir      string
 }
 
-// GetAgentsDataDirectories returns the standardized data directories for Agents
+// GetNodesDataDirectories returns the standardized data directories for Playground
 // It respects environment variables and provides sensible defaults
-func GetAgentsDataDirectories() (*DataDirectories, error) {
-	// Determine Agents home directory
-	agentsHome := os.Getenv("AGENTS_HOME")
+func GetNodesDataDirectories() (*DataDirectories, error) {
+	// Determine Playground home directory (PLAYGROUND_HOME preferred, AGENTS_HOME fallback)
+	agentsHome := os.Getenv("PLAYGROUND_HOME")
+	if agentsHome == "" {
+		agentsHome = os.Getenv("AGENTS_HOME") // Legacy fallback
+	}
 	if agentsHome == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -56,9 +59,9 @@ func GetAgentsDataDirectories() (*DataDirectories, error) {
 	return dirs, nil
 }
 
-// EnsureDataDirectories creates all necessary Agents data directories
+// EnsureDataDirectories creates all necessary Playground data directories
 func EnsureDataDirectories() (*DataDirectories, error) {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return nil, err
 	}
@@ -101,27 +104,27 @@ func EnsureDataDirectories() (*DataDirectories, error) {
 	return dirs, nil
 }
 
-// GetDatabasePath returns the path to the main Agents database
+// GetDatabasePath returns the path to the main Playground database
 func GetDatabasePath() (string, error) {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(dirs.DatabaseDir, "agents.db"), nil
 }
 
-// GetKVStorePath returns the path to the Agents key-value store
+// GetKVStorePath returns the path to the Playground key-value store
 func GetKVStorePath() (string, error) {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(dirs.DatabaseDir, "agents.bolt"), nil
 }
 
-// GetAgentRegistryPath returns the path to the agent registry file
-func GetAgentRegistryPath() (string, error) {
-	dirs, err := GetAgentsDataDirectories()
+// GetNodeRegistryPath returns the path to the agent registry file
+func GetNodeRegistryPath() (string, error) {
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return "", err
 	}
@@ -130,7 +133,7 @@ func GetAgentRegistryPath() (string, error) {
 
 // GetConfigPath returns the path to a configuration file
 func GetConfigPath(filename string) (string, error) {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +142,7 @@ func GetConfigPath(filename string) (string, error) {
 
 // GetLogPath returns the path to a log file
 func GetLogPath(filename string) (string, error) {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return "", err
 	}
@@ -148,7 +151,7 @@ func GetLogPath(filename string) (string, error) {
 
 // GetTempPath returns the path to a temporary file
 func GetTempPath(filename string) (string, error) {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return "", err
 	}
@@ -181,12 +184,12 @@ func GetPlatformSpecificPaths() map[string]string {
 
 // ValidatePaths checks if all required paths are accessible
 func ValidatePaths() error {
-	dirs, err := GetAgentsDataDirectories()
+	dirs, err := GetNodesDataDirectories()
 	if err != nil {
 		return err
 	}
 
-	// Check if we can write to the Agents home directory
+	// Check if we can write to the Playground home directory
 	testFile := filepath.Join(dirs.AgentsHome, ".write_test")
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		return err

@@ -81,7 +81,7 @@ async function createControlPlaneStub() {
   const executionStatuses: any[] = [];
   const memory: MemoryEntry[] = [];
   const vectors: VectorEntry[] = [];
-  const agents = new Map<string, { baseUrl: string; reasoners: any[]; skills: any[] }>();
+  const agents = new Map<string, { baseUrl: string; bots: any[]; skills: any[] }>();
 
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server, path: '/api/v1/memory/events/ws' });
@@ -100,7 +100,7 @@ async function createControlPlaneStub() {
     registrations.push(payload);
     agents.set(payload.id, {
       baseUrl: payload.base_url ?? payload.public_url,
-      reasoners: payload.reasoners ?? [],
+      bots: payload.bots ?? [],
       skills: payload.skills ?? []
     });
     res.json({ ok: true });
@@ -129,7 +129,7 @@ async function createControlPlaneStub() {
       health_status: 'running',
       deployment_type: 'long_running',
       last_heartbeat: heartbeats.find((hb) => hb.nodeId === agentId)?.status,
-      reasoners: info.reasoners.map((r: any) => ({
+      bots: info.bots.map((r: any) => ({
         id: r.id,
         invocation_target: `${agentId}.${r.id}`,
         tags: r.tags ?? [],
@@ -144,13 +144,13 @@ async function createControlPlaneStub() {
       }))
     }));
 
-    const totalReasoners = capabilities.reduce((total, cap) => total + cap.reasoners.length, 0);
+    const totalBots = capabilities.reduce((total, cap) => total + cap.bots.length, 0);
     const totalSkills = capabilities.reduce((total, cap) => total + cap.skills.length, 0);
 
     res.json({
       discovered_at: new Date().toISOString(),
       total_agents: capabilities.length,
-      total_reasoners: totalReasoners,
+      total_bots: totalBots,
       total_skills: totalSkills,
       pagination: { limit: capabilities.length, offset: 0, has_more: false },
       capabilities
@@ -169,8 +169,8 @@ async function createControlPlaneStub() {
       return;
     }
 
-    const targetType = agentInfo.skills.some((s) => s.id === name) ? 'skill' : 'reasoner';
-    const path = targetType === 'skill' ? `/api/v1/skills/${name}` : `/api/v1/reasoners/${name}`;
+    const targetType = agentInfo.skills.some((s) => s.id === name) ? 'skill' : 'bot';
+    const path = targetType === 'skill' ? `/api/v1/skills/${name}` : `/api/v1/bots/${name}`;
 
     try {
       const response = await axios.post(`${agentInfo.baseUrl}${path}`, req.body?.input ?? {}, {
@@ -292,7 +292,7 @@ describe('TypeScript SDK integration', () => {
     control = await createControlPlaneStub();
     agentPort = await getFreePort();
 
-    agent = new Agent({
+    agent = new Bot({
       nodeId: 'ts-e2e-agent',
       port: agentPort,
       host: '127.0.0.1',
@@ -301,7 +301,7 @@ describe('TypeScript SDK integration', () => {
       devMode: false
     });
 
-    agent.reasoner('echo', async (ctx) => {
+    agent.bot('echo', async (ctx) => {
       await ctx.memory.set('last_input', ctx.input.message);
       const stored = await ctx.memory.get('last_input');
       return {
@@ -327,13 +327,13 @@ describe('TypeScript SDK integration', () => {
     await waitFor(() => control.registrations.length > 0);
 
     const registration = control.registrations.at(-1);
-    expect(registration.reasoners.map((r: any) => r.id)).toContain('echo');
+    expect(registration.bots.map((r: any) => r.id)).toContain('echo');
     expect(control.heartbeats.some((hb) => hb.status === 'starting')).toBe(true);
 
     const discovery = await client.discoverCapabilities({ agent: 'ts-e2e-agent' });
     const capability = discovery.json?.capabilities.find((cap) => cap.agentId === 'ts-e2e-agent');
 
-    expect(capability?.reasoners.map((r) => r.id)).toContain('echo');
+    expect(capability?.bots.map((r) => r.id)).toContain('echo');
     expect(capability?.skills.map((s) => s.id)).toContain('greet');
   });
 
@@ -363,7 +363,7 @@ describe('TypeScript SDK integration', () => {
 
     expect(lastEvents[0].status).toBe('running');
     expect(lastEvents[1].status).toBe('succeeded');
-    expect(lastEvents[1].reasoner_id).toBe('echo');
+    expect(lastEvents[1].bot_id).toBe('echo');
     expect(lastEvents[1].agent_node_id).toBe('ts-e2e-agent');
   });
 });

@@ -94,7 +94,7 @@ export function convertTagsToApiFormat(tags: FilterTag[]): {
         filters.status = tag.value;
         break;
       case "agent":
-        filters.agent_node_id = tag.value;
+        filters.node_id = tag.value;
         break;
       case "workflow":
         filters.workflow_id = tag.value;
@@ -173,8 +173,8 @@ export function convertApiFormatToTags(
     tags.push(createFilterTag("status", filters.status));
   }
 
-  if (filters.agent_node_id) {
-    tags.push(createFilterTag("agent", filters.agent_node_id));
+  if (filters.node_id) {
+    tags.push(createFilterTag("agent", filters.node_id));
   }
 
   if (filters.workflow_id) {

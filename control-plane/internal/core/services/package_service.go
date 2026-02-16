@@ -127,32 +127,32 @@ func (ps *DefaultPackageService) uninstallPackage(packageName string, force bool
 	}
 
 	// 2. Check if package exists
-	agentNode, exists := registry.Installed[packageName]
+	node, exists := registry.Installed[packageName]
 	if !exists {
 		return fmt.Errorf("package %s is not installed", packageName)
 	}
 
 	// 3. Check if package is running
-	if agentNode.Status == "running" && !force {
+	if node.Status == "running" && !force {
 		return fmt.Errorf("package %s is currently running (use --force to stop and uninstall)", packageName)
 	}
 
 	// 4. Stop the package if it's running
-	if agentNode.Status == "running" {
-		fmt.Printf("Stopping running agent node...\n")
-		if err := ps.stopAgentNode(&agentNode); err != nil {
-			fmt.Printf("Warning: Failed to stop agent node: %v\n", err)
+	if node.Status == "running" {
+		fmt.Printf("Stopping running hanzo node...\n")
+		if err := ps.stopNode(&node); err != nil {
+			fmt.Printf("Warning: Failed to stop hanzo node: %v\n", err)
 		}
 	}
 
 	// 5. Remove package directory
-	if err := os.RemoveAll(agentNode.Path); err != nil {
+	if err := os.RemoveAll(node.Path); err != nil {
 		return fmt.Errorf("failed to remove package directory: %w", err)
 	}
 
 	// 6. Remove log file
-	if agentNode.Runtime.LogFile != "" {
-		if err := os.Remove(agentNode.Runtime.LogFile); err != nil && !os.IsNotExist(err) {
+	if node.Runtime.LogFile != "" {
+		if err := os.Remove(node.Runtime.LogFile); err != nil && !os.IsNotExist(err) {
 			fmt.Printf("Warning: Failed to remove log file: %v\n", err)
 		}
 	}
@@ -167,14 +167,14 @@ func (ps *DefaultPackageService) uninstallPackage(packageName string, force bool
 	return nil
 }
 
-// stopAgentNode stops a running agent node
-func (ps *DefaultPackageService) stopAgentNode(agentNode *packages.InstalledPackage) error {
-	if agentNode.Runtime.PID == nil {
-		return fmt.Errorf("no PID found for agent node")
+// stopNode stops a running hanzo node
+func (ps *DefaultPackageService) stopNode(node *packages.InstalledPackage) error {
+	if node.Runtime.PID == nil {
+		return fmt.Errorf("no PID found for hanzo node")
 	}
 
 	// Find and kill the process
-	process, err := os.FindProcess(*agentNode.Runtime.PID)
+	process, err := os.FindProcess(*node.Runtime.PID)
 	if err != nil {
 		return fmt.Errorf("failed to find process: %w", err)
 	}

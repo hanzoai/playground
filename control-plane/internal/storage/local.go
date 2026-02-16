@@ -70,7 +70,7 @@ func (e *ValidationError) Error() string {
 func (ls *LocalStorage) getWorkflowExecutionByID(ctx context.Context, q DBTX, executionID string) (*types.WorkflowExecution, error) {
 	query := `
 		SELECT workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
-		       agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id, workflow_depth,
+		       node_id, parent_workflow_id, parent_execution_id, root_workflow_id, workflow_depth,
 		       bot_id, input_data, output_data, input_size, output_size,
 		       status, started_at, completed_at, duration_ms,
 		       state_version, last_event_sequence, active_children, pending_children,
@@ -90,7 +90,7 @@ func (ls *LocalStorage) getWorkflowExecutionByID(ctx context.Context, q DBTX, ex
 	var leaseExpires sql.NullTime
 	err := row.Scan(
 		&execution.WorkflowID, &execution.ExecutionID, &execution.AgentsRequestID,
-		&runID, &execution.SessionID, &execution.ActorID, &execution.AgentNodeID,
+		&runID, &execution.SessionID, &execution.ActorID, &execution.NodeID,
 		&execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID, &execution.WorkflowDepth,
 		&execution.BotID, &inputData, &outputData,
 		&execution.InputSize, &execution.OutputSize, &execution.Status,
@@ -359,7 +359,7 @@ func (ls *LocalStorage) StoreWorkflowStep(ctx context.Context, step *types.Workf
 
 	query := `
 		INSERT INTO workflow_steps (
-			step_id, run_id, parent_step_id, execution_id, agent_node_id,
+			step_id, run_id, parent_step_id, execution_id, node_id,
 			target, status, attempt, priority, not_before, input_uri, result_uri,
 			error_message, metadata, started_at, completed_at, leased_at,
 			lease_timeout, created_at, updated_at
@@ -368,7 +368,7 @@ func (ls *LocalStorage) StoreWorkflowStep(ctx context.Context, step *types.Workf
 			run_id=excluded.run_id,
 			parent_step_id=excluded.parent_step_id,
 			execution_id=excluded.execution_id,
-			agent_node_id=excluded.agent_node_id,
+			node_id=excluded.node_id,
 			target=excluded.target,
 			status=excluded.status,
 			attempt=excluded.attempt,
@@ -392,7 +392,7 @@ func (ls *LocalStorage) StoreWorkflowStep(ctx context.Context, step *types.Workf
 		step.RunID,
 		step.ParentStepID,
 		step.ExecutionID,
-		step.AgentNodeID,
+		step.NodeID,
 		step.Target,
 		step.Status,
 		step.Attempt,
@@ -526,7 +526,7 @@ func (ls *LocalStorage) initializeSQLite(ctx context.Context) error {
 
 	log.Printf("📁 Initializing SQLite database at: %s", dbPath)
 
-	busyTimeout := resolveEnvInt("AGENTS_SQLITE_BUSY_TIMEOUT_MS", 60000)
+	busyTimeout := resolveEnvInt("PLAYGROUND_SQLITE_BUSY_TIMEOUT_MS", "AGENTS_SQLITE_BUSY_TIMEOUT_MS", 60000)
 	if busyTimeout <= 0 {
 		busyTimeout = 60000
 	}
@@ -541,12 +541,12 @@ func (ls *LocalStorage) initializeSQLite(ctx context.Context) error {
 
 	ls.db = newSQLDatabase(db, "local")
 
-	maxOpen := resolveEnvInt("AGENTS_SQLITE_MAX_OPEN_CONNS", 1)
+	maxOpen := resolveEnvInt("PLAYGROUND_SQLITE_MAX_OPEN_CONNS", "AGENTS_SQLITE_MAX_OPEN_CONNS", 1)
 	if maxOpen <= 0 {
 		maxOpen = 1
 	}
 	ls.db.SetMaxOpenConns(maxOpen)
-	idleConns := resolveEnvInt("AGENTS_SQLITE_MAX_IDLE_CONNS", 1)
+	idleConns := resolveEnvInt("PLAYGROUND_SQLITE_MAX_IDLE_CONNS", "AGENTS_SQLITE_MAX_IDLE_CONNS", 1)
 	if idleConns < 0 {
 		idleConns = 0
 	}
@@ -585,14 +585,18 @@ func (ls *LocalStorage) initializeSQLite(ctx context.Context) error {
 	return nil
 }
 
-func resolveEnvInt(key string, fallback int) int {
-	raw := strings.TrimSpace(os.Getenv(key))
+// resolveEnvInt reads the primary env var, then the fallbackKey, then the default value.
+func resolveEnvInt(primaryKey, fallbackKey string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(primaryKey))
+	if raw == "" {
+		raw = strings.TrimSpace(os.Getenv(fallbackKey))
+	}
 	if raw == "" {
 		return fallback
 	}
 	value, err := strconv.Atoi(raw)
 	if err != nil {
-		log.Printf("⚠️  Invalid integer for %s=%s, using fallback %d", key, raw, fallback)
+		log.Printf("⚠️  Invalid integer for %s=%s, using fallback %d", primaryKey, raw, fallback)
 		return fallback
 	}
 	return value
@@ -975,19 +979,19 @@ func (ls *LocalStorage) ensurePostgresWorkflowFTS(ctx context.Context) error {
 		`CREATE TABLE IF NOT EXISTS workflow_executions_fts (
                         execution_id TEXT PRIMARY KEY,
                         workflow_id TEXT,
-                        agent_node_id TEXT,
+                        node_id TEXT,
                         session_id TEXT,
                         workflow_name TEXT,
                         search_vector TSVECTOR
                 );`,
 		`CREATE OR REPLACE FUNCTION workflow_executions_fts_upsert() RETURNS trigger AS $$
                 BEGIN
-                        INSERT INTO workflow_executions_fts(execution_id, workflow_id, agent_node_id, session_id, workflow_name, search_vector)
-                        VALUES (NEW.execution_id, NEW.workflow_id, NEW.agent_node_id, NEW.session_id, NEW.workflow_name,
+                        INSERT INTO workflow_executions_fts(execution_id, workflow_id, node_id, session_id, workflow_name, search_vector)
+                        VALUES (NEW.execution_id, NEW.workflow_id, NEW.node_id, NEW.session_id, NEW.workflow_name,
                                 to_tsvector('simple', coalesce(NEW.workflow_name, '') || ' ' || coalesce(NEW.execution_id, '') || ' ' || coalesce(NEW.workflow_id, '')))
                         ON CONFLICT (execution_id) DO UPDATE SET
                                 workflow_id = EXCLUDED.workflow_id,
-                                agent_node_id = EXCLUDED.agent_node_id,
+                                node_id = EXCLUDED.node_id,
                                 session_id = EXCLUDED.session_id,
                                 workflow_name = EXCLUDED.workflow_name,
                                 search_vector = EXCLUDED.search_vector;
@@ -1012,8 +1016,8 @@ func (ls *LocalStorage) ensurePostgresWorkflowFTS(ctx context.Context) error {
 		`CREATE TRIGGER workflow_executions_fts_delete
                         AFTER DELETE ON workflow_executions
                         FOR EACH ROW EXECUTE FUNCTION workflow_executions_fts_delete();`,
-		`INSERT INTO workflow_executions_fts(execution_id, workflow_id, agent_node_id, session_id, workflow_name, search_vector)
-                        SELECT execution_id, workflow_id, agent_node_id, session_id, workflow_name,
+		`INSERT INTO workflow_executions_fts(execution_id, workflow_id, node_id, session_id, workflow_name, search_vector)
+                        SELECT execution_id, workflow_id, node_id, session_id, workflow_name,
                                to_tsvector('simple', coalesce(workflow_name, '') || ' ' || coalesce(execution_id, '') || ' ' || coalesce(workflow_id, ''))
                         FROM workflow_executions
                         ON CONFLICT (execution_id) DO NOTHING;`,
@@ -1041,7 +1045,7 @@ func (ls *LocalStorage) ensurePostgresIndexes(ctx context.Context) error {
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_execution_id ON workflow_executions(execution_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_session_id ON workflow_executions(session_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_actor_id ON workflow_executions(actor_id)",
-		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_agent_node ON workflow_executions(agent_node_id)",
+		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_node ON workflow_executions(node_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_started_at ON workflow_executions(started_at)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_parent_execution_id ON workflow_executions(parent_execution_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_parent_workflow_id ON workflow_executions(parent_workflow_id)",
@@ -1063,7 +1067,7 @@ func (ls *LocalStorage) setupWorkflowExecutionFTS() error {
         CREATE VIRTUAL TABLE IF NOT EXISTS workflow_executions_fts USING fts5(
                 execution_id,
                 workflow_id,
-                agent_node_id,
+                node_id,
                 session_id,
                 workflow_name
         );`
@@ -1074,14 +1078,14 @@ func (ls *LocalStorage) setupWorkflowExecutionFTS() error {
 
 	createFTSTriggers := []string{
 		`CREATE TRIGGER IF NOT EXISTS workflow_executions_fts_insert AFTER INSERT ON workflow_executions BEGIN
-                        INSERT INTO workflow_executions_fts(rowid, execution_id, workflow_id, agent_node_id, session_id, workflow_name)
-                        VALUES (new.id, new.execution_id, new.workflow_id, new.agent_node_id, new.session_id, new.workflow_name);
+                        INSERT INTO workflow_executions_fts(rowid, execution_id, workflow_id, node_id, session_id, workflow_name)
+                        VALUES (new.id, new.execution_id, new.workflow_id, new.node_id, new.session_id, new.workflow_name);
                 END;`,
 		`CREATE TRIGGER IF NOT EXISTS workflow_executions_fts_update AFTER UPDATE ON workflow_executions BEGIN
                         UPDATE workflow_executions_fts SET
                                 execution_id = new.execution_id,
                                 workflow_id = new.workflow_id,
-                                agent_node_id = new.agent_node_id,
+                                node_id = new.node_id,
                                 session_id = new.session_id,
                                 workflow_name = new.workflow_name
                         WHERE rowid = new.id;
@@ -1098,8 +1102,8 @@ func (ls *LocalStorage) setupWorkflowExecutionFTS() error {
 	}
 
 	populateFTS := `
-        INSERT INTO workflow_executions_fts(rowid, execution_id, workflow_id, agent_node_id, session_id, workflow_name)
-        SELECT id, execution_id, workflow_id, agent_node_id, session_id, workflow_name
+        INSERT INTO workflow_executions_fts(rowid, execution_id, workflow_id, node_id, session_id, workflow_name)
+        SELECT id, execution_id, workflow_id, node_id, session_id, workflow_name
         FROM workflow_executions
         WHERE NOT EXISTS (SELECT 1 FROM workflow_executions_fts WHERE rowid = workflow_executions.id);`
 
@@ -1123,13 +1127,13 @@ func (ls *LocalStorage) ensureSQLiteIndexes() error {
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_execution_id ON workflow_executions(execution_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_session_id ON workflow_executions(session_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_actor_id ON workflow_executions(actor_id)",
-		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_agent_node ON workflow_executions(agent_node_id)",
+		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_node ON workflow_executions(node_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_started_at ON workflow_executions(started_at)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_parent_execution_id ON workflow_executions(parent_execution_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_parent_workflow_id ON workflow_executions(parent_workflow_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_root_workflow_id ON workflow_executions(root_workflow_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_status ON workflow_executions(status)",
-		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_agent_node_status ON workflow_executions(agent_node_id, status)",
+		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_node_status ON workflow_executions(node_id, status)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_session_status ON workflow_executions(session_id, status)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_actor_status ON workflow_executions(actor_id, status)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow_status ON workflow_executions(workflow_id, status)",
@@ -1137,17 +1141,17 @@ func (ls *LocalStorage) ensureSQLiteIndexes() error {
 		"CREATE INDEX IF NOT EXISTS idx_workflow_runs_updated_at ON workflow_runs(updated_at)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_steps_created_at ON workflow_steps(created_at)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_steps_updated_at ON workflow_steps(updated_at)",
-		"CREATE INDEX IF NOT EXISTS idx_workflow_steps_agent_not_before ON workflow_steps(agent_node_id, status, not_before)",
+		"CREATE INDEX IF NOT EXISTS idx_workflow_steps_agent_not_before ON workflow_steps(node_id, status, not_before)",
 		"CREATE INDEX IF NOT EXISTS idx_workflow_steps_run_priority ON workflow_steps(run_id, priority DESC, not_before)",
 		"CREATE INDEX IF NOT EXISTS idx_workflows_session ON workflows(session_id)",
 		"CREATE INDEX IF NOT EXISTS idx_workflows_actor ON workflows(actor_id)",
 		"CREATE INDEX IF NOT EXISTS idx_sessions_actor ON sessions(actor_id)",
 		"CREATE INDEX IF NOT EXISTS idx_sessions_root ON sessions(root_session_id)",
-		"CREATE INDEX IF NOT EXISTS idx_agent_nodes_team ON agent_nodes(team_id)",
-		"CREATE INDEX IF NOT EXISTS idx_agent_nodes_health ON agent_nodes(health_status)",
-		"CREATE INDEX IF NOT EXISTS idx_agent_nodes_lifecycle ON agent_nodes(lifecycle_status)",
-		"CREATE INDEX IF NOT EXISTS idx_agent_dids_agent_node ON agent_dids(agent_node_id)",
-		"CREATE INDEX IF NOT EXISTS idx_agent_dids_agents_server ON agent_dids(agents_server_id)",
+		"CREATE INDEX IF NOT EXISTS idx_nodes_team ON nodes(team_id)",
+		"CREATE INDEX IF NOT EXISTS idx_nodes_health ON nodes(health_status)",
+		"CREATE INDEX IF NOT EXISTS idx_nodes_lifecycle ON nodes(lifecycle_status)",
+		"CREATE INDEX IF NOT EXISTS idx_hanzo_dids_agent_node ON hanzo_dids(node_id)",
+		"CREATE INDEX IF NOT EXISTS idx_hanzo_dids_agents_server ON hanzo_dids(playground_server_id)",
 		"CREATE INDEX IF NOT EXISTS idx_component_dids_agent_did ON component_dids(agent_did)",
 		"CREATE INDEX IF NOT EXISTS idx_component_dids_type ON component_dids(component_type)",
 		"CREATE INDEX IF NOT EXISTS idx_execution_vcs_execution_id ON execution_vcs(execution_id)",
@@ -1521,7 +1525,7 @@ func (ls *LocalStorage) runMigrations() error {
 				CREATE VIRTUAL TABLE IF NOT EXISTS workflow_executions_fts USING fts5(
 					execution_id,
 					workflow_id,
-					agent_node_id,
+					node_id,
 					session_id,
 					workflow_name
 				);
@@ -1533,15 +1537,15 @@ func (ls *LocalStorage) runMigrations() error {
 
 				-- Create triggers
 				CREATE TRIGGER workflow_executions_fts_insert AFTER INSERT ON workflow_executions BEGIN
-					INSERT INTO workflow_executions_fts(rowid, execution_id, workflow_id, agent_node_id, session_id, workflow_name)
-					VALUES (new.id, new.execution_id, new.workflow_id, new.agent_node_id, new.session_id, new.workflow_name);
+					INSERT INTO workflow_executions_fts(rowid, execution_id, workflow_id, node_id, session_id, workflow_name)
+					VALUES (new.id, new.execution_id, new.workflow_id, new.node_id, new.session_id, new.workflow_name);
 				END;
 
 				CREATE TRIGGER workflow_executions_fts_update AFTER UPDATE ON workflow_executions BEGIN
 					UPDATE workflow_executions_fts SET
 						execution_id = new.execution_id,
 						workflow_id = new.workflow_id,
-						agent_node_id = new.agent_node_id,
+						node_id = new.node_id,
 						session_id = new.session_id,
 						workflow_name = new.workflow_name
 					WHERE rowid = new.id;
@@ -1552,8 +1556,8 @@ func (ls *LocalStorage) runMigrations() error {
 				END;
 
 				-- Populate FTS table with existing data (ignore duplicates)
-				INSERT OR IGNORE INTO workflow_executions_fts(rowid, execution_id, workflow_id, agent_node_id, session_id, workflow_name)
-				SELECT id, execution_id, workflow_id, agent_node_id, session_id, workflow_name
+				INSERT OR IGNORE INTO workflow_executions_fts(rowid, execution_id, workflow_id, node_id, session_id, workflow_name)
+				SELECT id, execution_id, workflow_id, node_id, session_id, workflow_name
 				FROM workflow_executions
 				WHERE NOT EXISTS (SELECT 1 FROM workflow_executions_fts WHERE rowid = workflow_executions.id);`,
 		},
@@ -1573,7 +1577,7 @@ func (ls *LocalStorage) runMigrations() error {
 				CREATE INDEX IF NOT EXISTS idx_workflow_executions_actor_status_time ON workflow_executions(actor_id, status, started_at);
 
 				-- Composite index for agent + status + time queries
-				CREATE INDEX IF NOT EXISTS idx_workflow_executions_agent_status_time ON workflow_executions(agent_node_id, status, started_at);
+				CREATE INDEX IF NOT EXISTS idx_workflow_executions_agent_status_time ON workflow_executions(node_id, status, started_at);
 
 				-- Composite index for status + time queries
 				CREATE INDEX IF NOT EXISTS idx_workflow_executions_status_time ON workflow_executions(status, started_at);
@@ -1743,7 +1747,7 @@ func (ls *LocalStorage) HealthCheck(ctx context.Context) error {
 }
 
 // StoreExecution stores an agent execution record in SQLite.
-func (ls *LocalStorage) StoreExecution(ctx context.Context, execution *types.AgentExecution) error {
+func (ls *LocalStorage) StoreExecution(ctx context.Context, execution *types.BotExecution) error {
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during store execution: %w", err)
 	}
@@ -1768,7 +1772,7 @@ func (ls *LocalStorage) StoreExecution(ctx context.Context, execution *types.Age
 }
 
 // GetExecution retrieves an agent execution record from SQLite by ID.
-func (ls *LocalStorage) GetExecution(ctx context.Context, id int64) (*types.AgentExecution, error) {
+func (ls *LocalStorage) GetExecution(ctx context.Context, id int64) (*types.BotExecution, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during get execution: %w", err)
 	}
@@ -1778,7 +1782,7 @@ func (ls *LocalStorage) GetExecution(ctx context.Context, id int64) (*types.Agen
 		return nil, fmt.Errorf("failed to prepare gorm transaction: %w", err)
 	}
 
-	model := &AgentExecutionModel{}
+	model := &BotExecutionModel{}
 	if err := gormDB.Where("id = ?", id).Take(model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("execution with ID %d not found", id)
@@ -1790,7 +1794,7 @@ func (ls *LocalStorage) GetExecution(ctx context.Context, id int64) (*types.Agen
 }
 
 // QueryExecutions retrieves agent execution records based on filters using GORM.
-func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.AgentExecution, error) {
+func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.BotExecution, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during query executions: %w", err)
 	}
@@ -1800,7 +1804,7 @@ func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.Execu
 		return nil, fmt.Errorf("failed to prepare gorm transaction: %w", err)
 	}
 
-	query := gormDB.Model(&AgentExecutionModel{})
+	query := gormDB.Model(&BotExecutionModel{})
 
 	if filters.WorkflowID != nil {
 		query = query.Where("workflow_id = ?", *filters.WorkflowID)
@@ -1808,8 +1812,8 @@ func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.Execu
 	if filters.SessionID != nil {
 		query = query.Where("session_id = ?", *filters.SessionID)
 	}
-	if filters.AgentNodeID != nil {
-		query = query.Where("agent_node_id = ?", *filters.AgentNodeID)
+	if filters.NodeID != nil {
+		query = query.Where("node_id = ?", *filters.NodeID)
 	}
 	if filters.BotID != nil {
 		query = query.Where("bot_id = ?", *filters.BotID)
@@ -1838,12 +1842,12 @@ func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.Execu
 		query = query.Offset(filters.Offset)
 	}
 
-	var models []AgentExecutionModel
+	var models []BotExecutionModel
 	if err := query.Find(&models).Error; err != nil {
 		return nil, fmt.Errorf("failed to query agent executions: %w", err)
 	}
 
-	executions := make([]*types.AgentExecution, 0, len(models))
+	executions := make([]*types.BotExecution, 0, len(models))
 	for i := range models {
 		exec, err := agentExecutionFromModel(&models[i])
 		if err != nil {
@@ -1854,17 +1858,17 @@ func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.Execu
 
 	return executions, nil
 }
-func agentExecutionToModel(exec *types.AgentExecution) (*AgentExecutionModel, error) {
+func agentExecutionToModel(exec *types.BotExecution) (*BotExecutionModel, error) {
 	metadataJSON, err := json.Marshal(exec.Metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal execution metadata: %w", err)
 	}
 
-	model := &AgentExecutionModel{
+	model := &BotExecutionModel{
 		ID:           exec.ID,
 		WorkflowID:   exec.WorkflowID,
 		SessionID:    exec.SessionID,
-		AgentNodeID:  exec.AgentNodeID,
+		NodeID:  exec.NodeID,
 		BotID:   exec.BotID,
 		InputData:    []byte(exec.InputData),
 		OutputData:   []byte(exec.OutputData),
@@ -1874,7 +1878,7 @@ func agentExecutionToModel(exec *types.AgentExecution) (*AgentExecutionModel, er
 		Status:       exec.Status,
 		ErrorMessage: exec.ErrorMessage,
 		UserID:       exec.UserID,
-		TeamID:       exec.NodeID,
+		TeamID:       nil,
 		Metadata:     metadataJSON,
 		CreatedAt:    exec.CreatedAt,
 	}
@@ -1882,12 +1886,12 @@ func agentExecutionToModel(exec *types.AgentExecution) (*AgentExecutionModel, er
 	return model, nil
 }
 
-func agentExecutionFromModel(model *AgentExecutionModel) (*types.AgentExecution, error) {
-	exec := &types.AgentExecution{
+func agentExecutionFromModel(model *BotExecutionModel) (*types.BotExecution, error) {
+	exec := &types.BotExecution{
 		ID:           model.ID,
 		WorkflowID:   model.WorkflowID,
 		SessionID:    model.SessionID,
-		AgentNodeID:  model.AgentNodeID,
+		NodeID:  model.NodeID,
 		BotID:   model.BotID,
 		InputData:    json.RawMessage(append([]byte(nil), model.InputData...)),
 		OutputData:   json.RawMessage(append([]byte(nil), model.OutputData...)),
@@ -1897,7 +1901,6 @@ func agentExecutionFromModel(model *AgentExecutionModel) (*types.AgentExecution,
 		Status:       model.Status,
 		ErrorMessage: model.ErrorMessage,
 		UserID:       model.UserID,
-		NodeID:       model.TeamID,
 		CreatedAt:    model.CreatedAt,
 	}
 
@@ -2042,7 +2045,7 @@ func (ls *LocalStorage) retryDatabaseOperation(ctx context.Context, operationID 
 // sqliteWorkflowExecutionInsertQuery captures the column order for workflow execution inserts.
 const sqliteWorkflowExecutionInsertQuery = `INSERT INTO workflow_executions (
 	workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
-	agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id, workflow_depth,
+	node_id, parent_workflow_id, parent_execution_id, root_workflow_id, workflow_depth,
 	bot_id, input_data, output_data, input_size, output_size,
 	status, started_at, completed_at, duration_ms,
 	state_version, last_event_sequence, active_children, pending_children,
@@ -2130,7 +2133,7 @@ func (ls *LocalStorage) executeWorkflowInsert(ctx context.Context, q DBTX, execu
 	// Execute INSERT query using the DBTX interface
 	_, err = q.ExecContext(ctx, insertQuery,
 		execution.WorkflowID, execution.ExecutionID, execution.AgentsRequestID, execution.RunID,
-		execution.SessionID, execution.ActorID, execution.AgentNodeID,
+		execution.SessionID, execution.ActorID, execution.NodeID,
 		execution.ParentWorkflowID, execution.ParentExecutionID, execution.RootWorkflowID, execution.WorkflowDepth,
 		execution.BotID, execution.InputData, execution.OutputData,
 		execution.InputSize, execution.OutputSize,
@@ -2396,7 +2399,7 @@ func (ls *LocalStorage) QueryWorkflowExecutions(ctx context.Context, filters typ
 		SELECT
 			workflow_executions.id, workflow_executions.workflow_id, workflow_executions.execution_id,
 			workflow_executions.agents_request_id, workflow_executions.run_id, workflow_executions.session_id, workflow_executions.actor_id,
-			workflow_executions.agent_node_id, workflow_executions.parent_workflow_id, workflow_executions.parent_execution_id,
+			workflow_executions.node_id, workflow_executions.parent_workflow_id, workflow_executions.parent_execution_id,
 			workflow_executions.root_workflow_id, workflow_executions.workflow_depth,
 			workflow_executions.bot_id, workflow_executions.input_data, workflow_executions.output_data,
 			workflow_executions.input_size, workflow_executions.output_size,
@@ -2443,9 +2446,9 @@ func (ls *LocalStorage) QueryWorkflowExecutions(ctx context.Context, filters typ
 		conditions = append(conditions, "workflow_executions.actor_id = ?")
 		args = append(args, *filters.ActorID)
 	}
-	if filters.AgentNodeID != nil {
-		conditions = append(conditions, "workflow_executions.agent_node_id = ?")
-		args = append(args, *filters.AgentNodeID)
+	if filters.NodeID != nil {
+		conditions = append(conditions, "workflow_executions.node_id = ?")
+		args = append(args, *filters.NodeID)
 	}
 	if filters.ParentExecutionID != nil {
 		conditions = append(conditions, "workflow_executions.parent_execution_id = ?")
@@ -2524,7 +2527,7 @@ func (ls *LocalStorage) QueryWorkflowExecutions(ctx context.Context, filters typ
 		err := rows.Scan(
 			&execution.ID, &execution.WorkflowID, &execution.ExecutionID,
 			&execution.AgentsRequestID, &runID, &execution.SessionID, &execution.ActorID,
-			&execution.AgentNodeID, &execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID,
+			&execution.NodeID, &execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID,
 			&execution.WorkflowDepth, &execution.BotID, &inputData,
 			&outputData, &execution.InputSize, &execution.OutputSize,
 			&execution.Status, &execution.StartedAt, &execution.CompletedAt,
@@ -2598,7 +2601,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 			-- Base case: Find the root execution(s)
 			SELECT
 				id, workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
-				agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id,
+				node_id, parent_workflow_id, parent_execution_id, root_workflow_id,
 				workflow_depth, bot_id, input_data, output_data, input_size, output_size,
 				status, started_at, completed_at, duration_ms,
 				state_version, last_event_sequence, active_children, pending_children,
@@ -2616,7 +2619,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 			-- Recursive case: Find children of current level
 			SELECT
 				we.id, we.workflow_id, we.execution_id, we.agents_request_id, we.run_id, we.session_id, we.actor_id,
-				we.agent_node_id, we.parent_workflow_id, we.parent_execution_id, we.root_workflow_id,
+				we.node_id, we.parent_workflow_id, we.parent_execution_id, we.root_workflow_id,
 				we.workflow_depth, we.bot_id, we.input_data, we.output_data, we.input_size, we.output_size,
 				we.status, we.started_at, we.completed_at, we.duration_ms,
 				we.state_version, we.last_event_sequence, we.active_children, we.pending_children,
@@ -2632,7 +2635,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 		)
 		SELECT
 			id, workflow_id, execution_id, agents_request_id, run_id, session_id, actor_id,
-			agent_node_id, parent_workflow_id, parent_execution_id, root_workflow_id,
+			node_id, parent_workflow_id, parent_execution_id, root_workflow_id,
 			workflow_depth, bot_id, input_data, output_data, input_size, output_size,
 			status, started_at, completed_at, duration_ms,
 			state_version, last_event_sequence, active_children, pending_children,
@@ -2665,7 +2668,7 @@ func (ls *LocalStorage) QueryWorkflowDAG(ctx context.Context, rootWorkflowID str
 		err := rows.Scan(
 			&execution.ID, &execution.WorkflowID, &execution.ExecutionID,
 			&execution.AgentsRequestID, &runID, &execution.SessionID, &execution.ActorID,
-			&execution.AgentNodeID, &execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID,
+			&execution.NodeID, &execution.ParentWorkflowID, &execution.ParentExecutionID, &execution.RootWorkflowID,
 			&execution.WorkflowDepth, &execution.BotID, &inputData,
 			&outputData, &execution.InputSize, &execution.OutputSize,
 			&execution.Status, &execution.StartedAt, &execution.CompletedAt,
@@ -4263,8 +4266,8 @@ func (ls *LocalStorage) publishMemoryChange(event types.MemoryChangeEvent) {
 	}()
 }
 
-// RegisterAgent stores an agent node record in SQLite.
-func (ls *LocalStorage) RegisterAgent(ctx context.Context, agent *types.AgentNode) error {
+// RegisterNode stores an agent node record in SQLite.
+func (ls *LocalStorage) RegisterNode(ctx context.Context, agent *types.Node) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during register agent: %w", err)
@@ -4279,10 +4282,10 @@ func (ls *LocalStorage) RegisterAgent(ctx context.Context, agent *types.AgentNod
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction for agent registration: %w", err)
 	}
-	defer rollbackTx(tx, "RegisterAgent:"+agent.ID)
+	defer rollbackTx(tx, "RegisterNode:"+agent.ID)
 
 	// Execute the agent registration using the transaction
-	if err := ls.executeRegisterAgent(ctx, tx, agent); err != nil {
+	if err := ls.executeRegisterNode(ctx, tx, agent); err != nil {
 		return err
 	}
 
@@ -4294,10 +4297,10 @@ func (ls *LocalStorage) RegisterAgent(ctx context.Context, agent *types.AgentNod
 	return nil
 }
 
-// executeRegisterAgent performs the actual agent registration using DBTX interface
-func (ls *LocalStorage) executeRegisterAgent(ctx context.Context, q DBTX, agent *types.AgentNode) error {
+// executeRegisterNode performs the actual agent registration using DBTX interface
+func (ls *LocalStorage) executeRegisterNode(ctx context.Context, q DBTX, agent *types.Node) error {
 	query := `
-		INSERT INTO agent_nodes (
+		INSERT INTO nodes (
 			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
@@ -4351,8 +4354,8 @@ func (ls *LocalStorage) executeRegisterAgent(ctx context.Context, q DBTX, agent 
 	return nil
 }
 
-// GetAgent retrieves an agent node record from SQLite by ID.
-func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+// GetNode retrieves an agent node record from SQLite by ID.
+func (ls *LocalStorage) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during get agent: %w", err)
@@ -4363,11 +4366,11 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
-		FROM agent_nodes WHERE id = ?`
+		FROM nodes WHERE id = ?`
 
 	row := ls.db.QueryRowContext(ctx, query, id)
 
-	agent := &types.AgentNode{}
+	agent := &types.Node{}
 	var botsJSON, skillsJSON, commConfigJSON, featuresJSON, metadataJSON []byte
 	var healthStatusStr, lifecycleStatusStr string
 	var invocationURL sql.NullString
@@ -4386,7 +4389,7 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 	}
 
 	agent.HealthStatus = types.HealthStatus(healthStatusStr)
-	agent.LifecycleStatus = types.AgentLifecycleStatus(lifecycleStatusStr)
+	agent.LifecycleStatus = types.BotLifecycleStatus(lifecycleStatusStr)
 	if invocationURL.Valid && strings.TrimSpace(invocationURL.String) != "" {
 		url := strings.TrimSpace(invocationURL.String)
 		agent.InvocationURL = &url
@@ -4439,8 +4442,8 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 	return agent, nil
 }
 
-// ListAgents retrieves agent node records from SQLite based on filters.
-func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error) {
+// ListNodes retrieves agent node records from SQLite based on filters.
+func (ls *LocalStorage) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during list agents: %w", err)
@@ -4451,7 +4454,7 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
-		FROM agent_nodes`
+		FROM nodes`
 
 	var conditions []string
 	var args []interface{}
@@ -4484,14 +4487,14 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 	}
 	defer rows.Close()
 
-	agents := []*types.AgentNode{}
+	agents := []*types.Node{}
 	for rows.Next() {
 		// Check context cancellation during iteration
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("context cancelled during agent list iteration: %w", err)
 		}
 
-		agent := &types.AgentNode{}
+		agent := &types.Node{}
 		var botsJSON, skillsJSON, commConfigJSON, featuresJSON, metadataJSON []byte
 		var healthStatusStr, lifecycleStatusStr string
 		var invocationURL sql.NullString
@@ -4506,7 +4509,7 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 		}
 
 		agent.HealthStatus = types.HealthStatus(healthStatusStr)
-		agent.LifecycleStatus = types.AgentLifecycleStatus(lifecycleStatusStr)
+		agent.LifecycleStatus = types.BotLifecycleStatus(lifecycleStatusStr)
 		if invocationURL.Valid && strings.TrimSpace(invocationURL.String) != "" {
 			url := strings.TrimSpace(invocationURL.String)
 			agent.InvocationURL = &url
@@ -4566,9 +4569,9 @@ func (ls *LocalStorage) ListAgents(ctx context.Context, filters types.AgentFilte
 	return agents, nil
 }
 
-// UpdateAgentHealth updates the health status of an agent node in SQLite.
+// UpdateNodeHealth updates the health status of an agent node in SQLite.
 // IMPORTANT: This method ONLY updates health_status, never last_heartbeat (only heartbeat endpoint should do that)
-func (ls *LocalStorage) UpdateAgentHealth(ctx context.Context, id string, status types.HealthStatus) error {
+func (ls *LocalStorage) UpdateNodeHealth(ctx context.Context, id string, status types.HealthStatus) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during update agent health: %w", err)
@@ -4579,10 +4582,10 @@ func (ls *LocalStorage) UpdateAgentHealth(ctx context.Context, id string, status
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction for agent health update: %w", err)
 	}
-	defer rollbackTx(tx, "UpdateAgentHealth:"+id)
+	defer rollbackTx(tx, "UpdateNodeHealth:"+id)
 
 	// Execute the health update using the transaction
-	if err := ls.executeUpdateAgentHealth(ctx, tx, id, status); err != nil {
+	if err := ls.executeUpdateNodeHealth(ctx, tx, id, status); err != nil {
 		return err
 	}
 
@@ -4594,10 +4597,10 @@ func (ls *LocalStorage) UpdateAgentHealth(ctx context.Context, id string, status
 	return nil
 }
 
-// executeUpdateAgentHealth performs the actual health status update using DBTX interface
-func (ls *LocalStorage) executeUpdateAgentHealth(ctx context.Context, q DBTX, id string, status types.HealthStatus) error {
+// executeUpdateNodeHealth performs the actual health status update using DBTX interface
+func (ls *LocalStorage) executeUpdateNodeHealth(ctx context.Context, q DBTX, id string, status types.HealthStatus) error {
 	query := `
-		UPDATE agent_nodes
+		UPDATE nodes
 		SET health_status = ?
 		WHERE id = ?;`
 
@@ -4609,11 +4612,11 @@ func (ls *LocalStorage) executeUpdateAgentHealth(ctx context.Context, q DBTX, id
 	return nil
 }
 
-// UpdateAgentHealthAtomic updates the health status of an agent node atomically with optimistic locking.
+// UpdateNodeHealthAtomic updates the health status of an agent node atomically with optimistic locking.
 // If expectedLastHeartbeat is provided, the update will only succeed if the current last_heartbeat matches.
 // This prevents race conditions between health monitor and heartbeat updates.
 // IMPORTANT: This method ONLY updates health_status, never last_heartbeat (only heartbeat endpoint should do that)
-func (ls *LocalStorage) UpdateAgentHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
+func (ls *LocalStorage) UpdateNodeHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during update agent health atomic: %w", err)
@@ -4626,14 +4629,14 @@ func (ls *LocalStorage) UpdateAgentHealthAtomic(ctx context.Context, id string, 
 		// Atomic update with optimistic locking - only update health_status if last_heartbeat hasn't changed
 		// DO NOT update last_heartbeat here - that creates phantom heartbeats!
 		query = `
-			UPDATE agent_nodes
+			UPDATE nodes
 			SET health_status = ?
 			WHERE id = ? AND last_heartbeat = ?;`
 		args = []interface{}{status, id, expectedLastHeartbeat.UTC().Format(time.RFC3339Nano)}
 	} else {
 		// Standard atomic update without timestamp check - only update health_status
 		query = `
-			UPDATE agent_nodes
+			UPDATE nodes
 			SET health_status = ?
 			WHERE id = ?;`
 		args = []interface{}{status, id}
@@ -4660,8 +4663,8 @@ func (ls *LocalStorage) UpdateAgentHealthAtomic(ctx context.Context, id string, 
 	return nil
 }
 
-// UpdateAgentHeartbeat updates only the heartbeat timestamp of an agent node in SQLite.
-func (ls *LocalStorage) UpdateAgentHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
+// UpdateNodeHeartbeat updates only the heartbeat timestamp of an agent node in SQLite.
+func (ls *LocalStorage) UpdateNodeHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during update agent heartbeat: %w", err)
@@ -4672,10 +4675,10 @@ func (ls *LocalStorage) UpdateAgentHeartbeat(ctx context.Context, id string, hea
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction for agent heartbeat update: %w", err)
 	}
-	defer rollbackTx(tx, "UpdateAgentHeartbeat:"+id)
+	defer rollbackTx(tx, "UpdateNodeHeartbeat:"+id)
 
 	// Execute the heartbeat update using the transaction
-	if err := ls.executeUpdateAgentHeartbeat(ctx, tx, id, heartbeatTime); err != nil {
+	if err := ls.executeUpdateNodeHeartbeat(ctx, tx, id, heartbeatTime); err != nil {
 		return err
 	}
 
@@ -4687,10 +4690,10 @@ func (ls *LocalStorage) UpdateAgentHeartbeat(ctx context.Context, id string, hea
 	return nil
 }
 
-// executeUpdateAgentHeartbeat performs the actual heartbeat timestamp update using DBTX interface
-func (ls *LocalStorage) executeUpdateAgentHeartbeat(ctx context.Context, q DBTX, id string, heartbeatTime time.Time) error {
+// executeUpdateNodeHeartbeat performs the actual heartbeat timestamp update using DBTX interface
+func (ls *LocalStorage) executeUpdateNodeHeartbeat(ctx context.Context, q DBTX, id string, heartbeatTime time.Time) error {
 	query := `
-		UPDATE agent_nodes
+		UPDATE nodes
 		SET last_heartbeat = ?
 		WHERE id = ?;`
 
@@ -4703,8 +4706,8 @@ func (ls *LocalStorage) executeUpdateAgentHeartbeat(ctx context.Context, q DBTX,
 	return nil
 }
 
-// UpdateAgentLifecycleStatus updates the lifecycle status of an agent node in SQLite.
-func (ls *LocalStorage) UpdateAgentLifecycleStatus(ctx context.Context, id string, status types.AgentLifecycleStatus) error {
+// UpdateBotLifecycleStatus updates the lifecycle status of an agent node in SQLite.
+func (ls *LocalStorage) UpdateBotLifecycleStatus(ctx context.Context, id string, status types.BotLifecycleStatus) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during update agent lifecycle status: %w", err)
@@ -4715,10 +4718,10 @@ func (ls *LocalStorage) UpdateAgentLifecycleStatus(ctx context.Context, id strin
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction for agent lifecycle update: %w", err)
 	}
-	defer rollbackTx(tx, "UpdateAgentLifecycleStatus:"+id)
+	defer rollbackTx(tx, "UpdateBotLifecycleStatus:"+id)
 
 	// Execute the lifecycle status update using the transaction
-	if err := ls.executeUpdateAgentLifecycleStatus(ctx, tx, id, status); err != nil {
+	if err := ls.executeUpdateBotLifecycleStatus(ctx, tx, id, status); err != nil {
 		return err
 	}
 
@@ -4730,10 +4733,10 @@ func (ls *LocalStorage) UpdateAgentLifecycleStatus(ctx context.Context, id strin
 	return nil
 }
 
-// executeUpdateAgentLifecycleStatus performs the actual lifecycle status update using DBTX interface
-func (ls *LocalStorage) executeUpdateAgentLifecycleStatus(ctx context.Context, q DBTX, id string, status types.AgentLifecycleStatus) error {
+// executeUpdateBotLifecycleStatus performs the actual lifecycle status update using DBTX interface
+func (ls *LocalStorage) executeUpdateBotLifecycleStatus(ctx context.Context, q DBTX, id string, status types.BotLifecycleStatus) error {
 	query := `
-		UPDATE agent_nodes
+		UPDATE nodes
 		SET lifecycle_status = ?
 		WHERE id = ?;`
 
@@ -4808,7 +4811,7 @@ type Transaction interface {
 
 // Agent Configuration Management Methods
 
-func agentConfigurationToModel(cfg *types.AgentConfiguration) (*AgentConfigurationModel, error) {
+func agentConfigurationToModel(cfg *types.BotConfiguration) (*BotConfigurationModel, error) {
 	configJSON, err := json.Marshal(cfg.Configuration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal configuration: %w", err)
@@ -4819,7 +4822,7 @@ func agentConfigurationToModel(cfg *types.AgentConfiguration) (*AgentConfigurati
 		return nil, fmt.Errorf("failed to marshal encrypted fields: %w", err)
 	}
 
-	return &AgentConfigurationModel{
+	return &BotConfigurationModel{
 		ID:              cfg.ID,
 		AgentID:         cfg.AgentID,
 		PackageID:       cfg.PackageID,
@@ -4834,8 +4837,8 @@ func agentConfigurationToModel(cfg *types.AgentConfiguration) (*AgentConfigurati
 	}, nil
 }
 
-func agentConfigurationFromModel(model *AgentConfigurationModel) (*types.AgentConfiguration, error) {
-	cfg := &types.AgentConfiguration{
+func agentConfigurationFromModel(model *BotConfigurationModel) (*types.BotConfiguration, error) {
+	cfg := &types.BotConfiguration{
 		ID:        model.ID,
 		AgentID:   model.AgentID,
 		PackageID: model.PackageID,
@@ -4864,8 +4867,8 @@ func agentConfigurationFromModel(model *AgentConfigurationModel) (*types.AgentCo
 	return cfg, nil
 }
 
-// StoreAgentConfiguration stores an agent configuration record in SQLite
-func (ls *LocalStorage) StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+// StoreBotConfiguration stores an agent configuration record in SQLite
+func (ls *LocalStorage) StoreBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during store agent configuration: %w", err)
@@ -4901,8 +4904,8 @@ func (ls *LocalStorage) StoreAgentConfiguration(ctx context.Context, config *typ
 	return nil
 }
 
-// GetAgentConfiguration retrieves an agent configuration record from SQLite
-func (ls *LocalStorage) GetAgentConfiguration(ctx context.Context, agentID, packageID string) (*types.AgentConfiguration, error) {
+// GetBotConfiguration retrieves an agent configuration record from SQLite
+func (ls *LocalStorage) GetBotConfiguration(ctx context.Context, agentID, packageID string) (*types.BotConfiguration, error) {
 	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -4913,7 +4916,7 @@ func (ls *LocalStorage) GetAgentConfiguration(ctx context.Context, agentID, pack
 		return nil, fmt.Errorf("failed to prepare gorm transaction: %w", err)
 	}
 
-	model := &AgentConfigurationModel{}
+	model := &BotConfigurationModel{}
 	if err := gormDB.Where("agent_id = ? AND package_id = ?", agentID, packageID).Take(model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("configuration for agent '%s' and package '%s' not found", agentID, packageID)
@@ -4924,8 +4927,8 @@ func (ls *LocalStorage) GetAgentConfiguration(ctx context.Context, agentID, pack
 	return agentConfigurationFromModel(model)
 }
 
-// QueryAgentConfigurations retrieves agent configuration records from SQLite based on filters
-func (ls *LocalStorage) QueryAgentConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.AgentConfiguration, error) {
+// QueryBotConfigurations retrieves agent configuration records from SQLite based on filters
+func (ls *LocalStorage) QueryBotConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.BotConfiguration, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during query agent configurations: %w", err)
@@ -4936,7 +4939,7 @@ func (ls *LocalStorage) QueryAgentConfigurations(ctx context.Context, filters ty
 		return nil, fmt.Errorf("failed to prepare gorm transaction: %w", err)
 	}
 
-	query := gormDB.Model(&AgentConfigurationModel{})
+	query := gormDB.Model(&BotConfigurationModel{})
 
 	if filters.AgentID != nil {
 		query = query.Where("agent_id = ?", *filters.AgentID)
@@ -4965,12 +4968,12 @@ func (ls *LocalStorage) QueryAgentConfigurations(ctx context.Context, filters ty
 		query = query.Offset(filters.Offset)
 	}
 
-	var models []AgentConfigurationModel
+	var models []BotConfigurationModel
 	if err := query.Find(&models).Error; err != nil {
 		return nil, fmt.Errorf("failed to query agent configurations: %w", err)
 	}
 
-	configurations := make([]*types.AgentConfiguration, 0, len(models))
+	configurations := make([]*types.BotConfiguration, 0, len(models))
 	for i := range models {
 		cfg, err := agentConfigurationFromModel(&models[i])
 		if err != nil {
@@ -4982,8 +4985,8 @@ func (ls *LocalStorage) QueryAgentConfigurations(ctx context.Context, filters ty
 	return configurations, nil
 }
 
-// UpdateAgentConfiguration updates an existing agent configuration record
-func (ls *LocalStorage) UpdateAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+// UpdateBotConfiguration updates an existing agent configuration record
+func (ls *LocalStorage) UpdateBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return err
@@ -5004,7 +5007,7 @@ func (ls *LocalStorage) UpdateAgentConfiguration(ctx context.Context, config *ty
 		return fmt.Errorf("failed to prepare gorm transaction: %w", err)
 	}
 
-	result := gormDB.Model(&AgentConfigurationModel{}).
+	result := gormDB.Model(&BotConfigurationModel{}).
 		Where("agent_id = ? AND package_id = ?", config.AgentID, config.PackageID).
 		Updates(map[string]interface{}{
 			"configuration":    configJSON,
@@ -5026,8 +5029,8 @@ func (ls *LocalStorage) UpdateAgentConfiguration(ctx context.Context, config *ty
 	return nil
 }
 
-// DeleteAgentConfiguration deletes an agent configuration record
-func (ls *LocalStorage) DeleteAgentConfiguration(ctx context.Context, agentID, packageID string) error {
+// DeleteBotConfiguration deletes an agent configuration record
+func (ls *LocalStorage) DeleteBotConfiguration(ctx context.Context, agentID, packageID string) error {
 	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return err
@@ -5039,7 +5042,7 @@ func (ls *LocalStorage) DeleteAgentConfiguration(ctx context.Context, agentID, p
 	}
 
 	result := gormDB.Where("agent_id = ? AND package_id = ?", agentID, packageID).
-		Delete(&AgentConfigurationModel{})
+		Delete(&BotConfigurationModel{})
 
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete agent configuration: %w", result.Error)
@@ -5052,15 +5055,15 @@ func (ls *LocalStorage) DeleteAgentConfiguration(ctx context.Context, agentID, p
 	return nil
 }
 
-// ValidateAgentConfiguration validates a configuration against the package schema
-func (ls *LocalStorage) ValidateAgentConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
+// ValidateBotConfiguration validates a configuration against the package schema
+func (ls *LocalStorage) ValidateBotConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during validate agent configuration: %w", err)
 	}
 
 	// Get the package to access its schema
-	pkg, err := ls.GetAgentPackage(ctx, packageID)
+	pkg, err := ls.GetBotPackage(ctx, packageID)
 	if err != nil {
 		return &types.ConfigurationValidationResult{
 			Valid:  false,
@@ -5089,8 +5092,8 @@ func (ls *LocalStorage) ValidateAgentConfiguration(ctx context.Context, agentID,
 
 // Agent Package Management Methods
 
-// StoreAgentPackage stores an agent package record in SQLite
-func (ls *LocalStorage) StoreAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+// StoreBotPackage stores an agent package record in SQLite
+func (ls *LocalStorage) StoreBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during store agent package: %w", err)
@@ -5134,8 +5137,8 @@ func (ls *LocalStorage) StoreAgentPackage(ctx context.Context, pkg *types.AgentP
 	return nil
 }
 
-// GetAgentPackage retrieves an agent package record from SQLite
-func (ls *LocalStorage) GetAgentPackage(ctx context.Context, packageID string) (*types.AgentPackage, error) {
+// GetBotPackage retrieves an agent package record from SQLite
+func (ls *LocalStorage) GetBotPackage(ctx context.Context, packageID string) (*types.BotPackage, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during get agent package: %w", err)
@@ -5150,7 +5153,7 @@ func (ls *LocalStorage) GetAgentPackage(ctx context.Context, packageID string) (
 
 	row := ls.db.QueryRowContext(ctx, query, packageID)
 
-	pkg := &types.AgentPackage{}
+	pkg := &types.BotPackage{}
 	var metadataJSON []byte
 
 	err := row.Scan(
@@ -5176,8 +5179,8 @@ func (ls *LocalStorage) GetAgentPackage(ctx context.Context, packageID string) (
 	return pkg, nil
 }
 
-// QueryAgentPackages retrieves agent package records from SQLite based on filters
-func (ls *LocalStorage) QueryAgentPackages(ctx context.Context, filters types.PackageFilters) ([]*types.AgentPackage, error) {
+// QueryBotPackages retrieves agent package records from SQLite based on filters
+func (ls *LocalStorage) QueryBotPackages(ctx context.Context, filters types.PackageFilters) ([]*types.BotPackage, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during query agent packages: %w", err)
@@ -5231,14 +5234,14 @@ func (ls *LocalStorage) QueryAgentPackages(ctx context.Context, filters types.Pa
 	}
 	defer rows.Close()
 
-	packages := []*types.AgentPackage{}
+	packages := []*types.BotPackage{}
 	for rows.Next() {
 		// Check context cancellation during iteration
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("context cancelled during package iteration: %w", err)
 		}
 
-		pkg := &types.AgentPackage{}
+		pkg := &types.BotPackage{}
 		var metadataJSON []byte
 
 		err := rows.Scan(
@@ -5267,8 +5270,8 @@ func (ls *LocalStorage) QueryAgentPackages(ctx context.Context, filters types.Pa
 	return packages, nil
 }
 
-// UpdateAgentPackage updates an existing agent package record
-func (ls *LocalStorage) UpdateAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+// UpdateBotPackage updates an existing agent package record
+func (ls *LocalStorage) UpdateBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return err
@@ -5308,8 +5311,8 @@ func (ls *LocalStorage) UpdateAgentPackage(ctx context.Context, pkg *types.Agent
 	return nil
 }
 
-// DeleteAgentPackage deletes an agent package record
-func (ls *LocalStorage) DeleteAgentPackage(ctx context.Context, packageID string) error {
+// DeleteBotPackage deletes an agent package record
+func (ls *LocalStorage) DeleteBotPackage(ctx context.Context, packageID string) error {
 	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return err
@@ -5368,7 +5371,7 @@ func (ls *LocalStorage) executeBotMetricsQuery(tx DBTX, nodeID, localBotID strin
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful_executions,
 			COALESCE(SUM(CASE WHEN started_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END), 0) as executions_last_24h
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND bot_id = ?`
+		WHERE node_id = ? AND bot_id = ?`
 
 	row := tx.QueryRow(metricsQuery, nodeID, localBotID)
 
@@ -5390,7 +5393,7 @@ func (ls *LocalStorage) executeBotMetricsQuery(tx DBTX, nodeID, localBotID strin
 	recentQuery := `
 		SELECT execution_id, status, duration_ms, started_at
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND bot_id = ?
+		WHERE node_id = ? AND bot_id = ?
 		ORDER BY started_at DESC
 		LIMIT 5`
 
@@ -5441,7 +5444,7 @@ func (ls *LocalStorage) executeBotMetricsQueryDirect(ctx context.Context, nodeID
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful_executions,
 			COALESCE(SUM(CASE WHEN started_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END), 0) as executions_last_24h
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND bot_id = ?`
+		WHERE node_id = ? AND bot_id = ?`
 
 	row := ls.db.QueryRowContext(ctx, metricsQuery, nodeID, localBotID)
 
@@ -5463,7 +5466,7 @@ func (ls *LocalStorage) executeBotMetricsQueryDirect(ctx context.Context, nodeID
 	recentQuery := `
 		SELECT execution_id, status, duration_ms, started_at
 		FROM workflow_executions
-		WHERE agent_node_id = ? AND bot_id = ?
+		WHERE node_id = ? AND bot_id = ?
 		ORDER BY started_at DESC
 		LIMIT 5`
 
@@ -5546,7 +5549,7 @@ func (ls *LocalStorage) executeBotHistoryQuery(tx DBTX, nodeID, localBotID strin
 				COUNT(*) OVER() as total_count,
 				ROW_NUMBER() OVER(ORDER BY started_at DESC) as row_num
 			FROM workflow_executions
-			WHERE agent_node_id = ? AND bot_id = ?
+			WHERE node_id = ? AND bot_id = ?
 		)
 		SELECT execution_id, status, input_data, output_data, error_message, duration_ms, started_at, total_count
 		FROM execution_data
@@ -5631,7 +5634,7 @@ func (ls *LocalStorage) executeBotHistoryQueryDirect(ctx context.Context, nodeID
 				COUNT(*) OVER() as total_count,
 				ROW_NUMBER() OVER(ORDER BY started_at DESC) as row_num
 			FROM workflow_executions
-			WHERE agent_node_id = ? AND bot_id = ?
+			WHERE node_id = ? AND bot_id = ?
 		)
 		SELECT execution_id, status, input_data, output_data, error_message, duration_ms, started_at, total_count
 		FROM execution_data
@@ -5719,8 +5722,8 @@ func (ls *LocalStorage) GetWorkflowExecutionEventBus() *events.EventBus[*types.W
 	return ls.workflowExecutionEventBus
 }
 
-// Agents Server DID operations
-func (ls *LocalStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
+// Playground Server DID operations
+func (ls *LocalStorage) StorePlaygroundServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during store af server DID: %w", err)
@@ -5729,10 +5732,10 @@ func (ls *LocalStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID
 	// Validate input parameters
 	if agentsServerID == "" {
 		return &ValidationError{
-			Field:   "agents_server_id",
+			Field:   "playground_server_id",
 			Value:   agentsServerID,
 			Reason:  "af server ID cannot be empty",
-			Context: "StoreAgentsServerDID",
+			Context: "StorePlaygroundServerDID",
 		}
 	}
 	if rootDID == "" {
@@ -5740,7 +5743,7 @@ func (ls *LocalStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID
 			Field:   "root_did",
 			Value:   rootDID,
 			Reason:  "root DID cannot be empty",
-			Context: "StoreAgentsServerDID",
+			Context: "StorePlaygroundServerDID",
 		}
 	}
 	if len(masterSeed) == 0 {
@@ -5748,7 +5751,7 @@ func (ls *LocalStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID
 			Field:   "master_seed",
 			Value:   "<encrypted>",
 			Reason:  "master seed cannot be empty",
-			Context: "StoreAgentsServerDID",
+			Context: "StorePlaygroundServerDID",
 		}
 	}
 
@@ -5759,21 +5762,21 @@ func (ls *LocalStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID
 	}
 	defer func() {
 		if err != nil {
-			rollbackTx(tx, "StoreAgentsServerDID")
+			rollbackTx(tx, "StorePlaygroundServerDID")
 		}
 	}()
 
 	// Execute with retry logic
 	err = ls.retryOnConstraintFailure(ctx, func() error {
 		query := `
-                        INSERT OR REPLACE INTO did_registry (agents_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation, total_dids)
+                        INSERT OR REPLACE INTO did_registry (playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation, total_dids)
                         VALUES (?, ?, ?, ?, ?, 0)
                 `
 		if ls.mode == "postgres" {
 			query = `
-                                INSERT INTO did_registry (agents_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation, total_dids)
+                                INSERT INTO did_registry (playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation, total_dids)
                                 VALUES (?, ?, ?, ?, ?, 0)
-                                ON CONFLICT (agents_server_id) DO UPDATE SET
+                                ON CONFLICT (playground_server_id) DO UPDATE SET
                                         root_did = EXCLUDED.root_did,
                                         master_seed_encrypted = EXCLUDED.master_seed_encrypted,
                                         created_at = EXCLUDED.created_at,
@@ -5797,19 +5800,19 @@ func (ls *LocalStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	log.Printf("Successfully stored af server DID: agents_server_id=%s, root_did=%s", agentsServerID, rootDID)
+	log.Printf("Successfully stored af server DID: playground_server_id=%s, root_did=%s", agentsServerID, rootDID)
 	return nil
 }
 
-// StoreAgentDIDWithComponents stores an agent DID along with its component DIDs in a single transaction
-func (ls *LocalStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []ComponentDIDRequest) error {
+// StoreNodeDIDWithComponents stores an agent DID along with its component DIDs in a single transaction
+func (ls *LocalStorage) StoreNodeDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []ComponentDIDRequest) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during store agent DID with components: %w", err)
 	}
 
 	// Pre-storage validation
-	if err := ls.validateAgentsServerExists(ctx, agentsServerDID); err != nil {
+	if err := ls.validatePlaygroundServerExists(ctx, agentsServerDID); err != nil {
 		return fmt.Errorf("pre-storage validation failed: %w", err)
 	}
 
@@ -5820,21 +5823,21 @@ func (ls *LocalStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID
 	}
 	defer func() {
 		if err != nil {
-			rollbackTx(tx, "StoreAgentDIDWithComponents")
+			rollbackTx(tx, "StoreNodeDIDWithComponents")
 		}
 	}()
 
 	// Store agent DID first
 	err = ls.retryOnConstraintFailure(ctx, func() error {
 		query := `
-			INSERT INTO agent_dids (
-				agent_node_id, did, agents_server_id, public_key_jwk, derivation_path, registered_at, status
+			INSERT INTO hanzo_dids (
+				node_id, did, playground_server_id, public_key_jwk, derivation_path, registered_at, status
 			) VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 		derivationPath := fmt.Sprintf("m/44'/0'/0'/%d", derivationIndex)
 		_, execErr := tx.ExecContext(ctx, query, agentID, agentDID, agentsServerDID, publicKeyJWK, derivationPath, time.Now(), "active")
 		if execErr != nil {
-			if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "agent_dids") {
+			if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "hanzo_dids") {
 				return &DuplicateDIDError{
 					DID:  fmt.Sprintf("agent:%s@%s", agentID, agentsServerDID),
 					Type: "agent",
@@ -5842,8 +5845,8 @@ func (ls *LocalStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID
 			}
 			if strings.Contains(execErr.Error(), "FOREIGN KEY constraint failed") {
 				return &ForeignKeyConstraintError{
-					Table:           "agent_dids",
-					Column:          "agents_server_id",
+					Table:           "hanzo_dids",
+					Column:          "playground_server_id",
 					ReferencedTable: "did_registry",
 					ReferencedValue: agentsServerDID,
 					Operation:       "INSERT",
@@ -5883,7 +5886,7 @@ func (ls *LocalStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID
 					return &ForeignKeyConstraintError{
 						Table:           "component_dids",
 						Column:          "agent_did",
-						ReferencedTable: "agent_dids",
+						ReferencedTable: "hanzo_dids",
 						ReferencedValue: agentDID,
 						Operation:       "INSERT",
 					}
@@ -5911,20 +5914,20 @@ func (ls *LocalStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID
 	return nil
 }
 
-func (ls *LocalStorage) GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error) {
+func (ls *LocalStorage) GetPlaygroundServerDID(ctx context.Context, agentsServerID string) (*types.PlaygroundServerDIDInfo, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during get af server DID: %w", err)
 	}
 
 	query := `
-		SELECT agents_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation
-		FROM did_registry WHERE agents_server_id = ?
+		SELECT playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation
+		FROM did_registry WHERE playground_server_id = ?
 	`
 	row := ls.db.QueryRowContext(ctx, query, agentsServerID)
-	info := &types.AgentsServerDIDInfo{}
+	info := &types.PlaygroundServerDIDInfo{}
 
-	err := row.Scan(&info.AgentsServerID, &info.RootDID, &info.MasterSeed, &info.CreatedAt, &info.LastKeyRotation)
+	err := row.Scan(&info.PlaygroundServerID, &info.RootDID, &info.MasterSeed, &info.CreatedAt, &info.LastKeyRotation)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // Return nil, nil for "not found"
@@ -5934,14 +5937,14 @@ func (ls *LocalStorage) GetAgentsServerDID(ctx context.Context, agentsServerID s
 	return info, nil
 }
 
-func (ls *LocalStorage) ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error) {
+func (ls *LocalStorage) ListPlaygroundServerDIDs(ctx context.Context) ([]*types.PlaygroundServerDIDInfo, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during list af server DIDs: %w", err)
 	}
 
 	query := `
-		SELECT agents_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation
+		SELECT playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation
 		FROM did_registry ORDER BY created_at DESC
 	`
 	rows, err := ls.db.QueryContext(ctx, query)
@@ -5950,15 +5953,15 @@ func (ls *LocalStorage) ListAgentsServerDIDs(ctx context.Context) ([]*types.Agen
 	}
 	defer rows.Close()
 
-	var infos []*types.AgentsServerDIDInfo
+	var infos []*types.PlaygroundServerDIDInfo
 	for rows.Next() {
 		// Check context cancellation during iteration
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("context cancelled during af server DID list iteration: %w", err)
 		}
 
-		info := &types.AgentsServerDIDInfo{}
-		err := rows.Scan(&info.AgentsServerID, &info.RootDID, &info.MasterSeed, &info.CreatedAt, &info.LastKeyRotation)
+		info := &types.PlaygroundServerDIDInfo{}
+		err := rows.Scan(&info.PlaygroundServerID, &info.RootDID, &info.MasterSeed, &info.CreatedAt, &info.LastKeyRotation)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan af server DID: %w", err)
 		}
@@ -6059,25 +6062,25 @@ func (ls *LocalStorage) ListDIDs(ctx context.Context) ([]*types.DIDRegistryEntry
 	return entries, nil
 }
 
-// validateAgentsServerExists checks if a af server registry exists
-func (ls *LocalStorage) validateAgentsServerExists(ctx context.Context, agentsServerID string) error {
+// validatePlaygroundServerExists checks if a af server registry exists
+func (ls *LocalStorage) validatePlaygroundServerExists(ctx context.Context, agentsServerID string) error {
 	if agentsServerID == "" {
 		return &ValidationError{
-			Field:   "agents_server_id",
+			Field:   "playground_server_id",
 			Value:   agentsServerID,
 			Reason:  "af server ID cannot be empty",
 			Context: "pre-storage validation",
 		}
 	}
 
-	query := `SELECT 1 FROM did_registry WHERE agents_server_id = ? LIMIT 1`
+	query := `SELECT 1 FROM did_registry WHERE playground_server_id = ? LIMIT 1`
 	var exists int
 	err := ls.db.QueryRowContext(ctx, query, agentsServerID).Scan(&exists)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &ForeignKeyConstraintError{
-				Table:           "agent_dids",
-				Column:          "agents_server_id",
+				Table:           "hanzo_dids",
+				Column:          "playground_server_id",
 				ReferencedTable: "did_registry",
 				ReferencedValue: agentsServerID,
 				Operation:       "INSERT",
@@ -6088,8 +6091,8 @@ func (ls *LocalStorage) validateAgentsServerExists(ctx context.Context, agentsSe
 	return nil
 }
 
-// validateAgentDIDExists checks if an agent DID exists
-func (ls *LocalStorage) validateAgentDIDExists(ctx context.Context, agentDID string) error {
+// validateNodeDIDExists checks if an agent DID exists
+func (ls *LocalStorage) validateNodeDIDExists(ctx context.Context, agentDID string) error {
 	if agentDID == "" {
 		return &ValidationError{
 			Field:   "agent_did",
@@ -6099,7 +6102,7 @@ func (ls *LocalStorage) validateAgentDIDExists(ctx context.Context, agentDID str
 		}
 	}
 
-	query := `SELECT 1 FROM agent_dids WHERE did = ? LIMIT 1`
+	query := `SELECT 1 FROM hanzo_dids WHERE did = ? LIMIT 1`
 	var exists int
 	err := ls.db.QueryRowContext(ctx, query, agentDID).Scan(&exists)
 	if err != nil {
@@ -6107,7 +6110,7 @@ func (ls *LocalStorage) validateAgentDIDExists(ctx context.Context, agentDID str
 			return &ForeignKeyConstraintError{
 				Table:           "component_dids",
 				Column:          "agent_did",
-				ReferencedTable: "agent_dids",
+				ReferencedTable: "hanzo_dids",
 				ReferencedValue: agentDID,
 				Operation:       "INSERT",
 			}
@@ -6160,24 +6163,24 @@ func (ls *LocalStorage) retryOnConstraintFailure(ctx context.Context, operation 
 }
 
 // Agent DID operations
-func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
+func (ls *LocalStorage) StoreNodeDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during store agent DID: %w", err)
 	}
 
 	// Pre-storage validation
-	if err := ls.validateAgentsServerExists(ctx, agentsServerDID); err != nil {
+	if err := ls.validatePlaygroundServerExists(ctx, agentsServerDID); err != nil {
 		return fmt.Errorf("pre-storage validation failed: %w", err)
 	}
 
 	// Validate input parameters
 	if agentID == "" {
 		return &ValidationError{
-			Field:   "agent_node_id",
+			Field:   "node_id",
 			Value:   agentID,
 			Reason:  "agent ID cannot be empty",
-			Context: "StoreAgentDID",
+			Context: "StoreNodeDID",
 		}
 	}
 	if agentDID == "" {
@@ -6185,7 +6188,7 @@ func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, ag
 			Field:   "did",
 			Value:   agentDID,
 			Reason:  "agent DID cannot be empty",
-			Context: "StoreAgentDID",
+			Context: "StoreNodeDID",
 		}
 	}
 	if publicKeyJWK == "" {
@@ -6193,7 +6196,7 @@ func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, ag
 			Field:   "public_key_jwk",
 			Value:   publicKeyJWK,
 			Reason:  "public key JWK cannot be empty",
-			Context: "StoreAgentDID",
+			Context: "StoreNodeDID",
 		}
 	}
 
@@ -6204,7 +6207,7 @@ func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, ag
 	}
 	defer func() {
 		if err != nil {
-			rollbackTx(tx, "StoreAgentDID")
+			rollbackTx(tx, "StoreNodeDID")
 		}
 	}()
 
@@ -6212,16 +6215,16 @@ func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, ag
 	err = ls.retryOnConstraintFailure(ctx, func() error {
 		// INSERT-only query - no ON CONFLICT clause for security
 		query := `
-			INSERT INTO agent_dids (
-				agent_node_id, did, agents_server_id, public_key_jwk, derivation_path, registered_at, status
+			INSERT INTO hanzo_dids (
+				node_id, did, playground_server_id, public_key_jwk, derivation_path, registered_at, status
 			) VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 		derivationPath := fmt.Sprintf("m/44'/0'/0'/%d", derivationIndex)
 		_, execErr := tx.ExecContext(ctx, query, agentID, agentDID, agentsServerDID, publicKeyJWK, derivationPath, time.Now(), "active")
 		if execErr != nil {
 			// Check if this is a unique constraint violation (duplicate agent DID)
-			if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "agent_dids") {
-				log.Printf("Duplicate agent DID entry detected: agent_id=%s, agents_server_id=%s", agentID, agentsServerDID)
+			if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "hanzo_dids") {
+				log.Printf("Duplicate agent DID entry detected: agent_id=%s, playground_server_id=%s", agentID, agentsServerDID)
 				return &DuplicateDIDError{
 					DID:  fmt.Sprintf("agent:%s@%s", agentID, agentsServerDID),
 					Type: "agent",
@@ -6230,8 +6233,8 @@ func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, ag
 			// Check for foreign key constraint violations
 			if strings.Contains(execErr.Error(), "FOREIGN KEY constraint failed") {
 				return &ForeignKeyConstraintError{
-					Table:           "agent_dids",
-					Column:          "agents_server_id",
+					Table:           "hanzo_dids",
+					Column:          "playground_server_id",
 					ReferencedTable: "did_registry",
 					ReferencedValue: agentsServerDID,
 					Operation:       "INSERT",
@@ -6255,22 +6258,22 @@ func (ls *LocalStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, ag
 	return nil
 }
 
-func (ls *LocalStorage) GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error) {
+func (ls *LocalStorage) GetNodeDID(ctx context.Context, agentID string) (*types.NodeDIDInfo, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during get agent DID: %w", err)
 	}
 
 	query := `
-		SELECT agent_node_id, did, agents_server_id, public_key_jwk, derivation_path,
+		SELECT node_id, did, playground_server_id, public_key_jwk, derivation_path,
 		       bots, skills, status, registered_at
-		FROM agent_dids WHERE agent_node_id = ?`
+		FROM hanzo_dids WHERE node_id = ?`
 
 	row := ls.db.QueryRowContext(ctx, query, agentID)
-	info := &types.AgentDIDInfo{}
+	info := &types.NodeDIDInfo{}
 
 	var botsJSON, skillsJSON, publicKeyJWK string
-	err := row.Scan(&info.AgentNodeID, &info.DID, &info.AgentsServerID, &publicKeyJWK,
+	err := row.Scan(&info.NodeID, &info.DID, &info.PlaygroundServerID, &publicKeyJWK,
 		&info.DerivationPath, &botsJSON, &skillsJSON, &info.Status, &info.RegisteredAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -6300,16 +6303,16 @@ func (ls *LocalStorage) GetAgentDID(ctx context.Context, agentID string) (*types
 	return info, nil
 }
 
-func (ls *LocalStorage) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInfo, error) {
+func (ls *LocalStorage) ListNodeDIDs(ctx context.Context) ([]*types.NodeDIDInfo, error) {
 	// Check context cancellation early
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled during list agent DIDs: %w", err)
 	}
 
 	query := `
-		SELECT agent_node_id, did, agents_server_id, public_key_jwk, derivation_path,
+		SELECT node_id, did, playground_server_id, public_key_jwk, derivation_path,
 		       bots, skills, status, registered_at
-		FROM agent_dids ORDER BY registered_at DESC`
+		FROM hanzo_dids ORDER BY registered_at DESC`
 
 	rows, err := ls.db.QueryContext(ctx, query)
 	if err != nil {
@@ -6317,16 +6320,16 @@ func (ls *LocalStorage) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInf
 	}
 	defer rows.Close()
 
-	var infos []*types.AgentDIDInfo
+	var infos []*types.NodeDIDInfo
 	for rows.Next() {
 		// Check context cancellation during iteration
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("context cancelled during agent DID list iteration: %w", err)
 		}
 
-		info := &types.AgentDIDInfo{}
+		info := &types.NodeDIDInfo{}
 		var botsJSON, skillsJSON, publicKeyJWK string
-		err := rows.Scan(&info.AgentNodeID, &info.DID, &info.AgentsServerID, &publicKeyJWK,
+		err := rows.Scan(&info.NodeID, &info.DID, &info.PlaygroundServerID, &publicKeyJWK,
 			&info.DerivationPath, &botsJSON, &skillsJSON, &info.Status, &info.RegisteredAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan agent DID: %w", err)
@@ -6363,7 +6366,7 @@ func (ls *LocalStorage) StoreComponentDID(ctx context.Context, componentID, comp
 	}
 
 	// Pre-storage validation
-	if err := ls.validateAgentDIDExists(ctx, agentDID); err != nil {
+	if err := ls.validateNodeDIDExists(ctx, agentDID); err != nil {
 		return fmt.Errorf("pre-storage validation failed: %w", err)
 	}
 
@@ -6440,7 +6443,7 @@ func (ls *LocalStorage) StoreComponentDID(ctx context.Context, componentID, comp
 				return &ForeignKeyConstraintError{
 					Table:           "component_dids",
 					Column:          "agent_did",
-					ReferencedTable: "agent_dids",
+					ReferencedTable: "hanzo_dids",
 					ReferencedValue: agentDID,
 					Operation:       "INSERT",
 				}
@@ -6481,7 +6484,7 @@ func (ls *LocalStorage) GetComponentDID(ctx context.Context, componentID string)
 	var derivationPath string
 	var createdAt sql.NullTime
 
-	err := row.Scan(&info.ComponentID, &info.ComponentDID, &info.AgentDID,
+	err := row.Scan(&info.ComponentID, &info.ComponentDID, &info.NodeDID,
 		&info.ComponentType, &info.ComponentName, &derivationPath, &createdAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -6549,7 +6552,7 @@ func (ls *LocalStorage) ListComponentDIDs(ctx context.Context, agentDID string) 
 		var derivationPath string
 		var createdAt sql.NullTime
 
-		err := rows.Scan(&info.ComponentID, &info.ComponentDID, &info.AgentDID,
+		err := rows.Scan(&info.ComponentID, &info.ComponentDID, &info.NodeDID,
 			&info.ComponentType, &info.ComponentName, &derivationPath, &createdAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan component DID: %w", err)
@@ -6659,9 +6662,9 @@ func buildExecutionVCFilterClauses(filters types.VCFilters) (string, []interface
 		conditions = append(conditions, "evc.caller_did = ?")
 		args = append(args, *filters.CallerDID)
 	}
-	if filters.AgentNodeID != nil {
-		conditions = append(conditions, "COALESCE(we.agent_node_id, '') = ?")
-		args = append(args, *filters.AgentNodeID)
+	if filters.NodeID != nil {
+		conditions = append(conditions, "COALESCE(we.node_id, '') = ?")
+		args = append(args, *filters.NodeID)
 	}
 	if filters.Status != nil {
 		conditions = append(conditions, "evc.status = ?")
@@ -6686,7 +6689,7 @@ func buildExecutionVCFilterClauses(filters types.VCFilters) (string, []interface
 				"LOWER(evc.target_did) LIKE ? OR "+
 				"LOWER(evc.caller_did) LIKE ? OR "+
 				"LOWER(evc.session_id) LIKE ? OR "+
-				"LOWER(COALESCE(we.agent_node_id, '')) LIKE ? OR "+
+				"LOWER(COALESCE(we.node_id, '')) LIKE ? OR "+
 				"LOWER(COALESCE(we.workflow_name, '')) LIKE ?"+
 				")")
 			for i := 0; i < 8; i++ {
@@ -6708,7 +6711,7 @@ func (ls *LocalStorage) ListExecutionVCs(ctx context.Context, filters types.VCFi
 		SELECT evc.vc_id, evc.execution_id, evc.workflow_id, evc.session_id,
 		       evc.issuer_did, evc.target_did, evc.caller_did, evc.input_hash,
 		       evc.output_hash, evc.status, evc.created_at, evc.storage_uri,
-		       evc.document_size_bytes, we.agent_node_id, we.workflow_name
+		       evc.document_size_bytes, we.node_id, we.workflow_name
 		FROM execution_vcs evc
 		LEFT JOIN workflow_executions we ON we.execution_id = evc.execution_id`
 
@@ -6744,7 +6747,7 @@ func (ls *LocalStorage) ListExecutionVCs(ctx context.Context, filters types.VCFi
 		err := rows.Scan(&info.VCID, &info.ExecutionID, &info.WorkflowID, &info.SessionID,
 			&info.IssuerDID, &info.TargetDID, &info.CallerDID, &info.InputHash,
 			&info.OutputHash, &info.Status, &info.CreatedAt, &info.StorageURI,
-			&info.DocumentSize, &info.AgentNodeID, &info.WorkflowName)
+			&info.DocumentSize, &info.NodeID, &info.WorkflowName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan execution VC: %w", err)
 		}

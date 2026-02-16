@@ -1,0 +1,188 @@
+import type { ReactNode } from "react";
+import {
+  Wifi,
+  WifiOff,
+  Grid,
+  Terminal,
+  Renew,
+  Search,
+  CloudOffline
+} from "@/components/ui/icon-bridge";
+import { Button } from "../ui/button";
+import { cn } from "../../lib/utils";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "../ui/empty";
+
+interface EmptyBotsStateProps {
+  type: 'no-bots' | 'no-online' | 'no-offline' | 'no-search-results';
+  searchTerm?: string;
+  onRefresh?: () => void;
+  onClearFilters?: () => void;
+  onShowAll?: () => void;
+  loading?: boolean;
+  className?: string;
+}
+
+interface EmptyStateAction {
+  label: string;
+  action?: () => void;
+  icon?: ReactNode;
+}
+
+interface EmptyStateTip {
+  title: string;
+  body: string;
+  icon: ReactNode;
+}
+
+interface EmptyStateConfig {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  primaryAction?: EmptyStateAction | null;
+  secondaryAction?: EmptyStateAction | null;
+  tip?: EmptyStateTip;
+}
+
+export function EmptyBotsState({
+  type,
+  searchTerm,
+  onRefresh,
+  onClearFilters,
+  onShowAll,
+  loading = false,
+  className
+}: EmptyBotsStateProps) {
+  const getStateConfig = (): EmptyStateConfig => {
+    switch (type) {
+      case 'no-bots':
+        return {
+          icon: <Grid className="h-10 w-10" />,
+          title: "No Bots Available",
+          description: "There are no bots registered in the system yet. Connect some hanzo nodes to see bots here.",
+          primaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
+          secondaryAction: null,
+          tip: {
+            icon: <Terminal className="h-5 w-5 text-muted-foreground" />,
+            title: "Getting started",
+            body: "Launch an hanzo node to register bots with Playground. They will appear here as soon as they are online.",
+          },
+        };
+
+      case 'no-online':
+        return {
+          icon: <Wifi className="h-10 w-10" />,
+          title: "No Online Bots",
+          description: "All bots are currently offline. Check your hanzo node connections or try viewing all bots.",
+          primaryAction: { label: "Show All Bots", action: onShowAll, icon: <Grid className="h-4 w-4" /> },
+          secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
+          tip: {
+            icon: <CloudOffline className="h-5 w-5 text-muted-foreground" />,
+            title: "Connection check",
+            body: "Verify that your hanzo nodes are connected and healthy. Offline bots usually indicate network or configuration issues.",
+          },
+        };
+
+      case 'no-offline':
+        return {
+          icon: <WifiOff className="h-10 w-10" />,
+          title: "No Offline Bots",
+          description: "Great! All your bots are currently online and ready to use.",
+          primaryAction: { label: "Show Online Bots", action: onShowAll, icon: <Wifi className="h-4 w-4" /> },
+          secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> }
+        };
+
+      case 'no-search-results':
+        return {
+          icon: <Search className="h-10 w-10" />,
+          title: "No Results Found",
+          description: searchTerm
+            ? `No bots match "${searchTerm}". Try a different search term or clear your filters.`
+            : "No bots match your current filters. Try adjusting your search criteria.",
+          primaryAction: { label: "Clear Filters", action: onClearFilters, icon: <Grid className="h-4 w-4" /> },
+          secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> }
+        };
+
+      default:
+        return {
+          icon: <CloudOffline className="h-10 w-10" />,
+          title: "Something went wrong",
+          description: "Unable to load bots. Please try refreshing the page.",
+          primaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
+          secondaryAction: null
+        };
+    }
+  };
+
+  const config = getStateConfig();
+
+  return (
+    <Empty className={cn("min-h-[360px]", className)}>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">{config.icon}</EmptyMedia>
+        <EmptyTitle>{config.title}</EmptyTitle>
+        <EmptyDescription>{config.description}</EmptyDescription>
+      </EmptyHeader>
+
+      {(config.primaryAction || config.secondaryAction) && (
+        <EmptyContent className="gap-2 sm:gap-3">
+          {config.primaryAction ? (
+            <Button
+              onClick={config.primaryAction.action}
+              disabled={loading}
+              className="inline-flex min-w-[140px] items-center gap-2"
+            >
+              {config.primaryAction.icon}
+              {config.primaryAction.label}
+            </Button>
+          ) : null}
+          {config.secondaryAction ? (
+            <Button
+              variant="outline"
+              onClick={config.secondaryAction.action}
+              disabled={loading}
+              className="inline-flex min-w-[140px] items-center gap-2"
+            >
+              {config.secondaryAction.icon}
+              {config.secondaryAction.label}
+            </Button>
+          ) : null}
+        </EmptyContent>
+      )}
+
+      {config.tip && <Tip title={config.tip.title} icon={config.tip.icon} body={config.tip.body} />}
+    </Empty>
+  );
+}
+
+function Tip({
+  title,
+  body,
+  icon,
+}: {
+  title: string;
+  body: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="mt-4 w-full max-w-md rounded-lg border border-border/40 bg-muted/15 p-4 text-left">
+      <div className="flex items-start gap-3 text-body">
+        <span className="mt-1 flex h-9 w-9 items-center justify-center rounded-full bg-muted/40 text-muted-foreground">
+          {icon}
+        </span>
+        <div className="space-y-1">
+          <p className="text-body font-medium text-text-primary">{title}</p>
+          <p className="text-body-small text-muted-foreground leading-relaxed">
+            {body}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

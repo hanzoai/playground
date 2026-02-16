@@ -165,7 +165,7 @@ function transformExecutionDetailsResponse(raw: any): WorkflowExecution {
     agents_request_id: raw.agents_request_id ?? "",
     session_id: raw.session_id ?? undefined,
     actor_id: raw.actor_id ?? undefined,
-    agent_node_id: raw.agent_node_id,
+    node_id: raw.node_id,
     parent_workflow_id: raw.parent_workflow_id ?? undefined,
     root_workflow_id: raw.root_workflow_id ?? undefined,
     workflow_depth:
@@ -306,12 +306,12 @@ export async function getExecutionsBySession(
 }
 
 export async function getExecutionsByAgent(
-  agentNodeId: string,
+  nodeId: string,
   page: number = 1,
   pageSize: number = 20,
 ): Promise<PaginatedExecutions> {
   return getExecutionsSummary({
-    agent_node_id: agentNodeId,
+    node_id: nodeId,
     page,
     page_size: pageSize,
   }) as Promise<PaginatedExecutions>;

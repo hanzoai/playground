@@ -3,8 +3,8 @@ package domain
 
 import "time"
 
-// AgentNode represents a running agent instance
-type AgentNode struct {
+// Node represents a running agent instance
+type Node struct {
 	ID              string            `json:"id"`
 	Name            string            `json:"name"`
 	Port            int               `json:"port"`
@@ -56,8 +56,8 @@ type InstalledPackage struct {
 	InstalledAt time.Time         `json:"installed_at"`
 }
 
-// AgentsConfig represents the Agents configuration
-type AgentsConfig struct {
+// PlaygroundConfig represents the Agents configuration
+type PlaygroundConfig struct {
 	HomeDir     string            `json:"home_dir"`
 	Environment map[string]string `json:"environment"`
 	MCP         MCPConfig         `json:"mcp"`
@@ -97,8 +97,8 @@ type RunningAgent struct {
 	LogFile   string    `json:"log_file"`
 }
 
-// AgentStatus represents the status of an agent
-type AgentStatus struct {
+// BotStatus represents the status of an agent
+type BotStatus struct {
 	Name      string    `json:"name"`
 	IsRunning bool      `json:"is_running"`
 	PID       int       `json:"pid"`

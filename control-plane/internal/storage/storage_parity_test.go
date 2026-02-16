@@ -57,9 +57,8 @@ func TestStorageParity_CreateExecutionRecord(t *testing.T) {
 			exec := &types.Execution{
 				ExecutionID: "exec-parity-1",
 				RunID:       "run-parity-1",
-				AgentNodeID: "agent-1",
+				NodeID:      "agent-1",
 				BotID:  "bot-1",
-				NodeID:      "node-1",
 				Status:      string(types.ExecutionStatusPending),
 				StartedAt:   time.Now().UTC(),
 			}
@@ -73,7 +72,7 @@ func TestStorageParity_CreateExecutionRecord(t *testing.T) {
 			require.NotNil(t, retrieved)
 			require.Equal(t, exec.ExecutionID, retrieved.ExecutionID)
 			require.Equal(t, exec.RunID, retrieved.RunID)
-			require.Equal(t, exec.AgentNodeID, retrieved.AgentNodeID)
+			require.Equal(t, exec.NodeID, retrieved.NodeID)
 			require.Equal(t, exec.BotID, retrieved.BotID)
 		})
 	}
@@ -88,9 +87,8 @@ func TestStorageParity_UpdateExecutionRecord(t *testing.T) {
 	exec := &types.Execution{
 		ExecutionID: "exec-update-parity",
 		RunID:       "run-update-parity",
-		AgentNodeID: "agent-1",
+		NodeID:      "agent-1",
 		BotID:  "bot-1",
-		NodeID:      "node-1",
 		Status:      string(types.ExecutionStatusPending),
 		StartedAt:   time.Now().UTC(),
 	}
@@ -128,27 +126,24 @@ func TestStorageParity_QueryExecutionRecords(t *testing.T) {
 		{
 			ExecutionID: "exec-query-1",
 			RunID:       "run-query-1",
-			AgentNodeID: "agent-1",
+			NodeID:      "agent-1",
 			BotID:  "bot-1",
-			NodeID:      "node-1",
 			Status:      string(types.ExecutionStatusSucceeded),
 			StartedAt:   time.Now().UTC(),
 		},
 		{
 			ExecutionID: "exec-query-2",
 			RunID:       "run-query-1",
-			AgentNodeID: "agent-1",
+			NodeID:      "agent-1",
 			BotID:  "bot-2",
-			NodeID:      "node-2",
 			Status:      string(types.ExecutionStatusFailed),
 			StartedAt:   time.Now().UTC(),
 		},
 		{
 			ExecutionID: "exec-query-3",
 			RunID:       "run-query-2",
-			AgentNodeID: "agent-2",
+			NodeID:      "agent-2",
 			BotID:  "bot-1",
-			NodeID:      "node-3",
 			Status:      string(types.ExecutionStatusSucceeded),
 			StartedAt:   time.Now().UTC(),
 		},
@@ -165,9 +160,9 @@ func TestStorageParity_QueryExecutionRecords(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, results, 2)
 
-	// Query by agent_node_id
+	// Query by node_id
 	results, err = store.QueryExecutionRecords(ctx, types.ExecutionFilter{
-		AgentNodeID: stringPtr("agent-1"),
+		NodeID: stringPtr("agent-1"),
 	})
 	require.NoError(t, err)
 	require.Len(t, results, 2)
@@ -205,7 +200,7 @@ func TestStorageParity_StoreWorkflowExecution(t *testing.T) {
 		ExecutionID:         executionID,
 		AgentsRequestID: "req-1",
 		RunID:               &runID,
-		AgentNodeID:         "agent-1",
+		NodeID:         "agent-1",
 		BotID:          "bot-1",
 		Status:              string(types.ExecutionStatusPending),
 		StartedAt:           time.Now().UTC(),
@@ -234,9 +229,8 @@ func TestStorageParity_TransactionRollback(t *testing.T) {
 	exec := &types.Execution{
 		ExecutionID: "exec-rollback",
 		RunID:       "run-rollback",
-		AgentNodeID: "agent-1",
+		NodeID:      "agent-1",
 		BotID:  "bot-1",
-		NodeID:      "node-1",
 		Status:      string(types.ExecutionStatusPending),
 		StartedAt:   time.Now().UTC(),
 	}

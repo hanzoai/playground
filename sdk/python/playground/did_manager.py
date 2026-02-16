@@ -2,7 +2,7 @@
 DID Manager for Playground SDK
 
 Handles Decentralized Identity (DID) and Verifiable Credentials (VC) functionality
-for agent nodes, reasoners, and skills.
+for agent nodes, bots, and skills.
 """
 
 from typing import Dict, List, Optional, Any
@@ -32,7 +32,7 @@ class DIDIdentityPackage:
     """Complete DID identity package for an agent."""
 
     agent_did: DIDIdentity
-    reasoner_dids: Dict[str, DIDIdentity]
+    bot_dids: Dict[str, DIDIdentity]
     skill_dids: Dict[str, DIDIdentity]
     agents_server_id: str
 
@@ -84,14 +84,14 @@ class DIDManager:
             return {}
         return {"X-API-Key": self.api_key}
 
-    def register_agent(
-        self, reasoners: List[Dict[str, Any]], skills: List[Dict[str, Any]]
+    def register_bot(
+        self, bots: List[Dict[str, Any]], skills: List[Dict[str, Any]]
     ) -> bool:
         """
         Register agent with Playground Server and obtain DID identity package.
 
         Args:
-            reasoners: List of reasoner definitions
+            bots: List of bot definitions
             skills: List of skill definitions
 
         Returns:
@@ -100,13 +100,13 @@ class DIDManager:
         try:
             logger.debug(
                 f"DID registration for agent: {self.agent_node_id} "
-                f"({len(reasoners)} reasoners, {len(skills)} skills)"
+                f"({len(bots)} bots, {len(skills)} skills)"
             )
 
             # Prepare registration request
             registration_data = {
                 "agent_node_id": self.agent_node_id,
-                "reasoners": reasoners,
+                "bots": bots,
                 "skills": skills,
             }
 
@@ -199,7 +199,7 @@ class DIDManager:
             logger.error(f"Error creating execution context: {e}")
             return None
 
-    def get_agent_did(self) -> Optional[str]:
+    def get_bot_did(self) -> Optional[str]:
         """Get the agent node DID."""
         if self.identity_package:
             return self.identity_package.agent_did.did
@@ -207,7 +207,7 @@ class DIDManager:
 
     def get_function_did(self, function_name: str) -> Optional[str]:
         """
-        Get DID for a specific function (reasoner or skill).
+        Get DID for a specific function (bot or skill).
 
         Args:
             function_name: Name of the function
@@ -262,11 +262,11 @@ class DIDManager:
             "enabled": True,
             "agent_did": self.identity_package.agent_did.did,
             "agents_server_id": self.identity_package.agents_server_id,
-            "reasoner_count": len(self.identity_package.reasoner_dids),
+            "bot_count": len(self.identity_package.bot_dids),
             "skill_count": len(self.identity_package.skill_dids),
-            "reasoner_dids": {
+            "bot_dids": {
                 name: identity.did
-                for name, identity in self.identity_package.reasoner_dids.items()
+                for name, identity in self.identity_package.bot_dids.items()
             },
             "skill_dids": {
                 name: identity.did
@@ -289,16 +289,16 @@ class DIDManager:
             function_name=agent_data.get("function_name"),
         )
 
-        # Parse reasoner DIDs
-        reasoner_dids = {}
-        for name, reasoner_data in package_data["reasoner_dids"].items():
-            reasoner_dids[name] = DIDIdentity(
-                did=reasoner_data["did"],
-                private_key_jwk=reasoner_data["private_key_jwk"],
-                public_key_jwk=reasoner_data["public_key_jwk"],
-                derivation_path=reasoner_data["derivation_path"],
-                component_type=reasoner_data["component_type"],
-                function_name=reasoner_data.get("function_name"),
+        # Parse bot DIDs
+        bot_dids = {}
+        for name, bot_data in package_data["bot_dids"].items():
+            bot_dids[name] = DIDIdentity(
+                did=bot_data["did"],
+                private_key_jwk=bot_data["private_key_jwk"],
+                public_key_jwk=bot_data["public_key_jwk"],
+                derivation_path=bot_data["derivation_path"],
+                component_type=bot_data["component_type"],
+                function_name=bot_data.get("function_name"),
             )
 
         # Parse skill DIDs
@@ -315,7 +315,7 @@ class DIDManager:
 
         return DIDIdentityPackage(
             agent_did=agent_did,
-            reasoner_dids=reasoner_dids,
+            bot_dids=bot_dids,
             skill_dids=skill_dids,
             agents_server_id=package_data["agents_server_id"],
         )
@@ -325,9 +325,9 @@ class DIDManager:
         if not self.identity_package:
             return None
 
-        # Check reasoners
-        if function_name in self.identity_package.reasoner_dids:
-            return self.identity_package.reasoner_dids[function_name].did
+        # Check bots
+        if function_name in self.identity_package.bot_dids:
+            return self.identity_package.bot_dids[function_name].did
 
         # Check skills
         if function_name in self.identity_package.skill_dids:

@@ -43,13 +43,13 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 			return
 		}
 
-		agent, err := storageProvider.GetAgent(ctx, nodeID)
+		agent, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil || agent == nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
 
-		update := &types.AgentStatusUpdate{
+		update := &types.BotStatusUpdate{
 			Source: types.StatusSourceManual,
 		}
 
@@ -72,7 +72,7 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 		}
 
 		if statusManager != nil {
-			if err := statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+			if err := statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("failed to update agent status from lease handler")
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update status"})
 				return
@@ -80,7 +80,7 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 		}
 
 		now := time.Now().UTC()
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, nodeID, now); err != nil {
+		if err := storageProvider.UpdateNodeHeartbeat(ctx, nodeID, now); err != nil {
 			logger.Logger.Warn().Err(err).Str("node_id", nodeID).Msg("failed to persist heartbeat during status update")
 		}
 
@@ -129,7 +129,7 @@ func NodeActionAckHandler(storageProvider storage.StorageProvider, presenceManag
 			return
 		}
 
-		if _, err := storageProvider.GetAgent(ctx, nodeID); err != nil {
+		if _, err := storageProvider.GetNode(ctx, nodeID); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
@@ -142,7 +142,7 @@ func NodeActionAckHandler(storageProvider storage.StorageProvider, presenceManag
 			Msg("action acknowledgement received")
 
 		now := time.Now().UTC()
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, nodeID, now); err != nil {
+		if err := storageProvider.UpdateNodeHeartbeat(ctx, nodeID, now); err != nil {
 			logger.Logger.Warn().Err(err).Str("node_id", nodeID).Msg("failed to persist heartbeat during action ack")
 		}
 		if presenceManager != nil {
@@ -186,13 +186,13 @@ func ClaimActionsHandler(storageProvider storage.StorageProvider, presenceManage
 			payload.MaxItems = 1
 		}
 
-		if _, err := storageProvider.GetAgent(ctx, payload.NodeID); err != nil {
+		if _, err := storageProvider.GetNode(ctx, payload.NodeID); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
 
 		now := time.Now().UTC()
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, payload.NodeID, now); err != nil {
+		if err := storageProvider.UpdateNodeHeartbeat(ctx, payload.NodeID, now); err != nil {
 			logger.Logger.Warn().Err(err).Str("node_id", payload.NodeID).Msg("failed to persist heartbeat during claim")
 		}
 		if presenceManager != nil {
@@ -223,7 +223,7 @@ func NodeShutdownHandler(storageProvider storage.StorageProvider, statusManager 
 			return
 		}
 
-		if _, err := storageProvider.GetAgent(ctx, nodeID); err != nil {
+		if _, err := storageProvider.GetNode(ctx, nodeID); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
@@ -238,20 +238,20 @@ func NodeShutdownHandler(storageProvider storage.StorageProvider, statusManager 
 		if presenceManager != nil {
 			presenceManager.Forget(nodeID)
 		}
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, nodeID, now); err != nil {
+		if err := storageProvider.UpdateNodeHeartbeat(ctx, nodeID, now); err != nil {
 			logger.Logger.Warn().Err(err).Str("node_id", nodeID).Msg("failed to persist heartbeat during shutdown")
 		}
 
 		if statusManager != nil {
-			inactive := types.AgentStateStopping
-			lifecycle := types.AgentStatusOffline
-			update := &types.AgentStatusUpdate{
+			inactive := types.BotStateStopping
+			lifecycle := types.BotStatusOffline
+			update := &types.BotStatusUpdate{
 				State:           &inactive,
 				LifecycleStatus: &lifecycle,
 				Source:          types.StatusSourceManual,
 				Reason:          "agent shutdown",
 			}
-			if err := statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+			if err := statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("failed to update status during shutdown")
 			}
 		}
@@ -264,27 +264,27 @@ func NodeShutdownHandler(storageProvider storage.StorageProvider, statusManager 
 	}
 }
 
-func normalizePhase(phase string) (*types.AgentState, *types.AgentLifecycleStatus, error) {
+func normalizePhase(phase string) (*types.BotState, *types.BotLifecycleStatus, error) {
 	if phase == "" {
 		return nil, nil, nil
 	}
 
 	switch strings.ToLower(strings.TrimSpace(phase)) {
 	case "starting":
-		state := types.AgentStateStarting
-		lifecycle := types.AgentStatusStarting
+		state := types.BotStateStarting
+		lifecycle := types.BotStatusStarting
 		return &state, &lifecycle, nil
 	case "ready":
-		state := types.AgentStateActive
-		lifecycle := types.AgentStatusReady
+		state := types.BotStateActive
+		lifecycle := types.BotStatusReady
 		return &state, &lifecycle, nil
 	case "degraded":
-		state := types.AgentStateActive
-		lifecycle := types.AgentStatusDegraded
+		state := types.BotStateActive
+		lifecycle := types.BotStatusDegraded
 		return &state, &lifecycle, nil
 	case "offline":
-		state := types.AgentStateInactive
-		lifecycle := types.AgentStatusOffline
+		state := types.BotStateInactive
+		lifecycle := types.BotStatusOffline
 		return &state, &lifecycle, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported phase: %s", phase)

@@ -1,4 +1,4 @@
-import type { ReasonerDefinition, ReasonerHandler, ReasonerOptions } from '../types/reasoner.js';
+import type { BotDefinition, BotHandler, BotOptions } from '../types/bot.js';
 import type { SkillDefinition, SkillHandler, SkillOptions } from '../types/skill.js';
 
 export interface AgentRouterOptions {
@@ -9,7 +9,7 @@ export interface AgentRouterOptions {
 export class AgentRouter {
   readonly prefix?: string;
   readonly tags?: string[];
-  readonly reasoners: ReasonerDefinition[] = [];
+  readonly bots: BotDefinition[] = [];
   readonly skills: SkillDefinition[] = [];
 
   constructor(options: AgentRouterOptions = {}) {
@@ -17,13 +17,13 @@ export class AgentRouter {
     this.tags = options.tags;
   }
 
-  reasoner<TInput = any, TOutput = any>(
+  bot<TInput = any, TOutput = any>(
     name: string,
-    handler: ReasonerHandler<TInput, TOutput>,
-    options?: ReasonerOptions
+    handler: BotHandler<TInput, TOutput>,
+    options?: BotOptions
   ) {
     const fullName = this.prefix ? `${sanitize(this.prefix)}_${name}` : name;
-    this.reasoners.push({ name: fullName, handler, options });
+    this.bots.push({ name: fullName, handler, options });
     return this;
   }
 

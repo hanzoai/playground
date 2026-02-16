@@ -21,15 +21,15 @@ var (
 // NewLogsCommand creates the logs command
 func NewLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "logs <agent-node-name>",
-		Short: "View logs for a Agents agent node",
-		Long: `Display logs for an installed Agents agent node package.
+		Use:   "logs <bot-name>",
+		Short: "View logs for a bot",
+		Long: `Display logs for an installed bot package.
 
-Shows the most recent log entries from the agent node's log file.
+Shows the most recent log entries from the bot's log file.
 
 Examples:
-  af logs email-helper
-  af logs data-analyzer --follow`,
+  playground logs email-helper
+  playground logs data-analyzer --follow`,
 		Args: cobra.ExactArgs(1),
 		RunE: runLogsCommand,
 	}
@@ -41,7 +41,7 @@ Examples:
 }
 
 func runLogsCommand(cmd *cobra.Command, args []string) error {
-	agentNodeName := args[0]
+	nodeName := args[0]
 
 	logViewer := &LogViewer{
 		AgentsHome: getAgentsHomeDir(),
@@ -49,7 +49,7 @@ func runLogsCommand(cmd *cobra.Command, args []string) error {
 		Tail:           logsTail,
 	}
 
-	if err := logViewer.ViewLogs(agentNodeName); err != nil {
+	if err := logViewer.ViewLogs(nodeName); err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to view logs")
 		return fmt.Errorf("failed to view logs: %w", err)
 	}
@@ -57,15 +57,15 @@ func runLogsCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// LogViewer handles viewing agent node logs
+// LogViewer handles viewing hanzo node logs
 type LogViewer struct {
 	AgentsHome string
 	Follow         bool
 	Tail           int
 }
 
-// ViewLogs displays logs for an agent node
-func (lv *LogViewer) ViewLogs(agentNodeName string) error {
+// ViewLogs displays logs for an hanzo node
+func (lv *LogViewer) ViewLogs(nodeName string) error {
 	// Load registry to get log file path
 	registryPath := filepath.Join(lv.AgentsHome, "installed.yaml")
 	registry := &packages.InstallationRegistry{
@@ -80,19 +80,19 @@ func (lv *LogViewer) ViewLogs(agentNodeName string) error {
 		return fmt.Errorf("failed to read registry: %w", err)
 	}
 
-	agentNode, exists := registry.Installed[agentNodeName]
+	node, exists := registry.Installed[nodeName]
 	if !exists {
-		return fmt.Errorf("agent node %s not installed", agentNodeName)
+		return fmt.Errorf("hanzo node %s not installed", nodeName)
 	}
 
-	logFile := agentNode.Runtime.LogFile
+	logFile := node.Runtime.LogFile
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
-		logger.Logger.Info().Msgf("📝 No logs found for %s", agentNodeName)
-		logger.Logger.Info().Msg("💡 Logs will appear here when the agent node is running")
+		logger.Logger.Info().Msgf("📝 No logs found for %s", nodeName)
+		logger.Logger.Info().Msg("💡 Logs will appear here when the hanzo node is running")
 		return nil
 	}
 
-	logger.Logger.Info().Msgf("📝 Logs for %s:", agentNodeName)
+	logger.Logger.Info().Msgf("📝 Logs for %s:", nodeName)
 	logger.Logger.Info().Msgf("📁 %s\n", logFile)
 
 	if lv.Follow {

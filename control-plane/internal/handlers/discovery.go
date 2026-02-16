@@ -19,9 +19,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// AgentLister is the minimal dependency required for discovery.
-type AgentLister interface {
-	ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error)
+// NodeLister is the minimal dependency required for discovery.
+type NodeLister interface {
+	ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error)
 }
 
 // DiscoveryFilters captures query parameters for capability discovery.
@@ -68,18 +68,18 @@ type DiscoveryResponse struct {
 	TotalBots int                 `json:"total_bots"`
 	TotalSkills    int                 `json:"total_skills"`
 	Pagination     DiscoveryPagination `json:"pagination"`
-	Capabilities   []AgentCapability   `json:"capabilities"`
+	Capabilities   []NodeCapability   `json:"capabilities"`
 }
 
-// AgentCapability describes a single agent and its bots/skills.
-type AgentCapability struct {
+// NodeCapability describes a single node and its bots/skills.
+type NodeCapability struct {
 	AgentID        string               `json:"agent_id"`
 	BaseURL        string               `json:"base_url"`
 	Version        string               `json:"version"`
 	HealthStatus   string               `json:"health_status"`
 	DeploymentType string               `json:"deployment_type"`
 	LastHeartbeat  time.Time            `json:"last_heartbeat"`
-	Bots      []BotCapability `json:"bots"`
+	Bots           []BotCapability      `json:"bots"`
 	Skills         []SkillCapability    `json:"skills"`
 }
 
@@ -119,7 +119,7 @@ type CompactCapability struct {
 }
 
 var (
-	agentCache     []*types.AgentNode
+	agentCache     []*types.Node
 	agentCacheLock sync.RWMutex
 	agentCacheTime time.Time
 	agentCacheTTL  = 30 * time.Second
@@ -127,24 +127,24 @@ var (
 
 var (
 	discoveryRequestCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "agents_discovery_requests_total",
+		Name: "playground_discovery_requests_total",
 		Help: "Total number of discovery requests processed by the control plane.",
 	}, []string{"format", "status"})
 	discoveryRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "agents_discovery_request_duration_seconds",
+		Name:    "playground_discovery_request_duration_seconds",
 		Help:    "Latency distribution for discovery responses.",
 		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2},
 	}, []string{"format"})
 	discoveryCacheHits = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "agents_discovery_cache_hits_total",
+		Name: "playground_discovery_cache_hits_total",
 		Help: "Count of discovery cache hits within the TTL window.",
 	})
 	discoveryCacheMisses = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "agents_discovery_cache_misses_total",
+		Name: "playground_discovery_cache_misses_total",
 		Help: "Count of discovery cache refreshes due to TTL expiry or cold starts.",
 	})
 	discoveryFilterUsage = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "agents_discovery_filter_usage_total",
+		Name: "playground_discovery_filter_usage_total",
 		Help: "Usage count for discovery filters.",
 	}, []string{"filter_type"})
 )
@@ -157,7 +157,7 @@ func InvalidateDiscoveryCache() {
 	agentCacheTime = time.Time{}
 }
 
-func getCachedAgents(ctx context.Context, storageProvider AgentLister) ([]*types.AgentNode, bool, error) {
+func getCachedAgents(ctx context.Context, storageProvider NodeLister) ([]*types.Node, bool, error) {
 	agentCacheLock.RLock()
 	if time.Since(agentCacheTime) < agentCacheTTL && agentCache != nil {
 		defer agentCacheLock.RUnlock()
@@ -167,7 +167,7 @@ func getCachedAgents(ctx context.Context, storageProvider AgentLister) ([]*types
 	}
 	agentCacheLock.RUnlock()
 
-	agents, err := storageProvider.ListAgents(ctx, types.AgentFilters{})
+	agents, err := storageProvider.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		return nil, false, err
 	}
@@ -184,7 +184,7 @@ func getCachedAgents(ctx context.Context, storageProvider AgentLister) ([]*types
 }
 
 // DiscoveryCapabilitiesHandler exposes the discovery endpoint.
-func DiscoveryCapabilitiesHandler(storageProvider AgentLister) gin.HandlerFunc {
+func DiscoveryCapabilitiesHandler(storageProvider NodeLister) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		requestFormat := normalizeDiscoveryFormat(strings.ToLower(strings.TrimSpace(c.DefaultQuery("format", "json"))))
@@ -462,14 +462,14 @@ func optionalString(value string) *string {
 	return &v
 }
 
-func buildDiscoveryResponse(agents []*types.AgentNode, filters DiscoveryFilters) DiscoveryResponse {
+func buildDiscoveryResponse(agents []*types.Node, filters DiscoveryFilters) DiscoveryResponse {
 	allowedAgents := make(map[string]struct{})
 	for _, id := range filters.AgentIDs {
 		allowedAgents[id] = struct{}{}
 	}
 
 	var (
-		matchedCapabilities []AgentCapability
+		matchedCapabilities []NodeCapability
 		totalBots      int
 		totalSkills         int
 	)
@@ -485,7 +485,7 @@ func buildDiscoveryResponse(agents []*types.AgentNode, filters DiscoveryFilters)
 			continue
 		}
 
-		capability := AgentCapability{
+		capability := NodeCapability{
 			AgentID:        agent.ID,
 			BaseURL:        agent.BaseURL,
 			Version:        agent.Version,
@@ -593,7 +593,7 @@ func decodeSchema(raw json.RawMessage) map[string]interface{} {
 	return schema
 }
 
-func extractDescription(metadata types.AgentMetadata, id string) *string {
+func extractDescription(metadata types.BotMetadata, id string) *string {
 	if metadata.Custom == nil {
 		return nil
 	}
@@ -609,7 +609,7 @@ func extractDescription(metadata types.AgentMetadata, id string) *string {
 	return nil
 }
 
-func extractExamples(metadata types.AgentMetadata, id string) []map[string]interface{} {
+func extractExamples(metadata types.BotMetadata, id string) []map[string]interface{} {
 	if metadata.Custom == nil {
 		return nil
 	}

@@ -72,6 +72,102 @@ export function teamProvision(params: TeamProvisionParams): Promise<TeamProvisio
 }
 
 // ---------------------------------------------------------------------------
+// Cloud Provisioning (full cloud nodes on DOKS)
+// ---------------------------------------------------------------------------
+
+export interface CloudProvisionParams {
+  node_id?: string;
+  display_name: string;
+  model: string;
+  image?: string;
+  workspace?: string;
+  env?: Record<string, string>;
+  labels?: Record<string, string>;
+  cpu?: string;
+  memory?: string;
+}
+
+export interface CloudProvisionResult {
+  node_id: string;
+  pod_name: string;
+  namespace: string;
+  node_type: 'local' | 'cloud';
+  status: string;
+  endpoint?: string;
+  created_at: string;
+}
+
+export interface CloudNode {
+  node_id: string;
+  pod_name: string;
+  namespace: string;
+  node_type: 'local' | 'cloud';
+  status: string;
+  image: string;
+  endpoint: string;
+  owner: string;
+  org: string;
+  labels: Record<string, string>;
+  created_at: string;
+  last_seen: string;
+}
+
+/** Provision a full cloud hanzo node on DOKS. */
+export async function cloudProvision(params: CloudProvisionParams): Promise<CloudProvisionResult> {
+  const resp = await fetch('/api/v1/cloud/nodes/provision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!resp.ok) throw new Error(`cloud provision failed: ${resp.status}`);
+  return resp.json();
+}
+
+/** Deprovision a cloud hanzo node. */
+export async function cloudDeprovision(nodeId: string): Promise<void> {
+  const resp = await fetch(`/api/v1/cloud/nodes/${nodeId}`, { method: 'DELETE' });
+  if (!resp.ok) throw new Error(`cloud deprovision failed: ${resp.status}`);
+}
+
+/** List all cloud nodes (optionally filtered by org). */
+export async function cloudListNodes(org?: string): Promise<{ nodes: CloudNode[]; count: number }> {
+  const url = org ? `/api/v1/cloud/nodes?org=${org}` : '/api/v1/cloud/nodes';
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`cloud list failed: ${resp.status}`);
+  return resp.json();
+}
+
+/** Get a specific cloud node. */
+export async function cloudGetNode(nodeId: string): Promise<CloudNode> {
+  const resp = await fetch(`/api/v1/cloud/nodes/${nodeId}`);
+  if (!resp.ok) throw new Error(`cloud get node failed: ${resp.status}`);
+  return resp.json();
+}
+
+/** Get logs for a cloud node. */
+export async function cloudGetLogs(nodeId: string, tail = 100): Promise<{ node_id: string; logs: string }> {
+  const resp = await fetch(`/api/v1/cloud/nodes/${nodeId}/logs?tail=${tail}`);
+  if (!resp.ok) throw new Error(`cloud logs failed: ${resp.status}`);
+  return resp.json();
+}
+
+/** Provision an entire team of cloud agents. */
+export async function cloudTeamProvision(teamName: string, agents: CloudProvisionParams[], workspace?: string): Promise<{
+  team_name: string;
+  agents: CloudProvisionResult[];
+  errors: string[];
+  count: number;
+}> {
+  const resp = await fetch('/api/v1/cloud/teams/provision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ team_name: teamName, agents, workspace }),
+  });
+  if (!resp.ok) throw new Error(`team provision failed: ${resp.status}`);
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------
 

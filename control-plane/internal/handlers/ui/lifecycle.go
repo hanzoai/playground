@@ -17,21 +17,21 @@ import (
 // LifecycleHandler provides handlers for agent lifecycle management operations.
 type LifecycleHandler struct {
 	storage      storage.StorageProvider
-	agentService interfaces.AgentService
+	botService interfaces.BotService
 }
 
 // NewLifecycleHandler creates a new LifecycleHandler.
-func NewLifecycleHandler(storage storage.StorageProvider, agentService interfaces.AgentService) *LifecycleHandler {
+func NewLifecycleHandler(storage storage.StorageProvider, botService interfaces.BotService) *LifecycleHandler {
 	return &LifecycleHandler{
-		storage:      storage,
-		agentService: agentService,
+		storage:    storage,
+		botService: botService,
 	}
 }
 
 // getAgentBaseURL attempts to get the stored base_url for an agent, falling back to localhost construction
 func (h *LifecycleHandler) getAgentBaseURL(ctx context.Context, agentID string, port int) string {
 	// First try to get the registered agent's base_url from storage
-	if registeredAgent, err := h.storage.GetAgent(ctx, agentID); err == nil && registeredAgent != nil && registeredAgent.BaseURL != "" {
+	if registeredAgent, err := h.storage.GetNode(ctx, agentID); err == nil && registeredAgent != nil && registeredAgent.BaseURL != "" {
 		return registeredAgent.BaseURL
 	}
 
@@ -90,8 +90,8 @@ func (h *LifecycleHandler) StartAgentHandler(c *gin.Context) {
 	}
 
 	// Start the agent using the agent service
-	// The AgentService will handle validation of agent existence and configuration
-	runningAgent, err := h.agentService.RunAgent(agentID, runOptions)
+	// The BotService will handle validation of agent existence and configuration
+	runningAgent, err := h.botService.RunAgent(agentID, runOptions)
 	if err != nil {
 		// Check if it's a "not found" error and return appropriate status
 		if strings.Contains(err.Error(), "not installed") || strings.Contains(err.Error(), "not found") {
@@ -127,7 +127,7 @@ func (h *LifecycleHandler) StopAgentHandler(c *gin.Context) {
 	}
 
 	// Get current agent status
-	agentStatus, err := h.agentService.GetAgentStatus(agentID)
+	agentStatus, err := h.botService.GetBotStatus(agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "agent not found or not installed"})
 		return
@@ -143,7 +143,7 @@ func (h *LifecycleHandler) StopAgentHandler(c *gin.Context) {
 	}
 
 	// Stop the agent using the agent service
-	if err := h.agentService.StopAgent(agentID); err != nil {
+	if err := h.botService.StopAgent(agentID); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to stop agent: " + err.Error()})
 		return
 	}
@@ -158,9 +158,9 @@ func (h *LifecycleHandler) StopAgentHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetAgentStatusHandler handles requests for getting agent status
+// GetBotStatusHandler handles requests for getting agent status
 // GET /api/ui/v1/agents/:agentId/status
-func (h *LifecycleHandler) GetAgentStatusHandler(c *gin.Context) {
+func (h *LifecycleHandler) GetBotStatusHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	agentID := c.Param("agentId")
 	if agentID == "" {
@@ -169,14 +169,14 @@ func (h *LifecycleHandler) GetAgentStatusHandler(c *gin.Context) {
 	}
 
 	// Check if agent package exists
-	agentPackage, err := h.storage.GetAgentPackage(ctx, agentID)
+	agentPackage, err := h.storage.GetBotPackage(ctx, agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "agent package not found"})
 		return
 	}
 
 	// Get agent status from service
-	agentStatus, err := h.agentService.GetAgentStatus(agentID)
+	agentStatus, err := h.botService.GetBotStatus(agentID)
 	if err != nil {
 		// Agent not installed, return basic status
 		response := map[string]interface{}{
@@ -195,7 +195,7 @@ func (h *LifecycleHandler) GetAgentStatusHandler(c *gin.Context) {
 	var configurationRequired bool
 	if len(agentPackage.ConfigurationSchema) > 0 {
 		configurationRequired = true
-		config, err := h.storage.GetAgentConfiguration(ctx, agentID, agentID)
+		config, err := h.storage.GetBotConfiguration(ctx, agentID, agentID)
 		configurationStatus = getConfigurationStatus(config)
 		if err != nil {
 			configurationStatus = "not_configured"
@@ -210,7 +210,7 @@ func (h *LifecycleHandler) GetAgentStatusHandler(c *gin.Context) {
 		"agent_id":               agentID,
 		"name":                   agentStatus.Name,
 		"is_running":             agentStatus.IsRunning,
-		"status":                 getAgentLifecycleStatus(agentStatus, configurationStatus, configurationRequired),
+		"status":                 getBotLifecycleStatus(agentStatus, configurationStatus, configurationRequired),
 		"pid":                    agentStatus.PID,
 		"port":                   agentStatus.Port,
 		"uptime":                 agentStatus.Uptime,
@@ -232,7 +232,7 @@ func (h *LifecycleHandler) GetAgentStatusHandler(c *gin.Context) {
 func (h *LifecycleHandler) ListRunningAgentsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	// Get all running agents from service
-	runningAgents, err := h.agentService.ListRunningAgents()
+	runningAgents, err := h.botService.ListRunningAgents()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to list running agents: " + err.Error()})
 		return
@@ -242,7 +242,7 @@ func (h *LifecycleHandler) ListRunningAgentsHandler(c *gin.Context) {
 	agents := make([]map[string]interface{}, 0) // Initialize with an empty slice
 	for _, agent := range runningAgents {
 		// Get package info for additional metadata
-		agentPackage, err := h.storage.GetAgentPackage(ctx, agent.Name)
+		agentPackage, err := h.storage.GetBotPackage(ctx, agent.Name)
 		var packageInfo map[string]interface{}
 		if err == nil {
 			packageInfo = map[string]interface{}{
@@ -281,7 +281,7 @@ func (h *LifecycleHandler) ListRunningAgentsHandler(c *gin.Context) {
 }
 
 // Helper function to determine configuration status
-func getConfigurationStatus(config *types.AgentConfiguration) string {
+func getConfigurationStatus(config *types.BotConfiguration) string {
 	if config == nil {
 		return "not_configured"
 	}
@@ -306,7 +306,7 @@ func (h *LifecycleHandler) ReconcileAgentHandler(c *gin.Context) {
 	}
 
 	// Get current status which will trigger reconciliation
-	status, err := h.agentService.GetAgentStatus(agentID)
+	status, err := h.botService.GetBotStatus(agentID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not installed") || strings.Contains(err.Error(), "not found") {
 			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
@@ -332,7 +332,7 @@ func (h *LifecycleHandler) ReconcileAgentHandler(c *gin.Context) {
 }
 
 // Helper function to determine overall agent lifecycle status
-func getAgentLifecycleStatus(agentStatus *domain.AgentStatus, configStatus string, configRequired bool) string {
+func getBotLifecycleStatus(agentStatus *domain.BotStatus, configStatus string, configRequired bool) string {
 	if agentStatus.IsRunning {
 		return "running"
 	}

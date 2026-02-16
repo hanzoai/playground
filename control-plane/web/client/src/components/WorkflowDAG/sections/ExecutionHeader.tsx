@@ -9,7 +9,7 @@ import { normalizeExecutionStatus, getStatusLabel } from "../../../utils/status"
 interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -107,7 +107,7 @@ export function ExecutionHeader({
                 className="text-muted-foreground flex-shrink-0"
               />
               <span className="text-body-small truncate">
-                {node.agent_name || node.agent_node_id}
+                {node.agent_name || node.node_id}
               </span>
             </div>
 

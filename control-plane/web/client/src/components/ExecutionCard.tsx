@@ -131,7 +131,7 @@ export function ExecutionCard({ execution, onViewDetails, compact = false }: Exe
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <div className="text-muted-foreground">Agent</div>
-              <div className="font-medium">{execution.agent_node_id}</div>
+              <div className="font-medium">{execution.node_id}</div>
             </div>
             <div>
               <div className="text-muted-foreground">Bot</div>

@@ -214,7 +214,7 @@ export function WorkflowDeckGLTestPage() {
                   <span className="uppercase tracking-wide text-slate-400">
                     Agent
                   </span>
-                  <span>{hoveredNode.agent_node_id ?? "—"}</span>
+                  <span>{hoveredNode.node_id ?? "—"}</span>
                   <span className="uppercase tracking-wide text-slate-400">
                     Status
                   </span>

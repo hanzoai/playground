@@ -36,8 +36,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-postgres" (include "playground.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "playground.demoAgent.fullname" -}}
-{{- printf "%s-demo-agent" (include "playground.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- define "playground.demoBot.fullname" -}}
+{{- printf "%s-demo-bot" (include "playground.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "playground.controlPlane.grpcPort" -}}

@@ -35,27 +35,42 @@ type Config struct {
 	SiteName string
 }
 
+// envOr reads the first non-empty value from the given env var names.
+func envOr(keys ...string) string {
+	for _, k := range keys {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // DefaultConfig returns a Config with sensible defaults.
-// It reads from environment variables:
-// - OPENAI_API_KEY or OPENROUTER_API_KEY
-// - AI_BASE_URL (defaults to OpenAI)
-// - AI_MODEL (defaults to gpt-4o)
+// It reads from environment variables (HANZO_ prefix preferred, with fallback):
+//   - HANZO_API_KEY / OPENAI_API_KEY / OPENROUTER_API_KEY
+//   - HANZO_AI_BASE_URL / AI_BASE_URL (defaults to OpenAI)
+//   - HANZO_AI_MODEL / AI_MODEL (defaults to gpt-4o)
 func DefaultConfig() *Config {
-	apiKey := os.Getenv("OPENAI_API_KEY")
+	// HANZO_API_KEY takes highest priority.
+	apiKey := os.Getenv("HANZO_API_KEY")
 	baseURL := "https://api.openai.com/v1"
 
-	// Check for OpenRouter configuration
+	if apiKey == "" {
+		apiKey = os.Getenv("OPENAI_API_KEY")
+	}
+
+	// Check for OpenRouter configuration -- takes precedence over plain OPENAI_API_KEY.
 	if routerKey := os.Getenv("OPENROUTER_API_KEY"); routerKey != "" {
 		apiKey = routerKey
 		baseURL = "https://openrouter.ai/api/v1"
 	}
 
-	// Allow override via AI_BASE_URL
-	if customURL := os.Getenv("AI_BASE_URL"); customURL != "" {
+	// Allow override via HANZO_AI_BASE_URL or AI_BASE_URL.
+	if customURL := envOr("HANZO_AI_BASE_URL", "AI_BASE_URL"); customURL != "" {
 		baseURL = customURL
 	}
 
-	model := os.Getenv("AI_MODEL")
+	model := envOr("HANZO_AI_MODEL", "AI_MODEL")
 	if model == "" {
 		model = "gpt-4o"
 	}

@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Playground is a Kubernetes-style control plane for AI agents. It provides production infrastructure for deploying, orchestrating, and observing multi-agent systems with cryptographic identity and audit trails.
+Playground is a Kubernetes-style control plane for AI bots. It provides production infrastructure for deploying, orchestrating, and observing multi-bot systems with cryptographic identity and audit trails.
 
 **Architecture:** Three-tier monorepo
 - **Control Plane** (Go): Orchestration server providing REST/gRPC APIs, workflow execution, observability, and cryptographic identity
-- **SDKs** (Python & Go): Libraries for building agents that communicate with the control plane
-- **Web UI** (React/TypeScript): Embedded admin interface for monitoring workflows and managing agents
+- **SDKs** (Python & Go): Libraries for building bots that communicate with the control plane
+- **Web UI** (React/TypeScript): Embedded admin interface for monitoring workflows and managing bots
 
 ## Development Setup
 
@@ -36,7 +36,7 @@ make build
 **Local mode** (uses SQLite + BoltDB, no external dependencies):
 ```bash
 cd control-plane
-go run ./cmd/af dev
+go run ./cmd/playground dev
 # Or: go run ./cmd/playground-server
 ```
 
@@ -44,12 +44,12 @@ go run ./cmd/af dev
 ```bash
 # Run migrations first
 cd control-plane
-export AGENTS_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
-goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
+export PLAYGROUND_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
+goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" up
 
 # Start server
-AGENTS_STORAGE_MODE=postgresql \
-AGENTS_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable" \
+PLAYGROUND_STORAGE_MODE=postgresql \
+PLAYGROUND_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable" \
 go run ./cmd/playground-server
 ```
 
@@ -103,13 +103,13 @@ cd sdk/python && ruff format .
 ### Database Migrations
 ```bash
 cd control-plane
-export AGENTS_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
+export PLAYGROUND_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
 
 # Check migration status
-goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" status
+goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" status
 
 # Apply all pending migrations
-goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
+goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" up
 
 # Create new migration
 goose -dir ./migrations create <migration_name> sql
@@ -140,7 +140,7 @@ The UI dev server proxies API requests to the control plane. In production, the 
 - `cli/` - CLI command definitions and routing
 - `server/` - HTTP server setup (Gin framework), middleware, routing
 - `handlers/` - HTTP request handlers for REST/gRPC endpoints
-- `services/` - Business logic layer (workflow execution, agent registry, DID/VC generation)
+- `services/` - Business logic layer (workflow execution, bot registry, DID/VC generation)
 - `storage/` - Data persistence layer with multiple backends (local SQLite/BoltDB, PostgreSQL, cloud)
 - `events/` - Event bus for workflow notifications and SSE streaming
 - `core/` - Domain models and interfaces
@@ -149,16 +149,16 @@ The UI dev server proxies API requests to the control plane. In production, the 
 - `mcp/` - Model Context Protocol integration
 - `logger/` - Structured logging (zerolog)
 - `config/` - Configuration management (Viper)
-- `templates/` - Code generation templates for `af init`
+- `templates/` - Code generation templates for `playground init`
 - `utils/` - Shared utilities
 - `encryption/` - Cryptographic primitives for DID/VC
 - `packages/` - Shared internal packages
 - `embedded/` - Embedded assets (web UI dist)
 
 **Configuration:**
-- Environment variables take precedence over `config/agents.yaml`
+- Environment variables take precedence over `config/playground.yaml`
 - See `control-plane/.env.example` for all options
-- Key modes: `AGENTS_MODE=local` (SQLite/BoltDB) vs `AGENTS_STORAGE_MODE=postgresql` (cloud)
+- Key modes: `PLAYGROUND_MODE=local` (SQLite/BoltDB) vs `PLAYGROUND_STORAGE_MODE=postgresql` (cloud)
 
 **Database Schema:**
 - `migrations/` - SQL migrations managed by Goose
@@ -167,15 +167,15 @@ The UI dev server proxies API requests to the control plane. In production, the 
 ### SDK Structure
 
 **Python SDK (`sdk/python/playground/`):**
-- Built on FastAPI/Uvicorn for agent HTTP servers
-- Key modules: `Agent`, `agent_field_handler`, `client`, `execution_context`, `memory`, `ai`
-- Agents register "reasoners" (decorated functions) that become REST endpoints
+- Built on FastAPI/Uvicorn for bot HTTP servers
+- Key modules: `Bot`, `bot_field_handler`, `client`, `execution_context`, `memory`, `ai`
+- Bots register "reasoners" (decorated functions) that become REST endpoints
 - Test with: `pytest` (see `pyproject.toml` for test markers: unit, functional, integration)
 - Install locally: `pip install -e .[dev]`
 
 **Go SDK (`sdk/go/`):**
-- Modules: `agent/` (agent builder), `client/` (HTTP client), `types/` (shared types), `ai/` (LLM helpers)
-- Agents register "skills" (functions) similar to Python SDK
+- Modules: `bot/` (bot builder), `client/` (HTTP client), `types/` (shared types), `ai/` (LLM helpers)
+- Bots register "skills" (functions) similar to Python SDK
 - Test with: `go test ./...`
 
 ### Web UI (`control-plane/web/client/`)
@@ -186,29 +186,29 @@ The UI dev server proxies API requests to the control plane. In production, the 
 
 ## Key Workflows
 
-### Creating a New Agent (Python)
+### Creating a New Bot (Python)
 ```bash
-# Generate agent scaffold (run from repo root or any directory)
-af init my-agent
-cd my-agent
+# Generate bot scaffold (run from repo root or any directory)
+playground init my-bot
+cd my-bot
 
-# Edit agent code (auto-generated template)
-# Run agent locally (connects to control plane at AGENTS_SERVER env var or --server flag)
-af run
+# Edit bot code (auto-generated template)
+# Run bot locally (connects to control plane at PLAYGROUND_SERVER env var or --server flag)
+playground run
 ```
 
-### Creating a New Agent (Go)
+### Creating a New Bot (Go)
 ```go
-import playgroundagent "github.com/hanzoai/playground/sdk/go/agent"
+import playgroundbot "github.com/hanzoai/playground/sdk/go/bot"
 
-agent, _ := playgroundagent.New(playgroundagent.Config{
-    NodeID:   "my-agent",
+bot, _ := playgroundbot.New(playgroundbot.Config{
+    NodeID:   "my-bot",
     PlaygroundURL: "http://localhost:8080",
 })
-agent.RegisterSkill("greet", func(ctx context.Context, input map[string]any) (any, error) {
+bot.RegisterSkill("greet", func(ctx context.Context, input map[string]any) (any, error) {
     return map[string]any{"message": "hello"}, nil
 })
-agent.Run(context.Background())
+bot.Run(context.Background())
 ```
 
 ### Adding a New Control Plane Endpoint
@@ -249,27 +249,27 @@ Storage interface is unified—services call storage layer methods, storage laye
 
 ### Configuration Precedence
 1. Environment variables (highest priority)
-2. Config file (`config/agents.yaml` or `AGENTS_CONFIG_FILE` path)
+2. Config file (`config/playground.yaml` or `PLAYGROUND_CONFIG_FILE` path)
 3. Defaults in code
 
-### Agent-to-Agent Communication
-- Agents call each other via control plane: `await agent.call("other-agent.function", input={...})`
+### Bot-to-Bot Communication
+- Bots call each other via control plane: `await bot.call("other-bot.function", input={...})`
 - Control plane routes requests, tracks workflow DAG, injects metrics
-- Never direct agent-to-agent HTTP—always through control plane
+- Never direct bot-to-bot HTTP—always through control plane
 
 ### Memory Scopes
-- **Global:** Shared across all agents/sessions
-- **Agent:** Scoped to one agent, all sessions
+- **Global:** Shared across all bots/sessions
+- **Bot:** Scoped to one bot, all sessions
 - **Session:** Scoped to one session (multi-turn conversation)
 - **Run:** Scoped to single execution/workflow run
 
-Automatically synced by control plane. Agents access via SDK methods: `agent.memory.get/set(scope, key, value)`
+Automatically synced by control plane. Bots access via SDK methods: `bot.memory.get/set(scope, key, value)`
 
 ### DID/VC (Cryptographic Identity)
-- Opt-in per agent: Set `app.vc_generator.set_enabled(True)` in Python or equivalent in Go
+- Opt-in per bot: Set `app.vc_generator.set_enabled(True)` in Python or equivalent in Go
 - Control plane generates W3C Verifiable Credentials for each execution
 - Export audit trails: `GET /api/v1/did/workflow/{workflow_id}/vc-chain`
-- Verify offline: `af verify audit.json`
+- Verify offline: `playground verify audit.json`
 
 ## Module Naming
 
@@ -290,23 +290,23 @@ Releases are automated via `.github/workflows/release.yml` and `.goreleaser.yml`
 
 ## Debugging Tips
 
-- **Control plane not starting:** Check `AGENTS_DATABASE_URL` is set correctly (PostgreSQL mode) or ensure SQLite file path is writable (local mode)
+- **Control plane not starting:** Check `PLAYGROUND_DATABASE_URL` is set correctly (PostgreSQL mode) or ensure SQLite file path is writable (local mode)
 - **Migrations failing:** Ensure PostgreSQL is running and connection string is correct. Check migration status with `goose status`
-- **Agent can't connect:** Verify `AGENTS_SERVER` env var points to control plane (default: `http://localhost:8080`)
+- **Bot can't connect:** Verify `PLAYGROUND_URL` env var points to control plane (default: `http://localhost:8080`)
 - **UI not loading:** In dev, ensure both Vite dev server (`npm run dev`) and control plane server are running. In prod, ensure `make build` was run to embed UI in binary
-- **Agent execution stuck:** Check workflow DAG in UI (`/ui/workflows`) for errors. Check agent logs for exceptions.
-- **Database connection pool exhausted:** Increase `AGENTS_STORAGE_POSTGRES_MAX_CONNECTIONS` in config
+- **Bot execution stuck:** Check workflow DAG in UI (`/ui/workflows`) for errors. Check bot logs for exceptions.
+- **Database connection pool exhausted:** Increase `PLAYGROUND_STORAGE_POSTGRES_MAX_CONNECTIONS` in config
 
 ## Environment Variables Reference
 
 See `control-plane/.env.example` for comprehensive list. Key vars:
-- `AGENTS_PORT` - HTTP server port (default: 8080)
-- `AGENTS_MODE` - `local` or `cloud`
-- `AGENTS_STORAGE_MODE` - `local`, `postgresql`, or `cloud`
-- `AGENTS_DATABASE_URL` - PostgreSQL connection string
-- `AGENTS_UI_ENABLED` - Enable/disable web UI
-- `AGENTS_UI_MODE` - `embedded` (production) or `development` (Vite proxy)
-- `AGENTS_CONFIG_FILE` - Path to config YAML
+- `PLAYGROUND_PORT` - HTTP server port (default: 8080)
+- `PLAYGROUND_MODE` - `local` or `cloud`
+- `PLAYGROUND_STORAGE_MODE` - `local`, `postgresql`, or `cloud`
+- `PLAYGROUND_DATABASE_URL` - PostgreSQL connection string
+- `PLAYGROUND_UI_ENABLED` - Enable/disable web UI
+- `PLAYGROUND_UI_MODE` - `embedded` (production) or `development` (Vite proxy)
+- `PLAYGROUND_CONFIG_FILE` - Path to config YAML
 - `GIN_MODE` - `debug` or `release`
 - `LOG_LEVEL` - `debug`, `info`, `warn`, `error`
 

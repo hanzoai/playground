@@ -115,11 +115,11 @@ export function CompactExecutionHeader({
           <div className="hidden lg:flex items-center gap-1.5 group flex-shrink-0 min-w-0">
             <span>Agent:</span>
             <code className="font-mono text-foreground bg-muted/30 px-1 py-0.5 rounded whitespace-nowrap max-w-[180px] truncate">
-              {execution.agent_node_id}
+              {execution.node_id}
             </code>
             <CopyButton
-              value={execution.agent_node_id}
-              tooltip="Copy agent node ID"
+              value={execution.node_id}
+              tooltip="Copy hanzo node ID"
               className="opacity-0 transition-opacity duration-150 group-hover:opacity-100 h-6 w-6 rounded-md [&_svg]:!h-3 [&_svg]:!w-3"
             />
           </div>
@@ -128,7 +128,7 @@ export function CompactExecutionHeader({
           <div className="hidden xl:flex items-center gap-1.5 flex-shrink-0 min-w-0">
             <span>DID:</span>
             <DIDDisplay
-              nodeId={execution.agent_node_id}
+              nodeId={execution.node_id}
               variant="inline"
               className="text-xs"
             />

@@ -160,12 +160,12 @@ func TestVCService_GenerateExecutionVC_Success(t *testing.T) {
 
 	// Register an agent first
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-vc-test",
+		NodeID: "agent-vc-test",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -178,7 +178,7 @@ func TestVCService_GenerateExecutionVC_Success(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    targetDID,
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -226,11 +226,11 @@ func TestVCService_GenerateExecutionVC_WithError(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-vc-error",
+		NodeID: "agent-vc-error",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -242,7 +242,7 @@ func TestVCService_GenerateExecutionVC_WithError(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -314,11 +314,11 @@ func TestVCService_GenerateExecutionVC_EmptyData(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-empty",
+		NodeID: "agent-empty",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -330,7 +330,7 @@ func TestVCService_GenerateExecutionVC_EmptyData(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -350,11 +350,11 @@ func TestVCService_GenerateExecutionVC_LongErrorMessage(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-long-error",
+		NodeID: "agent-long-error",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -366,7 +366,7 @@ func TestVCService_GenerateExecutionVC_LongErrorMessage(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -394,11 +394,11 @@ func TestVCService_VerifyVC_Success(t *testing.T) {
 
 	// Register an agent and generate a VC
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-verify",
+		NodeID: "agent-verify",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -410,7 +410,7 @@ func TestVCService_VerifyVC_Success(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -460,11 +460,11 @@ func TestVCService_VerifyVC_TamperedSignature(t *testing.T) {
 
 	// Register an agent and generate a VC
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-tamper",
+		NodeID: "agent-tamper",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -476,7 +476,7 @@ func TestVCService_VerifyVC_TamperedSignature(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -504,11 +504,11 @@ func TestVCService_VerifyVC_InvalidIssuerDID(t *testing.T) {
 
 	// Register an agent and generate a VC
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-invalid-issuer",
+		NodeID: "agent-invalid-issuer",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -520,7 +520,7 @@ func TestVCService_VerifyVC_InvalidIssuerDID(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -639,11 +639,11 @@ func TestVCService_CreateWorkflowVC_Success(t *testing.T) {
 
 	// Register an agent first
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-workflow-vc",
+		NodeID: "agent-workflow-vc",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -656,7 +656,7 @@ func TestVCService_CreateWorkflowVC_Success(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -669,7 +669,7 @@ func TestVCService_CreateWorkflowVC_Success(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -718,11 +718,11 @@ func TestVCService_QueryExecutionVCs_Success(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-query",
+		NodeID: "agent-query",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -735,7 +735,7 @@ func TestVCService_QueryExecutionVCs_Success(t *testing.T) {
 		SessionID:    "session-query",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -748,7 +748,7 @@ func TestVCService_QueryExecutionVCs_Success(t *testing.T) {
 		SessionID:    "session-query",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -777,11 +777,11 @@ func TestVCService_GetExecutionVCByExecutionID(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-get-exec",
+		NodeID: "agent-get-exec",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -793,7 +793,7 @@ func TestVCService_GetExecutionVCByExecutionID(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -837,11 +837,11 @@ func TestVCService_ListWorkflowVCs_Success(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-list-workflow",
+		NodeID: "agent-list-workflow",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -854,7 +854,7 @@ func TestVCService_ListWorkflowVCs_Success(t *testing.T) {
 		SessionID:    "session-list",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -886,12 +886,12 @@ func TestVCService_VerifyExecutionVCComprehensive_Success(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-comprehensive",
+		NodeID: "agent-comprehensive",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -904,7 +904,7 @@ func TestVCService_VerifyExecutionVCComprehensive_Success(t *testing.T) {
 		SessionID:    "session-comprehensive",
 		CallerDID:    callerDID,
 		TargetDID:    targetDID,
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -963,11 +963,11 @@ func TestVCService_VerifyExecutionVCComprehensive_IssuerMismatch(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-mismatch",
+		NodeID: "agent-mismatch",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -979,7 +979,7 @@ func TestVCService_VerifyExecutionVCComprehensive_IssuerMismatch(t *testing.T) {
 		SessionID:    "session-1",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -1049,11 +1049,11 @@ func TestVCService_DetermineWorkflowStatus(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-status",
+		NodeID: "agent-status",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -1066,7 +1066,7 @@ func TestVCService_DetermineWorkflowStatus(t *testing.T) {
 		SessionID:    "session-status",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -1079,7 +1079,7 @@ func TestVCService_DetermineWorkflowStatus(t *testing.T) {
 		SessionID:    "session-status",
 		CallerDID:    callerDID,
 		TargetDID:    "",
-		AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+		NodeDID: regResp.IdentityPackage.NodeDID.DID,
 		Timestamp:    time.Now(),
 	}
 
@@ -1107,11 +1107,11 @@ func TestVCService_DetermineWorkflowStatus_AllSucceeded(t *testing.T) {
 
 	// Register an agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-status-all-success",
+		NodeID: "agent-status-all-success",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 	}
 
-	regResp, err := didService.RegisterAgent(req)
+	regResp, err := didService.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
@@ -1125,7 +1125,7 @@ func TestVCService_DetermineWorkflowStatus_AllSucceeded(t *testing.T) {
 			SessionID:    "session-success",
 			CallerDID:    callerDID,
 			TargetDID:    "",
-			AgentNodeDID: regResp.IdentityPackage.AgentDID.DID,
+			NodeDID: regResp.IdentityPackage.NodeDID.DID,
 			Timestamp:    time.Now(),
 		}
 

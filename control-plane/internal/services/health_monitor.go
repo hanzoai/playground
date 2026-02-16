@@ -49,7 +49,7 @@ type HealthMonitor struct {
 	storage       storage.StorageProvider
 	config        HealthMonitorConfig
 	uiService     *UIService
-	agentClient   interfaces.AgentClient
+	nodeClient   interfaces.NodeClient
 	statusManager *StatusManager
 	presence      *PresenceManager
 	stopCh        chan struct{}
@@ -65,7 +65,7 @@ type HealthMonitor struct {
 }
 
 // NewHealthMonitor creates a new HTTP-first health monitor service
-func NewHealthMonitor(storage storage.StorageProvider, config HealthMonitorConfig, uiService *UIService, agentClient interfaces.AgentClient, statusManager *StatusManager, presence *PresenceManager) *HealthMonitor {
+func NewHealthMonitor(storage storage.StorageProvider, config HealthMonitorConfig, uiService *UIService, nodeClient interfaces.NodeClient, statusManager *StatusManager, presence *PresenceManager) *HealthMonitor {
 	// Set default values
 	if config.CheckInterval == 0 {
 		config.CheckInterval = 10 * time.Second
@@ -84,7 +84,7 @@ func NewHealthMonitor(storage storage.StorageProvider, config HealthMonitorConfi
 		storage:        storage,
 		config:         config,
 		uiService:      uiService,
-		agentClient:    agentClient,
+		nodeClient:    nodeClient,
 		statusManager:  statusManager,
 		presence:       presence,
 		stopCh:         make(chan struct{}),
@@ -95,8 +95,8 @@ func NewHealthMonitor(storage storage.StorageProvider, config HealthMonitorConfi
 	}
 }
 
-// RegisterAgent adds an agent to the active monitoring list
-func (hm *HealthMonitor) RegisterAgent(nodeID, baseURL string) {
+// RegisterNode adds an agent to the active monitoring list
+func (hm *HealthMonitor) RegisterNode(nodeID, baseURL string) {
 	hm.agentsMutex.Lock()
 	defer hm.agentsMutex.Unlock()
 
@@ -134,35 +134,35 @@ func (hm *HealthMonitor) UnregisterAgent(nodeID string) {
 		ctx := context.Background()
 		if hm.statusManager != nil {
 			// Use unified status system
-			inactiveState := types.AgentStateInactive
+			inactiveState := types.BotStateInactive
 			healthScore := 0
-			update := &types.AgentStatusUpdate{
+			update := &types.BotStatusUpdate{
 				State:       &inactiveState,
 				HealthScore: &healthScore,
 				Source:      types.StatusSourceHealthCheck,
 				Reason:      "agent unregistered from health monitoring",
 			}
 
-			if err := hm.statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+			if err := hm.statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Failed to update unified status for unregistered agent %s", nodeID)
 				// Fallback to legacy update
-				if err := hm.storage.UpdateAgentHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
+				if err := hm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
 					logger.Logger.Error().Err(err).Msgf("❌ Failed to update agent %s status to inactive", nodeID)
 				}
 			}
 		} else {
 			// Fallback to legacy system
-			if err := hm.storage.UpdateAgentHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
+			if err := hm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Failed to update agent %s status to inactive", nodeID)
 			}
 			// Also update lifecycle status to offline for consistency
-			if err := hm.storage.UpdateAgentLifecycleStatus(ctx, nodeID, types.AgentStatusOffline); err != nil {
+			if err := hm.storage.UpdateBotLifecycleStatus(ctx, nodeID, types.BotStatusOffline); err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Failed to update agent %s lifecycle status to offline", nodeID)
 			}
 
 			// Broadcast offline event (legacy)
 			if hm.uiService != nil {
-				if agent, err := hm.storage.GetAgent(ctx, nodeID); err == nil {
+				if agent, err := hm.storage.GetNode(ctx, nodeID); err == nil {
 					events.PublishNodeOffline(nodeID, agent)
 					events.PublishNodeHealthChanged(nodeID, string(types.HealthStatusInactive), agent)
 					hm.uiService.OnNodeStatusChanged(agent)
@@ -176,7 +176,7 @@ func (hm *HealthMonitor) UnregisterAgent(nodeID string) {
 // and performs initial health checks. This should be called on startup to
 // recover state after a control plane restart.
 func (hm *HealthMonitor) RecoverFromDatabase(ctx context.Context) error {
-	nodes, err := hm.storage.ListAgents(ctx, types.AgentFilters{})
+	nodes, err := hm.storage.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (hm *HealthMonitor) RecoverFromDatabase(ctx context.Context) error {
 			continue // Skip nodes without callback URL
 		}
 
-		hm.RegisterAgent(node.ID, node.BaseURL)
+		hm.RegisterNode(node.ID, node.BaseURL)
 	}
 
 	// Perform health checks asynchronously to avoid blocking startup
@@ -275,7 +275,7 @@ func (hm *HealthMonitor) checkAgentHealth(nodeID string) {
 	defer cancel()
 
 	// Perform HTTP health check
-	status, err := hm.agentClient.GetAgentStatus(ctx, nodeID)
+	status, err := hm.nodeClient.GetBotStatus(ctx, nodeID)
 
 	var checkPassed bool
 	if err != nil {
@@ -364,19 +364,19 @@ func (hm *HealthMonitor) markAgentActive(nodeID string) {
 	ctx := context.Background()
 
 	if hm.statusManager != nil {
-		activeState := types.AgentStateActive
+		activeState := types.BotStateActive
 		healthScore := healthScoreActive
-		update := &types.AgentStatusUpdate{
+		update := &types.BotStatusUpdate{
 			State:       &activeState,
 			HealthScore: &healthScore,
 			Source:      types.StatusSourceHealthCheck,
 			Reason:      "HTTP health check passed",
 		}
 
-		if err := hm.statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+		if err := hm.statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Failed to mark agent %s active via status manager", nodeID)
 			// Fallback to direct storage update
-			if err := hm.storage.UpdateAgentHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
+			if err := hm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Failed to update health status for agent %s", nodeID)
 			}
 			return
@@ -390,14 +390,14 @@ func (hm *HealthMonitor) markAgentActive(nodeID string) {
 		hm.checkMCPHealthForNode(nodeID)
 	} else {
 		// Legacy fallback
-		if err := hm.storage.UpdateAgentHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
+		if err := hm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Failed to update health status for agent %s", nodeID)
 			return
 		}
-		if err := hm.storage.UpdateAgentLifecycleStatus(ctx, nodeID, types.AgentStatusReady); err != nil {
+		if err := hm.storage.UpdateBotLifecycleStatus(ctx, nodeID, types.BotStatusReady); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Failed to update lifecycle status for agent %s", nodeID)
 		}
-		if updatedAgent, err := hm.storage.GetAgent(ctx, nodeID); err == nil {
+		if updatedAgent, err := hm.storage.GetNode(ctx, nodeID); err == nil {
 			events.PublishNodeOnline(nodeID, updatedAgent)
 			if hm.presence != nil {
 				hm.presence.Touch(nodeID, time.Now())
@@ -416,31 +416,31 @@ func (hm *HealthMonitor) markAgentInactive(nodeID string, failCount int) {
 	ctx := context.Background()
 
 	if hm.statusManager != nil {
-		inactiveState := types.AgentStateInactive
+		inactiveState := types.BotStateInactive
 		healthScore := healthScoreInactive
-		update := &types.AgentStatusUpdate{
+		update := &types.BotStatusUpdate{
 			State:       &inactiveState,
 			HealthScore: &healthScore,
 			Source:      types.StatusSourceHealthCheck,
 			Reason:      fmt.Sprintf("%d consecutive health check failures", failCount),
 		}
 
-		if err := hm.statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+		if err := hm.statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Failed to mark agent %s inactive via status manager", nodeID)
-			if err := hm.storage.UpdateAgentHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
+			if err := hm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Failed to update health status for agent %s", nodeID)
 			}
 		}
 	} else {
 		// Legacy fallback
-		if err := hm.storage.UpdateAgentHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
+		if err := hm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Failed to update health status for agent %s", nodeID)
 			return
 		}
-		if err := hm.storage.UpdateAgentLifecycleStatus(ctx, nodeID, types.AgentStatusOffline); err != nil {
+		if err := hm.storage.UpdateBotLifecycleStatus(ctx, nodeID, types.BotStatusOffline); err != nil {
 			logger.Logger.Error().Err(err).Msgf("❌ Failed to update lifecycle status for agent %s", nodeID)
 		}
-		if updatedAgent, err := hm.storage.GetAgent(ctx, nodeID); err == nil {
+		if updatedAgent, err := hm.storage.GetNode(ctx, nodeID); err == nil {
 			events.PublishNodeOffline(nodeID, updatedAgent)
 			events.PublishNodeHealthChanged(nodeID, string(types.HealthStatusInactive), updatedAgent)
 			if hm.uiService != nil {
@@ -452,7 +452,7 @@ func (hm *HealthMonitor) markAgentInactive(nodeID string, failCount int) {
 
 // checkMCPHealthForNode checks MCP health for a specific node
 func (hm *HealthMonitor) checkMCPHealthForNode(nodeID string) {
-	if hm.agentClient == nil {
+	if hm.nodeClient == nil {
 		return
 	}
 
@@ -461,7 +461,7 @@ func (hm *HealthMonitor) checkMCPHealthForNode(nodeID string) {
 	defer cancel()
 
 	// Fetch MCP health from agent
-	healthResponse, err := hm.agentClient.GetMCPHealth(ctx, nodeID)
+	healthResponse, err := hm.nodeClient.GetMCPHealth(ctx, nodeID)
 	if err != nil {
 		// Silently continue - agent might not support MCP
 		return

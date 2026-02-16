@@ -3,7 +3,7 @@
  */
 
 import type { Node, Edge, Viewport } from '@xyflow/react';
-import type { AgentStatus } from './gateway';
+import type { BotStatus } from './gateway';
 
 // ---------------------------------------------------------------------------
 // Data Interfaces
@@ -16,7 +16,7 @@ export interface Bot {
   name: string;
   emoji?: string;
   avatar?: string;
-  status: AgentStatus;
+  status: BotStatus;
   sessionKey?: string;
   model?: string;
   workspace?: string;
@@ -24,6 +24,13 @@ export interface Bot {
   activeView: BotView;
   source: 'local' | 'cloud';
   teamId?: string;
+  /** Cloud node fields — only set when source === 'cloud' */
+  podName?: string;
+  namespace?: string;
+  endpoint?: string;
+  image?: string;
+  owner?: string;
+  org?: string;
 }
 
 export interface Starter {

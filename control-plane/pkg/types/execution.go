@@ -13,10 +13,9 @@ type Execution struct {
 	RunID             string  `json:"run_id" db:"run_id"`
 	ParentExecutionID *string `json:"parent_execution_id,omitempty" db:"parent_execution_id"`
 
-	// Agent metadata
-	AgentNodeID string `json:"agent_node_id" db:"agent_node_id"`
-	BotID  string `json:"bot_id" db:"bot_id"`
-	NodeID      string `json:"node_id" db:"node_id"`
+	// Node metadata
+	NodeID     string `json:"node_id" db:"node_id"`
+	BotID string `json:"bot_id" db:"bot_id"`
 
 	// Payloads
 	InputPayload  json.RawMessage `json:"input" db:"input_payload"`
@@ -51,7 +50,7 @@ type ExecutionFilter struct {
 	RunID             *string
 	ExecutionID       *string
 	ParentExecutionID *string
-	AgentNodeID       *string
+	NodeID       *string
 	BotID        *string
 	Status            *string
 	SessionID         *string
@@ -136,9 +135,9 @@ var LegacyExecutionEndpoints = struct {
 	UIWorkflowSummaryFast    string
 	UIWorkflowDag            string
 	UIWorkflowNotes          string
-	UIAgentExecutionList     string
-	UIAgentExecutionDetail   string
-	UIAgentExecutionTimeline string
+	UIBotExecutionList     string
+	UIBotExecutionDetail   string
+	UIBotExecutionTimeline string
 
 	UIWorkflowRunList   string
 	UIWorkflowRunDetail string
@@ -161,9 +160,9 @@ var LegacyExecutionEndpoints = struct {
 	UIWorkflowSummaryFast:    "/api/ui/v1/workflows/summary/optimized",
 	UIWorkflowDag:            "/api/ui/v1/workflows/:workflowId/dag",
 	UIWorkflowNotes:          "/api/ui/v1/workflows/:workflowId/notes/events",
-	UIAgentExecutionList:     "/api/ui/v1/agents/:agentId/executions",
-	UIAgentExecutionDetail:   "/api/ui/v1/agents/:agentId/executions/:executionId",
-	UIAgentExecutionTimeline: "/api/ui/v1/agents/:agentId/executions/:executionId/timeline",
+	UIBotExecutionList:     "/api/ui/v1/agents/:agentId/executions",
+	UIBotExecutionDetail:   "/api/ui/v1/agents/:agentId/executions/:executionId",
+	UIBotExecutionTimeline: "/api/ui/v1/agents/:agentId/executions/:executionId/timeline",
 
 	UIWorkflowRunList:   "/api/ui/v2/workflow-runs",
 	UIWorkflowRunDetail: "/api/ui/v2/workflow-runs/:run_id",

@@ -1,13 +1,13 @@
 import axios, { AxiosInstance } from 'axios';
 import type {
-  AgentConfig,
+  BotConfig,
   DiscoveryOptions,
   DiscoveryFormat,
   DiscoveryResult,
   DiscoveryResponse,
   CompactDiscoveryResponse,
   HealthStatus
-} from '../types/agent.js';
+} from '../types/bot.js';
 import { httpAgent, httpsAgent } from '../utils/httpAgents.js';
 
 export interface ExecutionStatusUpdate {
@@ -20,10 +20,10 @@ export interface ExecutionStatusUpdate {
 
 export class PlaygroundClient {
   private readonly http: AxiosInstance;
-  private readonly config: AgentConfig;
+  private readonly config: BotConfig;
   private readonly defaultHeaders: Record<string, string>;
 
-  constructor(config: AgentConfig) {
+  constructor(config: BotConfig) {
     const baseURL = (config.playgroundUrl ?? 'http://localhost:8080').replace(/\/$/, '');
 this.http = axios.create({
       baseURL,
@@ -97,7 +97,7 @@ this.http = axios.create({
     executionId: string;
     runId: string;
     workflowId?: string;
-    reasonerId: string;
+    botId: string;
     agentNodeId: string;
     status: 'running' | 'succeeded' | 'failed';
     parentExecutionId?: string;
@@ -111,8 +111,8 @@ this.http = axios.create({
       execution_id: event.executionId,
       workflow_id: event.workflowId ?? event.runId,
       run_id: event.runId,
-      reasoner_id: event.reasonerId,
-      type: event.reasonerId,
+      bot_id: event.botId,
+      type: event.botId,
       agent_node_id: event.agentNodeId,
       status: event.status,
       parent_execution_id: event.parentExecutionId,
@@ -171,7 +171,7 @@ this.http = axios.create({
       params.agent_ids = combinedAgents.join(',');
     }
 
-    if (options.reasoner) params.reasoner = options.reasoner;
+    if (options.bot) params.bot = options.bot;
     if (options.skill) params.skill = options.skill;
     if (options.tags?.length) params.tags = dedupe(options.tags).join(',');
 
@@ -226,7 +226,7 @@ this.http = axios.create({
     return {
       discoveredAt: String(payload?.discovered_at ?? ''),
       totalAgents: Number(payload?.total_agents ?? 0),
-      totalReasoners: Number(payload?.total_reasoners ?? 0),
+      totalBots: Number(payload?.total_bots ?? 0),
       totalSkills: Number(payload?.total_skills ?? 0),
       pagination: {
         limit: Number(payload?.pagination?.limit ?? 0),
@@ -240,7 +240,7 @@ this.http = axios.create({
         healthStatus: cap?.health_status ?? '',
         deploymentType: cap?.deployment_type,
         lastHeartbeat: cap?.last_heartbeat,
-        reasoners: (cap?.reasoners ?? []).map((r: any) => ({
+        bots: (cap?.bots ?? []).map((r: any) => ({
           id: r?.id ?? '',
           description: r?.description,
           tags: r?.tags ?? [],
@@ -270,7 +270,7 @@ this.http = axios.create({
 
     return {
       discoveredAt: String(payload?.discovered_at ?? ''),
-      reasoners: (payload?.reasoners ?? []).map(toCap),
+      bots: (payload?.bots ?? []).map(toCap),
       skills: (payload?.skills ?? []).map(toCap)
     };
   }

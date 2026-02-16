@@ -78,7 +78,7 @@ type apiWorkflowExecution struct {
 	ExecutionID       string  `json:"execution_id"`
 	ParentExecutionID *string `json:"parent_execution_id,omitempty"`
 	ParentWorkflowID  *string `json:"parent_workflow_id,omitempty"`
-	AgentNodeID       string  `json:"agent_node_id"`
+	NodeID       string  `json:"node_id"`
 	BotID        string  `json:"bot_id"`
 	Status            string  `json:"status"`
 	StartedAt         string  `json:"started_at"`
@@ -187,8 +187,8 @@ func convertAggregationToSummary(agg *storage.RunSummaryAggregation) WorkflowRun
 	}
 
 	// Set agent ID
-	if agg.RootAgentNodeID != nil && *agg.RootAgentNodeID != "" {
-		summary.AgentID = agg.RootAgentNodeID
+	if agg.RootNodeID != nil && *agg.RootNodeID != "" {
+		summary.AgentID = agg.RootNodeID
 	}
 
 	// Set session and actor IDs
@@ -348,8 +348,8 @@ func summarizeRun(runID string, executions []*types.Execution) WorkflowRunSummar
 		summary.DisplayName = runID
 	}
 	summary.RootBot = dag.BotID
-	if dag.AgentNodeID != "" {
-		summary.AgentID = &dag.AgentNodeID
+	if dag.NodeID != "" {
+		summary.AgentID = &dag.NodeID
 	}
 	summary.SessionID = sessionID
 	summary.ActorID = actorID
@@ -480,7 +480,7 @@ func buildAPIExecutions(nodes []handlers.WorkflowDAGNode) []apiWorkflowExecution
 				}
 				return nil
 			}(),
-			AgentNodeID:     node.AgentNodeID,
+			NodeID:     node.NodeID,
 			BotID:      node.BotID,
 			Status:          node.Status,
 			StartedAt:       node.StartedAt,

@@ -1,5 +1,5 @@
-import type { Agent } from '../agent/Agent.js';
-import type { MCPServerConfig } from '../types/agent.js';
+import { Bot } from '../agent/Bot.js';
+import type { MCPServerConfig } from '../types/bot.js';
 import type { MCPTool, MCPToolRegistration } from '../types/mcp.js';
 import { MCPClientRegistry } from './MCPClientRegistry.js';
 
@@ -14,7 +14,7 @@ export class MCPToolRegistrar {
   private readonly devMode: boolean;
 
   constructor(
-    private readonly agent: Agent,
+    private readonly agent: Bot,
     private readonly registry: MCPClientRegistry,
     private readonly options: MCPToolRegistrarOptions = {}
   ) {

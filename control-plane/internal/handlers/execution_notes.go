@@ -109,7 +109,7 @@ func AddExecutionNoteHandler(storageProvider ExecutionNoteStorage) gin.HandlerFu
 				Type:        "workflow_note_added",
 				ExecutionID: executionID,
 				WorkflowID:  runID, // Use run_id as workflow_id for SSE events
-				AgentNodeID: updated.AgentNodeID,
+				NodeID: updated.NodeID,
 				Status:      "note_added",
 				Timestamp:   time.Now(),
 				Data: map[string]interface{}{

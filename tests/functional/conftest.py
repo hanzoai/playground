@@ -2,7 +2,7 @@
 Pytest configuration and fixtures for Playground functional tests.
 
 These fixtures provide integration with the Docker-based test environment,
-allowing tests to interact with the control plane and create test agents.
+allowing tests to interact with the control plane and create test bots.
 """
 
 import asyncio
@@ -14,14 +14,14 @@ from typing import AsyncGenerator, Callable, Dict, Optional
 
 import httpx
 import pytest
-from playground import Agent, AIConfig
+from playground import Bot, AIConfig
 
 from utils import FunctionalTestLogger, InstrumentedAsyncClient
 
 pytest_plugins = ("pytest_asyncio",)
 
-AGENT_BIND_HOST = os.environ.get("TEST_AGENT_BIND_HOST", "127.0.0.1")
-AGENT_CALLBACK_HOST = os.environ.get("TEST_AGENT_CALLBACK_HOST", "127.0.0.1")
+BOT_BIND_HOST = os.environ.get("TEST_BOT_BIND_HOST", os.environ.get("TEST_AGENT_BIND_HOST", "127.0.0.1"))
+BOT_CALLBACK_HOST = os.environ.get("TEST_BOT_CALLBACK_HOST", os.environ.get("TEST_AGENT_CALLBACK_HOST", "127.0.0.1"))
 HTTP_LOGGING_ENABLED = os.environ.get("FUNCTIONAL_HTTP_LOGGING", "1") != "0"
 
 CONFTEST_DIR = Path(__file__).resolve().parent
@@ -64,7 +64,7 @@ def _init_session_logger() -> FunctionalTestLogger:
     logger = FunctionalTestLogger(log_file=None, max_body_chars=max_chars)
     if last_error:
         logger.log(
-            "⚠️ Functional logs will only stream to stdout; "
+            "Warning: Functional logs will only stream to stdout; "
             f"unable to persist log file ({last_error})."
         )
     return logger
@@ -84,7 +84,7 @@ def _get_session_logger() -> FunctionalTestLogger:
 @pytest.fixture(scope="session")
 def control_plane_url() -> str:
     """Get the Playground control plane URL from environment."""
-    url = os.environ.get("AGENTS_SERVER", "http://localhost:8080")
+    url = os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
     return url.rstrip("/")
 
 
@@ -101,7 +101,7 @@ def openrouter_api_key() -> str:
 def openrouter_model() -> str:
     """
     Get the OpenRouter model to use for tests from environment.
-    
+
     IMPORTANT: All tests MUST use this fixture and NOT hardcode model names.
     This allows us to use cost-effective models for testing.
     """
@@ -143,7 +143,7 @@ def verify_control_plane(control_plane_url: str, functional_logger: FunctionalTe
         try:
             response = httpx.get(health_url, timeout=2.0)
             if response.status_code == 200:
-                functional_logger.log(f"✓ Control plane is healthy (attempt {attempt + 1})")
+                functional_logger.log(f"Control plane is healthy (attempt {attempt + 1})")
                 return
         except (httpx.RequestError, httpx.TimeoutException):
             pass
@@ -213,7 +213,7 @@ async def async_http_client(
 def openrouter_config(openrouter_api_key: str, openrouter_model: str) -> AIConfig:
     """
     Provide an AIConfig configured for OpenRouter.
-    
+
     IMPORTANT: Uses the OPENROUTER_MODEL environment variable.
     Default model is cost-effective for testing (gemini-2.5-flash-lite).
     DO NOT hardcode model names in tests - always use this fixture.
@@ -229,117 +229,117 @@ def openrouter_config(openrouter_api_key: str, openrouter_model: str) -> AIConfi
 
 
 # ============================================================================
-# Agent Factory Fixtures
+# Bot Factory Fixtures
 # ============================================================================
 
 @pytest.fixture
-def make_test_agent(control_plane_url: str) -> Callable[..., Agent]:
+def make_test_bot(control_plane_url: str) -> Callable[..., Bot]:
     """
-    Factory fixture to create test agents.
-    
-    Returns a callable that creates and configures agents for testing.
-    Agents are automatically configured to connect to the control plane.
-    
+    Factory fixture to create test bots.
+
+    Returns a callable that creates and configures bots for testing.
+    Bots are automatically configured to connect to the control plane.
+
     Usage:
-        def test_example(make_test_agent, openrouter_config):
-            agent = make_test_agent(
-                node_id="test-agent",
+        def test_example(make_test_bot, openrouter_config):
+            bot = make_test_bot(
+                node_id="test-bot",
                 ai_config=openrouter_config
             )
-            
-            @agent.reasoner()
-            async def my_reasoner():
+
+            @bot.bot()
+            async def my_bot():
                 return {"status": "ok"}
     """
-    created_agents = []
-    
+    created_bots = []
+
     def _factory(
         node_id: Optional[str] = None,
         ai_config: Optional[AIConfig] = None,
         **kwargs
-    ) -> Agent:
+    ) -> Bot:
         # Generate unique node ID if not provided
         if node_id is None:
-            node_id = f"test-agent-{uuid.uuid4().hex[:8]}"
-        
+            node_id = f"test-bot-{uuid.uuid4().hex[:8]}"
+
         # Set sensible defaults for testing
         kwargs.setdefault("playground_server", control_plane_url)
         kwargs.setdefault("dev_mode", True)
-        kwargs.setdefault("callback_url", "http://test-agent")
-        
+        kwargs.setdefault("callback_url", "http://test-bot")
+
         if ai_config is not None:
             kwargs["ai_config"] = ai_config
-        
-        agent = Agent(node_id=node_id, **kwargs)
-        created_agents.append(agent)
-        return agent
-    
+
+        bot = Bot(node_id=node_id, **kwargs)
+        created_bots.append(bot)
+        return bot
+
     yield _factory
-    
-    # Cleanup: No explicit cleanup needed as agents are ephemeral in tests
+
+    # Cleanup: No explicit cleanup needed as bots are ephemeral in tests
 
 
 @pytest.fixture
-async def registered_agent(
-    make_test_agent: Callable,
+async def registered_bot(
+    make_test_bot: Callable,
     openrouter_config: AIConfig,
     async_http_client: httpx.AsyncClient
-) -> AsyncGenerator[Agent, None]:
+) -> AsyncGenerator[Bot, None]:
     """
-    Provide a test agent that is already registered with the control plane.
-    
-    This is a convenience fixture for tests that need a ready-to-use agent.
+    Provide a test bot that is already registered with the control plane.
+
+    This is a convenience fixture for tests that need a ready-to-use bot.
     """
     import threading
     import uvicorn
-    
-    # Create agent
-    agent = make_test_agent(ai_config=openrouter_config)
-    
-    # Add a simple test reasoner
-    @agent.reasoner()
+
+    # Create bot
+    bot = make_test_bot(ai_config=openrouter_config)
+
+    # Add a simple test bot
+    @bot.bot()
     async def echo(message: str) -> Dict[str, str]:
         """Echo back the input message."""
         return {"message": message}
-    
+
     # Find a free port
     import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((AGENT_BIND_HOST, 0))
+        s.bind((BOT_BIND_HOST, 0))
         port = s.getsockname()[1]
-    
-    # Start agent in background thread
-    agent.base_url = f"http://{AGENT_CALLBACK_HOST}:{port}"
-    
+
+    # Start bot in background thread
+    bot.base_url = f"http://{BOT_CALLBACK_HOST}:{port}"
+
     config = uvicorn.Config(
-        app=agent,
-        host=AGENT_BIND_HOST,
+        app=bot,
+        host=BOT_BIND_HOST,
         port=port,
         log_level="error",
         access_log=False,
     )
     server = uvicorn.Server(config)
     loop = asyncio.new_event_loop()
-    
+
     def run_server():
         asyncio.set_event_loop(loop)
         loop.run_until_complete(server.serve())
-    
+
     thread = threading.Thread(target=run_server, daemon=True)
     thread.start()
-    
-    # Wait for agent to be ready
+
+    # Wait for bot to be ready
     await asyncio.sleep(1)
-    
+
     # Register with control plane
     try:
-        await agent.hanzo/agents_handler.register_with_playground_server(port)
-        agent.hanzo/agents_server = None
-        
+        await bot.hanzo_bots_handler.register_with_playground_server(port)
+        bot.hanzo_bots_server = None
+
         # Wait for registration to complete
         await asyncio.sleep(1)
-        
-        yield agent
+
+        yield bot
     finally:
         # Cleanup
         server.should_exit = True

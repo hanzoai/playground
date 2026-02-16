@@ -111,9 +111,9 @@ func (m *mockObservabilityStore) ClearDeadLetterQueue(ctx context.Context) error
 	return nil
 }
 
-func (m *mockObservabilityStore) ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error) {
+func (m *mockObservabilityStore) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	// Return empty list for tests - can be extended as needed
-	return []*types.AgentNode{}, nil
+	return []*types.Node{}, nil
 }
 
 // Test config normalization
@@ -285,7 +285,7 @@ func TestObservabilityForwarder_TransformExecutionEvent(t *testing.T) {
 		Type:        events.ExecutionCompleted,
 		ExecutionID: "exec-123",
 		WorkflowID:  "wf-456",
-		AgentNodeID: "agent-789",
+		NodeID: "agent-789",
 		Status:      "succeeded",
 		Timestamp:   time.Now(),
 		Data:        map[string]interface{}{"key": "value"},
@@ -301,7 +301,7 @@ func TestObservabilityForwarder_TransformExecutionEvent(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "exec-123", data["execution_id"])
 	require.Equal(t, "wf-456", data["workflow_id"])
-	require.Equal(t, "agent-789", data["agent_node_id"])
+	require.Equal(t, "agent-789", data["node_id"])
 	require.Equal(t, "succeeded", data["status"])
 	require.Equal(t, execEvent.Data, data["payload"])
 }

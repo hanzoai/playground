@@ -45,10 +45,10 @@ func TestGetNodesSummaryHandler_Structure(t *testing.T) {
 	defer realStorage.Close(ctx)
 
 	// Create real UIService with minimal dependencies
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -90,10 +90,10 @@ func TestGetNodeDetailsHandler_Structure(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -135,10 +135,10 @@ func TestGetNodeStatusHandler_Structure(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -175,10 +175,10 @@ func TestRefreshNodeStatusHandler_Structure(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -215,10 +215,10 @@ func TestBulkNodeStatusHandler_Validation(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -272,8 +272,8 @@ func TestGetDashboardSummaryHandler_Structure(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentService := &MockAgentServiceForUI{}
-	handler := NewDashboardHandler(realStorage, mockAgentService)
+	mockBotService := &MockBotServiceForUI{}
+	handler := NewDashboardHandler(realStorage, mockBotService)
 	router := gin.New()
 	router.GET("/api/ui/v1/dashboard", handler.GetDashboardSummaryHandler)
 
@@ -313,10 +313,10 @@ func TestAPIErrorHandling(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -367,10 +367,10 @@ func TestAPIMethodValidation(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -412,10 +412,10 @@ func TestAPIResponseFormat(t *testing.T) {
 	require.NoError(t, err)
 	defer realStorage.Close(ctx)
 
-	mockAgentClient := &MockAgentClientForUI{}
-	mockAgentService := &MockAgentServiceForUI{}
-	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockAgentClient)
-	uiService := services.NewUIService(realStorage, mockAgentClient, mockAgentService, statusManager)
+	mockNodeClient := &MockNodeClientForUI{}
+	mockBotService := &MockBotServiceForUI{}
+	statusManager := services.NewStatusManager(realStorage, services.StatusManagerConfig{}, nil, mockNodeClient)
+	uiService := services.NewUIService(realStorage, mockNodeClient, mockBotService, statusManager)
 
 	handler := NewNodesHandler(uiService)
 	router := gin.New()
@@ -438,77 +438,77 @@ func TestAPIResponseFormat(t *testing.T) {
 	assert.Contains(t, result, "count")
 }
 
-// MockAgentClientForUI is a minimal mock for interfaces.AgentClient
-type MockAgentClientForUI struct {
+// MockNodeClientForUI is a minimal mock for interfaces.NodeClient
+type MockNodeClientForUI struct {
 	mock.Mock
 }
 
-func (m *MockAgentClientForUI) GetAgentStatus(ctx context.Context, nodeID string) (*interfaces.AgentStatusResponse, error) {
+func (m *MockNodeClientForUI) GetBotStatus(ctx context.Context, nodeID string) (*interfaces.BotStatusResponse, error) {
 	args := m.Called(ctx, nodeID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*interfaces.AgentStatusResponse), args.Error(1)
+	return args.Get(0).(*interfaces.BotStatusResponse), args.Error(1)
 }
 
-func (m *MockAgentClientForUI) GetMCPHealth(ctx context.Context, nodeID string) (*interfaces.MCPHealthResponse, error) {
+func (m *MockNodeClientForUI) GetMCPHealth(ctx context.Context, nodeID string) (*interfaces.MCPHealthResponse, error) {
 	return nil, nil
 }
 
-func (m *MockAgentClientForUI) RestartMCPServer(ctx context.Context, nodeID, alias string) error {
+func (m *MockNodeClientForUI) RestartMCPServer(ctx context.Context, nodeID, alias string) error {
 	return nil
 }
 
-func (m *MockAgentClientForUI) GetMCPTools(ctx context.Context, nodeID, alias string) (*interfaces.MCPToolsResponse, error) {
+func (m *MockNodeClientForUI) GetMCPTools(ctx context.Context, nodeID, alias string) (*interfaces.MCPToolsResponse, error) {
 	return nil, nil
 }
 
-func (m *MockAgentClientForUI) ShutdownAgent(ctx context.Context, nodeID string, graceful bool, timeoutSeconds int) (*interfaces.AgentShutdownResponse, error) {
+func (m *MockNodeClientForUI) ShutdownNode(ctx context.Context, nodeID string, graceful bool, timeoutSeconds int) (*interfaces.NodeShutdownResponse, error) {
 	return nil, nil
 }
 
-// MockAgentServiceForUI is a minimal mock for interfaces.AgentService
-type MockAgentServiceForUI struct {
+// MockBotServiceForUI is a minimal mock for interfaces.BotService
+type MockBotServiceForUI struct {
 	mock.Mock
 }
 
-func (m *MockAgentServiceForUI) GetAgentStatus(name string) (*domain.AgentStatus, error) {
+func (m *MockBotServiceForUI) GetBotStatus(name string) (*domain.BotStatus, error) {
 	args := m.Called(name)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*domain.AgentStatus), args.Error(1)
+	return args.Get(0).(*domain.BotStatus), args.Error(1)
 }
 
-func (m *MockAgentServiceForUI) RunAgent(name string, options domain.RunOptions) (*domain.RunningAgent, error) {
+func (m *MockBotServiceForUI) RunAgent(name string, options domain.RunOptions) (*domain.RunningAgent, error) {
 	return nil, nil
 }
 
-func (m *MockAgentServiceForUI) StopAgent(name string) error {
+func (m *MockBotServiceForUI) StopAgent(name string) error {
 	return nil
 }
 
-func (m *MockAgentServiceForUI) ListRunningAgents() ([]domain.RunningAgent, error) {
+func (m *MockBotServiceForUI) ListRunningAgents() ([]domain.RunningAgent, error) {
 	return []domain.RunningAgent{}, nil
 }
 
-// MockAgentService is a mock for interfaces.AgentService (used by dashboard)
-type MockAgentService struct {
+// MockBotService is a mock for interfaces.BotService (used by dashboard)
+type MockBotService struct {
 	mock.Mock
 }
 
-func (m *MockAgentService) GetAgents(ctx context.Context) ([]*types.AgentNode, error) {
+func (m *MockBotService) GetNodes(ctx context.Context) ([]*types.Node, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*types.AgentNode), args.Error(1)
+	return args.Get(0).([]*types.Node), args.Error(1)
 }
 
-func (m *MockAgentService) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+func (m *MockBotService) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentNode), args.Error(1)
+	return args.Get(0).(*types.Node), args.Error(1)
 }

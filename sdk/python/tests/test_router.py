@@ -1,6 +1,6 @@
 import pytest
 
-from playground.router import AgentRouter
+from playground.router import BotRouter
 
 
 class DummyAgent:
@@ -30,13 +30,13 @@ class DummyAgent:
 
 @pytest.mark.asyncio
 async def test_router_requires_agent_before_use():
-    router = AgentRouter()
+    router = BotRouter()
 
     with pytest.raises(RuntimeError):
         await router.call("node.skill")
 
     agent = DummyAgent()
-    router._attach_agent(agent)
+    router._attach_bot(agent)
 
     result = await router.call("node.skill", 1, mode="fast")
     assert result == "call-result"
@@ -48,12 +48,12 @@ async def test_router_requires_agent_before_use():
     assert router.memory == "memory-client"
 
 
-def test_reasoner_and_skill_registration():
-    router = AgentRouter(prefix="/api/v1", tags=["base"])
+def test_bot_and_skill_registration():
+    router = BotRouter(prefix="/api/v1", tags=["base"])
 
-    @router.reasoner(path="/foo")
-    def sample_reasoner():
-        return "reasoner"
+    @router.bot(path="/foo")
+    def sample_bot():
+        return "bot"
 
     @router.skill(tags=["extra"], path="tool")
     def sample_skill():
@@ -61,10 +61,10 @@ def test_reasoner_and_skill_registration():
 
     # The decorator returns a wrapper; original func is stored in entry["func"]
     # and also accessible via wrapper._original_func
-    assert router.reasoners[0]["func"] is sample_reasoner._original_func
-    assert router.reasoners[0]["wrapper"] is sample_reasoner
-    assert router.reasoners[0]["path"] == "/foo"
-    assert router.reasoners[0]["tags"] == ["base"]
+    assert router.bots[0]["func"] is sample_bot._original_func
+    assert router.bots[0]["wrapper"] is sample_bot
+    assert router.bots[0]["path"] == "/foo"
+    assert router.bots[0]["tags"] == ["base"]
 
     skill_entry = router.skills[0]
     assert skill_entry["func"] is sample_skill
@@ -73,20 +73,20 @@ def test_reasoner_and_skill_registration():
 
 
 def test_router_supports_parentheses_free_decorators():
-    router = AgentRouter()
+    router = BotRouter()
 
-    @router.reasoner
-    def inline_reasoner():
+    @router.bot
+    def inline_bot():
         return "ok"
 
     @router.skill
     def inline_skill():
         return "ok"
 
-    # The decorator returns a wrapper for reasoners
-    assert router.reasoners[0]["func"] is inline_reasoner._original_func
-    assert router.reasoners[0]["wrapper"] is inline_reasoner
-    assert router.reasoners[0]["path"] is None
+    # The decorator returns a wrapper for bots
+    assert router.bots[0]["func"] is inline_bot._original_func
+    assert router.bots[0]["wrapper"] is inline_bot
+    assert router.bots[0]["path"] is None
     assert router.skills[0]["func"] is inline_skill
     assert router.skills[0]["path"] is None
 
@@ -99,19 +99,19 @@ def test_router_supports_parentheses_free_decorators():
         ("api/", None, "detail", "/api/detail"),
         ("/root/", "default", "custom", "/root/custom"),
         ("", "default", None, "/default"),
-        ("group", "/reasoners/foo", None, "/reasoners/group/foo"),
+        ("group", "/bots/foo", None, "/bots/group/foo"),
     ],
 )
 def test_combine_path(prefix, default, custom, expected):
-    router = AgentRouter(prefix=prefix)
+    router = BotRouter(prefix=prefix)
     assert router._combine_path(default, custom) == expected
 
 
 def test_router_automatic_delegation():
-    """Test that AgentRouter automatically delegates all Agent methods via __getattr__."""
-    router = AgentRouter()
+    """Test that BotRouter automatically delegates all Agent methods via __getattr__."""
+    router = BotRouter()
     agent = DummyAgent()
-    router._attach_agent(agent)
+    router._attach_bot(agent)
 
     # Test note() delegation (the original issue)
     note_result = router.note("Test message", tags=["debug"])
@@ -132,7 +132,7 @@ def test_router_automatic_delegation():
 
 def test_router_delegation_without_agent_raises_error():
     """Test that accessing delegated methods without an attached agent raises RuntimeError."""
-    router = AgentRouter()
+    router = BotRouter()
 
     # Test that note() raises RuntimeError when no agent is attached
     with pytest.raises(RuntimeError, match="Router not attached to an agent"):

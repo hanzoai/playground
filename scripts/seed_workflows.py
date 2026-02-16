@@ -29,13 +29,13 @@ from typing import List, Optional, Sequence, Tuple
 
 
 @dataclass(frozen=True)
-class AgentNodeDefinition:
+class NodeDefinition:
     node_id: str
     base_url: str
     version: str
     deployment_type: str
     invocation_url: str
-    reasoners: Sequence[dict]  # Changed from Sequence[str] to Sequence[dict]
+    bots: Sequence[dict]  # Changed from Sequence[str] to Sequence[dict]
     skills: Sequence[dict]  # Changed from Sequence[str] to Sequence[dict]
     communication: dict
     health_status: str = "healthy"
@@ -64,8 +64,8 @@ class NodeRecord:
     request_id: str
     parent_execution_id: Optional[str]
     depth: int
-    agent_node_id: str
-    reasoner_id: str
+    node_id: str
+    bot_id: str
     status: str
     status_reason: Optional[str]
     error_message: Optional[str]
@@ -79,16 +79,16 @@ class NodeRecord:
 
 # --- Constants ------------------------------------------------------------
 
-DEFAULT_DB_PATH = Path("~/.hanzo/agents/data/playground.db").expanduser()
+DEFAULT_DB_PATH = Path("~/.hanzo/playground/data/playground.db").expanduser()
 
-AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
-    AgentNodeDefinition(
+HANZO_NODE_POOL: Tuple[NodeDefinition, ...] = (
+    NodeDefinition(
         node_id="atlas_scope_orchestrator",
         base_url="https://agents.internal/atlas-scope",
         version="1.14.3",
         deployment_type="long_running",
         invocation_url="https://agents.internal/atlas-scope/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Deep Scope Orchestrator",
                 "input_schema": {},
@@ -118,13 +118,13 @@ AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
         features={"supports_multithread": True},
         metadata={"owner": "Atlas Research"},
     ),
-    AgentNodeDefinition(
+    NodeDefinition(
         node_id="source_link_parser",
         base_url="https://agents.internal/source-parser",
         version="2.3.1",
         deployment_type="ephemeral",
         invocation_url="https://agents.internal/source-parser/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Signal Enrichment Parser",
                 "input_schema": {},
@@ -155,13 +155,13 @@ AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
         features={"supports_batch": True},
         metadata={"coverage": "public+subscription"},
     ),
-    AgentNodeDefinition(
+    NodeDefinition(
         node_id="signal_prioritizer",
         base_url="https://agents.internal/signal-prioritizer",
         version="0.9.12",
         deployment_type="long_running",
         invocation_url="https://agents.internal/signal-prioritizer/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Signal Weighting Pipeline",
                 "input_schema": {},
@@ -191,13 +191,13 @@ AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
         features={"weighted_scores": True},
         metadata={"owner": "SignalOps"},
     ),
-    AgentNodeDefinition(
+    NodeDefinition(
         node_id="narrative_synthesizer",
         base_url="https://agents.internal/narrative-synth",
         version="3.0.2",
         deployment_type="long_running",
         invocation_url="https://agents.internal/narrative-synth/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Narrative Multi-Lens Synth",
                 "input_schema": {},
@@ -227,13 +227,13 @@ AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
         features={"supports_sections": True},
         metadata={"owner": "NarrativeOps"},
     ),
-    AgentNodeDefinition(
+    NodeDefinition(
         node_id="risk_modeler",
         base_url="https://agents.internal/risk-modeler",
         version="1.8.7",
         deployment_type="long_running",
         invocation_url="https://agents.internal/risk-modeler/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Risk Quant Scorer",
                 "input_schema": {},
@@ -263,13 +263,13 @@ AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
         features={"supports_probabilistic": True},
         metadata={"coverage": "macroeconomic"},
     ),
-    AgentNodeDefinition(
+    NodeDefinition(
         node_id="market_lens_vectorizer",
         base_url="https://agents.internal/market-lens",
         version="0.6.5",
         deployment_type="ephemeral",
         invocation_url="https://agents.internal/market-lens/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Market Vector Indexer",
                 "input_schema": {},
@@ -299,13 +299,13 @@ AGENT_NODE_POOL: Tuple[AgentNodeDefinition, ...] = (
         features={"supports_dimensionality": 1536},
         metadata={"owner": "MarketIntel"},
     ),
-    AgentNodeDefinition(
+    NodeDefinition(
         node_id="insight_validation_bureau",
         base_url="https://agents.internal/insight-validation",
         version="1.2.9",
         deployment_type="long_running",
         invocation_url="https://agents.internal/insight-validation/invoke",
-        reasoners=(
+        bots=(
             {
                 "id": "Insight Validation Hub",
                 "input_schema": {},
@@ -464,7 +464,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
 def ensure_agent_nodes(conn: sqlite3.Connection, team_id: str) -> None:
     """Upsert the canned agent nodes so UI views have metadata."""
     now_iso = isoformat(datetime.utcnow())
-    for node in AGENT_NODE_POOL:
+    for node in HANZO_NODE_POOL:
         payload = (
             node.node_id,
             team_id,
@@ -472,7 +472,7 @@ def ensure_agent_nodes(conn: sqlite3.Connection, team_id: str) -> None:
             node.version,
             node.deployment_type,
             node.invocation_url,
-            json.dumps(node.reasoners).encode(),
+            json.dumps(node.bots).encode(),
             json.dumps(node.skills).encode(),
             json.dumps(node.communication).encode(),
             node.health_status,
@@ -487,7 +487,7 @@ def ensure_agent_nodes(conn: sqlite3.Connection, team_id: str) -> None:
             """
             INSERT INTO agent_nodes (
                 id, team_id, base_url, version, deployment_type, invocation_url,
-                reasoners, skills, communication_config, health_status, lifecycle_status,
+                bots, skills, communication_config, health_status, lifecycle_status,
                 last_heartbeat, registered_at, features, metadata
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -617,8 +617,8 @@ def synthesize_nodes(
             request_id=scenario.root_request_id,
             parent_execution_id=None,
             depth=0,
-            agent_node_id="atlas_scope_orchestrator",
-            reasoner_id=AGENT_NODE_POOL[0].reasoners[0]["id"],
+            node_id="atlas_scope_orchestrator",
+            bot_id=HANZO_NODE_POOL[0].bots[0]["id"],
             status="succeeded",
             status_reason=None,
             error_message=None,
@@ -642,8 +642,8 @@ def synthesize_nodes(
         node_duration = random.randint(120, 1500)
         node_end = node_start + timedelta(seconds=node_duration)
 
-        agent_choice = random.choice(AGENT_NODE_POOL)
-        reasoner_choice = random.choice(agent_choice.reasoners)
+        agent_choice = random.choice(HANZO_NODE_POOL)
+        bot_choice = random.choice(agent_choice.bots)
 
         notes: List[dict] = []
         notes.append(
@@ -662,8 +662,8 @@ def synthesize_nodes(
                 request_id=f"af_req_{uuid.uuid4().hex[:12]}",
                 parent_execution_id=parent_node.execution_id,
                 depth=parent_node.depth + 1,
-                agent_node_id=agent_choice.node_id,
-                reasoner_id=reasoner_choice["id"],
+                node_id=agent_choice.node_id,
+                bot_id=bot_choice["id"],
                 status=status,
                 status_reason=status_reason,
                 error_message=error_message,
@@ -789,12 +789,12 @@ def insert_workflow(
                 scenario.run_id,
                 scenario.session_id,
                 scenario.actor_id,
-                node.agent_node_id,
+                node.node_id,
                 scenario.workflow_id,
                 node.parent_execution_id,
                 scenario.workflow_id,
                 node.depth,
-                node.reasoner_id,
+                node.bot_id,
                 json.dumps(node.input_payload).encode(),
                 json.dumps(node.output_payload).encode(),
                 len(json.dumps(node.input_payload)),
@@ -873,8 +873,8 @@ def insert_workflow(
                 scenario.run_id,
                 parent_step_id,
                 node.execution_id,
-                node.agent_node_id,
-                f"agent://{node.agent_node_id}",
+                node.node_id,
+                f"agent://{node.node_id}",
                 "succeeded" if node.status.startswith("succeeded") else node.status,
                 1,
                 random.randint(0, 4),
@@ -897,9 +897,9 @@ def insert_workflow(
                 node.execution_id,
                 scenario.run_id,
                 node.parent_execution_id,
-                node.agent_node_id,
-                node.reasoner_id,
-                node.agent_node_id,
+                node.node_id,
+                node.bot_id,
+                node.node_id,
                 node.status,
                 json.dumps(node.input_payload).encode(),
                 json.dumps(node.output_payload).encode(),
@@ -922,7 +922,7 @@ def insert_workflow(
         INSERT INTO workflow_executions (
             workflow_id, execution_id, agents_request_id, run_id, session_id,
             actor_id, agent_node_id, parent_workflow_id, parent_execution_id,
-            root_workflow_id, workflow_depth, reasoner_id, input_data, output_data,
+            root_workflow_id, workflow_depth, bot_id, input_data, output_data,
             input_size, output_size, workflow_name, workflow_tags, status,
             started_at, completed_at, duration_ms, state_version, last_event_sequence,
             active_children, pending_children, pending_terminal_status, status_reason,
@@ -1004,7 +1004,7 @@ def insert_workflow(
     conn.executemany(
         """
         INSERT INTO executions (
-            execution_id, run_id, parent_execution_id, agent_node_id, reasoner_id,
+            execution_id, run_id, parent_execution_id, agent_node_id, bot_id,
             node_id, status, input_payload, result_payload, error_message,
             input_uri, result_uri, session_id, actor_id, started_at, completed_at,
             duration_ms, created_at, updated_at

@@ -61,7 +61,7 @@ export function EnhancedNodesHeader({
   onAddServerless,
   onReconnect,
   actions,
-  subtitle = "Monitor and manage your AI agent nodes in the Hanzo Bot platform.",
+  subtitle = "Monitor and manage your AI hanzo nodes in the Playground orchestration platform.",
 }: EnhancedNodesHeaderProps) {
   const ConnectionIcon = isConnected ? WifiHigh : WifiSlash;
   const connectionLabel = isConnected
@@ -88,7 +88,7 @@ export function EnhancedNodesHeader({
       <div className="flex items-center gap-4 min-w-0 flex-1">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <h1 className="text-heading-2 leading-tight">Agent Nodes</h1>
+            <h1 className="text-heading-2 leading-tight">Nodes</h1>
             <Badge variant="count" size="sm">
               {totalNodes} total
             </Badge>
@@ -144,7 +144,7 @@ export function EnhancedNodesHeader({
             onClick={onAddServerless}
           >
             <Plus className="w-4 h-4" />
-            Add Serverless Agent
+            Add Serverless Bot
           </Button>
         )}
       </div>

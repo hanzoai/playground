@@ -101,7 +101,7 @@ func (pm *PresenceManager) SetExpireCallback(fn func(string)) {
 // and initializes presence leases based on their LastHeartbeat timestamps.
 // This should be called on startup to recover state after a control plane restart.
 func (pm *PresenceManager) RecoverFromDatabase(ctx context.Context, storageProvider storage.StorageProvider) error {
-	nodes, err := storageProvider.ListAgents(ctx, types.AgentFilters{})
+	nodes, err := storageProvider.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		return err
 	}
@@ -175,16 +175,16 @@ func (pm *PresenceManager) markInactive(nodeID string) {
 	}
 
 	ctx := context.Background()
-	inactive := types.AgentStateInactive
+	inactive := types.BotStateInactive
 	zero := 0
-	update := &types.AgentStatusUpdate{
+	update := &types.BotStatusUpdate{
 		State:       &inactive,
 		HealthScore: &zero,
 		Source:      types.StatusSourcePresence,
 		Reason:      "presence lease expired",
 	}
 
-	if err := pm.statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
+	if err := pm.statusManager.UpdateBotStatus(ctx, nodeID, update); err != nil {
 		logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to mark node inactive from presence manager")
 		return
 	}

@@ -30,7 +30,7 @@ func newStubStorage() *stubStorage {
 }
 
 // Required methods for ExecuteHandler
-func (s *stubStorage) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+func (s *stubStorage) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	return nil, nil
 }
 func (s *stubStorage) CreateExecutionRecord(ctx context.Context, execution *types.Execution) error {
@@ -65,13 +65,13 @@ func (s *stubStorage) GetExecutionEventBus() *events.ExecutionEventBus {
 func (s *stubStorage) Initialize(ctx context.Context, config storage.StorageConfig) error { return nil }
 func (s *stubStorage) Close(ctx context.Context) error                                    { return nil }
 func (s *stubStorage) HealthCheck(ctx context.Context) error                              { return nil }
-func (s *stubStorage) StoreExecution(ctx context.Context, execution *types.AgentExecution) error {
+func (s *stubStorage) StoreExecution(ctx context.Context, execution *types.BotExecution) error {
 	return nil
 }
-func (s *stubStorage) GetExecution(ctx context.Context, id int64) (*types.AgentExecution, error) {
+func (s *stubStorage) GetExecution(ctx context.Context, id int64) (*types.BotExecution, error) {
 	return nil, nil
 }
-func (s *stubStorage) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.AgentExecution, error) {
+func (s *stubStorage) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.BotExecution, error) {
 	return nil, nil
 }
 func (s *stubStorage) QueryWorkflowExecutions(ctx context.Context, filters types.WorkflowExecutionFilters) ([]*types.WorkflowExecution, error) {
@@ -191,20 +191,20 @@ func (s *stubStorage) GetLockStatus(ctx context.Context, key string) (*types.Dis
 }
 
 // Agent registry
-func (s *stubStorage) RegisterAgent(ctx context.Context, agent *types.AgentNode) error { return nil }
-func (s *stubStorage) ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error) {
+func (s *stubStorage) RegisterNode(ctx context.Context, agent *types.Node) error { return nil }
+func (s *stubStorage) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	return nil, nil
 }
-func (s *stubStorage) UpdateAgentHealth(ctx context.Context, id string, status types.HealthStatus) error {
+func (s *stubStorage) UpdateNodeHealth(ctx context.Context, id string, status types.HealthStatus) error {
 	return nil
 }
-func (s *stubStorage) UpdateAgentHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
+func (s *stubStorage) UpdateNodeHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
 	return nil
 }
-func (s *stubStorage) UpdateAgentHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
+func (s *stubStorage) UpdateNodeHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
 	return nil
 }
-func (s *stubStorage) UpdateAgentLifecycleStatus(ctx context.Context, id string, status types.AgentLifecycleStatus) error {
+func (s *stubStorage) UpdateBotLifecycleStatus(ctx context.Context, id string, status types.BotLifecycleStatus) error {
 	return nil
 }
 
@@ -223,39 +223,39 @@ func (s *stubStorage) GetBotExecutionHistory(ctx context.Context, botID string, 
 }
 
 // Agent Configuration Management
-func (s *stubStorage) StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+func (s *stubStorage) StoreBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	return nil
 }
-func (s *stubStorage) GetAgentConfiguration(ctx context.Context, agentID, packageID string) (*types.AgentConfiguration, error) {
+func (s *stubStorage) GetBotConfiguration(ctx context.Context, agentID, packageID string) (*types.BotConfiguration, error) {
 	return nil, nil
 }
-func (s *stubStorage) QueryAgentConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.AgentConfiguration, error) {
+func (s *stubStorage) QueryBotConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.BotConfiguration, error) {
 	return nil, nil
 }
-func (s *stubStorage) UpdateAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+func (s *stubStorage) UpdateBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	return nil
 }
-func (s *stubStorage) DeleteAgentConfiguration(ctx context.Context, agentID, packageID string) error {
+func (s *stubStorage) DeleteBotConfiguration(ctx context.Context, agentID, packageID string) error {
 	return nil
 }
-func (s *stubStorage) ValidateAgentConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
+func (s *stubStorage) ValidateBotConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
 	return nil, nil
 }
 
 // Agent Package Management
-func (s *stubStorage) StoreAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+func (s *stubStorage) StoreBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	return nil
 }
-func (s *stubStorage) GetAgentPackage(ctx context.Context, packageID string) (*types.AgentPackage, error) {
+func (s *stubStorage) GetBotPackage(ctx context.Context, packageID string) (*types.BotPackage, error) {
 	return nil, nil
 }
-func (s *stubStorage) QueryAgentPackages(ctx context.Context, filters types.PackageFilters) ([]*types.AgentPackage, error) {
+func (s *stubStorage) QueryBotPackages(ctx context.Context, filters types.PackageFilters) ([]*types.BotPackage, error) {
 	return nil, nil
 }
-func (s *stubStorage) UpdateAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+func (s *stubStorage) UpdateBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	return nil
 }
-func (s *stubStorage) DeleteAgentPackage(ctx context.Context, packageID string) error { return nil }
+func (s *stubStorage) DeleteBotPackage(ctx context.Context, packageID string) error { return nil }
 
 // Real-time features
 func (s *stubStorage) SubscribeToMemoryChanges(ctx context.Context, scope, scopeID string) (<-chan types.MemoryChangeEvent, error) {
@@ -279,25 +279,25 @@ func (s *stubStorage) ListDIDs(ctx context.Context) ([]*types.DIDRegistryEntry, 
 	return nil, nil
 }
 
-// Agents Server DID operations
-func (s *stubStorage) StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
+// Playground Server DID operations
+func (s *stubStorage) StorePlaygroundServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
 	return nil
 }
-func (s *stubStorage) GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error) {
+func (s *stubStorage) GetPlaygroundServerDID(ctx context.Context, agentsServerID string) (*types.PlaygroundServerDIDInfo, error) {
 	return nil, nil
 }
-func (s *stubStorage) ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error) {
+func (s *stubStorage) ListPlaygroundServerDIDs(ctx context.Context) ([]*types.PlaygroundServerDIDInfo, error) {
 	return nil, nil
 }
 
 // Agent DID operations
-func (s *stubStorage) StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
+func (s *stubStorage) StoreNodeDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
 	return nil
 }
-func (s *stubStorage) GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error) {
+func (s *stubStorage) GetNodeDID(ctx context.Context, agentID string) (*types.NodeDIDInfo, error) {
 	return nil, nil
 }
-func (s *stubStorage) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInfo, error) {
+func (s *stubStorage) ListNodeDIDs(ctx context.Context) ([]*types.NodeDIDInfo, error) {
 	return nil, nil
 }
 
@@ -313,7 +313,7 @@ func (s *stubStorage) ListComponentDIDs(ctx context.Context, agentDID string) ([
 }
 
 // Multi-step DID operations
-func (s *stubStorage) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []storage.ComponentDIDRequest) error {
+func (s *stubStorage) StoreNodeDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []storage.ComponentDIDRequest) error {
 	return nil
 }
 
@@ -399,7 +399,7 @@ func TestSetupRoutesRegistersMetricsAndUI(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	srv := &AgentsServer{
+	srv := &PlaygroundServer{
 		Router:            gin.New(),
 		storage:           newStubStorage(),
 		payloadStore:      &stubPayloadStore{},
@@ -421,12 +421,14 @@ func TestSetupRoutesRegistersMetricsAndUI(t *testing.T) {
 		require.Equal(t, "http://localhost:5173", w.Header().Get("Access-Control-Allow-Origin"))
 	})
 
-	t.Run("root redirect", func(t *testing.T) {
+	t.Run("root serves UI", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
 		w := httptest.NewRecorder()
 		srv.Router.ServeHTTP(w, req)
-		require.Equal(t, http.StatusMovedPermanently, w.Code)
-		require.Equal(t, "/ui/", w.Header().Get("Location"))
+		// In embedded mode without actual dist files, the handler will attempt
+		// to serve index.html. With the stub (no dist), we get a 200 from the
+		// registered route or a fallback. Just verify it's not a redirect.
+		require.NotEqual(t, http.StatusMovedPermanently, w.Code)
 	})
 }
 
@@ -435,7 +437,7 @@ func TestSetupRoutesRegistersWorkflowCleanupUIRoute(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	srv := &AgentsServer{
+	srv := &PlaygroundServer{
 		Router:            gin.New(),
 		storage:           newStubStorage(),
 		payloadStore:      &stubPayloadStore{},
@@ -463,7 +465,7 @@ func TestSetupRoutesRegistersHealthEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("health endpoint returns healthy status", func(t *testing.T) {
-		srv := &AgentsServer{
+		srv := &PlaygroundServer{
 			Router:            gin.New(),
 			storage:           newStubStorage(),
 			payloadStore:      &stubPayloadStore{},
@@ -486,7 +488,7 @@ func TestSetupRoutesRegistersHealthEndpoint(t *testing.T) {
 	})
 
 	t.Run("health endpoint accessible without API key", func(t *testing.T) {
-		srv := &AgentsServer{
+		srv := &PlaygroundServer{
 			Router:            gin.New(),
 			storage:           newStubStorage(),
 			payloadStore:      &stubPayloadStore{},
@@ -513,7 +515,7 @@ func TestSetupRoutesRegistersHealthEndpoint(t *testing.T) {
 	})
 
 	t.Run("health endpoint returns CORS headers", func(t *testing.T) {
-		srv := &AgentsServer{
+		srv := &PlaygroundServer{
 			Router:            gin.New(),
 			storage:           newStubStorage(),
 			payloadStore:      &stubPayloadStore{},
@@ -547,7 +549,7 @@ func TestUnregisterAgentFromMonitoringResponses(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	srv := &AgentsServer{}
+	srv := &PlaygroundServer{}
 
 	t.Run("missing node id returns 400", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodDelete, "/internal/nodes//monitor", nil)

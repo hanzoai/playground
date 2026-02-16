@@ -20,7 +20,7 @@ import (
 func TestUpdateExecutionStatusHandler_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -33,7 +33,7 @@ func TestUpdateExecutionStatusHandler_Success(t *testing.T) {
 	execution := &types.Execution{
 		ExecutionID: "exec-1",
 		RunID:        "run-1",
-		AgentNodeID:  "node-1",
+		NodeID:  "node-1",
 		BotID:   "bot-a",
 		Status:       types.ExecutionStatusRunning,
 		StartedAt:    time.Now().UTC(),
@@ -78,7 +78,7 @@ func TestUpdateExecutionStatusHandler_Success(t *testing.T) {
 func TestUpdateExecutionStatusHandler_Failed(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -131,7 +131,7 @@ func TestUpdateExecutionStatusHandler_Failed(t *testing.T) {
 func TestUpdateExecutionStatusHandler_WithWebhook(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
 		Bots: []types.BotDefinition{{ID: "bot-a"}},

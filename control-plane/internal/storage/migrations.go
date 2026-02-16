@@ -24,10 +24,10 @@ func (ls *LocalStorage) autoMigrateSchema(ctx context.Context) error {
 
 	models := []interface{}{
 		&ExecutionRecordModel{},
-		&AgentExecutionModel{},
-		&AgentNodeModel{},
-		&AgentConfigurationModel{},
-		&AgentPackageModel{},
+		&BotExecutionModel{},
+		&NodeModel{},
+		&BotConfigurationModel{},
+		&BotPackageModel{},
 		&WorkflowExecutionModel{},
 		&WorkflowExecutionEventModel{},
 		&WorkflowRunEventModel{},
@@ -36,7 +36,7 @@ func (ls *LocalStorage) autoMigrateSchema(ctx context.Context) error {
 		&WorkflowModel{},
 		&SessionModel{},
 		&DIDRegistryModel{},
-		&AgentDIDModel{},
+		&HanzoDIDModel{},
 		&ComponentDIDModel{},
 		&ExecutionVCModel{},
 		&WorkflowVCModel{},

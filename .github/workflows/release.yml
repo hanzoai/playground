@@ -1,6 +1,17 @@
 name: Release
 
 on:
+  # Automatic staging releases on push to main
+  push:
+    branches:
+      - main
+    paths:
+      - 'control-plane/**'
+      - 'sdk/**'
+      - 'VERSION'
+      - '.github/workflows/release.yml'
+
+  # Manual releases (production or staging)
   workflow_dispatch:
     inputs:
       release_environment:
@@ -350,7 +361,7 @@ jobs:
 
             ${{ needs.prepare.outputs.environment == 'staging' && '```bash
             # Staging binary (use --staging flag)
-            curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
+            curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
 
             # Python SDK (prerelease - requires --pre flag)
             pip install --pre playground
@@ -358,13 +369,13 @@ jobs:
             # TypeScript SDK
             npm install @playground/sdk@next
             ```' || '```bash
-            curl -fsSL https://playground.ai/install.sh | bash
+            curl -fsSL https://hanzo.bot/install.sh | bash
             ```' }}
 
             ### Version Pinning
 
             ```bash
-            VERSION=${{ needs.prepare.outputs.tag_name }} curl -fsSL https://playground.ai/install.sh | bash
+            VERSION=${{ needs.prepare.outputs.tag_name }} curl -fsSL https://hanzo.bot/install.sh | bash
             ```
 
             ### Manual Download

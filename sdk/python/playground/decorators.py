@@ -1,6 +1,6 @@
 """
 Enhanced decorators for Playground SDK with automatic workflow tracking.
-Provides always-on workflow tracking for reasoner calls.
+Provides always-on workflow tracking for bot calls.
 """
 
 import asyncio
@@ -17,13 +17,13 @@ from .execution_context import (
     set_execution_context,
     reset_execution_context,
 )
-from .agent_registry import get_current_agent_instance
-from .types import ReasonerDefinition
+from .bot_registry import get_current_bot_instance
+from .types import BotDefinition
 from .pydantic_utils import convert_function_args, should_convert_args
 from pydantic import ValidationError
 
 
-def reasoner(
+def bot(
     func=None,
     *,
     path: Optional[str] = None,
@@ -33,22 +33,22 @@ def reasoner(
     **kwargs,
 ):
     """
-    Enhanced reasoner decorator with automatic workflow tracking and full feature support.
+    Enhanced bot decorator with automatic workflow tracking and full feature support.
 
     Supports both:
-    @reasoner                           # Default: track_workflow=True
-    @reasoner(track_workflow=False)     # Explicit: disable tracking
-    @reasoner(path="/custom/path")      # Custom endpoint path
-    @reasoner(tags=["ai", "nlp"])       # Tags for organization
-    @reasoner(description="...")        # Custom description
+    @bot                           # Default: track_workflow=True
+    @bot(track_workflow=False)     # Explicit: disable tracking
+    @bot(path="/custom/path")      # Custom endpoint path
+    @bot(tags=["ai", "nlp"])       # Tags for organization
+    @bot(description="...")        # Custom description
 
     Args:
         func: The function to decorate (when used without parentheses)
-        path: Custom API endpoint path for this reasoner
-        tags: List of tags for organizing and categorizing reasoners
-        description: Description of what this reasoner does
+        path: Custom API endpoint path for this bot
+        tags: List of tags for organizing and categorizing bots
+        description: Description of what this bot does
         track_workflow: Whether to enable automatic workflow tracking (default: True)
-        **kwargs: Additional metadata to store with the reasoner
+        **kwargs: Additional metadata to store with the bot
 
     Returns:
         Decorated function with workflow tracking capabilities and full metadata support
@@ -68,37 +68,37 @@ def reasoner(
                     return f(*args, **kwargs)
 
         # Store comprehensive metadata on the function
-        wrapper._is_reasoner = True
+        wrapper._is_bot = True
         wrapper._track_workflow = track_workflow
-        wrapper._reasoner_name = f.__name__
+        wrapper._bot_name = f.__name__
         wrapper._original_func = f
-        wrapper._reasoner_path = path
-        wrapper._reasoner_tags = tags or []
-        wrapper._reasoner_description = (
-            description or f.__doc__ or f"Reasoner: {f.__name__}"
+        wrapper._bot_path = path
+        wrapper._bot_tags = tags or []
+        wrapper._bot_description = (
+            description or f.__doc__ or f"Bot: {f.__name__}"
         )
 
         # Store any additional metadata
         for key, value in kwargs.items():
-            setattr(wrapper, f"_reasoner_{key}", value)
+            setattr(wrapper, f"_bot_{key}", value)
 
         return wrapper
 
-    # Handle both @reasoner and @reasoner(...) syntax
+    # Handle both @bot and @bot(...) syntax
     if func is None:
-        # Called as @reasoner(track_workflow=False) or @reasoner(path="/custom")
+        # Called as @bot(track_workflow=False) or @bot(path="/custom")
         return decorator
     else:
-        # Called as @reasoner (no parentheses)
+        # Called as @bot (no parentheses)
         return decorator(func)
 
 
 async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
     """
-    Core function that handles automatic workflow tracking for reasoner calls.
+    Core function that handles automatic workflow tracking for bot calls.
 
     Args:
-        func: The reasoner function to execute
+        func: The bot function to execute
         *args: Positional arguments for the function
         **kwargs: Keyword arguments for the function
 
@@ -109,7 +109,7 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
     current_context = get_current_context()
 
     # Get agent instance (from context or global registry)
-    agent_instance = get_current_agent_instance()
+    agent_instance = get_current_bot_instance()
 
     if not agent_instance:
         # No agent context - execute without tracking
@@ -119,23 +119,23 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
             return func(*args, **kwargs)
 
     workflow_handler = getattr(agent_instance, "workflow_handler", None)
-    reasoner_name = getattr(func, "__name__", "reasoner")
+    bot_name = getattr(func, "__name__", "bot")
 
     # Generate execution metadata
     # Build a child context when executing under an existing workflow; otherwise create a root context
     if current_context:
         execution_context = current_context.create_child_context()
-        execution_context.reasoner_name = reasoner_name
+        execution_context.bot_name = bot_name
         parent_context = current_context
     else:
-        workflow_name = reasoner_name
+        workflow_name = bot_name
         if hasattr(agent_instance, "node_id"):
             workflow_name = f"{agent_instance.node_id}_{workflow_name}"
         execution_context = ExecutionContext.new_root(
             agent_node_id=getattr(agent_instance, "node_id", "agent"),
-            reasoner_name=workflow_name,
+            bot_name=workflow_name,
         )
-        execution_context.reasoner_name = reasoner_name
+        execution_context.bot_name = bot_name
         execution_context.agent_instance = agent_instance
         parent_context = None
 
@@ -150,7 +150,7 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
 
     if workflow_handler is not None:
         execution_context = await workflow_handler._ensure_execution_registered(
-            execution_context, reasoner_name, parent_context
+            execution_context, bot_name, parent_context
         )
 
     previous_agent_context = getattr(agent_instance, "_current_execution_context", None)
@@ -183,7 +183,7 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
                 execution_context.workflow_id,
                 session_id,
                 "agent",
-                reasoner_name,
+                bot_name,
             )
             if did_execution_context and hasattr(
                 agent_instance, "_populate_execution_context_with_did"
@@ -193,7 +193,7 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
                 )
         except Exception as exc:  # pragma: no cover - diagnostic only
             if getattr(agent_instance, "dev_mode", False):
-                log_warn(f"Failed to build DID context for {reasoner_name}: {exc}")
+                log_warn(f"Failed to build DID context for {bot_name}: {exc}")
             did_execution_context = None
 
     def _maybe_generate_vc(
@@ -207,14 +207,14 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
             and callable(generate_vc)
             and hasattr(agent_instance, "_should_generate_vc")
             and agent_instance._should_generate_vc(
-                reasoner_name, getattr(agent_instance, "_reasoner_vc_overrides", {})
+                bot_name, getattr(agent_instance, "_bot_vc_overrides", {})
             )
         ):
             asyncio.create_task(
                 generate_vc(
                     vc_generator,
                     did_execution_context,
-                    reasoner_name,
+                    bot_name,
                     input_data,
                     result_payload,
                     status=status,
@@ -242,7 +242,7 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
         except ValidationError as e:
             # Re-raise validation errors with context
             raise ValidationError(
-                f"Pydantic validation failed for reasoner '{func.__name__}': {e}",
+                f"Pydantic validation failed for bot '{func.__name__}': {e}",
                 model=getattr(e, "model", None),
             ) from e
         except Exception as e:
@@ -253,7 +253,7 @@ async def _execute_with_tracking(func: Callable, *args, **kwargs) -> Any:
         input_data = _build_input_payload(sig, args, call_kwargs)
 
         start_payload = {
-            "reasoner_name": reasoner_name,
+            "bot_name": bot_name,
             "args": list(args),
             "kwargs": dict(call_kwargs),
             "input_data": input_data,
@@ -339,7 +339,7 @@ def _build_input_payload(
 def _compose_event_payload(
     agent,
     context: ExecutionContext,
-    reasoner_name: str,
+    bot_name: str,
     status: str,
     parent_execution_id: Optional[str],
     input_data: Optional[Dict[str, Any]] = None,
@@ -348,10 +348,10 @@ def _compose_event_payload(
         "execution_id": context.execution_id,
         "workflow_id": context.workflow_id,
         "run_id": context.run_id,
-        "reasoner_id": reasoner_name,
+        "bot_id": bot_name,
         "agent_node_id": getattr(agent, "node_id", None),
         "status": status,
-        "type": reasoner_name,
+        "type": bot_name,
         "parent_execution_id": parent_execution_id,
         "parent_workflow_id": context.parent_workflow_id,
     }
@@ -386,7 +386,7 @@ def on_change(pattern: Union[str, List[str]]):
     return decorator
 
 
-# Legacy support for old reasoner decorator signature
+# Legacy support for old bot decorator signature
 async def _send_workflow_start(
     agent, context: ExecutionContext, payload: Dict[str, Any]
 ) -> None:
@@ -394,7 +394,7 @@ async def _send_workflow_start(
     if handler is None:
         return
     try:
-        reasoner_name = payload.get("reasoner_name", context.reasoner_name)
+        bot_name = payload.get("bot_name", context.bot_name)
         parent_execution_id = payload.get("parent_execution_id")
         input_data = payload.get("input_data") or {}
 
@@ -402,7 +402,7 @@ async def _send_workflow_start(
             await handler.notify_call_start(
                 context.execution_id,
                 context,
-                reasoner_name,
+                bot_name,
                 input_data,
                 parent_execution_id=parent_execution_id,
             )
@@ -410,7 +410,7 @@ async def _send_workflow_start(
             event_payload = _compose_event_payload(
                 agent,
                 context,
-                reasoner_name,
+                bot_name,
                 "running",
                 parent_execution_id,
                 input_data=input_data,
@@ -434,7 +434,7 @@ async def _send_workflow_completion(
     try:
         parent_execution_id = payload.get("parent_execution_id")
         input_data = payload.get("input_data")
-        reasoner_name = context.reasoner_name
+        bot_name = context.bot_name
 
         if hasattr(handler, "notify_call_complete"):
             await handler.notify_call_complete(
@@ -450,7 +450,7 @@ async def _send_workflow_completion(
             event_payload = _compose_event_payload(
                 agent,
                 context,
-                reasoner_name,
+                bot_name,
                 "succeeded",
                 parent_execution_id,
                 input_data=input_data,
@@ -476,7 +476,7 @@ async def _send_workflow_error(
     try:
         parent_execution_id = payload.get("parent_execution_id")
         input_data = payload.get("input_data")
-        reasoner_name = context.reasoner_name
+        bot_name = context.bot_name
 
         if hasattr(handler, "notify_call_error"):
             await handler.notify_call_error(
@@ -492,7 +492,7 @@ async def _send_workflow_error(
             event_payload = _compose_event_payload(
                 agent,
                 context,
-                reasoner_name,
+                bot_name,
                 "failed",
                 parent_execution_id,
                 input_data=input_data,
@@ -505,12 +505,12 @@ async def _send_workflow_error(
             log_warn(f"Failed to emit workflow error: {exc}")
 
 
-def legacy_reasoner(reasoner_id: str, input_schema: dict, output_schema: dict):
+def legacy_bot(bot_id: str, input_schema: dict, output_schema: dict):
     """
-    Legacy reasoner decorator for backward compatibility.
+    Legacy bot decorator for backward compatibility.
 
     This is kept for compatibility with existing code that uses the old signature.
-    New code should use the enhanced @reasoner decorator.
+    New code should use the enhanced @bot decorator.
     """
 
     def decorator(func):
@@ -519,8 +519,8 @@ def legacy_reasoner(reasoner_id: str, input_schema: dict, output_schema: dict):
             return func(*args, **kwargs)
 
         # Attach metadata to the function
-        wrapper._reasoner_def = ReasonerDefinition(
-            id=reasoner_id, input_schema=input_schema, output_schema=output_schema
+        wrapper._bot_def = BotDefinition(
+            id=bot_id, input_schema=input_schema, output_schema=output_schema
         )
         return wrapper
 

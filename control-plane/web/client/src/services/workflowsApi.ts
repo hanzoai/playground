@@ -104,7 +104,7 @@ interface ApiWorkflowExecution {
   workflow_id: string;
   parent_execution_id?: string | null;
   parent_workflow_id?: string | null;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;

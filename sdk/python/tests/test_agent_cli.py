@@ -4,7 +4,7 @@ Tests for agent_cli.py CLI functionality.
 
 import pytest
 from unittest.mock import MagicMock, patch, Mock
-from playground.agent_cli import AgentCLI
+from playground.bot_cli import BotCLI
 
 
 @pytest.fixture
@@ -12,9 +12,9 @@ def mock_agent():
     """Create a mock agent instance."""
     agent = MagicMock()
     agent.node_id = "test-agent"
-    agent.reasoners = [
-        {"id": "reasoner1", "type": "reasoner"},
-        {"id": "reasoner2", "type": "reasoner"},
+    agent.bots = [
+        {"id": "bot1", "type": "bot"},
+        {"id": "bot2", "type": "bot"},
     ]
     agent.skills = [
         {"id": "skill1", "type": "skill"},
@@ -23,18 +23,18 @@ def mock_agent():
 
 
 def test_agent_cli_init(mock_agent):
-    """Test AgentCLI initialization."""
-    cli = AgentCLI(mock_agent)
+    """Test BotCLI initialization."""
+    cli = BotCLI(mock_agent)
     assert cli.agent == mock_agent
 
 
 def test_get_all_functions(mock_agent):
     """Test getting all available functions."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
     functions = cli._get_all_functions()
 
-    assert "reasoner1" in functions
-    assert "reasoner2" in functions
+    assert "bot1" in functions
+    assert "bot2" in functions
     assert "skill1" in functions
     assert len(functions) == 3
     # Should be sorted
@@ -43,20 +43,20 @@ def test_get_all_functions(mock_agent):
 
 def test_get_function(mock_agent):
     """Test getting function by name."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     # Mock a function on the agent
     mock_func = MagicMock()
-    setattr(mock_agent, "reasoner1", mock_func)
+    setattr(mock_agent, "bot1", mock_func)
 
-    result = cli._get_function("reasoner1")
+    result = cli._get_function("bot1")
     # Should return the function or its _original_func if wrapped
     assert result is not None
 
 
 def test_get_function_not_found(mock_agent):
     """Test getting non-existent function."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
     # The function checks hasattr, so if it doesn't exist, it returns None
     # But we need to ensure the attribute doesn't exist
     if hasattr(mock_agent, "nonexistent"):
@@ -67,12 +67,12 @@ def test_get_function_not_found(mock_agent):
 
 def test_get_function_metadata(mock_agent):
     """Test getting function metadata."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
-    metadata = cli._get_function_metadata("reasoner1")
+    metadata = cli._get_function_metadata("bot1")
     assert metadata is not None
-    assert metadata["id"] == "reasoner1"
-    assert metadata["type"] == "reasoner"
+    assert metadata["id"] == "bot1"
+    assert metadata["type"] == "bot"
 
     metadata = cli._get_function_metadata("skill1")
     assert metadata is not None
@@ -85,7 +85,7 @@ def test_get_function_metadata(mock_agent):
 
 def test_parse_function_args_simple(mock_agent):
     """Test parsing simple function arguments."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def test_func(name: str, age: int):
         pass
@@ -97,7 +97,7 @@ def test_parse_function_args_simple(mock_agent):
 
 def test_parse_function_args_boolean(mock_agent):
     """Test parsing boolean arguments."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def test_func(verbose: bool, debug: bool):
         pass
@@ -109,7 +109,7 @@ def test_parse_function_args_boolean(mock_agent):
 
 def test_parse_function_args_with_defaults(mock_agent):
     """Test parsing arguments with default values."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def test_func(name: str, age: int = 25):
         pass
@@ -121,7 +121,7 @@ def test_parse_function_args_with_defaults(mock_agent):
 
 def test_parse_function_args_json(mock_agent):
     """Test parsing JSON arguments."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def test_func(data: dict, items: list):
         pass
@@ -135,7 +135,7 @@ def test_parse_function_args_json(mock_agent):
 
 def test_call_function_sync(mock_agent):
     """Test calling a synchronous function."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def sync_func(name: str) -> dict:
         return {"result": f"Hello {name}"}
@@ -157,7 +157,7 @@ def test_call_function_sync(mock_agent):
 
 def test_call_function_async(mock_agent):
     """Test calling an async function."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     async def async_func(name: str) -> dict:
         return {"result": f"Hello {name}"}
@@ -176,7 +176,7 @@ def test_call_function_async(mock_agent):
 
 def test_call_function_not_found(mock_agent):
     """Test calling non-existent function."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     with patch.object(cli, "_get_function", return_value=None):
         with patch("playground.agent_cli.log_error") as mock_log_error:
@@ -192,7 +192,7 @@ def test_call_function_not_found(mock_agent):
 
 def test_show_function_help(mock_agent):
     """Test showing function help."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def test_func(name: str, age: int = 25) -> dict:
         """This is a test function."""
@@ -203,7 +203,7 @@ def test_show_function_help(mock_agent):
             with patch.object(
                 cli,
                 "_get_function_metadata",
-                return_value={"type": "reasoner", "id": "test_func"},
+                return_value={"type": "bot", "id": "test_func"},
             ):
                 cli._show_function_help("test_func")
 
@@ -211,12 +211,12 @@ def test_show_function_help(mock_agent):
                 assert mock_print.call_count > 0
                 printed = " ".join(str(call) for call in mock_print.call_args_list)
                 assert "test_func" in printed
-                assert "reasoner" in printed
+                assert "bot" in printed
 
 
 def test_list_functions(mock_agent):
     """Test listing all functions."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     def func1():
         """Function 1 docstring."""
@@ -235,12 +235,12 @@ def test_list_functions(mock_agent):
             assert mock_print.call_count > 0
             printed = " ".join(str(call) for call in mock_print.call_args_list)
             assert "test-agent" in printed
-            assert "reasoner1" in printed or "reasoner2" in printed
+            assert "bot1" in printed or "bot2" in printed
 
 
 def test_run_cli_list_command(mock_agent):
     """Test running CLI with list command."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     with patch.object(cli, "_list_functions") as mock_list:
         with patch("sys.argv", ["script", "list"]):
@@ -254,7 +254,7 @@ def test_run_cli_list_command(mock_agent):
 
 def test_run_cli_call_command(mock_agent):
     """Test running CLI with call command."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     with patch.object(cli, "_call_function") as mock_call:
         with patch("sys.argv", ["script", "call", "func1", "--arg", "value"]):
@@ -271,7 +271,7 @@ def test_run_cli_call_command(mock_agent):
 
 def test_run_cli_help_command(mock_agent):
     """Test running CLI with help command."""
-    cli = AgentCLI(mock_agent)
+    cli = BotCLI(mock_agent)
 
     with patch.object(cli, "_show_function_help") as mock_help:
         with patch("sys.argv", ["script", "help", "func1"]):

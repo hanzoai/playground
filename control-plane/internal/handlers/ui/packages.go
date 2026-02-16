@@ -119,7 +119,7 @@ func (h *PackageHandler) ListPackagesHandler(c *gin.Context) {
 
 	// Get all agent packages from storage
 	ctx := c.Request.Context()
-	packages, err := h.storage.QueryAgentPackages(ctx, types.PackageFilters{})
+	packages, err := h.storage.QueryBotPackages(ctx, types.PackageFilters{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to list packages"})
 		return
@@ -145,7 +145,7 @@ func (h *PackageHandler) ListPackagesHandler(c *gin.Context) {
 
 		if configRequired {
 			// Check if configuration exists and is complete
-			config, err := h.storage.GetAgentConfiguration(ctx, pkg.ID, pkg.ID)
+			config, err := h.storage.GetBotConfiguration(ctx, pkg.ID, pkg.ID)
 			if err == nil && config.Status == types.ConfigurationStatusActive {
 				configComplete = true
 			}
@@ -191,7 +191,7 @@ func (h *PackageHandler) GetPackageDetailsHandler(c *gin.Context) {
 
 	// Get the agent package
 	ctx := c.Request.Context()
-	pkg, err := h.storage.GetAgentPackage(ctx, packageID)
+	pkg, err := h.storage.GetBotPackage(ctx, packageID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "package not found"})
 		return
@@ -215,7 +215,7 @@ func (h *PackageHandler) GetPackageDetailsHandler(c *gin.Context) {
 	configComplete := false
 
 	if configRequired {
-		config, err := h.storage.GetAgentConfiguration(ctx, packageID, packageID)
+		config, err := h.storage.GetBotConfiguration(ctx, packageID, packageID)
 		if err == nil {
 			currentConfig = config.Configuration
 			configComplete = config.Status == types.ConfigurationStatusActive
@@ -254,13 +254,13 @@ func (h *PackageHandler) GetPackageDetailsHandler(c *gin.Context) {
 }
 
 // determinePackageStatus determines the current status of a package
-func (h *PackageHandler) determinePackageStatus(ctx context.Context, pkg *types.AgentPackage) string {
+func (h *PackageHandler) determinePackageStatus(ctx context.Context, pkg *types.BotPackage) string {
 	// Check if configuration is required
 	configRequired := len(pkg.ConfigurationSchema) > 0
 
 	if configRequired {
 		// Check configuration status
-		config, err := h.storage.GetAgentConfiguration(ctx, pkg.ID, pkg.ID)
+		config, err := h.storage.GetBotConfiguration(ctx, pkg.ID, pkg.ID)
 		if err != nil {
 			return "not_configured"
 		}
@@ -284,7 +284,7 @@ func (h *PackageHandler) determinePackageStatus(ctx context.Context, pkg *types.
 }
 
 // matchesSearch checks if a package matches the search query
-func (h *PackageHandler) matchesSearch(pkg *types.AgentPackage, search string) bool {
+func (h *PackageHandler) matchesSearch(pkg *types.BotPackage, search string) bool {
 	search = strings.ToLower(search)
 
 	return strings.Contains(strings.ToLower(pkg.Name), search) ||

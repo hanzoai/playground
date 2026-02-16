@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { AgentNodeSummary } from '../types/playground';
+import type { NodeSummary } from '../types/playground';
 import { getNodesSummary, streamNodeEvents } from '../services/api';
-import AgentNodesTable from './AgentNodesTable';
+import NodesTable from './NodesTable';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from '@/components/ui/icon-bridge';
 
 interface NodeEvent {
   type: string;
-  node: AgentNodeSummary | { id: string };
+  node: NodeSummary | { id: string };
   timestamp: string;
 }
 
 const NodesList: React.FC = () => {
-  const [nodes, setNodes] = useState<AgentNodeSummary[]>([]);
+  const [nodes, setNodes] = useState<NodeSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
@@ -28,7 +28,7 @@ const NodesList: React.FC = () => {
       setTotalCount(data.count);
     } catch (err) {
       console.error('Failed to load nodes summary:', err);
-      setError('Failed to load agent nodes. Please ensure the Hanzo Bot server is running and accessible.');
+      setError('Failed to load hanzo nodes. Please ensure the Playground server is running and accessible.');
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +54,7 @@ const NodesList: React.FC = () => {
       const data: NodeEvent = JSON.parse(event.data);
       console.log('Node registered event:', data);
       setNodes(prevNodes => {
-        const newNode = data.node as AgentNodeSummary;
+        const newNode = data.node as NodeSummary;
         // Check if node already exists (for updates)
         const existingIndex = prevNodes.findIndex(node => node.id === newNode.id);
         if (existingIndex > -1) {
@@ -71,7 +71,7 @@ const NodesList: React.FC = () => {
       const data: NodeEvent = JSON.parse(event.data);
       console.log('Node health changed event:', data);
       setNodes(prevNodes => {
-        const updatedNode = data.node as AgentNodeSummary;
+        const updatedNode = data.node as NodeSummary;
         return prevNodes.map(node =>
           node.id === updatedNode.id ? updatedNode : node
         );
@@ -118,7 +118,7 @@ const NodesList: React.FC = () => {
         </Alert>
       )}
 
-      <AgentNodesTable nodes={nodes} isLoading={isLoading} error={error} />
+      <NodesTable nodes={nodes} isLoading={isLoading} error={error} />
     </div>
   );
 };

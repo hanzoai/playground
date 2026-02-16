@@ -25,7 +25,7 @@ type WebhookStore interface {
 	UpdateExecutionWebhookState(ctx context.Context, executionID string, update types.ExecutionWebhookStateUpdate) error
 	StoreExecutionWebhookEvent(ctx context.Context, event *types.ExecutionWebhookEvent) error
 	ListDueExecutionWebhooks(ctx context.Context, limit int) ([]*types.ExecutionWebhook, error)
-	GetAgent(ctx context.Context, id string) (*types.AgentNode, error)
+	GetNode(ctx context.Context, id string) (*types.Node, error)
 }
 
 type WebhookDispatcher interface {
@@ -419,7 +419,7 @@ func (d *webhookDispatcher) buildPayload(ctx context.Context, exec *types.Execut
 }
 
 func (d *webhookDispatcher) resolveTargetType(ctx context.Context, exec *types.Execution) string {
-	agent, err := d.store.GetAgent(ctx, exec.NodeID)
+	agent, err := d.store.GetNode(ctx, exec.NodeID)
 	if err != nil || agent == nil {
 		return "bot"
 	}

@@ -120,7 +120,7 @@ async def test_submit_execution_wraps_payload(monkeypatch):
     manager.connection_manager = DummyConnectionManager(DummySession())
 
     execution_id = await manager.submit_execution(
-        target="node.reasoner",
+        target="node.bot",
         input_data={"foo": "bar"},
     )
 
@@ -128,7 +128,7 @@ async def test_submit_execution_wraps_payload(monkeypatch):
 
     assert session_post.await_count == 1
     call = session_post.await_args
-    assert call.args[0] == "http://example/api/v1/execute/async/node.reasoner"
+    assert call.args[0] == "http://example/api/v1/execute/async/node.bot"
     assert call.kwargs["json"] == {"input": {"foo": "bar"}}
 
 
@@ -179,7 +179,7 @@ async def test_submit_execution_ignores_completed_entries_for_capacity():
 
     # Should still accept a new submission because there are no active executions.
     execution_id = await manager.submit_execution(
-        target="node.reasoner",
+        target="node.bot",
         input_data={"foo": "bar"},
     )
 

@@ -8,7 +8,7 @@ import { getStatusLabel, getStatusTheme, normalizeExecutionStatus } from '../../
 interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -110,7 +110,7 @@ export function ExecutionPanel({ execution, onClose, isOpen, task_name, agent_na
               {task_name || execution.bot_id}
             </h3>
             <p className="text-body-small">
-              {agent_name || execution.agent_node_id}
+              {agent_name || execution.node_id}
             </p>
           </div>
         </div>
@@ -232,15 +232,15 @@ export function ExecutionPanel({ execution, onClose, isOpen, task_name, agent_na
             </div>
 
             <div className="space-y-1">
-              <div className="text-body-small">Agent Node ID</div>
+              <div className="text-body-small">Node ID</div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono text-foreground">
-                  {execution.agent_node_id}
+                  {execution.node_id}
                 </code>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(execution.agent_node_id, 'agent')}
+                  onClick={() => copyToClipboard(execution.node_id, 'agent')}
                   className="h-6 w-6 p-0"
                 >
                   {copiedField === 'agent' ? (

@@ -172,7 +172,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
             <DIDStatusBadge status={didInfo.status} />
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Comprehensive DID identity details for agent node {nodeId}
+            Comprehensive DID identity details for hanzo node {nodeId}
           </DialogDescription>
         </DialogHeader>
 
@@ -228,7 +228,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-muted-foreground">
-                        Hanzo Bot Server:
+                        Playground Server:
                       </span>
                       <span className="text-foreground font-mono text-xs">
                         {didInfo.agents_server_id}
@@ -393,12 +393,12 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                           Node ID:
                         </dt>
                         <dd className="font-mono text-foreground text-right max-w-[60%] break-all">
-                          {didInfo.agent_node_id}
+                          {didInfo.node_id}
                         </dd>
                       </div>
                       <div className="flex items-center justify-between">
                         <dt className="font-medium text-muted-foreground">
-                          Hanzo Bot Server:
+                          Playground Server:
                         </dt>
                         <dd className="font-mono text-foreground text-right max-w-[60%] break-all">
                           {didInfo.agents_server_id}

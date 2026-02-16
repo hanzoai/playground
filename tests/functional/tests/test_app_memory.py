@@ -1,7 +1,7 @@
 import pytest
 
-from agents.memory_agent import AGENT_SPEC, create_agent as create_memory_agent
-from utils import run_agent_server, unique_node_id
+from bots.memory_agent import BOT_SPEC, create_bot as create_memory_bot
+from utils import run_bot_server, unique_node_id
 
 
 async def _invoke_remember_user(async_http_client, endpoint: str, payload: dict):
@@ -16,12 +16,12 @@ async def _invoke_remember_user(async_http_client, endpoint: str, payload: dict)
 
 @pytest.mark.functional
 @pytest.mark.asyncio
-async def test_app_memory_via_reasoner_endpoint(async_http_client):
-    agent = create_memory_agent(node_id=unique_node_id(AGENT_SPEC.default_node_id))
+async def test_app_memory_via_bot_endpoint(async_http_client):
+    bot = create_memory_bot(node_id=unique_node_id(BOT_SPEC.default_node_id))
 
-    async with run_agent_server(agent):
-        endpoint = f"/api/v1/reasoners/{agent.node_id}.remember_user"
-        user_id = unique_node_id("memory-user-reasoner")
+    async with run_bot_server(bot):
+        endpoint = f"/api/v1/bots/{bot.node_id}.remember_user"
+        user_id = unique_node_id("memory-user-bot")
         first = await _invoke_remember_user(
             async_http_client,
             endpoint,
@@ -43,10 +43,10 @@ async def test_app_memory_via_reasoner_endpoint(async_http_client):
 @pytest.mark.functional
 @pytest.mark.asyncio
 async def test_app_memory_via_execute_endpoint(async_http_client):
-    agent = create_memory_agent(node_id=unique_node_id(AGENT_SPEC.default_node_id))
+    bot = create_memory_bot(node_id=unique_node_id(BOT_SPEC.default_node_id))
 
-    async with run_agent_server(agent):
-        endpoint = f"/api/v1/execute/{agent.node_id}.remember_user"
+    async with run_bot_server(bot):
+        endpoint = f"/api/v1/execute/{bot.node_id}.remember_user"
         user_id = unique_node_id("memory-user-execute")
 
         first = await _invoke_remember_user(

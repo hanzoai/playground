@@ -566,7 +566,7 @@ export function buildDeckGraph(
     }
 
     // Generate agent colors
-    const agentId = node.agent_node_id || `agent-${index}`;
+    const agentId = node.node_id || `agent-${index}`;
     if (!agentColors.has(agentId)) {
       agentColors.set(agentId, getAgentColor(agentId, agentColors.size));
     }
@@ -679,7 +679,7 @@ export function buildDeckGraph(
       const y = layerIndex * verticalSpacing;
       const z = 0; // Keep flat for now
 
-      const agentId = node.agent_node_id || node.bot_id || "agent";
+      const agentId = node.node_id || node.bot_id || "agent";
       const colorInfo =
         agentColors.get(agentId) ??
         getAgentColor(agentId, agentColors.size + 1);

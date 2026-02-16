@@ -1,4 +1,4 @@
-"""AgentRouter provides FastAPI-style organization for agent reasoners and skills."""
+"""BotRouter provides FastAPI-style organization for bot bots and skills."""
 
 from __future__ import annotations
 
@@ -9,34 +9,34 @@ import inspect
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
-    from .agent import Agent
+    from .bot import Bot
 
 
-class AgentRouter:
-    """Collects reasoners and skills before registering them on an Agent."""
+class BotRouter:
+    """Collects bots and skills before registering them on a Bot."""
 
     def __init__(self, prefix: str = "", tags: Optional[List[str]] = None):
         self.prefix = prefix.rstrip("/") if prefix else ""
         self.tags = tags or []
-        self.reasoners: List[Dict[str, Any]] = []
+        self.bots: List[Dict[str, Any]] = []
         self.skills: List[Dict[str, Any]] = []
-        self._agent: Optional["Agent"] = None
+        self._agent: Optional["Bot"] = None
         self._tracked_functions: Dict[str, Callable] = {}
 
     # ------------------------------------------------------------------
     # Registration helpers
-    def reasoner(
+    def bot(
         self,
         path: Optional[str] = None,
         *,
         tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Callable[[Callable], Callable]:
-        """Store a reasoner definition for later registration on an Agent.
+        """Store a bot definition for later registration on a Bot.
 
         Returns a wrapper function that delegates to the tracked version once
-        the router is attached to an agent. This ensures that direct calls
-        between reasoners go through workflow tracking.
+        the router is attached to a bot. This ensures that direct calls
+        between bots go through workflow tracking.
         """
 
         direct_registration: Optional[Callable] = None
@@ -69,10 +69,10 @@ class AgentRouter:
                 return func(*args, **kw)
 
             # Store metadata on the wrapper
-            wrapper._is_router_reasoner = True
+            wrapper._is_router_bot = True
             wrapper._original_func = func
 
-            router_ref.reasoners.append(
+            router_ref.bots.append(
                 {
                     "func": func,
                     "wrapper": wrapper,
@@ -130,9 +130,9 @@ class AgentRouter:
     # Automatic delegation via __getattr__
     def __getattr__(self, name: str) -> Any:
         """
-        Automatically delegate any unknown attribute/method to the attached agent.
+        Automatically delegate any unknown attribute/method to the attached bot.
 
-        This allows AgentRouter to transparently proxy all Agent methods (like ai(),
+        This allows BotRouter to transparently proxy all Bot methods (like ai(),
         call(), memory, note(), discover(), etc.) without explicitly defining
         delegation methods for each one.
 
@@ -140,34 +140,34 @@ class AgentRouter:
             name: The attribute/method name being accessed
 
         Returns:
-            The attribute/method from the attached agent
+            The attribute/method from the attached bot
 
         Raises:
-            RuntimeError: If router is not attached to an agent
-            AttributeError: If the agent doesn't have the requested attribute
+            RuntimeError: If router is not attached to a bot
+            AttributeError: If the bot doesn't have the requested attribute
         """
         # Avoid infinite recursion by accessing _agent through object.__getattribute__
         try:
             agent = object.__getattribute__(self, '_agent')
         except AttributeError:
             raise RuntimeError(
-                "Router not attached to an agent. Call Agent.include_router(router) first."
+                "Router not attached to a bot. Call Bot.include_router(router) first."
             )
 
         if agent is None:
             raise RuntimeError(
-                "Router not attached to an agent. Call Agent.include_router(router) first."
+                "Router not attached to a bot. Call Bot.include_router(router) first."
             )
 
-        # Delegate to the agent - will raise AttributeError if not found
+        # Delegate to the bot - will raise AttributeError if not found
         return getattr(agent, name)
 
     @property
-    def app(self) -> "Agent":
-        """Access the underlying Agent instance."""
+    def app(self) -> "Bot":
+        """Access the underlying Bot instance."""
         if not self._agent:
             raise RuntimeError(
-                "Router not attached to an agent. Call Agent.include_router(router) first."
+                "Router not attached to a bot. Call Bot.include_router(router) first."
             )
         return self._agent
 
@@ -197,7 +197,7 @@ class AgentRouter:
             segments.append(custom.strip("/"))
         elif default:
             stripped = default.strip("/")
-            if stripped.startswith("reasoners/") or stripped.startswith("skills/"):
+            if stripped.startswith("bots/") or stripped.startswith("skills/"):
                 head, *tail = stripped.split("/")
                 segments.append(head)
                 segments.extend(prefixes)
@@ -215,5 +215,5 @@ class AgentRouter:
         combined = "/".join(segment for segment in segments if segment)
         return f"/{combined}" if combined else "/"
 
-    def _attach_agent(self, agent: "Agent") -> None:
+    def _attach_bot(self, agent: "Bot") -> None:
         self._agent = agent

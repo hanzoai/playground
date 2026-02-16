@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import type {
-  AgentNodeSummary,
-  AgentStatus,
+  NodeSummary,
+  BotStatus,
   HealthStatus,
   LifecycleStatus,
 } from "../types/playground";
@@ -55,7 +55,7 @@ const formatRelativeTime = (date: Date) => {
 };
 
 export function NodesPage() {
-  const [nodes, setNodes] = useState<AgentNodeSummary[]>([]);
+  const [nodes, setNodes] = useState<NodeSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,7 +128,7 @@ export function NodesPage() {
     } catch (err) {
       console.error("Failed to load nodes summary:", err);
       setError(
-        "Failed to load agent nodes. Please ensure the Hanzo Bot server is running and accessible."
+        "Failed to load hanzo nodes. Please ensure the Playground server is running and accessible."
       );
     } finally {
       setIsLoading(false);
@@ -172,7 +172,7 @@ export function NodesPage() {
         console.log("🆕 Frontend: Processing node_registered event");
         if (nodeData) {
           setNodes((prevNodes) => {
-            const newNode = nodeData as AgentNodeSummary;
+            const newNode = nodeData as NodeSummary;
             console.log("🆕 Frontend: New node data:", newNode);
             const existingIndex = prevNodes.findIndex(
               (node) => node.id === newNode.id
@@ -199,7 +199,7 @@ export function NodesPage() {
         console.log(`🔄 Frontend: Processing ${latestEvent.type} event`);
         if (nodeData) {
           setNodes((prevNodes) => {
-            const updatedNode = nodeData as AgentNodeSummary;
+            const updatedNode = nodeData as NodeSummary;
             console.log("🔄 Frontend: Updated node data:", {
               id: updatedNode.id,
               health_status: updatedNode.health_status,
@@ -254,7 +254,7 @@ export function NodesPage() {
         ) {
           const statusData = eventData as {
             node_id: string;
-            new_status: AgentStatus;
+            new_status: BotStatus;
           };
           setNodes((prevNodes) =>
             prevNodes.map((node) => {
@@ -318,7 +318,7 @@ export function NodesPage() {
         ) {
           const refreshData = eventData as {
             node_id: string;
-            status: AgentStatus;
+            status: BotStatus;
           };
           setNodes((prevNodes) =>
             prevNodes.map((node) => {
@@ -385,7 +385,7 @@ export function NodesPage() {
         ) {
           const statusData = eventData as {
             node_id: string;
-            new_status: AgentStatus;
+            new_status: BotStatus;
           };
           setNodes((prevNodes) =>
             prevNodes.map((node) => {
@@ -479,7 +479,7 @@ export function NodesPage() {
 
   // Handle bulk status refresh
   const handleBulkRefresh = (
-    status: AgentStatus | Record<string, AgentStatus>
+    status: BotStatus | Record<string, BotStatus>
   ) => {
     if ("state" in status) {
       // Single status - shouldn't happen in bulk refresh but handle it
@@ -488,7 +488,7 @@ export function NodesPage() {
     }
 
     // Multiple statuses
-    const statuses = status as Record<string, AgentStatus>;
+    const statuses = status as Record<string, BotStatus>;
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
         const newStatus = statuses[node.id];
@@ -538,7 +538,7 @@ export function NodesPage() {
     ? `Showing ${filteredNodes.length} result${
         filteredNodes.length === 1 ? "" : "s"
       } for "${searchQuery}"`
-    : "Monitor and manage your AI agent nodes in the Hanzo Bot platform.";
+    : "Monitor and manage your AI hanzo nodes in the Playground orchestration platform.";
 
   const connectionBadgeVariant = connected
     ? "success"
@@ -565,7 +565,7 @@ export function NodesPage() {
   }
 
   pageHeaderActions.push({
-    label: "Add Serverless Agent",
+    label: "Add Serverless Bot",
     onClick: () => setShowServerlessModal(true),
     icon: <Plus className="h-4 w-4" />,
     variant: "default",
@@ -595,7 +595,7 @@ export function NodesPage() {
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden">
         <PageHeader
-          title="Agent Nodes"
+          title="Nodes"
           description={headerSubtitle}
           actions={pageHeaderActions}
           aside={

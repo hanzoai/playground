@@ -46,9 +46,8 @@ func TestPostgresStorage_ConnectionPooling(t *testing.T) {
 	exec := &types.Execution{
 		ExecutionID: "exec-pg-1",
 		RunID:       "run-pg-1",
-		AgentNodeID: "agent-1",
+		NodeID:      "agent-1",
 		BotID:  "bot-1",
-		NodeID:      "node-1",
 		Status:      string(types.ExecutionStatusPending),
 		StartedAt:   time.Now().UTC(),
 	}
@@ -104,9 +103,8 @@ func TestPostgresStorage_CleanupWorkflowRemovesExecutionBackedRunData(t *testing
 	exec := &types.Execution{
 		ExecutionID: executionID,
 		RunID:       runID,
-		AgentNodeID: "agent-cleanup",
+		NodeID:      "agent-cleanup",
 		BotID:  "bot-cleanup",
-		NodeID:      "node-cleanup",
 		Status:      string(types.ExecutionStatusSucceeded),
 		StartedAt:   time.Now().UTC(),
 	}
@@ -189,9 +187,8 @@ func TestPostgresStorage_ConnectionSettings(t *testing.T) {
 	exec := &types.Execution{
 		ExecutionID: "exec-pg-conn",
 		RunID:       "run-pg-conn",
-		AgentNodeID: "agent-1",
+		NodeID:      "agent-1",
 		BotID:  "bot-1",
-		NodeID:      "node-1",
 		Status:      string(types.ExecutionStatusPending),
 		StartedAt:   time.Now().UTC(),
 	}
@@ -234,9 +231,8 @@ func TestPostgresStorage_ConcurrentOperations(t *testing.T) {
 			exec := &types.Execution{
 				ExecutionID: "exec-pg-concurrent-" + string(rune(id)),
 				RunID:       "run-pg-concurrent",
-				AgentNodeID: "agent-1",
+				NodeID:      "agent-1",
 				BotID:  "bot-1",
-				NodeID:      "node-1",
 				Status:      string(types.ExecutionStatusPending),
 				StartedAt:   time.Now().UTC(),
 			}

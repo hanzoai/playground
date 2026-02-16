@@ -84,7 +84,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   <HanzoLogo className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold tracking-tight">Hanzo Bot</span>
+                  <span className="truncate font-semibold tracking-tight">Hanzo Space</span>
                   <span className="truncate text-[10px] text-muted-foreground font-mono">v1.0.0</span>
                 </div>
               </NavLink>
@@ -243,12 +243,12 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="https://github.com/hanzoai/bot" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/hanzoai/playground" target="_blank" rel="noopener noreferrer">
                     GitHub
                   </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="https://github.com/hanzoai/bot/issues" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/hanzoai/playground/issues" target="_blank" rel="noopener noreferrer">
                     Support
                   </a>
                 </DropdownMenuItem>

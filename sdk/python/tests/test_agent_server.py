@@ -5,14 +5,14 @@ import sys
 from types import SimpleNamespace
 from fastapi import FastAPI
 
-from playground.agent_server import AgentServer
+from playground.bot_server import BotServer
 
 
 def make_agent_app():
     app = FastAPI()
     app.node_id = "agent-1"
     app.version = "1.0.0"
-    app.reasoners = [{"id": "reasoner_a"}]
+    app.bots = [{"id": "bot_a"}]
     app.skills = [{"id": "skill_b"}]
     app.client = SimpleNamespace(notify_graceful_shutdown_sync=lambda node_id: True)
     app.mcp_manager = type(
@@ -36,7 +36,7 @@ def make_agent_app():
 @pytest.mark.asyncio
 async def test_setup_playground_routes_health_endpoint():
     app = make_agent_app()
-    server = AgentServer(app)
+    server = BotServer(app)
     server.setup_playground_routes()
 
     async with httpx.AsyncClient(
@@ -52,10 +52,10 @@ async def test_setup_playground_routes_health_endpoint():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        resp_reasoners = await client.get("/reasoners")
+        resp_bots = await client.get("/bots")
         resp_skills = await client.get("/skills")
 
-    assert resp_reasoners.json()["reasoners"] == app.reasoners
+    assert resp_bots.json()["bots"] == app.bots
     assert resp_skills.json()["skills"] == app.skills
 
 
@@ -63,7 +63,7 @@ async def test_setup_playground_routes_health_endpoint():
 async def test_shutdown_endpoint_triggers_flags():
     app = make_agent_app()
     app.dev_mode = True
-    server = AgentServer(app)
+    server = BotServer(app)
     server.setup_playground_routes()
 
     async with httpx.AsyncClient(
@@ -84,7 +84,7 @@ async def test_shutdown_endpoint_triggers_flags():
 @pytest.mark.asyncio
 async def test_status_endpoint_reports_psutil(monkeypatch):
     app = make_agent_app()
-    server = AgentServer(app)
+    server = BotServer(app)
 
     class DummyProcess:
         def memory_info(self):
@@ -115,7 +115,7 @@ async def test_status_endpoint_reports_psutil(monkeypatch):
 @pytest.mark.asyncio
 async def test_shutdown_immediate_path(monkeypatch):
     app = make_agent_app()
-    server = AgentServer(app)
+    server = BotServer(app)
     server.setup_playground_routes()
 
     triggered = {}
@@ -123,7 +123,7 @@ async def test_shutdown_immediate_path(monkeypatch):
     async def fake_immediate(self):
         triggered["called"] = True
 
-    monkeypatch.setattr(AgentServer, "_immediate_shutdown", fake_immediate)
+    monkeypatch.setattr(BotServer, "_immediate_shutdown", fake_immediate)
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -161,7 +161,7 @@ async def test_mcp_start_stop_routes(monkeypatch):
 
     manager = StubMCPManager()
     app.mcp_manager = manager
-    server = AgentServer(app)
+    server = BotServer(app)
     server.setup_playground_routes()
 
     async with httpx.AsyncClient(

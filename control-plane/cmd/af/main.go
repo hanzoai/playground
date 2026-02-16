@@ -29,6 +29,14 @@ var (
 	date    = "unknown"
 )
 
+// envWithFallback reads PLAYGROUND_<key> first, then falls back to AGENTS_<key> for backward compatibility.
+func envWithFallback(key string) string {
+	if v := os.Getenv("PLAYGROUND_" + key); v != "" {
+		return v
+	}
+	return os.Getenv("AGENTS_" + key)
+}
+
 func main() {
 	// Create version info to pass to CLI
 	versionInfo := cli.VersionInfo{
@@ -47,7 +55,7 @@ func main() {
 
 // runServer contains the server startup logic for unified CLI
 func runServer(cmd *cobra.Command, args []string) {
-	logger.Logger.Debug().Msg("Agents server starting...")
+	logger.Logger.Debug().Msg("Playground server starting...")
 
 	// Load configuration with better defaults
 	cfgFilePath, _ := cmd.Flags().GetString("config")
@@ -63,7 +71,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	}
 
 	// Override from environment variables
-	if envPort := os.Getenv("AGENTS_PORT"); envPort != "" {
+	if envPort := envWithFallback("PORT"); envPort != "" {
 		if port, err := strconv.Atoi(envPort); err == nil {
 			cfg.Agents.Port = port
 		}
@@ -78,7 +86,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	}
 
 	if !storageModeExplicit {
-		if envMode := os.Getenv("AGENTS_STORAGE_MODE"); envMode != "" {
+		if envMode := envWithFallback("STORAGE_MODE"); envMode != "" {
 			cfg.Storage.Mode = envMode
 		}
 	}
@@ -88,9 +96,9 @@ func runServer(cmd *cobra.Command, args []string) {
 		postgresURL, _ = cmd.Flags().GetString("postgres-url")
 	}
 	if postgresURL == "" {
-		if env := os.Getenv("AGENTS_POSTGRES_URL"); env != "" {
+		if env := envWithFallback("POSTGRES_URL"); env != "" {
 			postgresURL = env
-		} else if env := os.Getenv("AGENTS_STORAGE_POSTGRES_URL"); env != "" {
+		} else if env := envWithFallback("STORAGE_POSTGRES_URL"); env != "" {
 			postgresURL = env
 		}
 	}
@@ -103,24 +111,24 @@ func runServer(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_HOST"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_HOST"); env != "" {
 		cfg.Storage.Postgres.Host = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_PORT"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_PORT"); env != "" {
 		if port, err := strconv.Atoi(env); err == nil {
 			cfg.Storage.Postgres.Port = port
 		}
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_DATABASE"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_DATABASE"); env != "" {
 		cfg.Storage.Postgres.Database = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_USER"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_USER"); env != "" {
 		cfg.Storage.Postgres.User = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_PASSWORD"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_PASSWORD"); env != "" {
 		cfg.Storage.Postgres.Password = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_SSLMODE"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_SSLMODE"); env != "" {
 		cfg.Storage.Postgres.SSLMode = env
 	}
 
@@ -159,16 +167,16 @@ func runServer(cmd *cobra.Command, args []string) {
 	}
 
 	// Create Agents server instance
-	agentsServer, err := server.NewAgentsServer(cfg)
+	agentsServer, err := server.NewPlaygroundServer(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create Agents server: %v", err)
+		log.Fatalf("Failed to create Playground server: %v", err)
 	}
 
 	// Start the server in a goroutine so we can open the browser
 	go func() {
-		fmt.Printf("Agents server attempting to start on port %d...\n", cfg.Agents.Port)
+		fmt.Printf("Playground server attempting to start on port %d...\n", cfg.Agents.Port)
 		if err := agentsServer.Start(); err != nil {
-			log.Fatalf("Failed to start Agents server: %v", err)
+			log.Fatalf("Failed to start Playground server: %v", err)
 		}
 	}()
 
@@ -195,7 +203,7 @@ func runServer(cmd *cobra.Command, args []string) {
 		openBrowser(uiTargetURL)
 	}
 
-	fmt.Printf("Agents server running on http://localhost:%d\n", cfg.Agents.Port)
+	fmt.Printf("Playground server running on http://localhost:%d\n", cfg.Agents.Port)
 	fmt.Printf("Press Ctrl+C to exit.\n")
 	// Keep main goroutine alive
 	select {}
@@ -203,15 +211,15 @@ func runServer(cmd *cobra.Command, args []string) {
 
 // loadConfig loads configuration with sensible defaults for user experience
 func loadConfig(configFile string) (*config.Config, error) {
-	// Set environment variable prefixes
-	viper.SetEnvPrefix("AGENTS")
+	// Set environment variable prefixes (PLAYGROUND_ primary, AGENTS_ fallback via envWithFallback)
+	viper.SetEnvPrefix("PLAYGROUND")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	// Explicitly bind environment variables for API auth config
 	// This is needed because Viper's AutomaticEnv only works for keys that exist in config
-	_ = viper.BindEnv("api.auth.api_key", "AGENTS_API_KEY")
-	_ = viper.BindEnv("api.auth.api_key", "AGENTS_API_AUTH_API_KEY")
+	_ = viper.BindEnv("api.auth.api_key", "PLAYGROUND_API_KEY", "AGENTS_API_KEY")
+	_ = viper.BindEnv("api.auth.api_key", "PLAYGROUND_API_AUTH_API_KEY", "AGENTS_API_AUTH_API_KEY")
 
 	// Get the directory where the binary is located for UI paths
 	execPath, err := os.Executable()
@@ -225,16 +233,17 @@ func loadConfig(configFile string) (*config.Config, error) {
 		viper.SetConfigFile(configFile)
 	} else {
 		// Check for config file path from environment
-		if envConfigFile := os.Getenv("AGENTS_CONFIG_FILE"); envConfigFile != "" {
+		if envConfigFile := envWithFallback("CONFIG_FILE"); envConfigFile != "" {
 			viper.SetConfigFile(envConfigFile)
 		} else {
 			// Look for config in user's home directory first, then relative to exec dir, then local
 			homeDir, _ := os.UserHomeDir()
-			viper.AddConfigPath(filepath.Join(homeDir, ".hanzo/agents"))
+			viper.AddConfigPath(filepath.Join(homeDir, ".hanzo/playground"))
+			viper.AddConfigPath(filepath.Join(homeDir, ".hanzo/agents")) // Legacy fallback
 			viper.AddConfigPath(filepath.Join(execDir, "config"))
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(".")
-			viper.SetConfigName("agents")
+			viper.SetConfigName("playground")
 			viper.SetConfigType("yaml")
 		}
 	}
@@ -346,9 +355,9 @@ func loadConfig(configFile string) (*config.Config, error) {
 			}
 			cfg.Storage.Local.KVStorePath = kvPath
 		}
-		// Ensure all Agents data directories exist
+		// Ensure all Playground data directories exist
 		if _, err := utils.EnsureDataDirectories(); err != nil {
-			return nil, fmt.Errorf("failed to create Agents data directories: %w", err)
+			return nil, fmt.Errorf("failed to create Playground data directories: %w", err)
 		}
 	}
 

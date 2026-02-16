@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from playground.agent import Agent
-from playground.agent_registry import get_current_agent_instance
+from playground.bot import Agent
+from playground.bot_registry import get_current_bot_instance
 from playground.execution_context import (
     ExecutionContext,
     set_execution_context,
@@ -51,13 +51,13 @@ def test_set_as_current_updates_agent_registry():
     agent = make_agent_stub()
 
     agent._clear_current()
-    assert get_current_agent_instance() is None
+    assert get_current_bot_instance() is None
 
     agent._set_as_current()
-    assert get_current_agent_instance() is agent
+    assert get_current_bot_instance() is agent
 
     agent._clear_current()
-    assert get_current_agent_instance() is None
+    assert get_current_bot_instance() is None
 
 
 @pytest.mark.asyncio

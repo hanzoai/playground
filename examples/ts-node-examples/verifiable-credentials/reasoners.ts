@@ -1,23 +1,23 @@
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import { z } from 'zod';
 
 /**
- * Verifiable Credentials Reasoners
+ * Verifiable Credentials Bots
  *
- * Each reasoner demonstrates different VC generation patterns:
+ * Each bot demonstrates different VC generation patterns:
  * 1. Basic VC generation with explicit call
  * 2. AI-powered analysis with VC audit trail
  * 3. Data transformation with integrity proof
  * 4. Multi-step workflow with chained VCs
  */
 
-export const reasonersRouter = new AgentRouter({
+export const botsRouter = new BotRouter({
   prefix: 'vc',
   tags: ['verifiable-credentials', 'demo'],
 });
 
 // ============================================================================
-// Reasoner 1: Basic Processing with VC
+// Bot 1: Basic Processing with VC
 // ============================================================================
 
 interface ProcessInput {
@@ -33,7 +33,7 @@ interface ProcessOutput {
   vcId?: string;
 }
 
-reasonersRouter.reasoner<ProcessInput, ProcessOutput>(
+botsRouter.bot<ProcessInput, ProcessOutput>(
   'process',
   async (ctx) => {
     /**
@@ -112,7 +112,7 @@ reasonersRouter.reasoner<ProcessInput, ProcessOutput>(
 );
 
 // ============================================================================
-// Reasoner 2: AI Analysis with VC Audit Trail
+// Bot 2: AI Analysis with VC Audit Trail
 // ============================================================================
 
 const analysisSchema = z.object({
@@ -136,7 +136,7 @@ interface AnalyzeOutput extends AnalysisResult {
   analysisTimestamp: string;
 }
 
-reasonersRouter.reasoner<AnalyzeInput, AnalyzeOutput>(
+botsRouter.bot<AnalyzeInput, AnalyzeOutput>(
   'analyze',
   async (ctx) => {
     /**
@@ -230,7 +230,7 @@ Respond as JSON only, no markdown.`,
 );
 
 // ============================================================================
-// Reasoner 3: Data Transformation with Integrity Proof
+// Bot 3: Data Transformation with Integrity Proof
 // ============================================================================
 
 interface TransformInput {
@@ -251,7 +251,7 @@ interface TransformOutput {
   };
 }
 
-reasonersRouter.reasoner<TransformInput, TransformOutput>(
+botsRouter.bot<TransformInput, TransformOutput>(
   'transform',
   async (ctx) => {
     /**
@@ -344,7 +344,7 @@ reasonersRouter.reasoner<TransformInput, TransformOutput>(
 );
 
 // ============================================================================
-// Reasoner 4: Multi-Step Workflow with Chained VCs
+// Bot 4: Multi-Step Workflow with Chained VCs
 // ============================================================================
 
 interface ChainInput {
@@ -367,7 +367,7 @@ interface ChainOutput {
   workflowVcGenerated: boolean;
 }
 
-reasonersRouter.reasoner<ChainInput, ChainOutput>(
+botsRouter.bot<ChainInput, ChainOutput>(
   'chain',
   async (ctx) => {
     /**

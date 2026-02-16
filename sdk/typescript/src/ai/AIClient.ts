@@ -14,7 +14,7 @@ import { createXai } from '@ai-sdk/xai';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createCohere } from '@ai-sdk/cohere';
 import type { z } from 'zod';
-import type { AIConfig } from '../types/agent.js';
+import type { AIConfig } from '../types/bot.js';
 import { StatelessRateLimiter } from './RateLimiter.js';
 
 export type ZodSchema<T> = z.Schema<T, z.ZodTypeDef, any>;

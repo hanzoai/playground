@@ -10,13 +10,13 @@ import type {
   ServerlessEvent,
   ServerlessResponse
 } from '../types/agent.js';
-import { ReasonerRegistry } from './ReasonerRegistry.js';
+import { BotRegistry } from './BotRegistry.js';
 import { SkillRegistry } from './SkillRegistry.js';
 import { AgentRouter } from '../router/AgentRouter.js';
-import type { ReasonerHandler, ReasonerOptions } from '../types/reasoner.js';
+import type { BotHandler, BotOptions } from '../types/bot.js';
 import type { SkillHandler, SkillOptions } from '../types/skill.js';
 import { ExecutionContext, type ExecutionMetadata } from '../context/ExecutionContext.js';
-import { ReasonerContext } from '../context/ReasonerContext.js';
+import { BotContext } from '../context/BotContext.js';
 import { SkillContext } from '../context/SkillContext.js';
 import { AIClient } from '../ai/AIClient.js';
 import { PlaygroundClient } from '../client/PlaygroundClient.js';
@@ -43,7 +43,7 @@ class TargetNotFoundError extends Error {}
 export class Agent {
   readonly config: AgentConfig;
   readonly app: express.Express;
-  readonly reasoners = new ReasonerRegistry();
+  readonly bots = new BotRegistry();
   readonly skills = new SkillRegistry();
   private server?: http.Server;
   private heartbeatTimer?: NodeJS.Timeout;
@@ -99,12 +99,12 @@ export class Agent {
     this.registerDefaultRoutes();
   }
 
-  reasoner<TInput = any, TOutput = any>(
+  bot<TInput = any, TOutput = any>(
     name: string,
-    handler: ReasonerHandler<TInput, TOutput>,
-    options?: ReasonerOptions
+    handler: BotHandler<TInput, TOutput>,
+    options?: BotOptions
   ) {
-    this.reasoners.register(name, handler, options);
+    this.bots.register(name, handler, options);
     return this;
   }
 
@@ -118,7 +118,7 @@ export class Agent {
   }
 
   includeRouter(router: AgentRouter) {
-    this.reasoners.includeRouter(router);
+    this.bots.includeRouter(router);
     this.skills.includeRouter(router);
   }
 
@@ -276,8 +276,8 @@ export class Agent {
   async call(target: string, input: any) {
     const { agentId, name } = this.parseTarget(target);
     if (!agentId || agentId === this.config.nodeId) {
-      const local = this.reasoners.get(name);
-      if (!local) throw new Error(`Reasoner not found: ${name}`);
+      const local = this.bots.get(name);
+      if (!local) throw new Error(`Bot not found: ${name}`);
       const parentMetadata = ExecutionContext.getCurrent()?.metadata;
       const runId = parentMetadata?.runId ?? parentMetadata?.executionId ?? randomUUID();
       const metadata = {
@@ -306,7 +306,7 @@ export class Agent {
           executionId: execCtx.metadata.executionId,
           runId: execCtx.metadata.runId ?? execCtx.metadata.executionId,
           workflowId: execCtx.metadata.workflowId,
-          reasonerId: name,
+          botId: name,
           agentNodeId: this.config.nodeId,
           status,
           parentExecutionId: execCtx.metadata.parentExecutionId,
@@ -323,7 +323,7 @@ export class Agent {
       return ExecutionContext.run(execCtx, async () => {
         try {
           const result = await local.handler(
-            new ReasonerContext({
+            new BotContext({
               input,
               executionId: execCtx.metadata.executionId,
               runId: execCtx.metadata.runId,
@@ -398,35 +398,35 @@ export class Agent {
     this.app.get('/status', (_req, res) => {
       res.json({
         ...this.health(),
-        reasoners: this.reasoners.all().map((r) => r.name),
+        bots: this.bots.all().map((r) => r.name),
         skills: this.skills.all().map((s) => s.name)
       });
     });
 
-    this.app.get('/reasoners', (_req, res) => {
-      res.json(this.reasoners.all().map((r) => r.name));
+    this.app.get('/bots', (_req, res) => {
+      res.json(this.bots.all().map((r) => r.name));
     });
 
     this.app.get('/skills', (_req, res) => {
       res.json(this.skills.all().map((s) => s.name));
     });
 
-    this.app.post('/api/v1/reasoners/*', (req, res) => this.executeReasoner(req, res, (req.params as any)[0]));
-    this.app.post('/reasoners/:name', (req, res) => this.executeReasoner(req, res, req.params.name));
+    this.app.post('/api/v1/bots/*', (req, res) => this.executeBot(req, res, (req.params as any)[0]));
+    this.app.post('/bots/:name', (req, res) => this.executeBot(req, res, req.params.name));
 
     this.app.post('/api/v1/skills/*', (req, res) => this.executeSkill(req, res, (req.params as any)[0]));
     this.app.post('/skills/:name', (req, res) => this.executeSkill(req, res, req.params.name));
 
-    // Serverless-friendly execute endpoint that accepts { target, input } or { reasoner, input }
+    // Serverless-friendly execute endpoint that accepts { target, input } or { bot, input }
     this.app.post('/execute', (req, res) => this.executeServerlessHttp(req, res));
     this.app.post('/execute/:name', (req, res) => this.executeServerlessHttp(req, res, req.params.name));
   }
 
-  private async executeReasoner(req: express.Request, res: express.Response, name: string) {
+  private async executeBot(req: express.Request, res: express.Response, name: string) {
     try {
       await this.executeInvocation({
         targetName: name,
-        targetType: 'reasoner',
+        targetType: 'bot',
         input: req.body,
         metadata: this.buildMetadata(req),
         req,
@@ -475,7 +475,7 @@ export class Agent {
     });
 
     if (!invocation.name) {
-      res.status(400).json({ error: "Missing 'target' or 'reasoner' in request" });
+      res.status(400).json({ error: "Missing 'target' or 'bot' in request" });
       return;
     }
 
@@ -551,7 +551,7 @@ export class Agent {
       path,
       query: event?.queryStringParameters,
       body,
-      reasoner: event?.reasoner,
+      bot: event?.bot,
       target: event?.target,
       skill: event?.skill,
       type: event?.type
@@ -561,7 +561,7 @@ export class Agent {
       return {
         statusCode: 400,
         headers: { 'content-type': 'application/json' },
-        body: { error: "Missing 'target' or 'reasoner' in request" }
+        body: { error: "Missing 'target' or 'bot' in request" }
       };
     }
 
@@ -639,24 +639,24 @@ export class Agent {
     explicitTarget?: string;
     query?: Record<string, any>;
     body?: any;
-    reasoner?: string;
+    bot?: string;
     target?: string;
     skill?: string;
     type?: string;
-  }): { name?: string; targetType?: 'reasoner' | 'skill'; input: any } {
+  }): { name?: string; targetType?: 'bot' | 'skill'; input: any } {
     const pathTarget = this.parsePathTarget(params.path);
     const name =
       this.firstDefined<string>(
         params.explicitTarget,
         pathTarget.name,
         params.query?.target,
-        params.query?.reasoner,
+        params.query?.bot,
         params.query?.skill,
         params.target,
-        params.reasoner,
+        params.bot,
         params.skill,
         params.body?.target,
-        params.body?.reasoner,
+        params.body?.bot,
         params.body?.skill
       ) ?? pathTarget.name;
 
@@ -667,7 +667,7 @@ export class Agent {
       params.query?.targetType,
       params.body?.type,
       params.body?.targetType
-    ) ?? undefined) as 'reasoner' | 'skill' | undefined;
+    ) ?? undefined) as 'bot' | 'skill' | undefined;
 
     const input = this.normalizeInputPayload(params.body);
 
@@ -676,13 +676,13 @@ export class Agent {
 
   private parsePathTarget(
     path?: string
-  ): { name?: string; targetType?: 'reasoner' | 'skill' } {
+  ): { name?: string; targetType?: 'bot' | 'skill' } {
     if (!path) return {};
 
     const normalized = path.split('?')[0];
-    const reasonerMatch = normalized.match(/\/reasoners\/([^/]+)/);
-    if (reasonerMatch?.[1]) {
-      return { name: reasonerMatch[1], targetType: 'reasoner' };
+    const botMatch = normalized.match(/\/bots\/([^/]+)/);
+    if (botMatch?.[1]) {
+      return { name: botMatch[1], targetType: 'bot' };
     }
 
     const skillMatch = normalized.match(/\/skills\/([^/]+)/);
@@ -715,7 +715,7 @@ export class Agent {
     const parsed = this.parseBody(body);
 
     if (parsed && typeof parsed === 'object') {
-      const { target, reasoner, skill, type, targetType, ...rest } = parsed as Record<string, any>;
+      const { target, bot, skill, type, targetType, ...rest } = parsed as Record<string, any>;
       if ((parsed as any).input !== undefined) {
         return (parsed as any).input;
       }
@@ -740,8 +740,8 @@ export class Agent {
     return undefined;
   }
 
-  private reasonerDefinitions() {
-    return this.reasoners.all().map((r) => ({
+  private botDefinitions() {
+    return this.bots.all().map((r) => ({
       id: r.name,
       input_schema: toJsonSchema(r.options?.inputSchema),
       output_schema: toJsonSchema(r.options?.outputSchema),
@@ -767,14 +767,14 @@ export class Agent {
       node_id: this.config.nodeId,
       version: this.config.version,
       deployment_type: deploymentType,
-      reasoners: this.reasonerDefinitions(),
+      bots: this.botDefinitions(),
       skills: this.skillDefinitions()
     };
   }
 
   private async executeInvocation(params: {
     targetName: string;
-    targetType?: 'reasoner' | 'skill';
+    targetType?: 'bot' | 'skill';
     input: any;
     metadata: ExecutionMetadata;
     req?: express.Request;
@@ -791,9 +791,9 @@ export class Agent {
       return this.runSkill(skill, params);
     }
 
-    const reasoner = this.reasoners.get(params.targetName);
-    if (reasoner) {
-      return this.runReasoner(reasoner, params);
+    const bot = this.bots.get(params.targetName);
+    if (bot) {
+      return this.runBot(bot, params);
     }
 
     const fallbackSkill = this.skills.get(params.targetName);
@@ -801,11 +801,11 @@ export class Agent {
       return this.runSkill(fallbackSkill, params);
     }
 
-    throw new TargetNotFoundError(`Reasoner not found: ${params.targetName}`);
+    throw new TargetNotFoundError(`Bot not found: ${params.targetName}`);
   }
 
-  private async runReasoner(
-    reasoner: { handler: ReasonerHandler<any, any> },
+  private async runBot(
+    bot: { handler: BotHandler<any, any> },
     params: {
       targetName: string;
       input: any;
@@ -827,7 +827,7 @@ export class Agent {
 
     return ExecutionContext.run(execCtx, async () => {
       try {
-        const ctx = new ReasonerContext({
+        const ctx = new BotContext({
           input: params.input,
           executionId: params.metadata.executionId,
           runId: params.metadata.runId,
@@ -847,7 +847,7 @@ export class Agent {
           did: this.getDidInterface(params.metadata, params.input, params.targetName)
         });
 
-        const result = await reasoner.handler(ctx);
+        const result = await bot.handler(ctx);
         if (params.respond && params.res) {
           params.res.json(result);
           return;
@@ -917,7 +917,7 @@ export class Agent {
 
   private async registerWithControlPlane() {
     try {
-      const reasoners = this.reasonerDefinitions();
+      const bots = this.botDefinitions();
       const skills = this.skillDefinitions();
 
       const port = this.config.port ?? 8001;
@@ -933,18 +933,18 @@ export class Agent {
         base_url: publicUrl,
         public_url: publicUrl,
         deployment_type: this.config.deploymentType ?? 'long_running',
-        reasoners,
+        bots,
         skills
       });
 
       // Register with DID system if enabled
       if (this.config.didEnabled) {
         try {
-          const didRegistered = await this.didManager.registerAgent(reasoners, skills);
+          const didRegistered = await this.didManager.registerAgent(bots, skills);
           if (didRegistered) {
             const summary = this.didManager.getIdentitySummary();
             console.log(`[DID] Agent registered with DID: ${summary.agentDid}`);
-            console.log(`[DID] Reasoner DIDs: ${summary.reasonerCount}, Skill DIDs: ${summary.skillCount}`);
+            console.log(`[DID] Bot DIDs: ${summary.botCount}, Skill DIDs: ${summary.skillCount}`);
           }
         } catch (didErr) {
           if (!this.config.devMode) {

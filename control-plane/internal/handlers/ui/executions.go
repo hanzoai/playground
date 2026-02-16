@@ -129,7 +129,7 @@ type ExecutionSummary struct {
 	ExecutionID  string               `json:"execution_id"`
 	WorkflowID   string               `json:"workflow_id"`
 	SessionID    *string              `json:"session_id,omitempty"`
-	AgentNodeID  string               `json:"agent_node_id"`
+	NodeID  string               `json:"node_id"`
 	BotID   string               `json:"bot_id"`
 	Status       string               `json:"status"`
 	DurationMS   int                  `json:"duration_ms"`
@@ -160,7 +160,7 @@ type ExecutionDetailsResponse struct {
 	AgentsRequestID *string                        `json:"agents_request_id,omitempty"`
 	SessionID           *string                        `json:"session_id,omitempty"`
 	ActorID             *string                        `json:"actor_id,omitempty"`
-	AgentNodeID         string                         `json:"agent_node_id"`
+	NodeID         string                         `json:"node_id"`
 	ParentWorkflowID    *string                        `json:"parent_workflow_id,omitempty"`
 	RootWorkflowID      *string                        `json:"root_workflow_id,omitempty"`
 	WorkflowDepth       *int                           `json:"workflow_depth,omitempty"`
@@ -230,7 +230,7 @@ func (h *ExecutionHandler) ListExecutionsHandler(c *gin.Context) {
 	sortDesc := strings.ToLower(c.DefaultQuery("sortOrder", "desc")) != "asc"
 
 	filter := types.ExecutionFilter{
-		AgentNodeID:    &agentID,
+		NodeID:    &agentID,
 		Limit:          pageSize,
 		Offset:         (page - 1) * pageSize,
 		SortBy:         sortField,
@@ -291,7 +291,7 @@ func (h *ExecutionHandler) GetExecutionDetailsHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load execution: " + err.Error()})
 		return
 	}
-	if exec == nil || exec.AgentNodeID != agentID {
+	if exec == nil || exec.NodeID != agentID {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "execution not found for this agent"})
 		return
 	}
@@ -307,7 +307,7 @@ func (h *ExecutionHandler) GetExecutionsSummaryHandler(c *gin.Context) {
 	pageSize := parseBoundedIntOrDefault(c.Query("page_size"), 20, 1, 100)
 	status := strings.TrimSpace(c.Query("status"))
 	runID := strings.TrimSpace(c.Query("workflow_id"))
-	agentID := strings.TrimSpace(c.Query("agent_node_id"))
+	agentID := strings.TrimSpace(c.Query("node_id"))
 	sessionID := strings.TrimSpace(c.Query("session_id"))
 	groupBy := strings.TrimSpace(c.Query("group_by"))
 	startTime, err := parseTimePtrValue(c.Query("start_time"))
@@ -336,7 +336,7 @@ func (h *ExecutionHandler) GetExecutionsSummaryHandler(c *gin.Context) {
 		filter.RunID = &runID
 	}
 	if agentID != "" {
-		filter.AgentNodeID = &agentID
+		filter.NodeID = &agentID
 	}
 	if sessionID != "" {
 		filter.SessionID = &sessionID
@@ -387,7 +387,7 @@ type ExecutionsSummaryResponse struct {
 // GET /api/ui/v1/executions/stats
 func (h *ExecutionHandler) GetExecutionStatsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	agentID := strings.TrimSpace(c.Query("agent_node_id"))
+	agentID := strings.TrimSpace(c.Query("node_id"))
 	sessionID := strings.TrimSpace(c.Query("session_id"))
 	runID := strings.TrimSpace(c.Query("workflow_id"))
 
@@ -397,7 +397,7 @@ func (h *ExecutionHandler) GetExecutionStatsHandler(c *gin.Context) {
 		SortDescending: true,
 	}
 	if agentID != "" {
-		filter.AgentNodeID = &agentID
+		filter.NodeID = &agentID
 	}
 	if sessionID != "" {
 		filter.SessionID = &sessionID
@@ -422,7 +422,7 @@ func (h *ExecutionHandler) GetExecutionStatsHandler(c *gin.Context) {
 	for _, exec := range execs {
 		status := types.NormalizeExecutionStatus(exec.Status)
 		stats.ExecutionsByStatus[status]++
-		stats.ExecutionsByAgent[exec.AgentNodeID]++
+		stats.ExecutionsByAgent[exec.NodeID]++
 
 		switch status {
 		case string(types.ExecutionStatusSucceeded):
@@ -466,7 +466,7 @@ func (h *ExecutionHandler) GetEnhancedExecutionsHandler(c *gin.Context) {
 		filter.Status = &normalized
 	}
 	if agentID := strings.TrimSpace(c.Query("agent_id")); agentID != "" {
-		filter.AgentNodeID = &agentID
+		filter.NodeID = &agentID
 	}
 	if workflowID := strings.TrimSpace(c.Query("workflow_id")); workflowID != "" {
 		filter.RunID = &workflowID
@@ -509,7 +509,7 @@ func (h *ExecutionHandler) GetEnhancedExecutionsHandler(c *gin.Context) {
 			Status:          types.NormalizeExecutionStatus(exec.Status),
 			TaskName:        exec.BotID,
 			WorkflowName:    exec.RunID,
-			AgentName:       exec.AgentNodeID,
+			AgentName:       exec.NodeID,
 			RelativeTime:    formatRelativeTimeString(now, startedAt),
 			DurationDisplay: formatDurationDisplay(exec.DurationMS),
 			StartedAt:       startedAt.Format(time.RFC3339),
@@ -661,7 +661,7 @@ func (h *ExecutionHandler) toExecutionSummary(exec *types.Execution) ExecutionSu
 		ExecutionID:  exec.ExecutionID,
 		WorkflowID:   exec.RunID,
 		SessionID:    exec.SessionID,
-		AgentNodeID:  exec.AgentNodeID,
+		NodeID:  exec.NodeID,
 		BotID:   exec.BotID,
 		Status:       types.NormalizeExecutionStatus(exec.Status),
 		DurationMS:   duration,
@@ -708,7 +708,7 @@ func (h *ExecutionHandler) toExecutionDetails(ctx context.Context, exec *types.E
 		AgentsRequestID: nil,
 		SessionID:           exec.SessionID,
 		ActorID:             exec.ActorID,
-		AgentNodeID:         exec.AgentNodeID,
+		NodeID:         exec.NodeID,
 		ParentWorkflowID:    exec.ParentExecutionID,
 		RootWorkflowID:      nil,
 		WorkflowDepth:       nil,
@@ -871,8 +871,8 @@ func sanitizeExecutionSortField(field string) string {
 		return "duration_ms"
 	case "duration":
 		return "duration_ms"
-	case "agent_node_id":
-		return "agent_node_id"
+	case "node_id":
+		return "node_id"
 	case "execution_id":
 		return "execution_id"
 	case "run_id", "workflow_id":
@@ -906,8 +906,8 @@ func (h *ExecutionHandler) groupExecutionSummaries(summaries []ExecutionSummary,
 		switch key {
 		case "status":
 			bucket = summary.Status
-		case "agent", "agent_node_id":
-			bucket = summary.AgentNodeID
+		case "agent", "node_id":
+			bucket = summary.NodeID
 		case "bot", "bot_id":
 			bucket = summary.BotID
 		default:

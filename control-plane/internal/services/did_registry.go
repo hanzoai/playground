@@ -56,7 +56,7 @@ func (r *DIDRegistry) StoreRegistry(registry *types.DIDRegistry) error {
 	defer r.mu.Unlock()
 
 	// Store in memory
-	r.registries[registry.AgentsServerID] = registry
+	r.registries[registry.PlaygroundServerID] = registry
 
 	// Persist to database
 	return r.saveRegistryToDatabase(registry)
@@ -88,8 +88,8 @@ func (r *DIDRegistry) DeleteRegistry(agentsServerID string) error {
 	return nil
 }
 
-// UpdateAgentStatus updates the status of an agent DID.
-func (r *DIDRegistry) UpdateAgentStatus(agentsServerID, agentNodeID string, status types.AgentDIDStatus) error {
+// UpdateBotStatus updates the status of an agent DID.
+func (r *DIDRegistry) UpdateBotStatus(agentsServerID, nodeID string, status types.HanzoDIDStatus) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -98,13 +98,13 @@ func (r *DIDRegistry) UpdateAgentStatus(agentsServerID, agentNodeID string, stat
 		return fmt.Errorf("registry not found for af server: %s", agentsServerID)
 	}
 
-	agentInfo, exists := registry.AgentNodes[agentNodeID]
+	agentInfo, exists := registry.Nodes[nodeID]
 	if !exists {
-		return fmt.Errorf("agent not found: %s", agentNodeID)
+		return fmt.Errorf("agent not found: %s", nodeID)
 	}
 
 	agentInfo.Status = status
-	registry.AgentNodes[agentNodeID] = agentInfo
+	registry.Nodes[nodeID] = agentInfo
 
 	// Persist changes to database
 	return r.saveRegistryToDatabase(registry)
@@ -121,10 +121,10 @@ func (r *DIDRegistry) FindDIDByComponent(agentsServerID, componentType, function
 	}
 
 	// Search through all agent nodes
-	for _, agentInfo := range registry.AgentNodes {
+	for _, agentInfo := range registry.Nodes {
 		switch componentType {
 		case "agent":
-			if agentInfo.AgentNodeID == functionName {
+			if agentInfo.NodeID == functionName {
 				return &types.DIDIdentity{
 					DID:            agentInfo.DID,
 					PublicKeyJWK:   string(agentInfo.PublicKeyJWK),
@@ -162,8 +162,8 @@ func (r *DIDRegistry) FindDIDByComponent(agentsServerID, componentType, function
 	return nil, fmt.Errorf("DID not found for component: %s/%s", componentType, functionName)
 }
 
-// GetAgentDIDs retrieves all DIDs for a specific agent node.
-func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.DIDIdentityPackage, error) {
+// GetNodeDIDs retrieves all DIDs for a specific agent node.
+func (r *DIDRegistry) GetNodeDIDs(agentsServerID, nodeID string) (*types.DIDIdentityPackage, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -172,9 +172,9 @@ func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.D
 		return nil, fmt.Errorf("registry not found for af server: %s", agentsServerID)
 	}
 
-	agentInfo, exists := registry.AgentNodes[agentNodeID]
+	agentInfo, exists := registry.Nodes[nodeID]
 	if !exists {
-		return nil, fmt.Errorf("agent not found: %s", agentNodeID)
+		return nil, fmt.Errorf("agent not found: %s", nodeID)
 	}
 
 	// Build identity package (without private keys for security)
@@ -201,7 +201,7 @@ func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.D
 	}
 
 	return &types.DIDIdentityPackage{
-		AgentDID: types.DIDIdentity{
+		NodeDID: types.DIDIdentity{
 			DID:            agentInfo.DID,
 			PublicKeyJWK:   string(agentInfo.PublicKeyJWK),
 			DerivationPath: agentInfo.DerivationPath,
@@ -209,7 +209,7 @@ func (r *DIDRegistry) GetAgentDIDs(agentsServerID, agentNodeID string) (*types.D
 		},
 		BotDIDs:       botDIDs,
 		SkillDIDs:          skillDIDs,
-		AgentsServerID: agentsServerID,
+		PlaygroundServerID: agentsServerID,
 	}, nil
 }
 
@@ -221,7 +221,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 
 	ctx := context.Background()
 	// Load af server DID information
-	agentsServerDIDs, err := r.storageProvider.ListAgentsServerDIDs(ctx)
+	agentsServerDIDs, err := r.storageProvider.ListPlaygroundServerDIDs(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list af server DIDs: %w", err)
 	}
@@ -229,17 +229,17 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 	// Create registries for each af server
 	for _, agentsServerDIDInfo := range agentsServerDIDs {
 		registry := &types.DIDRegistry{
-			AgentsServerID: agentsServerDIDInfo.AgentsServerID,
+			PlaygroundServerID: agentsServerDIDInfo.PlaygroundServerID,
 			RootDID:            agentsServerDIDInfo.RootDID,
 			MasterSeed:         agentsServerDIDInfo.MasterSeed,
-			AgentNodes:         make(map[string]types.AgentDIDInfo),
+			Nodes:         make(map[string]types.NodeDIDInfo),
 			TotalDIDs:          0,
 			CreatedAt:          agentsServerDIDInfo.CreatedAt,
 			LastKeyRotation:    agentsServerDIDInfo.LastKeyRotation,
 		}
 
 		// Load agent DIDs for this af server
-		agentDIDs, err := r.storageProvider.ListAgentDIDs(ctx)
+		agentDIDs, err := r.storageProvider.ListNodeDIDs(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to list agent DIDs: %w", err)
 		}
@@ -249,10 +249,10 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 			// For now, we'll add all agents to the default af server
 			// TODO: Add af server filtering when the storage interface supports it
 
-			agentInfo := types.AgentDIDInfo{
+			agentInfo := types.NodeDIDInfo{
 				DID:                agentDIDInfo.DID,
-				AgentNodeID:        agentDIDInfo.AgentNodeID,
-				AgentsServerID: agentsServerDIDInfo.AgentsServerID,
+				NodeID:        agentDIDInfo.NodeID,
+				PlaygroundServerID: agentsServerDIDInfo.PlaygroundServerID,
 				PublicKeyJWK:       agentDIDInfo.PublicKeyJWK,
 				DerivationPath:     agentDIDInfo.DerivationPath,
 				Status:             agentDIDInfo.Status,
@@ -264,7 +264,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 			// Load component DIDs for this agent
 			componentDIDs, err := r.storageProvider.ListComponentDIDs(ctx, agentDIDInfo.DID)
 			if err != nil {
-				return fmt.Errorf("failed to list component DIDs for agent %s: %w", agentDIDInfo.AgentNodeID, err)
+				return fmt.Errorf("failed to list component DIDs for agent %s: %w", agentDIDInfo.NodeID, err)
 			}
 
 			for _, componentDID := range componentDIDs {
@@ -293,11 +293,11 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 				}
 			}
 
-			registry.AgentNodes[agentInfo.AgentNodeID] = agentInfo
+			registry.Nodes[agentInfo.NodeID] = agentInfo
 			registry.TotalDIDs++
 		}
 
-		r.registries[agentsServerDIDInfo.AgentsServerID] = registry
+		r.registries[agentsServerDIDInfo.PlaygroundServerID] = registry
 	}
 
 	return nil
@@ -311,9 +311,9 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 
 	ctx := context.Background()
 	// Store af server DID information
-	err := r.storageProvider.StoreAgentsServerDID(
+	err := r.storageProvider.StorePlaygroundServerDID(
 		ctx,
-		registry.AgentsServerID,
+		registry.PlaygroundServerID,
 		registry.RootDID,
 		registry.MasterSeed,
 		registry.CreatedAt,
@@ -324,7 +324,7 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 	}
 
 	// Store each agent DID and its components using transaction-safe method
-	for _, agentInfo := range registry.AgentNodes {
+	for _, agentInfo := range registry.Nodes {
 		// Extract derivation index from path (simplified)
 		derivationIndex := 0 // TODO: Parse from agentInfo.DerivationPath
 
@@ -356,11 +356,11 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 		}
 
 		// Use the enhanced storage method with transaction safety
-		err := r.storageProvider.StoreAgentDIDWithComponents(
+		err := r.storageProvider.StoreNodeDIDWithComponents(
 			ctx,
-			agentInfo.AgentNodeID,
+			agentInfo.NodeID,
 			agentInfo.DID,
-			registry.AgentsServerID, // Use af server ID instead of root DID
+			registry.PlaygroundServerID, // Use af server ID instead of root DID
 			string(agentInfo.PublicKeyJWK),
 			derivationIndex,
 			components,
@@ -368,16 +368,16 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 		if err != nil {
 			// Enhanced error handling for different constraint types
 			if validationErr, ok := err.(*storage.ValidationError); ok {
-				return fmt.Errorf("validation failed for agent %s: %w", agentInfo.AgentNodeID, validationErr)
+				return fmt.Errorf("validation failed for agent %s: %w", agentInfo.NodeID, validationErr)
 			}
 			if fkErr, ok := err.(*storage.ForeignKeyConstraintError); ok {
-				return fmt.Errorf("foreign key constraint violation for agent %s: %w", agentInfo.AgentNodeID, fkErr)
+				return fmt.Errorf("foreign key constraint violation for agent %s: %w", agentInfo.NodeID, fkErr)
 			}
 			if dupErr, ok := err.(*storage.DuplicateDIDError); ok {
-				log.Printf("Skipping duplicate DID entry during registry sync: %s (agent=%s)", dupErr.DID, agentInfo.AgentNodeID)
+				log.Printf("Skipping duplicate DID entry during registry sync: %s (agent=%s)", dupErr.DID, agentInfo.NodeID)
 				continue
 			}
-			return fmt.Errorf("failed to store agent DID %s with components: %w", agentInfo.AgentNodeID, err)
+			return fmt.Errorf("failed to store agent DID %s with components: %w", agentInfo.NodeID, err)
 		}
 	}
 

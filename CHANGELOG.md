@@ -6,13 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
-## [0.1.41-rc.8] - 2026-02-15
-
-
-### Other
-
-- Initial commit (bdec8c4)
-
 ## [0.1.41-rc.7] - 2026-02-15
 
 
@@ -29,12 +22,12 @@ Reverts these to .agents while keeping correct path references. (2f5451e)
 
 ### Fixed
 
-- Fix: rename agentfield files to playground (CI build fix)
+- Fix: rename playground files to playground (CI build fix)
 
-Rename files that still had agentfield in their filename:
-- types/agentfield.ts → types/playground.ts (TS build blocker)
-- test_agentfield_end_to_end.py → test_playground_end_to_end.py
-- agentfield-logo/icon SVGs → playground-logo/icon SVGs
+Rename files that still had playground in their filename:
+- types/playground.ts → types/playground.ts (TS build blocker)
+- test_playground_end_to_end.py → test_playground_end_to_end.py
+- playground-logo/icon SVGs → playground-logo/icon SVGs
 - Remove tracked binary, add to .gitignore (6d02fa7)
 
 ## [0.1.41-rc.5] - 2026-02-15
@@ -42,19 +35,19 @@ Rename files that still had agentfield in their filename:
 
 ### Changed
 
-- Refactor: complete rename from agentfield to playground/agents
+- Refactor: complete rename from playground to playground/agents
 
-- Go module: github.com/Agent-Field/agentfield -> github.com/hanzoai/playground
-- Binary: agentfield-server -> playground-server (cmd/ dir renamed)
+- Go module: github.com/hanzoai/playground -> github.com/hanzoai/playground
+- Binary: playground-server -> playground-server (cmd/ dir renamed)
 - Env prefix: AGENTFIELD_*/HANZO_AGENTS_* -> unified AGENTS_*
-- Config: agentfield.yaml -> agents.yaml, root key agents:
-- Home dir: ~/.agentfield -> ~/.hanzo/agents
+- Config: playground.yaml -> agents.yaml, root key agents:
+- Home dir: ~/.playground -> ~/.hanzo/agents
 - Docker image: ghcr.io/hanzoai/playground:latest
-- Python SDK: agentfield -> playground
-- DB columns: agentfield_server_id -> agents_server_id
-- Prometheus metrics: agentfield_* -> agents_*
+- Python SDK: playground -> playground
+- DB columns: playground_server_id -> agents_server_id
+- Prometheus metrics: playground_* -> agents_*
 - HTTP headers: X-AgentField-* -> X-Agents-*
-- DID URIs: did:agentfield: -> did:agents:
+- DID URIs: did:playground: -> did:agents:
 - All Go types/vars/structs renamed consistently
 - go build ./... passes clean (35d6d92)
 
@@ -62,10 +55,10 @@ Rename files that still had agentfield in their filename:
 
 ### Fixed
 
-- Fix: use agentfield GHCR package name (fork limitation)
+- Fix: use playground GHCR package name (fork limitation)
 
 GHCR blocks new package creation for forked repos.
-Keep pushing to ghcr.io/hanzoai/agentfield:latest which works. (289e4f2)
+Keep pushing to ghcr.io/hanzoai/playground:latest which works. (289e4f2)
 
 
 
@@ -73,7 +66,7 @@ Keep pushing to ghcr.io/hanzoai/agentfield:latest which works. (289e4f2)
 
 - Rename to Hanzo Playground - multiplayer agent orchestration
 
-Rename all branding from agentfield/canvas to playground:
+Rename all branding from playground/canvas to playground:
 - Helm chart: deployments/helm/playground/
 - Docker image: ghcr.io/hanzoai/playground:latest
 - UI: "Hanzo Playground" branding, playground- prefixes
@@ -116,7 +109,7 @@ the org that owns the repo (hanzoai for the fork). (6048d6d)
 
 - Ci: add GHCR deploy workflow for agents image
 
-Builds and pushes control-plane image to ghcr.io/agent-field/agentfield
+Builds and pushes control-plane image to ghcr.io/agent-field/playground
 on push to main or manual dispatch. Used by hanzo-k8s console integration. (e1873c5)
 
 ## [0.1.41-rc.3] - 2026-02-10
@@ -250,7 +243,7 @@ agent metadata (description, tags, author). This passes the agent's actual
 version and metadata through to the control plane registration endpoint.
 
 Also fixes hardcoded sdk_version in deployment tags to use the real package
-version from agentfield.__version__.
+version from playground.__version__.
 
 Fixes #148
 
@@ -501,7 +494,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 * fix: increase memory leak test threshold and update init-example SDK version
 
-- Bump init-example to @agentfield/sdk ^0.1.34 for connection pooling fix
+- Bump init-example to @playground/sdk ^0.1.34 for connection pooling fix
 - Increase memory leak test threshold from 10MB to 12MB to reduce CI flakiness
   (Node 18 on CI hit 10.37MB due to GC timing variance)
 
@@ -550,7 +543,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat: add Railway-deployable init-example agent
 
-- Add standalone package.json with npm-published @agentfield/sdk
+- Add standalone package.json with npm-published @playground/sdk
 - Add Dockerfile for Railway deployment
 - Update README with step-by-step agent deployment instructions
 - Include curl examples to test echo and sentiment reasoners
@@ -574,7 +567,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* chore: bump @agentfield/sdk to 0.1.32
+* chore: bump @playground/sdk to 0.1.32
 
 * debug: add diagnostic logging to init-example
 
@@ -620,7 +613,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 * feat: add Railway-deployable init-example agent
 
-- Add standalone package.json with npm-published @agentfield/sdk
+- Add standalone package.json with npm-published @playground/sdk
 - Add Dockerfile for Railway deployment
 - Update README with step-by-step agent deployment instructions
 - Include curl examples to test echo and sentiment reasoners
@@ -644,7 +637,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* chore: bump @agentfield/sdk to 0.1.32
+* chore: bump @playground/sdk to 0.1.32
 
 * debug: add diagnostic logging to init-example
 
@@ -1366,12 +1359,12 @@ while ensuring stale assignments don't block other contributors. (7bbac52)
 
 * docs: update Docker image references to Docker Hub
 
-Update all references from ghcr.io/agent-field/agentfield-control-plane
-to agentfield/control-plane (Docker Hub).
+Update all references from ghcr.io/agent-field/playground-control-plane
+to playground/control-plane (Docker Hub).
 
 Files updated:
 - deployments/kubernetes/base/control-plane-deployment.yaml
-- deployments/helm/agentfield/values.yaml
+- deployments/helm/playground/values.yaml
 - examples/python_agent_nodes/rag_evaluation/docker-compose.yml
 - README.md
 - docs/RELEASE.md (includes new DOCKERHUB_* secrets documentation)
@@ -1409,7 +1402,7 @@ Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com> (feeaa21)
 
 - Chore(ci): migrate Docker publishing from GHCR to Docker Hub (#133)
 
-- Change image path from ghcr.io/agent-field/agentfield-control-plane to agentfield/control-plane
+- Change image path from ghcr.io/agent-field/playground-control-plane to playground/control-plane
 - Update login step to use Docker Hub credentials (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
 - Remove unused OWNER env var from Docker metadata step
 
@@ -1777,7 +1770,7 @@ Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com> (e51b8d4)
 
 - Docs: Add website deployment guide links (#82)
 
-Reference the full deployment guides at agentfield.ai for Kubernetes
+Reference the full deployment guides at playground.ai for Kubernetes
 and Helm deployment options.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -1899,7 +1892,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 * Remove ARCHITECTURE.md, link to website docs instead
 
 The detailed architecture documentation is now on the website at
-agentfield.dev/examples/complete-agents/rag-evaluator - no need
+playground.dev/examples/complete-agents/rag-evaluator - no need
 to duplicate content in the repo.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -2439,7 +2432,7 @@ Co-authored-by: Claude <noreply@anthropic.com> (ebf7020)
 
 - Fix(release): fix example requirements and prevent future staging bumps (#56)
 
-* fix(examples): revert to stable agentfield version (0.1.19)
+* fix(examples): revert to stable playground version (0.1.19)
 
 The staging release bumped example requirements to 0.1.20-rc.1, but
 RC versions are published to TestPyPI, not PyPI. This caused Railway
@@ -2781,7 +2774,7 @@ Co-Authored-By: Claude <noreply@anthropic.com> (32d6d6d)
 
 - Fix: update test helper to accept api_key parameter
 
-Update _FakeAgentFieldClient and _agentfield_client_factory to accept
+Update _FakeAgentFieldClient and _playground_client_factory to accept
 the new api_key parameter that was added to AgentFieldClient.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -2894,7 +2887,7 @@ Co-Authored-By: Claude <noreply@anthropic.com> (cbfdf7b)
 
 - Fix(docs-chatbot): use correct start command
 
-Change start command from `python -m agentfield.run` (doesn't exist)
+Change start command from `python -m playground.run` (doesn't exist)
 to `python main.py` (the actual entry point).
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -2935,7 +2928,7 @@ Co-Authored-By: Claude <noreply@anthropic.com> (8c22356)
 
 - Fix(docs-chatbot): handle PyPI race condition in Railway deploys
 
-Add install script that waits for agentfield package to be available
+Add install script that waits for playground package to be available
 on PyPI before installing. This fixes the race condition where Railway
 deployment triggers before the release workflow finishes uploading to PyPI.
 
@@ -2975,7 +2968,7 @@ the current execution context during reasoner/skill execution. This
 enables a more ergonomic API:
 
 Before:
-  from agentfield.execution_context import get_current_context
+  from playground.execution_context import get_current_context
   ctx = get_current_context()
   workflow_id = ctx.workflow_id
 
@@ -2989,7 +2982,7 @@ placeholder context data.
 
 Also fixes integration test fixtures to support the current monorepo
 structure where control-plane lives at repo root instead of
-apps/platform/agentfield.
+apps/platform/playground.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
@@ -3058,7 +3051,7 @@ but never actually read or used by the codebase. This creates confusion
 for users who set these values expecting them to have an effect.
 
 Removed from YAML config:
-- agentfield: mode, max_concurrent_requests, request_timeout,
+- playground: mode, max_concurrent_requests, request_timeout,
   circuit_breaker_threshold (none were wired to any implementation)
 - execution_queue: worker_count, request_timeout, lease_duration,
   max_attempts, failure_backoff, max_failure_backoff, poll_interval,
@@ -3076,7 +3069,7 @@ Removed from Go structs:
   LocalStorageConfig, StorageConfig, UIConfig
 
 The remaining config options are all actively used:
-- agentfield.port, execution_cleanup.*, execution_queue webhook settings
+- playground.port, execution_cleanup.*, execution_queue webhook settings
 - ui.enabled/mode/dev_port
 - api.cors.*
 - storage.mode/local.database_path/local.kv_store_path/vector.*
@@ -3316,7 +3309,7 @@ This includes improvements to the Python SDK to support querying and parsing dis
 - Implements discovery routes in the control plane server.
 - Enhances the Python SDK with `discover` method, including new types for discovery responses and improved `Agent` and `AgentFieldClient` classes.
 - Refactors `AsyncExecutionManager` and `ResultCache` for lazy initialization of asyncio objects and `shutdown_event`.
-- Adds new types for discovery API responses in `sdk/python/agentfield/types.py`.
+- Adds new types for discovery API responses in `sdk/python/playground/types.py`.
 - Introduces unit tests for the new `discover_capabilities` functionality in the client. (ab2417b)
 
 - Updated (6f1f58d)

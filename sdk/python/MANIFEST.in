@@ -1,7 +1,7 @@
 include README.md
 include LICENSE
 include requirements.txt
-recursive-include agentfield *.py
+recursive-include playground *.py
 exclude examples/*
 exclude tests/*
 global-exclude *.pyc

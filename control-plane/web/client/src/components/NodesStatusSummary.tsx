@@ -3,10 +3,10 @@ import { summarizeNodeStatuses, getNodeStatusPresentation } from "@/utils/node-s
 import { Checklist } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import type { AgentNodeSummary } from "../types/playground";
+import type { NodeSummary } from "../types/playground";
 
 interface NodesStatusSummaryProps {
-  nodes: AgentNodeSummary[];
+  nodes: NodeSummary[];
   searchQuery: string;
 }
 

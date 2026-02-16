@@ -29,7 +29,7 @@ func (cmd *RunCommand) GetName() string {
 
 // GetDescription returns the command description
 func (cmd *RunCommand) GetDescription() string {
-	return "Run an installed Agents agent node package"
+	return "Run an installed bot package"
 }
 
 // BuildCobraCommand builds the Cobra command
@@ -39,17 +39,17 @@ func (cmd *RunCommand) BuildCobraCommand() *cobra.Command {
 	var verbose bool
 
 	cobraCmd := &cobra.Command{
-		Use:   "run <agent-node-name>",
+		Use:   "run <bot-name>",
 		Short: cmd.GetDescription(),
-		Long: `Start an installed Agents agent node package in the background.
+		Long: `Start an installed bot package in the background.
 
-The agent node will be assigned an available port and registered with
-the Agents server if available.
+The bot will be assigned an available port and registered with
+the Playground server if available.
 
 Examples:
-  af run email-helper
-  af run data-analyzer --port 8005
-  af run my-agent --detach=false`,
+  playground run email-helper
+  playground run data-analyzer --port 8005
+  playground run my-bot --detach=false`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			// Update output formatter with verbose setting
@@ -67,7 +67,7 @@ Examples:
 
 // execute performs the actual agent execution
 func (cmd *RunCommand) execute(agentName string, port int, detach, verbose bool) error {
-	cmd.output.PrintHeader("Running Agents Agent")
+	cmd.output.PrintHeader("Running Playground Bot")
 	cmd.output.PrintInfo(fmt.Sprintf("Agent: %s", agentName))
 
 	if verbose {
@@ -88,7 +88,7 @@ func (cmd *RunCommand) execute(agentName string, port int, detach, verbose bool)
 	cmd.output.PrintProgress("Starting agent...")
 
 	// Use the agent service to run the agent
-	runningAgent, err := cmd.Services.AgentService.RunAgent(agentName, options)
+	runningAgent, err := cmd.Services.BotService.RunAgent(agentName, options)
 	if err != nil {
 		cmd.output.PrintError(fmt.Sprintf("Failed to run agent: %v", err))
 		return err
@@ -109,7 +109,7 @@ func (cmd *RunCommand) execute(agentName string, port int, detach, verbose bool)
 
 		// Show running agents
 		cmd.output.PrintVerbose("Listing all running agents...")
-		agents, err := cmd.Services.AgentService.ListRunningAgents()
+		agents, err := cmd.Services.BotService.ListRunningAgents()
 		if err != nil {
 			cmd.output.PrintWarning(fmt.Sprintf("Could not list running agents: %v", err))
 		} else {
@@ -119,8 +119,8 @@ func (cmd *RunCommand) execute(agentName string, port int, detach, verbose bool)
 
 	if detach {
 		cmd.output.PrintInfo("Agent is running in the background")
-		cmd.output.PrintInfo("Use 'af stop " + agentName + "' to stop the agent")
-		cmd.output.PrintInfo("Use 'af logs " + agentName + "' to view logs")
+		cmd.output.PrintInfo("Use 'playground stop " + agentName + "' to stop the bot")
+		cmd.output.PrintInfo("Use 'playground logs " + agentName + "' to view logs")
 	}
 
 	return nil

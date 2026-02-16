@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2, Save, AlertCircle } from '@/components/ui/icon-bridge';
 import { ConfigField } from './ConfigField';
-import type { ConfigurationSchema, AgentConfiguration, ConfigField as ConfigFieldType } from '../../types/playground';
+import type { ConfigurationSchema, BotConfiguration, ConfigField as ConfigFieldType } from '../../types/playground';
 
 interface ConfigurationFormProps {
   schema: ConfigurationSchema;
-  initialValues?: AgentConfiguration;
-  onSubmit: (configuration: AgentConfiguration) => Promise<void>;
+  initialValues?: BotConfiguration;
+  onSubmit: (configuration: BotConfiguration) => Promise<void>;
   loading?: boolean;
   title?: string;
   description?: string;
@@ -28,14 +28,14 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
   description = "Configure the agent settings below"
 }) => {
   const fields = schema.fields ?? [];
-  const [values, setValues] = useState<AgentConfiguration>(initialValues);
+  const [values, setValues] = useState<BotConfiguration>(initialValues);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Initialize form values with defaults
   useEffect(() => {
-    const defaultValues: AgentConfiguration = {};
+    const defaultValues: BotConfiguration = {};
     fields.forEach((field) => {
       if (field.default !== undefined) {
         defaultValues[field.name] = field.default;

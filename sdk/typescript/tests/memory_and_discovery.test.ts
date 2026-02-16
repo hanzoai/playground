@@ -168,7 +168,7 @@ describe('PlaygroundClient discovery', () => {
     const payload = {
       discovered_at: '2025-01-01T00:00:00Z',
       total_agents: 1,
-      total_reasoners: 1,
+      total_bots: 1,
       total_skills: 1,
       pagination: { limit: 10, offset: 0, has_more: false },
       capabilities: [
@@ -179,12 +179,12 @@ describe('PlaygroundClient discovery', () => {
           health_status: 'active',
           deployment_type: 'long_running',
           last_heartbeat: 'now',
-          reasoners: [
+          bots: [
             {
               id: 'r1',
               invocation_target: 'agent-1:r1',
               tags: ['ml'],
-              description: 'reasoner',
+              description: 'bot',
               input_schema: { type: 'object' },
               output_schema: { type: 'object' },
               examples: [{ name: 'ex' }]
@@ -229,7 +229,7 @@ describe('PlaygroundClient discovery', () => {
     );
 
     expect(result.format).toBe('json');
-    expect(result.json?.capabilities[0].reasoners[0].invocationTarget).toBe('agent-1:r1');
+    expect(result.json?.capabilities[0].bots[0].invocationTarget).toBe('agent-1:r1');
     expect(result.json?.capabilities[0].skills[0].id).toBe('s1');
   });
 });

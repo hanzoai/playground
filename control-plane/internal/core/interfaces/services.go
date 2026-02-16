@@ -25,9 +25,9 @@ type PackageService interface {
 	GetPackageInfo(name string) (*domain.InstalledPackage, error)
 }
 
-// AgentService defines the contract for agent management operations.
+// BotService defines the contract for agent management operations.
 // This interface abstracts running, stopping, and monitoring agent instances.
-type AgentService interface {
+type BotService interface {
 	// RunAgent starts an agent with the given name and options.
 	// Returns information about the running agent or an error if startup fails.
 	RunAgent(name string, options domain.RunOptions) (*domain.RunningAgent, error)
@@ -36,9 +36,9 @@ type AgentService interface {
 	// Returns an error if the agent is not found or cannot be stopped.
 	StopAgent(name string) error
 
-	// GetAgentStatus retrieves the current status of an agent by name.
+	// GetBotStatus retrieves the current status of an agent by name.
 	// Returns an error if the agent is not found.
-	GetAgentStatus(name string) (*domain.AgentStatus, error)
+	GetBotStatus(name string) (*domain.BotStatus, error)
 
 	// ListRunningAgents returns a list of all currently running agents.
 	// Returns an error if the agent information cannot be retrieved.

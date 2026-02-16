@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import {
   EntityDecisionSchema,
   EntityProfileSchema,
@@ -14,9 +14,9 @@ import {
 } from '../schemas.js';
 import { formatContext, parseWithSchema } from '../utils.js';
 
-export const aggregationRouter = new AgentRouter({ prefix: 'aggregation' });
+export const aggregationRouter = new BotRouter({ prefix: 'aggregation' });
 
-aggregationRouter.reasoner(
+aggregationRouter.bot(
   'aggregateAndAnalyze',
   async (ctx) => {
     const { scenario, scenarioAnalysis, factorGraph, entities, decisions, context = [] } = ctx.input as {

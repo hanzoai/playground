@@ -1,7 +1,8 @@
 /**
- * CanvasPage
+ * CanvasPage (Space Canvas)
  *
  * Full-bleed infinite canvas for bot orchestration.
+ * Starts empty — shows onboarding when no bots exist in the active space.
  * Responsive: sidebar panel on desktop, drawer on mobile.
  */
 
@@ -12,26 +13,34 @@ import { CanvasSidebar } from '@/components/canvas/CanvasSidebar';
 import { ConnectionIndicator } from '@/components/canvas/ConnectionIndicator';
 import { ActionPill } from '@/components/canvas/ActionPill/ActionPill';
 import { CommandPalette } from '@/components/canvas/CommandPalette';
+import { FirstBotOnboarding } from '@/components/onboarding/FirstBotOnboarding';
 import { useGateway } from '@/hooks/useGateway';
 import { useCanvasStore } from '@/stores/canvasStore';
-import { useAgentStore } from '@/stores/agentStore';
+import { useBotStore } from '@/stores/botStore';
+import { useSpaceStore } from '@/stores/spaceStore';
 
 export function CanvasPage() {
   const { connectionState, isConnected, reconnect } = useGateway();
   const restore = useCanvasStore((s) => s.restore);
-  const addStarter = useCanvasStore((s) => s.addStarter);
   const nodes = useCanvasStore((s) => s.nodes);
-  const initialized = useAgentStore((s) => s.initialized);
-  const agentCount = useAgentStore((s) => s.agents.size);
+  const initialized = useBotStore((s) => s.initialized);
+  const agentCount = useBotStore((s) => s.agents.size);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const activeSpace = useSpaceStore((s) => s.activeSpace);
+  const spaceBots = useSpaceStore((s) => s.bots);
+  const fetchBots = useSpaceStore((s) => s.fetchBots);
 
   // Restore persisted canvas on mount
   useEffect(() => { restore(); }, [restore]);
 
-  // Add starter if canvas empty after initial sync
+  // Fetch space bots when space is active
   useEffect(() => {
-    if (initialized && nodes.length === 0) addStarter();
-  }, [initialized, nodes.length, addStarter]);
+    if (activeSpace) fetchBots();
+  }, [activeSpace, fetchBots]);
+
+  // Show onboarding when space has no bots and canvas has no nodes
+  const showOnboarding = activeSpace && spaceBots.length === 0 && nodes.length === 0 && initialized;
 
   return (
     <ReactFlowProvider>
@@ -72,14 +81,34 @@ export function CanvasPage() {
           {/* ActionPill */}
           <ActionPill />
 
-          {/* Empty state */}
-          {!isConnected && connectionState !== 'connecting' && connectionState !== 'authenticating' && connectionState !== 'reconnecting' && (
+          {/* Onboarding: empty canvas with active space but no bots */}
+          {showOnboarding && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+              <div className="pointer-events-auto px-4 py-8">
+                <FirstBotOnboarding />
+              </div>
+            </div>
+          )}
+
+          {/* No space selected */}
+          {!activeSpace && (
             <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
               <div className="flex flex-col items-center gap-3 text-center pointer-events-auto px-4">
-                <div className="text-4xl">🤖</div>
-                <h2 className="text-lg font-semibold">Hanzo Bot</h2>
+                <h2 className="text-lg font-semibold">No space selected</h2>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Connect to the gateway to see your bots. Click the indicator to reconnect.
+                  Go to <a href="/ui/spaces" className="text-primary underline">Spaces</a> to create or select a workspace.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Disconnected state (only when space is active and has bots) */}
+          {activeSpace && spaceBots.length > 0 && !isConnected && connectionState !== 'connecting' && connectionState !== 'authenticating' && connectionState !== 'reconnecting' && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+              <div className="flex flex-col items-center gap-3 text-center pointer-events-auto px-4">
+                <h2 className="text-lg font-semibold">Reconnecting...</h2>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Connection lost. Click the indicator to reconnect.
                 </p>
               </div>
             </div>

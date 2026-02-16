@@ -18,7 +18,7 @@ type RunSummaryAggregation struct {
 	EarliestStarted  time.Time
 	LatestStarted    time.Time
 	RootExecutionID  *string
-	RootAgentNodeID  *string
+	RootNodeID  *string
 	RootBotID   *string
 	SessionID        *string
 	ActorID          *string
@@ -34,9 +34,9 @@ type StorageProvider interface {
 	HealthCheck(ctx context.Context) error
 
 	// Execution operations
-	StoreExecution(ctx context.Context, execution *types.AgentExecution) error
-	GetExecution(ctx context.Context, id int64) (*types.AgentExecution, error)
-	QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.AgentExecution, error)
+	StoreExecution(ctx context.Context, execution *types.BotExecution) error
+	GetExecution(ctx context.Context, id int64) (*types.BotExecution, error)
+	QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.BotExecution, error)
 
 	// Workflow execution operations
 	StoreWorkflowExecution(ctx context.Context, execution *types.WorkflowExecution) error
@@ -102,14 +102,14 @@ type StorageProvider interface {
 	RenewLock(ctx context.Context, lockID string) (*types.DistributedLock, error)
 	GetLockStatus(ctx context.Context, key string) (*types.DistributedLock, error)
 
-	// Agent registry
-	RegisterAgent(ctx context.Context, agent *types.AgentNode) error
-	GetAgent(ctx context.Context, id string) (*types.AgentNode, error)
-	ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error)
-	UpdateAgentHealth(ctx context.Context, id string, status types.HealthStatus) error
-	UpdateAgentHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error
-	UpdateAgentHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error
-	UpdateAgentLifecycleStatus(ctx context.Context, id string, status types.AgentLifecycleStatus) error
+	// Node registry
+	RegisterNode(ctx context.Context, agent *types.Node) error
+	GetNode(ctx context.Context, id string) (*types.Node, error)
+	ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error)
+	UpdateNodeHealth(ctx context.Context, id string, status types.HealthStatus) error
+	UpdateNodeHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error
+	UpdateNodeHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error
+	UpdateBotLifecycleStatus(ctx context.Context, id string, status types.BotLifecycleStatus) error
 
 	// Configuration
 	SetConfig(ctx context.Context, key string, value interface{}) error
@@ -119,20 +119,20 @@ type StorageProvider interface {
 	GetBotPerformanceMetrics(ctx context.Context, botID string) (*types.BotPerformanceMetrics, error)
 	GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error)
 
-	// Agent Configuration Management
-	StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error
-	GetAgentConfiguration(ctx context.Context, agentID, packageID string) (*types.AgentConfiguration, error)
-	QueryAgentConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.AgentConfiguration, error)
-	UpdateAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error
-	DeleteAgentConfiguration(ctx context.Context, agentID, packageID string) error
-	ValidateAgentConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error)
+	// Bot Configuration Management
+	StoreBotConfiguration(ctx context.Context, config *types.BotConfiguration) error
+	GetBotConfiguration(ctx context.Context, agentID, packageID string) (*types.BotConfiguration, error)
+	QueryBotConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.BotConfiguration, error)
+	UpdateBotConfiguration(ctx context.Context, config *types.BotConfiguration) error
+	DeleteBotConfiguration(ctx context.Context, agentID, packageID string) error
+	ValidateBotConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error)
 
-	// Agent Package Management
-	StoreAgentPackage(ctx context.Context, pkg *types.AgentPackage) error
-	GetAgentPackage(ctx context.Context, packageID string) (*types.AgentPackage, error)
-	QueryAgentPackages(ctx context.Context, filters types.PackageFilters) ([]*types.AgentPackage, error)
-	UpdateAgentPackage(ctx context.Context, pkg *types.AgentPackage) error
-	DeleteAgentPackage(ctx context.Context, packageID string) error
+	// Bot Package Management
+	StoreBotPackage(ctx context.Context, pkg *types.BotPackage) error
+	GetBotPackage(ctx context.Context, packageID string) (*types.BotPackage, error)
+	QueryBotPackages(ctx context.Context, filters types.PackageFilters) ([]*types.BotPackage, error)
+	UpdateBotPackage(ctx context.Context, pkg *types.BotPackage) error
+	DeleteBotPackage(ctx context.Context, packageID string) error
 
 	// Real-time features (optional, may be handled by CacheProvider)
 	SubscribeToMemoryChanges(ctx context.Context, scope, scopeID string) (<-chan types.MemoryChangeEvent, error)
@@ -147,15 +147,15 @@ type StorageProvider interface {
 	GetDID(ctx context.Context, did string) (*types.DIDRegistryEntry, error)
 	ListDIDs(ctx context.Context) ([]*types.DIDRegistryEntry, error)
 
-	// Agents Server DID operations
-	StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error
-	GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error)
-	ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error)
+	// Playground Server DID operations
+	StorePlaygroundServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error
+	GetPlaygroundServerDID(ctx context.Context, agentsServerID string) (*types.PlaygroundServerDIDInfo, error)
+	ListPlaygroundServerDIDs(ctx context.Context) ([]*types.PlaygroundServerDIDInfo, error)
 
-	// Agent DID operations
-	StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error
-	GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error)
-	ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInfo, error)
+	// Node DID operations
+	StoreNodeDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error
+	GetNodeDID(ctx context.Context, agentID string) (*types.NodeDIDInfo, error)
+	ListNodeDIDs(ctx context.Context) ([]*types.NodeDIDInfo, error)
 
 	// Component DID operations
 	StoreComponentDID(ctx context.Context, componentID, componentDID, agentDID, componentType, componentName string, derivationIndex int) error
@@ -163,7 +163,7 @@ type StorageProvider interface {
 	ListComponentDIDs(ctx context.Context, agentDID string) ([]*types.ComponentDIDInfo, error)
 
 	// Multi-step DID operations with transaction safety
-	StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []ComponentDIDRequest) error
+	StoreNodeDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []ComponentDIDRequest) error
 
 	// Execution VC operations
 	StoreExecutionVC(ctx context.Context, vcID, executionID, workflowID, sessionID, issuerDID, targetDID, callerDID, inputHash, outputHash, status string, vcDocument []byte, signature string, storageURI string, documentSizeBytes int64) error
@@ -279,8 +279,10 @@ func (sf *StorageFactory) CreateStorage(config StorageConfig) (StorageProvider, 
 		mode = "local"
 	}
 
-	// Allow environment variable to override mode
-	if envMode := os.Getenv("AGENTS_STORAGE_MODE"); envMode != "" {
+	// Allow environment variable to override mode (PLAYGROUND_ preferred, AGENTS_ fallback)
+	if envMode := os.Getenv("PLAYGROUND_STORAGE_MODE"); envMode != "" {
+		mode = envMode
+	} else if envMode := os.Getenv("AGENTS_STORAGE_MODE"); envMode != "" {
 		mode = envMode
 	}
 

@@ -4,7 +4,7 @@ This folder contains a small Docker Compose setup for evaluating Playground loca
 
 - Control plane (UI + REST API)
 - PostgreSQL (pgvector)
-- Optional demo agents (Go + Python)
+- Optional demo bots (Go + Python)
 
 ## Quick start
 
@@ -55,7 +55,7 @@ curl -s http://localhost:8080/api/v1/did/workflow/$run_id/vc-chain | head -c 120
 The control plane must be able to call your agent at the URL it registers.
 
 - Same Compose network: use the service name (e.g. `http://demo-python-agent:8001`).
-- Agent on host, control plane in Docker: use `host.docker.internal` (Python: `AGENT_CALLBACK_URL`, Go: `AGENT_PUBLIC_URL`).
+- Bot on host, control plane in Docker: use `host.docker.internal` (Python: `HANZO_CALLBACK_URL`, Go: `HANZO_PUBLIC_URL`).
 
 ## Cleanup
 

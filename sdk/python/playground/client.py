@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 import requests
 
 from .types import (
-    AgentStatus,
+    BotStatus,
     CompactDiscoveryResponse,
     DiscoveryResponse,
     DiscoveryResult,
@@ -213,7 +213,7 @@ class PlaygroundClient:
         node_id: Optional[str] = None,
         agent_ids: Optional[List[str]] = None,
         node_ids: Optional[List[str]] = None,
-        reasoner: Optional[str] = None,
+        bot: Optional[str] = None,
         skill: Optional[str] = None,
         tags: Optional[List[str]] = None,
         include_input_schema: Optional[bool] = None,
@@ -257,8 +257,8 @@ class PlaygroundClient:
         elif len(combined_agent_ids) > 1:
             params["agent_ids"] = ",".join(combined_agent_ids)
 
-        if reasoner:
-            params["reasoner"] = reasoner
+        if bot:
+            params["bot"] = bot
         if skill:
             params["skill"] = skill
         if tags:
@@ -517,10 +517,10 @@ class PlaygroundClient:
         custom_section = metadata.setdefault("custom", {})
         custom_section["vc_generation"] = vc_metadata
 
-    async def register_agent(
+    async def register_bot(
         self,
         node_id: str,
-        reasoners: List[dict],
+        bots: List[dict],
         skills: List[dict],
         base_url: str,
         discovery: Optional[Dict[str, Any]] = None,
@@ -539,7 +539,7 @@ class PlaygroundClient:
                 "team_id": "default",
                 "base_url": base_url,
                 "version": version,
-                "reasoners": reasoners,
+                "bots": bots,
                 "skills": skills,
                 "communication_config": {
                     "protocols": ["http"],
@@ -604,7 +604,7 @@ class PlaygroundClient:
         headers: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
-        Execute a reasoner or skill via the durable execution gateway.
+        Execute a bot or skill via the durable execution gateway.
 
         The public signature remains unchanged, but internally we now submit the
         execution, poll for completion with adaptive backoff, and return the final
@@ -1009,13 +1009,13 @@ class PlaygroundClient:
         except Exception:
             return False
 
-    async def register_agent_with_status(
+    async def register_bot_with_status(
         self,
         node_id: str,
-        reasoners: List[dict],
+        bots: List[dict],
         skills: List[dict],
         base_url: str,
-        status: AgentStatus = AgentStatus.STARTING,
+        status: BotStatus = BotStatus.STARTING,
         discovery: Optional[Dict[str, Any]] = None,
         suppress_errors: bool = False,
         vc_metadata: Optional[Dict[str, Any]] = None,
@@ -1033,7 +1033,7 @@ class PlaygroundClient:
                 "team_id": "default",
                 "base_url": base_url,
                 "version": version,
-                "reasoners": reasoners,
+                "bots": bots,
                 "skills": skills,
                 "lifecycle_status": status.value,
                 "communication_config": {
@@ -1144,8 +1144,8 @@ class PlaygroundClient:
         Submit an async execution and return execution_id.
 
         Args:
-            target: Target in format 'node_id.reasoner_name' or 'node_id.skill_name'
-            input_data: Input data for the reasoner/skill
+            target: Target in format 'node_id.bot_name' or 'node_id.skill_name'
+            input_data: Input data for the bot/skill
             headers: Optional headers to include (will be merged with context headers)
             timeout: Optional execution timeout (uses config default if None)
             webhook: Optional webhook registration (dict or WebhookConfig)

@@ -2,7 +2,7 @@
 
 export interface AgentDIDInfo {
   did: string;
-  agent_node_id: string;
+  node_id: string;
   agents_server_id: string;
   public_key_jwk: any;
   derivation_path: string;
@@ -155,7 +155,7 @@ export interface VCProof {
 
 // Request/Response types for API calls
 export interface DIDRegistrationRequest {
-  agent_node_id: string;
+  node_id: string;
   bots: BotDefinition[];
   skills: SkillDefinition[];
 }
@@ -222,7 +222,7 @@ export interface SecurityAnalysis {
 
 export interface ComplianceChecks {
   w3c_compliance: boolean;
-  bot_standard_compliance: boolean;
+  playground_standard_compliance: boolean;
   audit_trail_integrity: boolean;
   data_integrity_checks: boolean;
   issues: VerificationIssue[];
@@ -266,7 +266,7 @@ export interface DIDResolutionEntry {
 
 export interface DIDFilters {
   agents_server_id?: string;
-  agent_node_id?: string;
+  node_id?: string;
   component_type?: string;
   status?: AgentDIDStatus;
   exposure_level?: string;

@@ -1,4 +1,4 @@
-import type { MemoryScope } from '../types/agent.js';
+import type { MemoryScope } from '../types/bot.js';
 import type { MemoryClient, MemoryRequestMetadata, VectorSearchOptions } from './MemoryClient.js';
 import type { MemoryEventClient } from './MemoryEventClient.js';
 import type { AIClient, AIEmbeddingOptions } from '../ai/AIClient.js';

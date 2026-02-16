@@ -7,9 +7,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Loader2, Save, AlertCircle, Eye, EyeOff, RefreshCw } from '@/components/ui/icon-bridge';
 import {
-  getAgentEnvironmentVariables,
-  updateAgentEnvironmentVariables,
-  getAgentConfigurationSchema
+  getBotEnvironmentVariables,
+  updateBotEnvironmentVariables,
+  getBotConfigurationSchema
 } from '../../services/api';
 import {
   useSuccessNotification,
@@ -62,8 +62,8 @@ export const EnvironmentVariableForm: React.FC<EnvironmentVariableFormProps> = (
     setLoading(true);
     try {
       const [schemaResponse, envResponse] = await Promise.all([
-        getAgentConfigurationSchema(agentId, packageId),
-        getAgentEnvironmentVariables(agentId, packageId)
+        getBotConfigurationSchema(agentId, packageId),
+        getBotEnvironmentVariables(agentId, packageId)
       ]);
 
       setSchema(schemaResponse);
@@ -199,7 +199,7 @@ export const EnvironmentVariableForm: React.FC<EnvironmentVariableFormProps> = (
         }
       });
 
-      await updateAgentEnvironmentVariables(agentId, packageId, variables);
+      await updateBotEnvironmentVariables(agentId, packageId, variables);
 
       showSuccess('Environment variables saved successfully');
       setHasChanges(false);

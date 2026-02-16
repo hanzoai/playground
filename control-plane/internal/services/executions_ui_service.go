@@ -26,7 +26,7 @@ type ExecutionSummaryForUI struct {
 	ExecutionID  string     `json:"execution_id"`
 	SessionID    *string    `json:"session_id"`
 	ActorID      *string    `json:"actor_id"`
-	AgentNodeID  string     `json:"agent_node_id"`
+	NodeID  string     `json:"node_id"`
 	BotID   string     `json:"bot_id"`
 	Status       string     `json:"status"`
 	StartedAt    time.Time  `json:"started_at"`
@@ -53,7 +53,7 @@ type GroupedExecutionSummary struct {
 
 // ExecutionFiltersForUI represents UI-friendly filters.
 type ExecutionFiltersForUI struct {
-	AgentNodeID *string    `json:"agent_node_id"`
+	NodeID *string    `json:"node_id"`
 	WorkflowID  *string    `json:"workflow_id"`
 	SessionID   *string    `json:"session_id"`
 	ActorID     *string    `json:"actor_id"`
@@ -253,8 +253,8 @@ func (s *ExecutionsUIService) convertToStorageFilters(uiFilters ExecutionFilters
 		Offset: (uiFilters.Page - 1) * uiFilters.PageSize,
 	}
 
-	if uiFilters.AgentNodeID != nil {
-		filters.AgentNodeID = uiFilters.AgentNodeID
+	if uiFilters.NodeID != nil {
+		filters.NodeID = uiFilters.NodeID
 	}
 	if uiFilters.WorkflowID != nil {
 		filters.WorkflowID = uiFilters.WorkflowID
@@ -298,7 +298,7 @@ func (s *ExecutionsUIService) convertToUISummary(exec *types.WorkflowExecution) 
 		ExecutionID:  exec.ExecutionID,
 		SessionID:    exec.SessionID,
 		ActorID:      exec.ActorID,
-		AgentNodeID:  exec.AgentNodeID,
+		NodeID:  exec.NodeID,
 		BotID:   exec.BotID,
 		Status:       exec.Status,
 		StartedAt:    exec.StartedAt,
@@ -353,8 +353,8 @@ func (s *ExecutionsUIService) groupExecutions(executions []*types.WorkflowExecut
 				groupLabel = "No Actor"
 			}
 		case "agent":
-			groupKey = exec.AgentNodeID
-			groupLabel = exec.AgentNodeID
+			groupKey = exec.NodeID
+			groupLabel = exec.NodeID
 		case "status":
 			groupKey = exec.Status
 			groupLabel = exec.Status

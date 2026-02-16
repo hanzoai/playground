@@ -3,7 +3,7 @@ Tests for Media Providers and Unified Multimodal UX.
 
 This module tests:
 - FalProvider, LiteLLMProvider, OpenRouterProvider
-- Provider routing in AgentAI (fal-ai/, openrouter/, default)
+- Provider routing in BotAI (fal-ai/, openrouter/, default)
 - New methods: ai_generate_video, ai_transcribe_audio
 - AIConfig extensions: fal_api_key, video_model
 """
@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from playground.agent_ai import AgentAI
+from playground.bot_ai import BotAI
 from playground.media_providers import (
     FalProvider,
     LiteLLMProvider,
@@ -294,16 +294,16 @@ class TestProviderRegistry:
 
 
 # =============================================================================
-# AgentAI Provider Routing Tests
+# BotAI Provider Routing Tests
 # =============================================================================
 
 
-class TestAgentAIProviderRouting:
-    """Tests for provider routing in AgentAI."""
+class TestBotAIProviderRouting:
+    """Tests for provider routing in BotAI."""
 
     def test_fal_provider_lazy_initialization(self, agent_with_ai):
         """_fal_provider should be lazily initialized."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
         assert ai._fal_provider_instance is None
 
         # Access the property to trigger initialization
@@ -315,7 +315,7 @@ class TestAgentAIProviderRouting:
 
     def test_fal_provider_cached(self, agent_with_ai):
         """_fal_provider should be cached after first access."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         with patch("playground.media_providers.FalProvider") as mock_fal:
             mock_provider = MagicMock()
@@ -331,7 +331,7 @@ class TestAgentAIProviderRouting:
     @pytest.mark.asyncio
     async def test_ai_with_vision_routes_fal_ai_prefix(self, agent_with_ai, monkeypatch):
         """ai_with_vision should route fal-ai/ models to FalProvider."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(
             text="test",
@@ -357,7 +357,7 @@ class TestAgentAIProviderRouting:
     @pytest.mark.asyncio
     async def test_ai_with_vision_routes_fal_prefix(self, agent_with_ai, monkeypatch):
         """ai_with_vision should route fal/ models to FalProvider."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(
             text="test",
@@ -382,7 +382,7 @@ class TestAgentAIProviderRouting:
     @pytest.mark.asyncio
     async def test_ai_with_audio_routes_fal_models(self, agent_with_ai):
         """ai_with_audio should route fal-ai/ models to FalProvider."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(
             text="Hello",
@@ -417,7 +417,7 @@ class TestAIGenerateVideo:
     @pytest.mark.asyncio
     async def test_ai_generate_video_uses_default_model(self, agent_with_ai):
         """ai_generate_video should use AIConfig.video_model as default."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(
             text="",
@@ -442,7 +442,7 @@ class TestAIGenerateVideo:
     @pytest.mark.asyncio
     async def test_ai_generate_video_with_image_url(self, agent_with_ai):
         """ai_generate_video should pass image_url for image-to-video."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(
             text="",
@@ -469,7 +469,7 @@ class TestAIGenerateVideo:
     @pytest.mark.asyncio
     async def test_ai_generate_video_rejects_non_fal_models(self, agent_with_ai):
         """ai_generate_video should reject non-Fal models."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         with pytest.raises(ValueError, match="only supports Fal.ai models"):
             await ai.ai_generate_video(
@@ -484,7 +484,7 @@ class TestAITranscribeAudio:
     @pytest.mark.asyncio
     async def test_ai_transcribe_audio_default_model(self, agent_with_ai):
         """ai_transcribe_audio should default to fal-ai/whisper."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(
             text="Hello world",
@@ -510,7 +510,7 @@ class TestAITranscribeAudio:
     @pytest.mark.asyncio
     async def test_ai_transcribe_audio_with_language(self, agent_with_ai):
         """ai_transcribe_audio should pass language hint."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         mock_response = MultimodalResponse(text="Hola mundo", audio=None, images=[], files=[])
         mock_transcribe = AsyncMock(return_value=mock_response)
@@ -532,7 +532,7 @@ class TestAITranscribeAudio:
     @pytest.mark.asyncio
     async def test_ai_transcribe_audio_rejects_non_fal_models(self, agent_with_ai):
         """ai_transcribe_audio should reject non-Fal models."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         with pytest.raises(ValueError, match="only supports Fal.ai models"):
             await ai.ai_transcribe_audio(
@@ -552,7 +552,7 @@ class TestUnifiedMultimodalUX:
     @pytest.mark.asyncio
     async def test_image_generation_routes_correctly(self, agent_with_ai, monkeypatch):
         """Different model prefixes should route to correct providers."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         # Track which methods are called
         calls = []
@@ -581,7 +581,7 @@ class TestUnifiedMultimodalUX:
 
     def test_all_new_methods_exist(self, agent_with_ai):
         """Agent should have all new multimodal methods."""
-        ai = AgentAI(agent_with_ai)
+        ai = BotAI(agent_with_ai)
 
         # Check methods exist
         assert hasattr(ai, "ai_generate_video")

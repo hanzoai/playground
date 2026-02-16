@@ -8,25 +8,25 @@ spec:
       containers:
         - name: control-plane
           env:
-            - name: AGENTS_STORAGE_MODE
+            - name: PLAYGROUND_STORAGE_MODE
               value: "postgres"
-            - name: AGENTS_STORAGE_POSTGRES_HOST
+            - name: PLAYGROUND_STORAGE_POSTGRES_HOST
               value: playground-postgres
-            - name: AGENTS_STORAGE_POSTGRES_PORT
+            - name: PLAYGROUND_STORAGE_POSTGRES_PORT
               value: "5432"
-            - name: AGENTS_STORAGE_POSTGRES_SSLMODE
+            - name: PLAYGROUND_STORAGE_POSTGRES_SSLMODE
               value: "disable"
-            - name: AGENTS_STORAGE_POSTGRES_DATABASE
+            - name: PLAYGROUND_STORAGE_POSTGRES_DATABASE
               valueFrom:
                 secretKeyRef:
                   name: playground-postgres-auth
                   key: database
-            - name: AGENTS_STORAGE_POSTGRES_USER
+            - name: PLAYGROUND_STORAGE_POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: playground-postgres-auth
                   key: username
-            - name: AGENTS_STORAGE_POSTGRES_PASSWORD
+            - name: PLAYGROUND_STORAGE_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: playground-postgres-auth

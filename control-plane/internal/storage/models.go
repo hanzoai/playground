@@ -7,9 +7,8 @@ type ExecutionRecordModel struct {
 	ExecutionID       string     `gorm:"column:execution_id;not null;uniqueIndex"`
 	RunID             string     `gorm:"column:run_id;not null;index"`
 	ParentExecutionID *string    `gorm:"column:parent_execution_id;index"`
-	AgentNodeID       string     `gorm:"column:agent_node_id;not null;index"`
-	BotID        string     `gorm:"column:bot_id;not null;index"`
-	NodeID            string     `gorm:"column:node_id;not null;index"`
+	NodeID     string `gorm:"column:node_id;not null;index"`
+	BotID string `gorm:"column:bot_id;not null;index"`
 	Status            string     `gorm:"column:status;not null;index"`
 	InputPayload      []byte     `gorm:"column:input_payload"`
 	ResultPayload     []byte     `gorm:"column:result_payload"`
@@ -28,11 +27,11 @@ type ExecutionRecordModel struct {
 
 func (ExecutionRecordModel) TableName() string { return "executions" }
 
-type AgentExecutionModel struct {
+type BotExecutionModel struct {
 	ID           int64     `gorm:"column:id;primaryKey;autoIncrement"`
 	WorkflowID   string    `gorm:"column:workflow_id;not null;index"`
 	SessionID    *string   `gorm:"column:session_id;index"`
-	AgentNodeID  string    `gorm:"column:agent_node_id;not null;index"`
+	NodeID  string    `gorm:"column:node_id;not null;index"`
 	BotID   string    `gorm:"column:bot_id;not null;index"`
 	InputData    []byte    `gorm:"column:input_data"`
 	OutputData   []byte    `gorm:"column:output_data"`
@@ -47,9 +46,9 @@ type AgentExecutionModel struct {
 	CreatedAt    time.Time `gorm:"column:created_at;autoCreateTime"`
 }
 
-func (AgentExecutionModel) TableName() string { return "agent_executions" }
+func (BotExecutionModel) TableName() string { return "agent_executions" }
 
-type AgentNodeModel struct {
+type NodeModel struct {
 	ID                  string     `gorm:"column:id;primaryKey"`
 	TeamID              string     `gorm:"column:team_id;not null;index"`
 	BaseURL             string     `gorm:"column:base_url;not null"`
@@ -67,12 +66,12 @@ type AgentNodeModel struct {
 	Metadata            []byte     `gorm:"column:metadata"`
 }
 
-func (AgentNodeModel) TableName() string { return "agent_nodes" }
+func (NodeModel) TableName() string { return "nodes" }
 
-type AgentConfigurationModel struct {
+type BotConfigurationModel struct {
 	ID              int64     `gorm:"column:id;primaryKey;autoIncrement"`
-	AgentID         string    `gorm:"column:agent_id;not null;index:idx_agent_config_agent_package,priority:1"`
-	PackageID       string    `gorm:"column:package_id;not null;index:idx_agent_config_agent_package,priority:2"`
+	AgentID         string    `gorm:"column:agent_id;not null;index:idx_bot_config_bot_package,priority:1"`
+	PackageID       string    `gorm:"column:package_id;not null;index:idx_bot_config_bot_package,priority:2"`
 	Configuration   []byte    `gorm:"column:configuration;not null"`
 	EncryptedFields []byte    `gorm:"column:encrypted_fields"`
 	Status          string    `gorm:"column:status;not null"`
@@ -83,9 +82,9 @@ type AgentConfigurationModel struct {
 	UpdatedBy       *string   `gorm:"column:updated_by"`
 }
 
-func (AgentConfigurationModel) TableName() string { return "agent_configurations" }
+func (BotConfigurationModel) TableName() string { return "agent_configurations" }
 
-type AgentPackageModel struct {
+type BotPackageModel struct {
 	ID                  string    `gorm:"column:id;primaryKey"`
 	Name                string    `gorm:"column:name;not null"`
 	Version             string    `gorm:"column:version;not null"`
@@ -101,7 +100,7 @@ type AgentPackageModel struct {
 	Metadata            []byte    `gorm:"column:metadata"`
 }
 
-func (AgentPackageModel) TableName() string { return "agent_packages" }
+func (BotPackageModel) TableName() string { return "agent_packages" }
 
 type WorkflowExecutionModel struct {
 	ID                    int64      `gorm:"column:id;primaryKey;autoIncrement"`
@@ -111,7 +110,7 @@ type WorkflowExecutionModel struct {
 	RunID                 *string    `gorm:"column:run_id;index"`
 	SessionID             *string    `gorm:"column:session_id;index;index:idx_workflow_executions_session_status,priority:1;index:idx_workflow_executions_session_status_time,priority:1;index:idx_workflow_executions_session_time,priority:1"`
 	ActorID               *string    `gorm:"column:actor_id;index;index:idx_workflow_executions_actor_status,priority:1;index:idx_workflow_executions_actor_status_time,priority:1;index:idx_workflow_executions_actor_time,priority:1"`
-	AgentNodeID           string     `gorm:"column:agent_node_id;not null;index;index:idx_workflow_executions_agent_node_status,priority:1;index:idx_workflow_executions_agent_status_time,priority:1"`
+	NodeID           string     `gorm:"column:node_id;not null;index;index:idx_workflow_executions_node_status,priority:1;index:idx_workflow_executions_node_status_time,priority:1"`
 	ParentWorkflowID      *string    `gorm:"column:parent_workflow_id;index"`
 	ParentExecutionID     *string    `gorm:"column:parent_execution_id;index"`
 	RootWorkflowID        *string    `gorm:"column:root_workflow_id;index"`
@@ -123,8 +122,8 @@ type WorkflowExecutionModel struct {
 	OutputSize            int        `gorm:"column:output_size"`
 	WorkflowName          *string    `gorm:"column:workflow_name"`
 	WorkflowTags          string     `gorm:"column:workflow_tags"`
-	Status                string     `gorm:"column:status;not null;index;index:idx_workflow_executions_agent_node_status,priority:2;index:idx_workflow_executions_session_status,priority:2;index:idx_workflow_executions_actor_status,priority:2;index:idx_workflow_executions_workflow_status,priority:2;index:idx_workflow_executions_status_time,priority:1;index:idx_workflow_executions_session_status_time,priority:2;index:idx_workflow_executions_actor_status_time,priority:2;index:idx_workflow_executions_agent_status_time,priority:2"`
-	StartedAt             time.Time  `gorm:"column:started_at;not null;index;index:idx_workflow_executions_status_time,priority:2;index:idx_workflow_executions_session_status_time,priority:3;index:idx_workflow_executions_actor_status_time,priority:3;index:idx_workflow_executions_agent_status_time,priority:3;index:idx_workflow_executions_session_time,priority:2;index:idx_workflow_executions_actor_time,priority:2"`
+	Status                string     `gorm:"column:status;not null;index;index:idx_workflow_executions_node_status,priority:2;index:idx_workflow_executions_session_status,priority:2;index:idx_workflow_executions_actor_status,priority:2;index:idx_workflow_executions_workflow_status,priority:2;index:idx_workflow_executions_status_time,priority:1;index:idx_workflow_executions_session_status_time,priority:2;index:idx_workflow_executions_actor_status_time,priority:2;index:idx_workflow_executions_node_status_time,priority:2"`
+	StartedAt             time.Time  `gorm:"column:started_at;not null;index;index:idx_workflow_executions_status_time,priority:2;index:idx_workflow_executions_session_status_time,priority:3;index:idx_workflow_executions_actor_status_time,priority:3;index:idx_workflow_executions_node_status_time,priority:3;index:idx_workflow_executions_session_time,priority:2;index:idx_workflow_executions_actor_time,priority:2"`
 	CompletedAt           *time.Time `gorm:"column:completed_at"`
 	DurationMS            int        `gorm:"column:duration_ms"`
 	StateVersion          int        `gorm:"column:state_version;not null;default:0"`
@@ -200,12 +199,12 @@ type WorkflowStepModel struct {
 	RunID        string     `gorm:"column:run_id;not null;index;index:idx_workflow_steps_run_execution,priority:1;index:idx_workflow_steps_run_status,priority:1;index:idx_workflow_steps_run_priority,priority:1"`
 	ParentStepID *string    `gorm:"column:parent_step_id;index"`
 	ExecutionID  *string    `gorm:"column:execution_id;index:idx_workflow_steps_run_execution,priority:2"`
-	AgentNodeID  *string    `gorm:"column:agent_node_id;index;index:idx_workflow_steps_agent_not_before,priority:1"`
+	NodeID  *string    `gorm:"column:node_id;index;index:idx_workflow_steps_node_not_before,priority:1"`
 	Target       *string    `gorm:"column:target"`
-	Status       string     `gorm:"column:status;not null;default:'pending';index;index:idx_workflow_steps_run_status,priority:2;index:idx_workflow_steps_status_not_before,priority:1;index:idx_workflow_steps_agent_not_before,priority:2"`
+	Status       string     `gorm:"column:status;not null;default:'pending';index;index:idx_workflow_steps_run_status,priority:2;index:idx_workflow_steps_status_not_before,priority:1;index:idx_workflow_steps_node_not_before,priority:2"`
 	Attempt      int        `gorm:"column:attempt;not null;default:0"`
 	Priority     int        `gorm:"column:priority;not null;default:0;index:idx_workflow_steps_run_priority,priority:2"`
-	NotBefore    time.Time  `gorm:"column:not_before;not null;index:idx_workflow_steps_status_not_before,priority:2;index:idx_workflow_steps_agent_not_before,priority:3;index:idx_workflow_steps_run_priority,priority:3"`
+	NotBefore    time.Time  `gorm:"column:not_before;not null;index:idx_workflow_steps_status_not_before,priority:2;index:idx_workflow_steps_node_not_before,priority:3;index:idx_workflow_steps_run_priority,priority:3"`
 	InputURI     *string    `gorm:"column:input_uri"`
 	ResultURI    *string    `gorm:"column:result_uri"`
 	ErrorMessage *string    `gorm:"column:error_message"`
@@ -261,10 +260,10 @@ type SessionModel struct {
 func (SessionModel) TableName() string { return "sessions" }
 
 type DIDRegistryModel struct {
-	AgentsServerID  string    `gorm:"column:agents_server_id;primaryKey"`
+	PlaygroundServerID  string    `gorm:"column:playground_server_id;primaryKey"`
 	MasterSeedEncrypted []byte    `gorm:"column:master_seed_encrypted;not null"`
 	RootDID             string    `gorm:"column:root_did;not null;unique"`
-	AgentNodes          string    `gorm:"column:agent_nodes;default:'{}'"`
+	Nodes          string    `gorm:"column:nodes;default:'{}'"`
 	TotalDIDs           int       `gorm:"column:total_dids;default:0"`
 	CreatedAt           time.Time `gorm:"column:created_at;autoCreateTime"`
 	LastKeyRotation     time.Time `gorm:"column:last_key_rotation;autoCreateTime"`
@@ -272,10 +271,10 @@ type DIDRegistryModel struct {
 
 func (DIDRegistryModel) TableName() string { return "did_registry" }
 
-type AgentDIDModel struct {
+type HanzoDIDModel struct {
 	DID                string    `gorm:"column:did;primaryKey"`
-	AgentNodeID        string    `gorm:"column:agent_node_id;not null;index"`
-	AgentsServerID string    `gorm:"column:agents_server_id;not null;index"`
+	NodeID        string    `gorm:"column:node_id;not null;index"`
+	PlaygroundServerID string    `gorm:"column:playground_server_id;not null;index"`
 	PublicKeyJWK       string    `gorm:"column:public_key_jwk;not null"`
 	DerivationPath     string    `gorm:"column:derivation_path;not null"`
 	Bots          string    `gorm:"column:bots;default:'{}'"`
@@ -286,11 +285,11 @@ type AgentDIDModel struct {
 	UpdatedAt          time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
 
-func (AgentDIDModel) TableName() string { return "agent_dids" }
+func (HanzoDIDModel) TableName() string { return "hanzo_dids" }
 
 type ComponentDIDModel struct {
 	DID            string    `gorm:"column:did;primaryKey"`
-	AgentDID       string    `gorm:"column:agent_did;not null;index"`
+	NodeDID       string    `gorm:"column:agent_did;not null;index"`
 	ComponentType  string    `gorm:"column:component_type;not null;index"`
 	FunctionName   string    `gorm:"column:function_name;not null"`
 	PublicKeyJWK   string    `gorm:"column:public_key_jwk;not null"`

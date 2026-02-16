@@ -20,17 +20,17 @@ import (
 type DashboardHandler struct {
 	storage       storage.StorageProvider
 	store         executionRecordStore
-	agentService  interfaces.AgentService
+	botService    interfaces.BotService
 	cache         *DashboardCache
 	enhancedCache *EnhancedDashboardCache
 }
 
 // NewDashboardHandler creates a new DashboardHandler.
-func NewDashboardHandler(storage storage.StorageProvider, agentService interfaces.AgentService) *DashboardHandler {
+func NewDashboardHandler(storage storage.StorageProvider, botService interfaces.BotService) *DashboardHandler {
 	return &DashboardHandler{
 		storage:       storage,
 		store:         storage,
-		agentService:  agentService,
+		botService:    botService,
 		cache:         NewDashboardCache(),
 		enhancedCache: NewEnhancedDashboardCache(),
 	}
@@ -256,7 +256,7 @@ type ActiveWorkflowRun struct {
 	Name        string    `json:"name,omitempty"`
 	StartedAt   time.Time `json:"started_at"`
 	ElapsedMs   int64     `json:"elapsed_ms"`
-	AgentNodeID string    `json:"agent_node_id"`
+	NodeID string    `json:"node_id"`
 	BotID  string    `json:"bot_id"`
 	Status      string    `json:"status"`
 }
@@ -277,7 +277,7 @@ type IncidentItem struct {
 	Status      string     `json:"status"`
 	StartedAt   time.Time  `json:"started_at"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	AgentNodeID string     `json:"agent_node_id"`
+	NodeID string     `json:"node_id"`
 	BotID  string     `json:"bot_id"`
 	Error       string     `json:"error,omitempty"`
 }
@@ -568,7 +568,7 @@ func (h *DashboardHandler) GetEnhancedDashboardSummaryHandler(c *gin.Context) {
 		return
 	}
 
-	agents, err := h.storage.ListAgents(ctx, types.AgentFilters{})
+	agents, err := h.storage.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("failed to list agents for enhanced dashboard")
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load agent data"})
@@ -638,20 +638,20 @@ func (h *DashboardHandler) GetEnhancedDashboardSummaryHandler(c *gin.Context) {
 }
 
 // buildEnhancedOverviewForRange builds overview metrics for a specific time range
-func (h *DashboardHandler) buildEnhancedOverviewForRange(agents []*types.AgentNode, executions []*types.Execution, startTime, endTime time.Time) EnhancedOverview {
+func (h *DashboardHandler) buildEnhancedOverviewForRange(agents []*types.Node, executions []*types.Execution, startTime, endTime time.Time) EnhancedOverview {
 	overview := EnhancedOverview{TotalAgents: len(agents)}
 
 	for _, agent := range agents {
 		overview.TotalBots += len(agent.Bots)
 		overview.TotalSkills += len(agent.Skills)
 
-		isDegraded := agent.LifecycleStatus == types.AgentStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
+		isDegraded := agent.LifecycleStatus == types.BotStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
 		if isDegraded {
 			overview.DegradedAgents++
 			continue
 		}
 
-		status, err := h.agentService.GetAgentStatus(agent.ID)
+		status, err := h.botService.GetBotStatus(agent.ID)
 		if err != nil {
 			overview.OfflineAgents++
 			continue
@@ -967,7 +967,7 @@ func buildActivityPatterns(executions []*types.Execution) ActivityPatterns {
 	return ActivityPatterns{HourlyHeatmap: heatmap}
 }
 
-func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.AgentNode, executions []*types.Execution) EnhancedOverview {
+func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.Node, executions []*types.Execution) EnhancedOverview {
 	overview := EnhancedOverview{TotalAgents: len(agents)}
 
 	for _, agent := range agents {
@@ -975,13 +975,13 @@ func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.
 		overview.TotalBots += len(agent.Bots)
 		overview.TotalSkills += len(agent.Skills)
 
-		isDegraded := agent.LifecycleStatus == types.AgentStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
+		isDegraded := agent.LifecycleStatus == types.BotStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
 		if isDegraded {
 			overview.DegradedAgents++
 			continue
 		}
 
-		status, err := h.agentService.GetAgentStatus(agent.ID)
+		status, err := h.botService.GetBotStatus(agent.ID)
 		if err != nil {
 			overview.OfflineAgents++
 			continue
@@ -1105,7 +1105,7 @@ func buildExecutionTrends(now time.Time, executions []*types.Execution) Executio
 	return trend
 }
 
-func (h *DashboardHandler) buildAgentHealthSummary(ctx context.Context, agents []*types.AgentNode) AgentHealthSummary {
+func (h *DashboardHandler) buildAgentHealthSummary(ctx context.Context, agents []*types.Node) AgentHealthSummary {
 	summary := AgentHealthSummary{Total: len(agents)}
 	items := make([]AgentHealthItem, 0, len(agents))
 
@@ -1121,7 +1121,7 @@ func (h *DashboardHandler) buildAgentHealthSummary(ctx context.Context, agents [
 			Skills:        len(agent.Skills),
 		}
 
-		isDegraded := agent.LifecycleStatus == types.AgentStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
+		isDegraded := agent.LifecycleStatus == types.BotStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
 		if isDegraded {
 			summary.Degraded++
 			item.Status = "degraded"
@@ -1129,7 +1129,7 @@ func (h *DashboardHandler) buildAgentHealthSummary(ctx context.Context, agents [
 			continue
 		}
 
-		status, err := h.agentService.GetAgentStatus(agent.ID)
+		status, err := h.botService.GetBotStatus(agent.ID)
 		if err != nil {
 			summary.Offline++
 			item.Status = "offline"
@@ -1244,7 +1244,7 @@ func buildWorkflowInsights(executions []*types.Execution, running []*types.Execu
 			Name:        exec.BotID,
 			StartedAt:   exec.StartedAt,
 			ElapsedMs:   elapsed,
-			AgentNodeID: exec.AgentNodeID,
+			NodeID: exec.NodeID,
 			BotID:  exec.BotID,
 			Status:      exec.Status,
 		})
@@ -1310,7 +1310,7 @@ func buildIncidentItems(executions []*types.Execution, limit int) []IncidentItem
 			Status:      exec.Status,
 			StartedAt:   exec.StartedAt,
 			CompletedAt: exec.CompletedAt,
-			AgentNodeID: exec.AgentNodeID,
+			NodeID: exec.NodeID,
 			BotID:  exec.BotID,
 			Error:       errorMessage,
 		})
@@ -1353,7 +1353,7 @@ func maxTime(current time.Time, candidate time.Time) time.Time {
 // getAgentsSummary collects agent statistics
 func (h *DashboardHandler) getAgentsSummary(ctx context.Context) (AgentsSummary, error) {
 	// Get all registered agents
-	agents, err := h.storage.ListAgents(ctx, types.AgentFilters{})
+	agents, err := h.storage.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		return AgentsSummary{}, err
 	}
@@ -1363,7 +1363,7 @@ func (h *DashboardHandler) getAgentsSummary(ctx context.Context) (AgentsSummary,
 
 	// Count running agents using the agent service
 	for _, agent := range agents {
-		if status, err := h.agentService.GetAgentStatus(agent.ID); err == nil && status.IsRunning {
+		if status, err := h.botService.GetBotStatus(agent.ID); err == nil && status.IsRunning {
 			running++
 		}
 	}
@@ -1434,7 +1434,7 @@ func (h *DashboardHandler) calculateSuccessRate(executions []*types.Execution) f
 // getPackagesSummary collects package statistics
 func (h *DashboardHandler) getPackagesSummary(ctx context.Context) (PackagesSummary, error) {
 	// Get all agent packages
-	packages, err := h.storage.QueryAgentPackages(ctx, types.PackageFilters{})
+	packages, err := h.storage.QueryBotPackages(ctx, types.PackageFilters{})
 	if err != nil {
 		return PackagesSummary{}, err
 	}
@@ -1451,7 +1451,7 @@ func (h *DashboardHandler) getPackagesSummary(ctx context.Context) (PackagesSumm
 			installed++
 		} else {
 			// Check if configuration exists and is active
-			if config, err := h.storage.GetAgentConfiguration(ctx, pkg.ID, pkg.ID); err == nil {
+			if config, err := h.storage.GetBotConfiguration(ctx, pkg.ID, pkg.ID); err == nil {
 				if config.Status == types.ConfigurationStatusActive || config.Status == types.ConfigurationStatusDraft {
 					installed++
 				}

@@ -367,8 +367,8 @@ export function ExecutionsList({
                             {execution.session_id && (
                               <div>Session: {execution.session_id}</div>
                             )}
-                            {execution.agent_node_id && (
-                              <div>Agent: {execution.agent_node_id}</div>
+                            {execution.node_id && (
+                              <div>Agent: {execution.node_id}</div>
                             )}
                             <div>Started: {startedAt ? (() => {
                               const date = new Date(startedAt);

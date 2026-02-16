@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import {
   EntityProfileSchema,
   FactorGraphSchema,
@@ -10,9 +10,9 @@ import {
 } from '../schemas.js';
 import { flattenAttributes, parseWithSchema } from '../utils.js';
 
-export const entityRouter = new AgentRouter({ prefix: 'entity' });
+export const entityRouter = new BotRouter({ prefix: 'entity' });
 
-entityRouter.reasoner(
+entityRouter.bot(
   'generateEntityBatch',
   async (ctx) => {
     const { startId, batchSize, scenarioAnalysis, factorGraph, explorationRatio = 0.1 } = ctx.input as {

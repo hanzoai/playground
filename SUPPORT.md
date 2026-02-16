@@ -24,7 +24,7 @@ Welcome to Playground! Here's how to get help:
 ## Response Times
 
 We aim to respond to issues within:
-- **Security issues**: 48 hours (email contact@playground.ai)
+- **Security issues**: 48 hours (email contact@hanzo.bot)
 - **Bugs**: 1 week
 - **Questions**: 1-2 weeks
 - **Feature requests**: Reviewed during planning cycles

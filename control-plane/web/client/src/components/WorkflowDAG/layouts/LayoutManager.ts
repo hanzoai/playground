@@ -322,7 +322,7 @@ export class LayoutManager {
    */
   private calculateNodeDimensions(nodeData: any): { width: number; height: number } {
     const taskText = nodeData.task_name || nodeData.bot_id || '';
-    const agentText = nodeData.agent_name || nodeData.agent_node_id || '';
+    const agentText = nodeData.agent_name || nodeData.node_id || '';
 
     const minWidth = 200;
     const maxWidth = 360;

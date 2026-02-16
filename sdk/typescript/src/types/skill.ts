@@ -1,5 +1,5 @@
 import type { SkillContext } from '../context/SkillContext.js';
-import type { Awaitable } from './agent.js';
+import type { Awaitable } from './bot.js';
 
 export interface SkillDefinition<TInput = any, TOutput = any> {
   name: string;

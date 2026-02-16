@@ -57,7 +57,7 @@ export function ExecutionFilters({
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (localFilters.agent_node_id) count++;
+    if (localFilters.node_id) count++;
     if (localFilters.workflow_id) count++;
     if (localFilters.session_id) count++;
     if (localFilters.actor_id) count++;
@@ -147,12 +147,12 @@ export function ExecutionFilters({
                 options={statusOptions}
               />
 
-              {/* Agent Node Filter */}
+              {/* Node Filter */}
               <TextInput
-                label="Agent Node"
-                value={localFilters.agent_node_id || ''}
-                onChange={(e) => handleFilterChange('agent_node_id', e.target.value || undefined)}
-                placeholder="Filter by agent node ID..."
+                label="Node"
+                value={localFilters.node_id || ''}
+                onChange={(e) => handleFilterChange('node_id', e.target.value || undefined)}
+                placeholder="Filter by hanzo node ID..."
               />
 
               {/* Workflow Filter */}

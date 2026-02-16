@@ -246,7 +246,7 @@ func (s *VCStorage) convertVCInfoToExecutionVC(vcInfo *types.ExecutionVCInfo) (*
 		ExecutionID:  vcInfo.ExecutionID,
 		WorkflowID:   vcInfo.WorkflowID,
 		SessionID:    vcInfo.SessionID,
-		AgentNodeID:  vcInfo.AgentNodeID,
+		NodeID:  vcInfo.NodeID,
 		WorkflowName: vcInfo.WorkflowName,
 		IssuerDID:    vcInfo.IssuerDID,
 		TargetDID:    vcInfo.TargetDID,

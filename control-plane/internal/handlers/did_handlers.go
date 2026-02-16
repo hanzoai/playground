@@ -13,9 +13,9 @@ import (
 
 // DIDService defines the DID operations required by handlers.
 type DIDService interface {
-	RegisterAgent(req *types.DIDRegistrationRequest) (*types.DIDRegistrationResponse, error)
+	RegisterNode(req *types.DIDRegistrationRequest) (*types.DIDRegistrationResponse, error)
 	ResolveDID(did string) (*types.DIDIdentity, error)
-	ListAllAgentDIDs() ([]string, error)
+	ListAllNodeDIDs() ([]string, error)
 }
 
 // VCService defines the VC operations required by handlers.
@@ -43,9 +43,9 @@ func NewDIDHandlers(didService DIDService, vcService VCService) *DIDHandlers {
 	}
 }
 
-// RegisterAgent handles agent DID registration requests.
+// RegisterNode handles agent DID registration requests.
 // POST /api/v1/did/register
-func (h *DIDHandlers) RegisterAgent(c *gin.Context) {
+func (h *DIDHandlers) RegisterNode(c *gin.Context) {
 	logger.Logger.Debug().Msg("🔍 DID registration endpoint called")
 
 	var req types.DIDRegistrationRequest
@@ -54,12 +54,12 @@ func (h *DIDHandlers) RegisterAgent(c *gin.Context) {
 		return
 	}
 
-	if req.AgentNodeID == "" {
+	if req.NodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "agent_node_id is required"})
 		return
 	}
 
-	response, err := h.didService.RegisterAgent(&req)
+	response, err := h.didService.RegisterNode(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register agent"})
 		return
@@ -199,7 +199,7 @@ func (h *DIDHandlers) CreateExecutionVC(c *gin.Context) {
 			SessionID    string `json:"session_id"`
 			CallerDID    string `json:"caller_did"`
 			TargetDID    string `json:"target_did"`
-			AgentNodeDID string `json:"agent_node_did"`
+			NodeDID string `json:"agent_node_did"`
 			Timestamp    string `json:"timestamp"`
 		} `json:"execution_context"`
 		InputData    []byte  `json:"input_data"`
@@ -245,7 +245,7 @@ func (h *DIDHandlers) CreateExecutionVC(c *gin.Context) {
 		SessionID:    req.ExecutionContext.SessionID,
 		CallerDID:    req.ExecutionContext.CallerDID,
 		TargetDID:    req.ExecutionContext.TargetDID,
-		AgentNodeDID: req.ExecutionContext.AgentNodeDID,
+		NodeDID: req.ExecutionContext.NodeDID,
 		Timestamp:    timestamp,
 	}
 
@@ -340,7 +340,7 @@ func (h *DIDHandlers) ExportVCs(c *gin.Context) {
 	}
 
 	// Get all registered agent DIDs from the DID service
-	agentDIDs, err := h.didService.ListAllAgentDIDs()
+	agentDIDs, err := h.didService.ListAllNodeDIDs()
 	if err != nil {
 		logger.Logger.Debug().Err(err).Msg("🔍 Failed to list agent DIDs")
 		// Continue with empty list rather than failing the entire request
@@ -428,9 +428,9 @@ func (h *DIDHandlers) GetDIDDocument(c *gin.Context) {
 		"service": []map[string]interface{}{
 			{
 				"id":              did + "#agents-service",
-				"type":            "AgentsAgentService",
+				"type":            "AgentsBotService",
 				"serviceEndpoint": "https://agents.example.com/api/v1",
-				"description":     "Agents Agent Platform Service",
+				"description":     "Playground Bot Platform Service",
 			},
 		},
 	}
@@ -442,7 +442,7 @@ func (h *DIDHandlers) GetDIDDocument(c *gin.Context) {
 func (h *DIDHandlers) RegisterRoutes(router *gin.RouterGroup) {
 	didGroup := router.Group("/did")
 	{
-		didGroup.POST("/register", h.RegisterAgent)
+		didGroup.POST("/register", h.RegisterNode)
 		didGroup.GET("/resolve/:did", h.ResolveDID)
 		didGroup.POST("/verify", h.VerifyVC)
 		didGroup.GET("/workflow/:workflow_id/vc-chain", h.GetWorkflowVCChain)

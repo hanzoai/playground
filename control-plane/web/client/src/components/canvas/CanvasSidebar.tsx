@@ -7,12 +7,12 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
-import { useAgentStore } from '@/stores/agentStore';
+import { useBotStore } from '@/stores/botStore';
 import { useCanvasStore } from '@/stores/canvasStore';
-import type { AgentStatus } from '@/types/gateway';
+import type { BotStatus } from '@/types/gateway';
 import { cn } from '@/lib/utils';
 
-const STATUS_FILTERS: { key: AgentStatus | 'all'; label: string }[] = [
+const STATUS_FILTERS: { key: BotStatus | 'all'; label: string }[] = [
   { key: 'all',    label: 'All' },
   { key: 'busy',   label: 'Working' },
   { key: 'idle',   label: 'Idle' },
@@ -26,13 +26,13 @@ interface CanvasSidebarProps {
 }
 
 export function CanvasSidebar({ open, onClose }: CanvasSidebarProps) {
-  const agents = useAgentStore((s) => s.getAgentList());
+  const agents = useBotStore((s) => s.getAgentList());
   const selectNode = useCanvasStore((s) => s.selectNode);
   const nodes = useCanvasStore((s) => s.nodes);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<AgentStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<BotStatus | 'all'>('all');
 
   const filtered = useMemo(() => {
     return agents.filter((agent) => {

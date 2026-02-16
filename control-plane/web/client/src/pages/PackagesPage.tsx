@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ConfigurationWizard } from "../components/forms";
-import { AgentPackageList } from "../components/packages";
+import { BotPackageList } from "../components/packages";
 import {
   Dialog,
   DialogContent,
@@ -15,26 +15,26 @@ import {
 } from "../components/ui/notification";
 import {
   ConfigurationApiError,
-  getAgentConfiguration,
+  getBotConfiguration,
   getConfigurationSchema,
-  setAgentConfiguration,
+  setBotConfiguration,
   startAgent,
   stopAgent,
 } from "../services/configurationApi";
 import type {
-  AgentConfiguration,
-  AgentPackage,
+  BotConfiguration,
+  BotPackage,
   ConfigurationSchema,
 } from "../types/playground";
 
 const PackagesPageContent: React.FC = () => {
-  const [selectedPackage, setSelectedPackage] = useState<AgentPackage | null>(
+  const [selectedPackage, setSelectedPackage] = useState<BotPackage | null>(
     null
   );
   const [configSchema, setConfigSchema] = useState<ConfigurationSchema | null>(
     null
   );
-  const [currentConfig, setCurrentConfig] = useState<AgentConfiguration>({});
+  const [currentConfig, setCurrentConfig] = useState<BotConfiguration>({});
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ const PackagesPageContent: React.FC = () => {
   const showSuccess = useSuccessNotification();
   const showError = useErrorNotification();
 
-  const handleConfigure = async (pkg: AgentPackage) => {
+  const handleConfigure = async (pkg: BotPackage) => {
     setError(null);
     setSelectedPackage(pkg);
 
@@ -50,7 +50,7 @@ const PackagesPageContent: React.FC = () => {
       // Load configuration schema and current configuration
       const [schema, config] = await Promise.all([
         getConfigurationSchema(pkg.id),
-        getAgentConfiguration(pkg.id).catch(() => ({})), // Default to empty if no config exists
+        getBotConfiguration(pkg.id).catch(() => ({})), // Default to empty if no config exists
       ]);
 
       setConfigSchema(schema);
@@ -68,14 +68,14 @@ const PackagesPageContent: React.FC = () => {
   };
 
   const handleConfigurationComplete = async (
-    configuration: AgentConfiguration
+    configuration: BotConfiguration
   ) => {
     if (!selectedPackage) return;
 
     setError(null);
 
     try {
-      await setAgentConfiguration(selectedPackage.id, configuration);
+      await setBotConfiguration(selectedPackage.id, configuration);
       setIsConfigDialogOpen(false);
       setSelectedPackage(null);
       setConfigSchema(null);
@@ -96,13 +96,13 @@ const PackagesPageContent: React.FC = () => {
     }
   };
 
-  const handleStart = async (pkg: AgentPackage) => {
+  const handleStart = async (pkg: BotPackage) => {
     setError(null);
 
     try {
       await startAgent(pkg.id);
       showSuccess(
-        "Agent Started",
+        "Bot Started",
         `${pkg.name} is now starting up`,
         {
           label: "View Logs",
@@ -122,17 +122,17 @@ const PackagesPageContent: React.FC = () => {
         "Start Failed",
         `Could not start ${pkg.name}: ${errorMessage}`
       );
-      console.error("Agent start error:", err);
+      console.error("Bot start error:", err);
     }
   };
 
-  const handleStop = async (pkg: AgentPackage) => {
+  const handleStop = async (pkg: BotPackage) => {
     setError(null);
 
     try {
       await stopAgent(pkg.id);
       showSuccess(
-        "Agent Stopped",
+        "Bot Stopped",
         `${pkg.name} has been stopped successfully`
       );
     } catch (err) {
@@ -145,7 +145,7 @@ const PackagesPageContent: React.FC = () => {
         "Stop Failed",
         `Could not stop ${pkg.name}: ${errorMessage}`
       );
-      console.error("Agent stop error:", err);
+      console.error("Bot stop error:", err);
     }
   };
 
@@ -159,7 +159,7 @@ const PackagesPageContent: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <AgentPackageList
+      <BotPackageList
         onConfigure={handleConfigure}
         onStart={handleStart}
         onStop={handleStop}

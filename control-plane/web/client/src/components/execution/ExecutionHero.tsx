@@ -145,21 +145,21 @@ export function ExecutionHero({
                 <div className="flex items-center gap-2">
                   <span>Agent:</span>
                   <code className="font-mono bg-muted/50 px-2 py-0.5 rounded text-body-small">
-                    {execution.agent_node_id}
+                    {execution.node_id}
                   </code>
                   <CopyButton
-                    value={execution.agent_node_id}
+                    value={execution.node_id}
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 p-0 hover:bg-muted/80 [&_svg]:h-3 [&_svg]:w-3"
-                    tooltip="Copy agent node ID"
+                    tooltip="Copy hanzo node ID"
                   />
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span>DID:</span>
                   <DIDDisplay
-                    nodeId={execution.agent_node_id}
+                    nodeId={execution.node_id}
                     variant="inline"
                     className="text-body-small"
                   />
@@ -228,7 +228,7 @@ export function ExecutionHero({
               size="sm"
               onClick={() =>
                 navigate(
-                  `/bots/${execution.agent_node_id}.${execution.bot_id}`
+                  `/bots/${execution.node_id}.${execution.bot_id}`
                 )
               }
               className="flex items-center gap-2 h-8"
@@ -240,11 +240,11 @@ export function ExecutionHero({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/nodes/${execution.agent_node_id}`)}
+              onClick={() => navigate(`/nodes/${execution.node_id}`)}
               className="flex items-center gap-2 h-8"
             >
               <ShareNetwork className="w-4 h-4" />
-              Agent Node
+              Node
             </Button>
           </div>
 

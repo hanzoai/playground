@@ -38,7 +38,7 @@ func TestExecuteHandler_Success(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -90,7 +90,7 @@ func TestExecuteHandler_AgentError(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -125,7 +125,7 @@ func TestExecuteHandler_AgentError(t *testing.T) {
 func TestExecuteHandler_TargetNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -165,7 +165,7 @@ func TestExecuteAsyncHandler_ReturnsAccepted(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -207,7 +207,7 @@ func TestExecuteAsyncHandler_ReturnsAccepted(t *testing.T) {
 func TestExecuteAsyncHandler_InvalidJSON(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	store := newTestExecutionStorage(&types.AgentNode{ID: "node-1"})
+	store := newTestExecutionStorage(&types.Node{ID: "node-1"})
 	payloads := services.NewFilePayloadStore(t.TempDir())
 
 	router := gin.New()
@@ -232,7 +232,7 @@ func TestGetExecutionStatusHandler_ReturnsResult(t *testing.T) {
 	execution := &types.Execution{
 		ExecutionID:   "exec-1",
 		RunID:         "run-1",
-		AgentNodeID:   "node-1",
+		NodeID:   "node-1",
 		BotID:    "bot-a",
 		Status:        types.ExecutionStatusSucceeded,
 		ResultPayload: result,

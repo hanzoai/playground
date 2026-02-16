@@ -581,12 +581,12 @@ func TestIsPackageInstalled_NotInstalled(t *testing.T) {
 	assert.False(t, installed)
 }
 
-func TestStopAgentNode_Success(t *testing.T) {
+func TestStopNode_Success(t *testing.T) {
 	tmpDir := t.TempDir()
 	agentsHome := tmpDir
 
 	pid := 12345
-	agentNode := &packages.InstalledPackage{
+	node := &packages.InstalledPackage{
 		Name:    "test-package",
 		Version: "1.0.0",
 		Runtime: packages.RuntimeInfo{
@@ -601,18 +601,18 @@ func TestStopAgentNode_Success(t *testing.T) {
 
 	// This will fail because we can't easily mock os.FindProcess
 	// But we verify the function exists and handles the PID check
-	err := service.stopAgentNode(agentNode)
+	err := service.stopNode(node)
 	// The error should not be about missing PID
 	if err != nil {
 		assert.NotContains(t, err.Error(), "no PID found")
 	}
 }
 
-func TestStopAgentNode_NoPID(t *testing.T) {
+func TestStopNode_NoPID(t *testing.T) {
 	tmpDir := t.TempDir()
 	agentsHome := tmpDir
 
-	agentNode := &packages.InstalledPackage{
+	node := &packages.InstalledPackage{
 		Name:    "test-package",
 		Version: "1.0.0",
 		Runtime: packages.RuntimeInfo{
@@ -625,7 +625,7 @@ func TestStopAgentNode_NoPID(t *testing.T) {
 
 	service := NewPackageService(registryStorage, fileSystem, agentsHome).(*DefaultPackageService)
 
-	err := service.stopAgentNode(agentNode)
+	err := service.stopNode(node)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no PID found")
 }

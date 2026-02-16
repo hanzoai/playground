@@ -2,36 +2,36 @@ import asyncio
 
 import pytest
 
-from playground.decorators import reasoner, _execute_with_tracking
+from playground.decorators import bot, _execute_with_tracking
 from playground.execution_context import ExecutionContext
-from playground.agent_registry import set_current_agent, clear_current_agent
+from playground.bot_registry import set_current_bot, clear_current_bot
 from tests.helpers import StubAgent
 
 
-def test_reasoner_metadata_and_plain_call():
-    @reasoner(tags=["t1"], description="desc")
+def test_bot_metadata_and_plain_call():
+    @bot(tags=["t1"], description="desc")
     def add(a: int, b: int):
         return a + b
 
     # metadata
-    assert getattr(add, "_is_reasoner", False) is True
-    assert add._reasoner_tags == ["t1"]
-    assert add._reasoner_description == "desc"
+    assert getattr(add, "_is_bot", False) is True
+    assert add._bot_tags == ["t1"]
+    assert add._bot_description == "desc"
     # executes without agent context (falls back to plain call)
     assert asyncio.run(add(2, 3)) == 5
 
 
-def test_reasoner_no_parentheses_syntax():
-    @reasoner
+def test_bot_no_parentheses_syntax():
+    @bot
     def echo(x):
         return x
 
-    assert getattr(echo, "_is_reasoner", False) is True
+    assert getattr(echo, "_is_bot", False) is True
     assert asyncio.run(echo("hi")) == "hi"
 
 
-def test_reasoner_disable_tracking():
-    @reasoner(track_workflow=False)
+def test_bot_disable_tracking():
+    @bot(track_workflow=False)
     def mul(a, b):
         return a * b
 
@@ -54,7 +54,7 @@ async def test_execute_with_tracking_success(monkeypatch):
     )
 
     agent = StubAgent()
-    set_current_agent(agent)
+    set_current_bot(agent)
 
     tasks = []
 
@@ -72,14 +72,14 @@ async def test_execute_with_tracking_success(monkeypatch):
     try:
         result = await _execute_with_tracking(sample, 5)
     finally:
-        clear_current_agent()
+        clear_current_bot()
         if tasks:
             await asyncio.gather(*tasks)
 
     assert result == 10
     assert "start" in captured
     ctx, payload = captured["start"][0]
-    assert ctx.reasoner_name == "sample"
+    assert ctx.bot_name == "sample"
     assert payload["args"][0] == 5
     assert "complete" in captured
 
@@ -97,7 +97,7 @@ async def test_execute_with_tracking_error(monkeypatch):
     monkeypatch.setattr("playground.decorators._send_workflow_error", record_error)
 
     agent = StubAgent()
-    set_current_agent(agent)
+    set_current_bot(agent)
 
     tasks = []
 
@@ -115,7 +115,7 @@ async def test_execute_with_tracking_error(monkeypatch):
         try:
             await _execute_with_tracking(boom)
         finally:
-            clear_current_agent()
+            clear_current_bot()
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
 

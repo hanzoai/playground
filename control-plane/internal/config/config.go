@@ -12,13 +12,15 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
-// Config holds the entire configuration for the Agents server.
+// Config holds the entire configuration for the Playground server.
 type Config struct {
-	Agents AgentsConfig `yaml:"agents" mapstructure:"agents"`
-	Features   FeatureConfig    `yaml:"features" mapstructure:"features"`
-	Storage    StorageConfig    `yaml:"storage" mapstructure:"storage"`
-	UI         UIConfig         `yaml:"ui" mapstructure:"ui"`
-	API        APIConfig        `yaml:"api" mapstructure:"api"`
+	Agents   PlaygroundConfig  `yaml:"agents" mapstructure:"agents"`
+	Features FeatureConfig `yaml:"features" mapstructure:"features"`
+	Storage  StorageConfig `yaml:"storage" mapstructure:"storage"`
+	UI       UIConfig      `yaml:"ui" mapstructure:"ui"`
+	API      APIConfig     `yaml:"api" mapstructure:"api"`
+	Cloud    CloudConfig   `yaml:"cloud" mapstructure:"cloud"`
+	IAM      IAMConfig     `yaml:"iam" mapstructure:"iam"`
 }
 
 // UIConfig holds configuration for the web UI.
@@ -30,15 +32,15 @@ type UIConfig struct {
 	DevPort    int    `yaml:"dev_port" mapstructure:"dev_port"`       // Port for UI dev server
 }
 
-// AgentsConfig holds the core Agents server configuration.
-type AgentsConfig struct {
+// PlaygroundConfig holds the core Playground server configuration.
+type PlaygroundConfig struct {
 	Port             int                    `yaml:"port"`
 	NodeHealth       NodeHealthConfig       `yaml:"node_health" mapstructure:"node_health"`
 	ExecutionCleanup ExecutionCleanupConfig `yaml:"execution_cleanup" mapstructure:"execution_cleanup"`
 	ExecutionQueue   ExecutionQueueConfig   `yaml:"execution_queue" mapstructure:"execution_queue"`
 }
 
-// NodeHealthConfig holds configuration for agent node health monitoring.
+// NodeHealthConfig holds configuration for Node health monitoring.
 // Zero values are treated as "use default" — set explicitly to override.
 type NodeHealthConfig struct {
 	CheckInterval           time.Duration `yaml:"check_interval" mapstructure:"check_interval"`                       // How often to HTTP health check nodes (0 = default 10s)
@@ -131,8 +133,8 @@ type AuthConfig struct {
 // with the implementation in the storage package.
 type StorageConfig = storage.StorageConfig
 
-// DefaultConfigPath is the default path for the af configuration file.
-const DefaultConfigPath = "agents.yaml" // Or "./agents.yaml", "config/agents.yaml" depending on convention
+// DefaultConfigPath is the default path for the playground configuration file.
+const DefaultConfigPath = "playground.yaml"
 
 // LoadConfig reads the configuration from the given path or default paths.
 func LoadConfig(configPath string) (*Config, error) {
@@ -140,17 +142,23 @@ func LoadConfig(configPath string) (*Config, error) {
 		configPath = DefaultConfigPath
 	}
 
-	// Check if the specific path exists
+	// Check if the specific path exists, with fallback to legacy names
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// Fallback: try to find it in common locations relative to executable or CWD
-		// This part might need more sophisticated logic depending on project structure
-		// For now, let's assume configPath is either absolute or relative to CWD.
-		// If not found, try a common "config/" subdirectory
-		altPath := filepath.Join("config", "agents.yaml")
-		if _, err2 := os.Stat(altPath); err2 == nil {
-			configPath = altPath
-		} else {
-			// If still not found, return the original error for the specified/default path
+		// Try common locations: config/playground.yaml, then legacy agents.yaml
+		fallbacks := []string{
+			filepath.Join("config", "playground.yaml"),
+			"agents.yaml",
+			filepath.Join("config", "agents.yaml"),
+		}
+		found := false
+		for _, alt := range fallbacks {
+			if _, err2 := os.Stat(alt); err2 == nil {
+				configPath = alt
+				found = true
+				break
+			}
+		}
+		if !found {
 			return nil, fmt.Errorf("configuration file not found at %s or default locations: %w", configPath, err)
 		}
 	}
@@ -165,46 +173,67 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse configuration file %s: %w", configPath, err)
 	}
 
+	// Apply defaults for new config sections
+	if cfg.Cloud.Kubernetes.Namespace == "" {
+		defaults := DefaultCloudConfig()
+		if !cfg.Cloud.Enabled {
+			cfg.Cloud = defaults
+		}
+	}
+	if cfg.IAM.Endpoint == "" {
+		cfg.IAM = DefaultIAMConfig()
+	}
+
 	// Apply environment variable overrides
 	applyEnvOverrides(&cfg)
+	applyCloudEnvOverrides(&cfg)
 
 	return &cfg, nil
 }
 
+// envWithFallback reads PLAYGROUND_<key> first, then falls back to AGENTS_<key>.
+func envWithFallback(key string) string {
+	if v := os.Getenv("PLAYGROUND_" + key); v != "" {
+		return v
+	}
+	return os.Getenv("AGENTS_" + key)
+}
+
 // applyEnvOverrides applies environment variable overrides to the config.
 // Environment variables take precedence over YAML config values.
+// Reads PLAYGROUND_* first, falls back to AGENTS_* for backward compatibility.
 func applyEnvOverrides(cfg *Config) {
 	// API Authentication
-	if apiKey := os.Getenv("AGENTS_API_KEY"); apiKey != "" {
+	if apiKey := envWithFallback("API_KEY"); apiKey != "" {
 		cfg.API.Auth.APIKey = apiKey
 	}
 	// Also support the nested path format for consistency
-	if apiKey := os.Getenv("AGENTS_API_AUTH_API_KEY"); apiKey != "" {
+	if apiKey := envWithFallback("API_AUTH_API_KEY"); apiKey != "" {
 		cfg.API.Auth.APIKey = apiKey
 	}
 
 	// Node health monitoring overrides
-	if val := os.Getenv("AGENTS_HEALTH_CHECK_INTERVAL"); val != "" {
+	if val := envWithFallback("HEALTH_CHECK_INTERVAL"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
 			cfg.Agents.NodeHealth.CheckInterval = d
 		}
 	}
-	if val := os.Getenv("AGENTS_HEALTH_CHECK_TIMEOUT"); val != "" {
+	if val := envWithFallback("HEALTH_CHECK_TIMEOUT"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
 			cfg.Agents.NodeHealth.CheckTimeout = d
 		}
 	}
-	if val := os.Getenv("AGENTS_HEALTH_CONSECUTIVE_FAILURES"); val != "" {
+	if val := envWithFallback("HEALTH_CONSECUTIVE_FAILURES"); val != "" {
 		if i, err := strconv.Atoi(val); err == nil {
 			cfg.Agents.NodeHealth.ConsecutiveFailures = i
 		}
 	}
-	if val := os.Getenv("AGENTS_HEALTH_RECOVERY_DEBOUNCE"); val != "" {
+	if val := envWithFallback("HEALTH_RECOVERY_DEBOUNCE"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
 			cfg.Agents.NodeHealth.RecoveryDebounce = d
 		}
 	}
-	if val := os.Getenv("AGENTS_HEARTBEAT_STALE_THRESHOLD"); val != "" {
+	if val := envWithFallback("HEARTBEAT_STALE_THRESHOLD"); val != "" {
 		if d, err := time.ParseDuration(val); err == nil {
 			cfg.Agents.NodeHealth.HeartbeatStaleThreshold = d
 		}

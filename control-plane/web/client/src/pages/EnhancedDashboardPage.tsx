@@ -136,8 +136,8 @@ export function EnhancedDashboardPage() {
       }
       const entry = ensureEntry(accumulator, run.bot_id);
       entry.activeRuns += 1;
-      if (run.agent_node_id) {
-        entry.agentIds.add(run.agent_node_id);
+      if (run.node_id) {
+        entry.agentIds.add(run.node_id);
       }
     });
 
@@ -147,8 +147,8 @@ export function EnhancedDashboardPage() {
       }
       const entry = ensureEntry(accumulator, incident.bot_id);
       entry.incidentCount += 1;
-      if (incident.agent_node_id) {
-        entry.agentIds.add(incident.agent_node_id);
+      if (incident.node_id) {
+        entry.agentIds.add(incident.node_id);
       }
     });
 
@@ -394,7 +394,7 @@ function OverviewStrip({ overview, trends, trendPoints, comparison }: OverviewSt
     <ResponsiveGrid variant="dashboard">
       {/* Agents Online */}
       <TrendMetricCard
-        label="Agents online"
+        label="Bots online"
         value={`${overview.active_agents}/${overview.total_agents}`}
         subtitle={
           overview.degraded_agents > 0

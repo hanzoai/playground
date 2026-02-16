@@ -44,10 +44,10 @@ type DIDStatsResponse struct {
 	TotalDIDs      int `json:"total_dids"`
 }
 
-// AgentDIDResponse represents an agent with its DIDs
-type AgentDIDResponse struct {
+// NodeDIDResponse represents an agent with its DIDs
+type NodeDIDResponse struct {
 	DID            string             `json:"did"`
-	AgentNodeID    string             `json:"agent_node_id"`
+	NodeID    string             `json:"node_id"`
 	Status         string             `json:"status"`
 	DerivationPath string             `json:"derivation_path"`
 	CreatedAt      string             `json:"created_at"`
@@ -90,7 +90,7 @@ func (h *IdentityHandlers) GetDIDStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Get all agent DIDs
-	agentDIDs, err := h.storage.ListAgentDIDs(ctx)
+	agentDIDs, err := h.storage.ListNodeDIDs(ctx)
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to list agent DIDs")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get DID stats"})
@@ -144,15 +144,15 @@ func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 
 	// Search agents if type is "all" or "agent"
 	if didType == "all" || didType == "agent" {
-		agentDIDs, err := h.storage.ListAgentDIDs(ctx)
+		agentDIDs, err := h.storage.ListNodeDIDs(ctx)
 		if err == nil {
 			for i := range agentDIDs {
 				agent := agentDIDs[i]
-				if query == "" || strings.Contains(strings.ToLower(agent.AgentNodeID), query) {
+				if query == "" || strings.Contains(strings.ToLower(agent.NodeID), query) {
 					results = append(results, DIDSearchResult{
 						Type:           "agent",
 						DID:            agent.DID,
-						Name:           agent.AgentNodeID,
+						Name:           agent.NodeID,
 						DerivationPath: agent.DerivationPath,
 						Status:         string(agent.Status),
 						CreatedAt:      agent.RegisteredAt.Format("2006-01-02T15:04:05Z"),
@@ -182,7 +182,7 @@ func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 					Type:           comp.ComponentType,
 					DID:            comp.ComponentDID,
 					Name:           comp.ComponentName,
-					ParentDID:      comp.AgentDID,
+					ParentDID:      comp.NodeDID,
 					DerivationPath: strconv.Itoa(comp.DerivationIndex),
 					CreatedAt:      comp.CreatedAt.Format("2006-01-02T15:04:05Z"),
 				})
@@ -213,9 +213,9 @@ func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 	})
 }
 
-// ListAgents returns a paginated list of agent DIDs
+// ListNodes returns a paginated list of agent DIDs
 // GET /api/ui/v1/identity/agents?limit=10&offset=0
-func (h *IdentityHandlers) ListAgents(c *gin.Context) {
+func (h *IdentityHandlers) ListNodes(c *gin.Context) {
 	ctx := c.Request.Context()
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
@@ -224,7 +224,7 @@ func (h *IdentityHandlers) ListAgents(c *gin.Context) {
 		limit = 50
 	}
 
-	agentDIDs, err := h.storage.ListAgentDIDs(ctx)
+	agentDIDs, err := h.storage.ListNodeDIDs(ctx)
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to list agent DIDs")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list agents"})
@@ -236,11 +236,11 @@ func (h *IdentityHandlers) ListAgents(c *gin.Context) {
 	componentsByAgent := make(map[string][]*types.ComponentDIDInfo)
 	for i := range componentDIDs {
 		comp := componentDIDs[i]
-		componentsByAgent[comp.AgentDID] = append(componentsByAgent[comp.AgentDID], comp)
+		componentsByAgent[comp.NodeDID] = append(componentsByAgent[comp.NodeDID], comp)
 	}
 
 	// Build response
-	var agents []AgentDIDResponse
+	var agents []NodeDIDResponse
 	for i := range agentDIDs {
 		agent := agentDIDs[i]
 		components := componentsByAgent[agent.DID]
@@ -254,9 +254,9 @@ func (h *IdentityHandlers) ListAgents(c *gin.Context) {
 			}
 		}
 
-		agents = append(agents, AgentDIDResponse{
+		agents = append(agents, NodeDIDResponse{
 			DID:            agent.DID,
-			AgentNodeID:    agent.AgentNodeID,
+			NodeID:    agent.NodeID,
 			Status:         string(agent.Status),
 			DerivationPath: agent.DerivationPath,
 			CreatedAt:      agent.RegisteredAt.Format("2006-01-02T15:04:05Z"),
@@ -288,11 +288,11 @@ func (h *IdentityHandlers) ListAgents(c *gin.Context) {
 	})
 }
 
-// GetAgentDetails returns detailed information about an agent and its components
+// GetNodeDetails returns detailed information about an agent and its components
 // GET /api/ui/v1/identity/agents/:agent_id/details?limit=20&offset=0
-func (h *IdentityHandlers) GetAgentDetails(c *gin.Context) {
+func (h *IdentityHandlers) GetNodeDetails(c *gin.Context) {
 	ctx := c.Request.Context()
-	agentNodeID := c.Param("agent_id")
+	nodeID := c.Param("agent_id")
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
@@ -301,16 +301,16 @@ func (h *IdentityHandlers) GetAgentDetails(c *gin.Context) {
 	}
 
 	// Find the agent DID
-	agentDIDs, err := h.storage.ListAgentDIDs(ctx)
+	agentDIDs, err := h.storage.ListNodeDIDs(ctx)
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to list agent DIDs")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get agent details"})
 		return
 	}
 
-	var agentDID *types.AgentDIDInfo
+	var agentDID *types.NodeDIDInfo
 	for i := range agentDIDs {
-		if agentDIDs[i].AgentNodeID == agentNodeID {
+		if agentDIDs[i].NodeID == nodeID {
 			agentDID = agentDIDs[i]
 			break
 		}
@@ -364,9 +364,9 @@ func (h *IdentityHandlers) GetAgentDetails(c *gin.Context) {
 
 	paginatedBots := bots[start:end]
 
-	response := AgentDIDResponse{
+	response := NodeDIDResponse{
 		DID:            agentDID.DID,
-		AgentNodeID:    agentDID.AgentNodeID,
+		NodeID:    agentDID.NodeID,
 		Status:         string(agentDID.Status),
 		DerivationPath: agentDID.DerivationPath,
 		CreatedAt:      agentDID.RegisteredAt.Format("2006-01-02T15:04:05Z"),
@@ -454,10 +454,10 @@ func (h *IdentityHandlers) SearchCredentials(c *gin.Context) {
 		filters.TargetDID = &targetDID
 	}
 
-	if agentNodeID := c.Query("agent_node_id"); agentNodeID != "" {
-		filters.AgentNodeID = &agentNodeID
-	} else if agentNodeID := c.Query("agent_id"); agentNodeID != "" {
-		filters.AgentNodeID = &agentNodeID
+	if nodeID := c.Query("node_id"); nodeID != "" {
+		filters.NodeID = &nodeID
+	} else if nodeID := c.Query("agent_id"); nodeID != "" {
+		filters.NodeID = &nodeID
 	}
 
 	if search := strings.TrimSpace(c.Query("query")); search != "" {
@@ -506,8 +506,8 @@ func (h *IdentityHandlers) SearchCredentials(c *gin.Context) {
 	for i := range vcs {
 		vc := vcs[i]
 		var agentName string
-		if vc.AgentNodeID != nil {
-			agentName = *vc.AgentNodeID
+		if vc.NodeID != nil {
+			agentName = *vc.NodeID
 		}
 
 		var workflowName string
@@ -549,8 +549,8 @@ func (h *IdentityHandlers) RegisterRoutes(router *gin.RouterGroup) {
 		// DID Explorer endpoints
 		identity.GET("/dids/stats", h.GetDIDStats)
 		identity.GET("/dids/search", h.SearchDIDs)
-		identity.GET("/agents", h.ListAgents)
-		identity.GET("/agents/:agent_id/details", h.GetAgentDetails)
+		identity.GET("/agents", h.ListNodes)
+		identity.GET("/agents/:agent_id/details", h.GetNodeDetails)
 
 		// Credentials endpoints
 		identity.GET("/credentials/search", h.SearchCredentials)

@@ -16,8 +16,8 @@ import (
 func NewMCPCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mcp",
-		Short: "Manage MCP servers in your Agents agent project",
-		Long: `Manage Model Context Protocol (MCP) servers in your Agents agent project.
+		Short: "Manage MCP servers in your playground project",
+		Long: `Manage Model Context Protocol (MCP) servers in your playground project.
 
 MCP servers provide external tools and resources that can be integrated into your agent.`,
 	}
@@ -62,7 +62,7 @@ func runMCPStatusCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 	manager := mcp.NewMCPManager(cfg, projectDir, verbose)
@@ -75,7 +75,7 @@ func runMCPStatusCommand(cmd *cobra.Command, args []string) error {
 
 	if len(servers) == 0 {
 		PrintInfo("No MCP servers installed")
-		fmt.Printf("\n%s %s\n", Blue("→"), "Add an MCP server: af add --mcp @modelcontextprotocol/server-github")
+		fmt.Printf("\n%s %s\n", Blue("→"), "Add an MCP server: playground add --mcp @modelcontextprotocol/server-github")
 		return nil
 	}
 
@@ -156,7 +156,7 @@ func runMCPStartCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 	manager := mcp.NewMCPManager(cfg, projectDir, verbose)
@@ -202,7 +202,7 @@ func runMCPStopCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 	manager := mcp.NewMCPManager(cfg, projectDir, verbose)
@@ -317,7 +317,7 @@ func NewMCPSkillsGenerateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate [alias]",
 		Short: "Generate skill files for MCP servers",
-		Long:  `Generate Python skill files that wrap MCP tools as Agents skills.`,
+		Long:  `Generate Python skill files that wrap MCP tools as Playground skills.`,
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runMCPSkillsGenerateCommand,
 	}
@@ -430,7 +430,7 @@ func runMCPSkillsListCommand(cmd *cobra.Command, args []string) error {
 
 	if skillCount == 0 {
 		PrintInfo("No auto-generated MCP skills found")
-		fmt.Printf("\n%s %s\n", Blue("→"), "Generate skills: af mcp skills generate")
+		fmt.Printf("\n%s %s\n", Blue("→"), "Generate skills: playground mcp skills generate")
 	} else {
 		fmt.Printf("\n%s %d skill files found\n", Gray("Total:"), skillCount)
 	}
@@ -464,7 +464,7 @@ func runMCPSkillsRefreshCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 	manager := mcp.NewMCPManager(cfg, projectDir, verbose)
@@ -529,7 +529,7 @@ func runMCPRemoveCommand(cmd *cobra.Command, args []string, force bool) error {
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 	manager := mcp.NewMCPManager(cfg, projectDir, verbose)
@@ -582,7 +582,7 @@ func runMCPDiscoverCommand(cmd *cobra.Command, args []string, refresh bool) erro
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 
@@ -685,7 +685,7 @@ func runMCPMigrateCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		cfg, err = config.LoadConfig("agents.yaml") // Fallback
 		if err != nil {
-			return fmt.Errorf("failed to load af configuration: %w", err)
+			return fmt.Errorf("failed to load playground configuration: %w", err)
 		}
 	}
 

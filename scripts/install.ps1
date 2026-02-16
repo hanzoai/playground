@@ -1,6 +1,6 @@
 # Playground CLI Installer for Windows
-# Usage: iwr -useb https://playground.ai/install.ps1 | iex
-# Version pinning: $env:VERSION="v1.0.0"; iwr -useb https://playground.ai/install.ps1 | iex
+# Usage: iwr -useb https://hanzo.bot/install.ps1 | iex
+# Version pinning: $env:VERSION="v1.0.0"; iwr -useb https://hanzo.bot/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
@@ -323,7 +323,7 @@ function Write-SuccessMessage {
     Write-Host "     playground init my-agent" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Resources:" -ForegroundColor White
-    Write-Host "  Documentation: https://playground.ai/docs" -ForegroundColor Blue
+    Write-Host "  Documentation: https://hanzo.bot/docs" -ForegroundColor Blue
     Write-Host "  GitHub:        https://github.com/$Repo" -ForegroundColor Blue
     Write-Host "  Support:       https://github.com/$Repo/issues" -ForegroundColor Blue
     Write-Host ""

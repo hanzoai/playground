@@ -28,7 +28,7 @@ class StubMCPClient:
 async def test_dynamic_skill_registration(monkeypatch):
     app = FastAPI()
     app.node_id = "agent"
-    app.reasoners = []
+    app.bots = []
     app.skills = []
     app.dev_mode = False
     app.mcp_client_registry = SimpleNamespace(
@@ -80,7 +80,7 @@ async def test_dynamic_skill_registration(monkeypatch):
 async def test_mcp_registry_absent_succeeds_quickly():
     app = FastAPI()
     app.node_id = "agent"
-    app.reasoners = []
+    app.bots = []
     app.skills = []
     app.dev_mode = False
     app.mcp_client_registry = None

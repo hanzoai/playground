@@ -33,32 +33,32 @@ func setupDIDTestEnvironment(t *testing.T) (*DIDService, *DIDRegistry, storage.S
 	return service, registry, provider, ctx, agentsID
 }
 
-func TestDIDServiceRegisterAgentAndResolve(t *testing.T) {
+func TestDIDServiceRegisterNodeAndResolve(t *testing.T) {
 	service, registry, provider, ctx, agentsID := setupDIDTestEnvironment(t)
 
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-alpha",
+		NodeID: "agent-alpha",
 		Bots:   []types.BotDefinition{{ID: "bot.fn"}},
 		Skills:      []types.SkillDefinition{{ID: "skill.fn", Tags: []string{"analysis"}}},
 	}
 
-	resp, err := service.RegisterAgent(req)
+	resp, err := service.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, resp.Success)
-	require.NotEmpty(t, resp.IdentityPackage.AgentDID.DID)
+	require.NotEmpty(t, resp.IdentityPackage.NodeDID.DID)
 	require.Contains(t, resp.IdentityPackage.BotDIDs, "bot.fn")
 	require.Contains(t, resp.IdentityPackage.SkillDIDs, "skill.fn")
 
 	storedRegistry, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
 	require.NotNil(t, storedRegistry)
-	require.Contains(t, storedRegistry.AgentNodes, "agent-alpha")
+	require.Contains(t, storedRegistry.Nodes, "agent-alpha")
 
-	agents, err := provider.ListAgentDIDs(ctx)
+	agents, err := provider.ListNodeDIDs(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, agents)
 
-	agentIdentity := resp.IdentityPackage.AgentDID
+	agentIdentity := resp.IdentityPackage.NodeDID
 	resolved, err := service.ResolveDID(agentIdentity.DID)
 	require.NoError(t, err)
 	require.Equal(t, agentIdentity.DID, resolved.DID)
@@ -86,12 +86,12 @@ func TestDIDServiceValidateRegistryFailure(t *testing.T) {
 	cfg := &config.DIDConfig{Enabled: true, Keystore: config.KeystoreConfig{Path: keystoreDir, Type: "local"}}
 	service := NewDIDService(cfg, ks, registry)
 
-	err = service.validateAgentsServerRegistry()
+	err = service.validatePlaygroundServerRegistry()
 	require.Error(t, err)
 
 	agentsID := "agents-validate"
 	require.NoError(t, service.Initialize(agentsID))
-	require.NoError(t, service.validateAgentsServerRegistry())
+	require.NoError(t, service.validatePlaygroundServerRegistry())
 
 	stored, err := registry.GetRegistry(agentsID)
 	require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestDIDService_ResolveDID_RootDID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resolved)
 	require.Equal(t, storedRegistry.RootDID, resolved.DID)
-	require.Equal(t, "agents_server", resolved.ComponentType)
+	require.Equal(t, "playground_server", resolved.ComponentType)
 	require.Equal(t, "m/44'/0'", resolved.DerivationPath)
 	require.NotEmpty(t, resolved.PrivateKeyJWK)
 	require.NotEmpty(t, resolved.PublicKeyJWK)
@@ -149,58 +149,58 @@ func TestDIDService_ResolveDID_DisabledSystem(t *testing.T) {
 	_ = ctx
 }
 
-func TestDIDService_RegisterAgent_ExistingAgent_NoChanges(t *testing.T) {
+func TestDIDService_RegisterNode_ExistingAgent_NoChanges(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	// Register agent first time
 	req1 := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-existing",
+		NodeID: "agent-existing",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	resp1, err := service.RegisterAgent(req1)
+	resp1, err := service.RegisterNode(req1)
 	require.NoError(t, err)
 	require.True(t, resp1.Success)
 
 	// Register same agent again with same components
 	req2 := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-existing",
+		NodeID: "agent-existing",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	resp2, err := service.RegisterAgent(req2)
+	resp2, err := service.RegisterNode(req2)
 	require.NoError(t, err)
 	require.True(t, resp2.Success)
 	require.Contains(t, resp2.Message, "No changes detected")
-	require.Equal(t, resp1.IdentityPackage.AgentDID.DID, resp2.IdentityPackage.AgentDID.DID)
+	require.Equal(t, resp1.IdentityPackage.NodeDID.DID, resp2.IdentityPackage.NodeDID.DID)
 }
 
-func TestDIDService_PartialRegisterAgent_NewComponents(t *testing.T) {
+func TestDIDService_PartialRegisterNode_NewComponents(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	// Register agent with initial components
 	req1 := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-partial",
+		NodeID: "agent-partial",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	resp1, err := service.RegisterAgent(req1)
+	resp1, err := service.RegisterNode(req1)
 	require.NoError(t, err)
 	require.True(t, resp1.Success)
 
 	// Partial registration with new components
 	partialReq := &types.PartialDIDRegistrationRequest{
-		AgentNodeID:    "agent-partial",
+		NodeID:    "agent-partial",
 		NewBotIDs: []string{"bot2"},
 		NewSkillIDs:    []string{"skill2"},
 		AllBots:   []types.BotDefinition{{ID: "bot1"}, {ID: "bot2"}},
 		AllSkills:      []types.SkillDefinition{{ID: "skill1"}, {ID: "skill2"}},
 	}
 
-	resp2, err := service.PartialRegisterAgent(partialReq)
+	resp2, err := service.PartialRegisterNode(partialReq)
 	require.NoError(t, err)
 	require.True(t, resp2.Success)
 	require.Contains(t, resp2.Message, "Partial registration successful")
@@ -210,7 +210,7 @@ func TestDIDService_PartialRegisterAgent_NewComponents(t *testing.T) {
 	require.Contains(t, resp2.IdentityPackage.SkillDIDs, "skill2")
 }
 
-func TestDIDService_PartialRegisterAgent_DisabledSystem(t *testing.T) {
+func TestDIDService_PartialRegisterNode_DisabledSystem(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -223,13 +223,13 @@ func TestDIDService_PartialRegisterAgent_DisabledSystem(t *testing.T) {
 	service := NewDIDService(cfg, ks, registry)
 
 	partialReq := &types.PartialDIDRegistrationRequest{
-		AgentNodeID:    "agent-test",
+		NodeID:    "agent-test",
 		NewBotIDs: []string{"bot1"},
 		AllBots:   []types.BotDefinition{{ID: "bot1"}},
 		AllSkills:      []types.SkillDefinition{},
 	}
 
-	resp, err := service.PartialRegisterAgent(partialReq)
+	resp, err := service.PartialRegisterNode(partialReq)
 	require.NoError(t, err)
 	require.False(t, resp.Success)
 	require.Contains(t, resp.Error, "DID system is disabled")
@@ -241,18 +241,18 @@ func TestDIDService_DeregisterComponents_Success(t *testing.T) {
 
 	// Register agent with multiple components
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-deregister",
+		NodeID: "agent-deregister",
 		Bots:   []types.BotDefinition{{ID: "bot1"}, {ID: "bot2"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}, {ID: "skill2"}},
 	}
 
-	resp, err := service.RegisterAgent(req)
+	resp, err := service.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, resp.Success)
 
 	// Deregister some components
 	deregReq := &types.ComponentDeregistrationRequest{
-		AgentNodeID:         "agent-deregister",
+		NodeID:         "agent-deregister",
 		BotIDsToRemove: []string{"bot1"},
 		SkillIDsToRemove:    []string{"skill1"},
 	}
@@ -263,7 +263,7 @@ func TestDIDService_DeregisterComponents_Success(t *testing.T) {
 	require.Equal(t, 2, deregResp.RemovedCount)
 
 	// Verify components were removed
-	existingAgent, err := service.GetExistingAgentDID("agent-deregister")
+	existingAgent, err := service.GetExistingNodeDID("agent-deregister")
 	require.NoError(t, err)
 	require.NotContains(t, existingAgent.Bots, "bot1")
 	require.Contains(t, existingAgent.Bots, "bot2")
@@ -276,17 +276,17 @@ func TestDIDService_DeregisterComponents_NotFound(t *testing.T) {
 
 	// Register agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-deregister-notfound",
+		NodeID: "agent-deregister-notfound",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	_, err := service.RegisterAgent(req)
+	_, err := service.RegisterNode(req)
 	require.NoError(t, err)
 
 	// Try to deregister non-existent components
 	deregReq := &types.ComponentDeregistrationRequest{
-		AgentNodeID:         "agent-deregister-notfound",
+		NodeID:         "agent-deregister-notfound",
 		BotIDsToRemove: []string{"nonexistent-bot"},
 		SkillIDsToRemove:    []string{"nonexistent-skill"},
 	}
@@ -301,7 +301,7 @@ func TestDIDService_DeregisterComponents_AgentNotFound(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	deregReq := &types.ComponentDeregistrationRequest{
-		AgentNodeID:         "nonexistent-agent",
+		NodeID:         "nonexistent-agent",
 		BotIDsToRemove: []string{"bot1"},
 		SkillIDsToRemove:    []string{"skill1"},
 	}
@@ -317,12 +317,12 @@ func TestDIDService_PerformDifferentialAnalysis_NoChanges(t *testing.T) {
 
 	// Register agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-diff",
+		NodeID: "agent-diff",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	_, err := service.RegisterAgent(req)
+	_, err := service.RegisterNode(req)
 	require.NoError(t, err)
 
 	// Perform differential analysis with same components
@@ -343,12 +343,12 @@ func TestDIDService_PerformDifferentialAnalysis_NewComponents(t *testing.T) {
 
 	// Register agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-diff-new",
+		NodeID: "agent-diff-new",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	_, err := service.RegisterAgent(req)
+	_, err := service.RegisterNode(req)
 	require.NoError(t, err)
 
 	// Perform differential analysis with new components
@@ -369,12 +369,12 @@ func TestDIDService_PerformDifferentialAnalysis_RemovedComponents(t *testing.T) 
 
 	// Register agent with multiple components
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-diff-removed",
+		NodeID: "agent-diff-removed",
 		Bots:   []types.BotDefinition{{ID: "bot1"}, {ID: "bot2"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}, {ID: "skill2"}},
 	}
 
-	_, err := service.RegisterAgent(req)
+	_, err := service.RegisterNode(req)
 	require.NoError(t, err)
 
 	// Perform differential analysis with fewer components
@@ -399,40 +399,40 @@ func TestDIDService_PerformDifferentialAnalysis_AgentNotFound(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to get existing agent")
 }
 
-func TestDIDService_GetExistingAgentDID_Success(t *testing.T) {
+func TestDIDService_GetExistingNodeDID_Success(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	// Register agent
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-get-existing",
+		NodeID: "agent-get-existing",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	regResp, err := service.RegisterAgent(req)
+	regResp, err := service.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, regResp.Success)
 
 	// Get existing agent
-	existingAgent, err := service.GetExistingAgentDID("agent-get-existing")
+	existingAgent, err := service.GetExistingNodeDID("agent-get-existing")
 	require.NoError(t, err)
 	require.NotNil(t, existingAgent)
-	require.Equal(t, "agent-get-existing", existingAgent.AgentNodeID)
-	require.Equal(t, regResp.IdentityPackage.AgentDID.DID, existingAgent.DID)
+	require.Equal(t, "agent-get-existing", existingAgent.NodeID)
+	require.Equal(t, regResp.IdentityPackage.NodeDID.DID, existingAgent.DID)
 	require.Len(t, existingAgent.Bots, 1)
 	require.Len(t, existingAgent.Skills, 1)
 }
 
-func TestDIDService_GetExistingAgentDID_NotFound(t *testing.T) {
+func TestDIDService_GetExistingNodeDID_NotFound(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
-	existingAgent, err := service.GetExistingAgentDID("nonexistent-agent")
+	existingAgent, err := service.GetExistingNodeDID("nonexistent-agent")
 	require.Error(t, err)
 	require.Nil(t, existingAgent)
 	require.Contains(t, err.Error(), "agent not found")
 }
 
-func TestDIDService_GetExistingAgentDID_DisabledSystem(t *testing.T) {
+func TestDIDService_GetExistingNodeDID_DisabledSystem(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -444,42 +444,42 @@ func TestDIDService_GetExistingAgentDID_DisabledSystem(t *testing.T) {
 	cfg := &config.DIDConfig{Enabled: false, Keystore: config.KeystoreConfig{Path: keystoreDir, Type: "local"}}
 	service := NewDIDService(cfg, ks, registry)
 
-	existingAgent, err := service.GetExistingAgentDID("agent-test")
+	existingAgent, err := service.GetExistingNodeDID("agent-test")
 	require.Error(t, err)
 	require.Nil(t, existingAgent)
 	require.Contains(t, err.Error(), "DID system is disabled")
 	_ = ctx
 }
 
-func TestDIDService_ListAllAgentDIDs_Success(t *testing.T) {
+func TestDIDService_ListAllNodeDIDs_Success(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	// Register multiple agents
 	req1 := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-list-1",
+		NodeID: "agent-list-1",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{},
 	}
 
-	_, err := service.RegisterAgent(req1)
+	_, err := service.RegisterNode(req1)
 	require.NoError(t, err)
 
 	req2 := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-list-2",
+		NodeID: "agent-list-2",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{},
 	}
 
-	_, err = service.RegisterAgent(req2)
+	_, err = service.RegisterNode(req2)
 	require.NoError(t, err)
 
 	// List all agent DIDs
-	agentDIDs, err := service.ListAllAgentDIDs()
+	agentDIDs, err := service.ListAllNodeDIDs()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(agentDIDs), 2)
 }
 
-func TestDIDService_ListAllAgentDIDs_DisabledSystem(t *testing.T) {
+func TestDIDService_ListAllNodeDIDs_DisabledSystem(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -491,48 +491,48 @@ func TestDIDService_ListAllAgentDIDs_DisabledSystem(t *testing.T) {
 	cfg := &config.DIDConfig{Enabled: false, Keystore: config.KeystoreConfig{Path: keystoreDir, Type: "local"}}
 	service := NewDIDService(cfg, ks, registry)
 
-	agentDIDs, err := service.ListAllAgentDIDs()
+	agentDIDs, err := service.ListAllNodeDIDs()
 	require.Error(t, err)
 	require.Nil(t, agentDIDs)
 	require.Contains(t, err.Error(), "DID system is disabled")
 	_ = ctx
 }
 
-func TestDIDService_RegisterAgent_EmptyBotID(t *testing.T) {
+func TestDIDService_RegisterNode_EmptyBotID(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	// Register agent with empty bot ID (should be skipped)
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-empty-bot",
+		NodeID: "agent-empty-bot",
 		Bots:   []types.BotDefinition{{ID: ""}, {ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: "skill1"}},
 	}
 
-	resp, err := service.RegisterAgent(req)
+	resp, err := service.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, resp.Success)
 	require.Len(t, resp.IdentityPackage.BotDIDs, 1) // Only non-empty bot
 	require.Contains(t, resp.IdentityPackage.BotDIDs, "bot1")
 }
 
-func TestDIDService_RegisterAgent_EmptySkillID(t *testing.T) {
+func TestDIDService_RegisterNode_EmptySkillID(t *testing.T) {
 	service, _, _, _, _ := setupDIDTestEnvironment(t)
 
 	// Register agent with empty skill ID (should be skipped)
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-empty-skill",
+		NodeID: "agent-empty-skill",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{{ID: ""}, {ID: "skill1"}},
 	}
 
-	resp, err := service.RegisterAgent(req)
+	resp, err := service.RegisterNode(req)
 	require.NoError(t, err)
 	require.True(t, resp.Success)
 	require.Len(t, resp.IdentityPackage.SkillDIDs, 1) // Only non-empty skill
 	require.Contains(t, resp.IdentityPackage.SkillDIDs, "skill1")
 }
 
-func TestDIDService_RegisterAgent_DisabledSystem(t *testing.T) {
+func TestDIDService_RegisterNode_DisabledSystem(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -545,27 +545,27 @@ func TestDIDService_RegisterAgent_DisabledSystem(t *testing.T) {
 	service := NewDIDService(cfg, ks, registry)
 
 	req := &types.DIDRegistrationRequest{
-		AgentNodeID: "agent-disabled",
+		NodeID: "agent-disabled",
 		Bots:   []types.BotDefinition{{ID: "bot1"}},
 		Skills:      []types.SkillDefinition{},
 	}
 
-	resp, err := service.RegisterAgent(req)
+	resp, err := service.RegisterNode(req)
 	require.NoError(t, err)
 	require.False(t, resp.Success)
 	require.Contains(t, resp.Error, "DID system is disabled")
 	_ = ctx
 }
 
-func TestDIDService_GetAgentsServerID(t *testing.T) {
+func TestDIDService_GetPlaygroundServerID(t *testing.T) {
 	service, _, _, _, agentsID := setupDIDTestEnvironment(t)
 
-	serverID, err := service.GetAgentsServerID()
+	serverID, err := service.GetPlaygroundServerID()
 	require.NoError(t, err)
 	require.Equal(t, agentsID, serverID)
 }
 
-func TestDIDService_GetAgentsServerID_NotInitialized(t *testing.T) {
+func TestDIDService_GetPlaygroundServerID_NotInitialized(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	registry := NewDIDRegistryWithStorage(provider)
 	require.NoError(t, registry.Initialize())
@@ -577,7 +577,7 @@ func TestDIDService_GetAgentsServerID_NotInitialized(t *testing.T) {
 	cfg := &config.DIDConfig{Enabled: true, Keystore: config.KeystoreConfig{Path: keystoreDir, Type: "local"}}
 	service := NewDIDService(cfg, ks, registry)
 
-	serverID, err := service.GetAgentsServerID()
+	serverID, err := service.GetPlaygroundServerID()
 	require.Error(t, err)
 	require.Empty(t, serverID)
 	require.Contains(t, err.Error(), "not initialized")

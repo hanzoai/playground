@@ -15,31 +15,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// AgentNodeRunner handles running agent nodes
-type AgentNodeRunner struct {
+// NodeRunner handles running hanzo nodes
+type NodeRunner struct {
 	AgentsHome string
 	Port           int
 	Detach         bool
 }
 
-// RunAgentNode starts an installed agent node
-func (ar *AgentNodeRunner) RunAgentNode(agentNodeName string) error {
-	fmt.Printf("🚀 Launching agent node: %s\n", agentNodeName)
+// RunNode starts an installed hanzo node
+func (ar *NodeRunner) RunNode(nodeName string) error {
+	fmt.Printf("🚀 Launching hanzo node: %s\n", nodeName)
 
-	// 1. Check if agent node is installed
+	// 1. Check if hanzo node is installed
 	registry, err := ar.loadRegistry()
 	if err != nil {
 		return fmt.Errorf("failed to load registry: %w", err)
 	}
 
-	agentNode, exists := registry.Installed[agentNodeName]
+	node, exists := registry.Installed[nodeName]
 	if !exists {
-		return fmt.Errorf("agent node %s not installed", agentNodeName)
+		return fmt.Errorf("hanzo node %s not installed", nodeName)
 	}
 
 	// 2. Check if already running
-	if agentNode.Status == "running" {
-		return fmt.Errorf("agent node %s is already running on port %d", agentNodeName, *agentNode.Runtime.Port)
+	if node.Status == "running" {
+		return fmt.Errorf("hanzo node %s is already running on port %d", nodeName, *node.Runtime.Port)
 	}
 
 	// 3. Allocate port
@@ -54,42 +54,42 @@ func (ar *AgentNodeRunner) RunAgentNode(agentNodeName string) error {
 
 	fmt.Printf("✅ Assigned port: %d\n", port)
 
-	// 4. Start agent node process
-	fmt.Printf("📡 Starting agent node process...\n")
-	cmd, err := ar.startAgentNodeProcess(agentNode, port)
+	// 4. Start hanzo node process
+	fmt.Printf("📡 Starting hanzo node process...\n")
+	cmd, err := ar.startNodeProcess(node, port)
 	if err != nil {
-		return fmt.Errorf("failed to start agent node: %w", err)
+		return fmt.Errorf("failed to start hanzo node: %w", err)
 	}
 
-	// 5. Wait for agent node to be ready
-	if err := ar.waitForAgentNode(port, 10*time.Second); err != nil {
+	// 5. Wait for hanzo node to be ready
+	if err := ar.waitForNode(port, 10*time.Second); err != nil {
 		if killErr := cmd.Process.Kill(); killErr != nil && !errors.Is(killErr, os.ErrProcessDone) {
-			fmt.Printf("⚠️  Failed to kill agent node process: %v\n", killErr)
+			fmt.Printf("⚠️  Failed to kill hanzo node process: %v\n", killErr)
 		}
-		return fmt.Errorf("agent node failed to start: %w", err)
+		return fmt.Errorf("hanzo node failed to start: %w", err)
 	}
 
-	fmt.Printf("🧠 Agent node registered with Agents Server\n")
+	fmt.Printf("🧠 node registered with Playground Server\n")
 
 	// 6. Update registry with runtime info
-	if err := ar.updateRuntimeInfo(agentNodeName, port, cmd.Process.Pid); err != nil {
+	if err := ar.updateRuntimeInfo(nodeName, port, cmd.Process.Pid); err != nil {
 		return fmt.Errorf("failed to update runtime info: %w", err)
 	}
 
-	// 7. Display agent node capabilities
-	if err := ar.displayCapabilities(agentNode, port); err != nil {
+	// 7. Display hanzo node capabilities
+	if err := ar.displayCapabilities(node, port); err != nil {
 		fmt.Printf("⚠️  Could not fetch capabilities: %v\n", err)
 	}
 
-	fmt.Printf("\n💡 Agent node running in background (PID: %d)\n", cmd.Process.Pid)
-	fmt.Printf("💡 View logs: af logs %s\n", agentNodeName)
-	fmt.Printf("💡 Stop agent node: af stop %s\n", agentNodeName)
+	fmt.Printf("\n💡 node running in background (PID: %d)\n", cmd.Process.Pid)
+	fmt.Printf("💡 View logs: playground logs %s\n", nodeName)
+	fmt.Printf("💡 Stop hanzo node: playground stop %s\n", nodeName)
 
 	return nil
 }
 
 // getFreePort finds an available port in the range 8001-8999
-func (ar *AgentNodeRunner) getFreePort() (int, error) {
+func (ar *NodeRunner) getFreePort() (int, error) {
 	for port := 8001; port <= 8999; port++ {
 		if ar.isPortAvailable(port) {
 			return port, nil
@@ -99,7 +99,7 @@ func (ar *AgentNodeRunner) getFreePort() (int, error) {
 }
 
 // isPortAvailable checks if a port is available
-func (ar *AgentNodeRunner) isPortAvailable(port int) bool {
+func (ar *NodeRunner) isPortAvailable(port int) bool {
 	conn, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return false
@@ -108,15 +108,15 @@ func (ar *AgentNodeRunner) isPortAvailable(port int) bool {
 	return true
 }
 
-// startAgentNodeProcess starts the agent node process
-func (ar *AgentNodeRunner) startAgentNodeProcess(agentNode InstalledPackage, port int) (*exec.Cmd, error) {
+// startNodeProcess starts the hanzo node process
+func (ar *NodeRunner) startNodeProcess(node InstalledPackage, port int) (*exec.Cmd, error) {
 	// Prepare environment variables
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("PORT=%d", port))
-	env = append(env, "AGENTS_SERVER_URL=http://localhost:8080")
+	env = append(env, "PLAYGROUND_SERVER_URL=http://localhost:8080")
 
 	// Load environment variables from package .env file
-	if envVars, err := ar.loadPackageEnvFile(agentNode.Path); err == nil {
+	if envVars, err := ar.loadPackageEnvFile(node.Path); err == nil {
 		for key, value := range envVars {
 			env = append(env, fmt.Sprintf("%s=%s", key, value))
 		}
@@ -125,7 +125,7 @@ func (ar *AgentNodeRunner) startAgentNodeProcess(agentNode InstalledPackage, por
 
 	// Prepare command - use virtual environment if available
 	var pythonPath string
-	venvPath := filepath.Join(agentNode.Path, "venv")
+	venvPath := filepath.Join(node.Path, "venv")
 
 	// Check if virtual environment exists
 	if _, err := os.Stat(filepath.Join(venvPath, "bin", "python")); err == nil {
@@ -141,11 +141,11 @@ func (ar *AgentNodeRunner) startAgentNodeProcess(agentNode InstalledPackage, por
 	}
 
 	cmd := exec.Command(pythonPath, "main.py")
-	cmd.Dir = agentNode.Path
+	cmd.Dir = node.Path
 	cmd.Env = env
 
 	// Setup logging
-	logFile, err := os.OpenFile(agentNode.Runtime.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(node.Runtime.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open log file: %w", err)
 	}
@@ -161,8 +161,8 @@ func (ar *AgentNodeRunner) startAgentNodeProcess(agentNode InstalledPackage, por
 	return cmd, nil
 }
 
-// waitForAgentNode waits for the agent node to become ready
-func (ar *AgentNodeRunner) waitForAgentNode(port int, timeout time.Duration) error {
+// waitForNode waits for the hanzo node to become ready
+func (ar *NodeRunner) waitForNode(port int, timeout time.Duration) error {
 	client := &http.Client{Timeout: 1 * time.Second}
 	deadline := time.Now().Add(timeout)
 
@@ -178,11 +178,11 @@ func (ar *AgentNodeRunner) waitForAgentNode(port int, timeout time.Duration) err
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	return fmt.Errorf("agent node did not become ready within %v", timeout)
+	return fmt.Errorf("hanzo node did not become ready within %v", timeout)
 }
 
-// displayCapabilities fetches and displays agent node capabilities
-func (ar *AgentNodeRunner) displayCapabilities(agentNode InstalledPackage, port int) error {
+// displayCapabilities fetches and displays hanzo node capabilities
+func (ar *NodeRunner) displayCapabilities(node InstalledPackage, port int) error {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Get bots
@@ -244,7 +244,7 @@ func (ar *AgentNodeRunner) displayCapabilities(agentNode InstalledPackage, port 
 }
 
 // updateRuntimeInfo updates the registry with runtime information
-func (ar *AgentNodeRunner) updateRuntimeInfo(agentNodeName string, port, pid int) error {
+func (ar *NodeRunner) updateRuntimeInfo(nodeName string, port, pid int) error {
 	registryPath := filepath.Join(ar.AgentsHome, "installed.yaml")
 
 	// Load registry
@@ -256,13 +256,13 @@ func (ar *AgentNodeRunner) updateRuntimeInfo(agentNodeName string, port, pid int
 	}
 
 	// Update runtime info
-	if agentNode, exists := registry.Installed[agentNodeName]; exists {
+	if node, exists := registry.Installed[nodeName]; exists {
 		startedAt := time.Now().Format(time.RFC3339)
-		agentNode.Status = "running"
-		agentNode.Runtime.Port = &port
-		agentNode.Runtime.PID = &pid
-		agentNode.Runtime.StartedAt = &startedAt
-		registry.Installed[agentNodeName] = agentNode
+		node.Status = "running"
+		node.Runtime.Port = &port
+		node.Runtime.PID = &pid
+		node.Runtime.StartedAt = &startedAt
+		registry.Installed[nodeName] = node
 	}
 
 	// Save registry
@@ -275,7 +275,7 @@ func (ar *AgentNodeRunner) updateRuntimeInfo(agentNodeName string, port, pid int
 }
 
 // loadRegistry loads the installation registry
-func (ar *AgentNodeRunner) loadRegistry() (*InstallationRegistry, error) {
+func (ar *NodeRunner) loadRegistry() (*InstallationRegistry, error) {
 	registryPath := filepath.Join(ar.AgentsHome, "installed.yaml")
 
 	registry := &InstallationRegistry{
@@ -292,7 +292,7 @@ func (ar *AgentNodeRunner) loadRegistry() (*InstallationRegistry, error) {
 }
 
 // loadPackageEnvFile loads environment variables from package .env file
-func (ar *AgentNodeRunner) loadPackageEnvFile(packagePath string) (map[string]string, error) {
+func (ar *NodeRunner) loadPackageEnvFile(packagePath string) (map[string]string, error) {
 	envPath := filepath.Join(packagePath, ".env")
 
 	data, err := os.ReadFile(envPath)

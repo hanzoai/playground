@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/github hero.png" alt="Playground - Kubernetes, for AI Agents" width="100%" />
+<img src="assets/github hero.png" alt="Playground - Kubernetes, for AI Bots" width="100%" />
 
-# Kubernetes for AI Agents
+# Kubernetes for AI Bots
 
 ### **Deploy, Scale, Observe, and Prove.**
 
@@ -16,7 +16,7 @@
 [![Deploy with Docker](https://img.shields.io/badge/deploy-docker-2496ED.svg?style=flat&labelColor=1e1e2e&logo=docker&logoColor=white)](https://docs.docker.com/)
 [![Discord](https://img.shields.io/badge/discord-join%20us-5865F2.svg?style=flat&labelColor=1e1e2e&logo=discord&logoColor=white)](https://discord.gg/aBHaXMkpqh)
 
-**[Docs](https://playground.ai/docs)** | **[Quick Start](https://playground.ai/docs/quick-start)** | **[Python SDK](https://playground.ai/api/python-sdk/overview)** | **[Go SDK](https://playground.ai/api/go-sdk/overview)** | **[TypeScript SDK](https://playground.ai/api/typescript-sdk/overview)** | **[REST API](https://playground.ai/api/rest-api/overview)** | **[Discord](https://discord.gg/aBHaXMkpqh)**
+**[Docs](https://hanzo.bot/docs)** | **[Quick Start](https://hanzo.bot/docs/quick-start)** | **[Python SDK](https://hanzo.bot/api/python-sdk/overview)** | **[Go SDK](https://hanzo.bot/api/go-sdk/overview)** | **[TypeScript SDK](https://hanzo.bot/api/typescript-sdk/overview)** | **[REST API](https://hanzo.bot/api/rest-api/overview)** | **[Discord](https://discord.gg/aBHaXMkpqh)**
 
 </div>
 
@@ -24,22 +24,22 @@
 
 **Playground is the backend infrastructure layer for autonomous AI.**
 
-AI has outgrown frameworks and is moving from chatbots into backends—making decisions about refunds, coordinating supply chains, managing portfolios. These agents need infrastructure, not prompt wrappers.
+AI has outgrown frameworks and is moving from chatbots into backends—making decisions about refunds, coordinating supply chains, managing portfolios. These bots need infrastructure, not prompt wrappers.
 
-Playground is an open-source **control plane** that treats AI agents as first-class backend services and makes agents production-ready.
+Playground is an open-source **control plane** that treats AI bots as first-class backend services and makes bots production-ready.
 
 **Scale Infrastructure** *(think: Kubernetes)*
-- **Routing & Discovery**: Agents find and call each other through standard REST APIs
+- **Routing & Discovery**: Bots find and call each other through standard REST APIs
 - **Async Execution**: Fire-and-forget tasks that run for minutes, hours, or days
 - **Durable State**: Built-in memory with vector search—no Redis or Pinecone required
 - **Observability**: Automatic workflow DAGs, Prometheus metrics, structured logs
 
-**Trust Infrastructure** *(think: Okta, rebuilt for agents)*
-- **W3C DIDs**: Every agent gets a cryptographic identity—not a shared API key
+**Trust Infrastructure** *(think: Okta, rebuilt for bots)*
+- **W3C DIDs**: Every bot gets a cryptographic identity—not a shared API key
 - **Verifiable Credentials**: Tamper-proof audit trails for every action
 - **Policy Enforcement**: Boundaries enforced by infrastructure, not prompts
 
-Write [Python](https://playground.ai/api/python-sdk/overview), [Go](https://playground.ai/api/go-sdk/overview), [TypeScript](https://playground.ai/api/typescript-sdk/overview), or call via [REST](https://playground.ai/api/rest-api/overview). Get production infrastructure automatically.
+Write [Python](https://hanzo.bot/api/python-sdk/overview), [Go](https://hanzo.bot/api/go-sdk/overview), [TypeScript](https://hanzo.bot/api/typescript-sdk/overview), or call via [REST](https://hanzo.bot/api/rest-api/overview). Get production infrastructure automatically.
 
 ---
 
@@ -49,9 +49,9 @@ Software keeps adding layers when complexity demands it. Frontend/backend separa
 
 We call this the AI Backend. Not a chatbot, not a copilot—infrastructure for software that can think.
 
-**Guided autonomy:** Agents that reason freely within boundaries you define. Predictable enough to trust. Flexible enough to be useful.
+**Guided autonomy:** Bots that reason freely within boundaries you define. Predictable enough to trust. Flexible enough to be useful.
 
-📖 **[Read: The AI Backend](https://playground.ai/blog/posts/ai-backend/?utm_source=github-readme)** — Our thesis on why every serious backend will need a reasoning layer.
+📖 **[Read: The AI Backend](https://hanzo.bot/blog/posts/ai-backend/?utm_source=github-readme)** — Our thesis on why every serious backend will need a reasoning layer.
 
 ---
 
@@ -65,15 +65,15 @@ We call this the AI Backend. Not a chatbot, not a copilot—infrastructure for s
 
 ---
 
-## Build Agents in Any Language
+## Build Bots in Any Language
 
 <details open>
 <summary><strong>Python</strong></summary>
 
 ```python
-from playground import Agent, AIConfig
+from playground import Bot, AIConfig
 
-app = Agent(node_id="researcher", ai_config=AIConfig(model="gpt-4o"))
+app = Bot(node_id="researcher", ai_config=AIConfig(model="gpt-4o"))
 
 @app.skill()
 def fetch_url(url: str) -> str:
@@ -87,57 +87,57 @@ async def summarize(url: str) -> dict:
 app.run()  # → POST /api/v1/execute/researcher.summarize
 ```
 
-[Full Python SDK Documentation →](https://playground.ai/api/python-sdk/overview)
+[Full Python SDK Documentation →](https://hanzo.bot/api/python-sdk/overview)
 </details>
 
 <details>
 <summary><strong>Go</strong></summary>
 
 ```go
-agent, _ := playgroundagent.New(playgroundagent.Config{
+bot, _ := playgroundbot.New(playgroundbot.Config{
     NodeID:        "researcher",
     PlaygroundURL: "http://localhost:8080",
 })
 
-agent.RegisterSkill("summarize", func(ctx context.Context, input map[string]any) (any, error) {
+bot.RegisterSkill("summarize", func(ctx context.Context, input map[string]any) (any, error) {
     url := input["url"].(string)
-    // Your agent logic here
+    // Your bot logic here
     return map[string]any{"summary": "..."}, nil
 })
 
-agent.Run(context.Background())
+bot.Run(context.Background())
 ```
 
-[Full Go SDK Documentation →](https://playground.ai/api/go-sdk/overview)
+[Full Go SDK Documentation →](https://hanzo.bot/api/go-sdk/overview)
 </details>
 
 <details>
 <summary><strong>TypeScript</strong></summary>
 
 ```typescript
-import { Agent } from '@playground/sdk';
+import { Bot } from '@playground/sdk';
 
-const agent = new Agent({
+const bot = new Bot({
   nodeId: 'researcher',
   playgroundUrl: 'http://localhost:8080',
 });
 
-agent.reasoner('summarize', async (ctx, input: { url: string }) => {
+bot.reasoner('summarize', async (ctx, input: { url: string }) => {
   const content = await fetch(input.url).then(r => r.text());
   return await ctx.ai(`Summarize: ${content}`);
 });
 
-agent.run();  // → POST /api/v1/execute/researcher.summarize
+bot.run();  // → POST /api/v1/execute/researcher.summarize
 ```
 
-[Full TypeScript SDK Documentation →](https://playground.ai/api/typescript-sdk/overview)
+[Full TypeScript SDK Documentation →](https://hanzo.bot/api/typescript-sdk/overview)
 </details>
 
 <details>
 <summary><strong>REST / Any Language</strong></summary>
 
 ```bash
-# Call any agent from anywhere—no SDK required
+# Call any bot from anywhere—no SDK required
 curl -X POST http://localhost:8080/api/v1/execute/researcher.summarize \
   -H "Content-Type: application/json" \
   -d '{"input": {"url": "https://example.com"}}'
@@ -152,7 +152,7 @@ const result = await fetch("http://localhost:8080/api/v1/execute/researcher.summ
 }).then(r => r.json());
 ```
 
-[REST API Reference →](https://playground.ai/api/rest-api/overview)
+[REST API Reference →](https://hanzo.bot/api/rest-api/overview)
 </details>
 
 ---
@@ -162,36 +162,36 @@ const result = await fetch("http://localhost:8080/api/v1/execute/researcher.summ
 ### 1. Install
 
 ```bash
-curl -fsSL https://playground.ai/install.sh | bash
+curl -fsSL https://hanzo.bot/install.sh | bash
 ```
 
-### 2. Create Your Agent
+### 2. Create Your Bot
 
 ```bash
-af init my-agent --defaults
-cd my-agent && pip install -r requirements.txt
+playground init my-bot --defaults
+cd my-bot && pip install -r requirements.txt
 ```
 
 ### 3. Start (Two Terminals Required)
 
-Playground uses a **control plane + agent node** architecture. You'll need two terminal windows:
+Playground uses a **control plane + Node** architecture. You'll need two terminal windows:
 
 **Terminal 1 – Start the Control Plane:**
 ```bash
-af server
+playground server
 ```
 > Opens the dashboard at http://localhost:8080
 
-**Terminal 2 – Start Your Agent:**
+**Terminal 2 – Start Your Bot:**
 ```bash
 python main.py
 ```
-> Agent auto-registers with the control plane
+> Bot auto-registers with the control plane
 
 ### 4. Test It
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/execute/my-agent.demo_echo \
+curl -X POST http://localhost:8080/api/v1/execute/my-bot.demo_echo \
   -H "Content-Type: application/json" \
   -d '{"input": {"message": "Hello!"}}'
 ```
@@ -201,50 +201,50 @@ curl -X POST http://localhost:8080/api/v1/execute/my-agent.demo_echo \
 
 **Go:**
 ```bash
-af init my-agent --defaults --language go
-cd my-agent && go mod download
+playground init my-bot --defaults --language go
+cd my-bot && go mod download
 go run .
 ```
 
 **TypeScript:**
 ```bash
-af init my-agent --defaults --language typescript
-cd my-agent && npm install
+playground init my-bot --defaults --language typescript
+cd my-bot && npm install
 npm run dev
 ```
 
 **Interactive mode** (choose language, set author info):
 ```bash
-af init my-agent  # No --defaults flag
+playground init my-bot  # No --defaults flag
 ```
 </details>
 
 <details>
 <summary><strong>Docker / Troubleshooting</strong></summary>
 
-If running the **control plane in Docker** and your **agent node runs outside that container**, make sure the control plane can reach the agent at the URL it registers.
+If running the **control plane in Docker** and your **Node runs outside that container**, make sure the control plane can reach the bot at the URL it registers.
 
-**Option A (agent on your host, control plane in Docker):**
+**Option A (bot on your host, control plane in Docker):**
 ```bash
 docker run -p 8080:8080 playground/control-plane:latest
 
-# Python agents (recommended)
-export AGENTS_URL="http://localhost:8080"
-export AGENT_CALLBACK_URL="http://host.docker.internal:8001"
+# Python bots (recommended)
+export PLAYGROUND_URL="http://localhost:8080"
+export HANZO_CALLBACK_URL="http://host.docker.internal:8001"
 python main.py
 
-# Go agents
-export AGENTS_URL="http://localhost:8080"
-export AGENT_PUBLIC_URL="http://host.docker.internal:8001"
+# Go bots
+export PLAYGROUND_URL="http://localhost:8080"
+export HANZO_PUBLIC_URL="http://host.docker.internal:8001"
 ```
 
-**Option B (agent + control plane both in Docker Compose / same network):**
-- Set the agent callback/public URL to the agent container's service name, e.g. `http://my-agent:8001`.
+**Option B (bot + control plane both in Docker Compose / same network):**
+- Set the bot callback/public URL to the bot container's service name, e.g. `http://my-bot:8001`.
 
 **Linux note:** `host.docker.internal` may require `--add-host=host.docker.internal:host-gateway` or using a Compose setup where both containers share a network.
 </details>
 
-**Next Steps:** [Build Your First Agent](https://playground.ai/guides/getting-started/build-your-first-agent) | [Deploy to Production](https://playground.ai/guides/deployment/overview) | [Examples](https://playground.ai/examples)
+**Next Steps:** [Build Your First Bot](https://hanzo.bot/guides/getting-started/build-your-first-bot) | [Deploy to Production](https://hanzo.bot/guides/deployment/overview) | [Examples](https://hanzo.bot/examples)
 
 ---
 
@@ -254,21 +254,21 @@ Real-world patterns built on Playground:
 
 | Example | Description | Links |
 |---------|-------------|-------|
-| **Deep Research API** | Massively parallel research backend. Fans out to 10k+ agents, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/hanzoai/af-deep-research) • [Docs](https://playground.ai/examples) |
-| **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://playground.ai/examples/complete-agents/rag-evaluator) |
+| **Deep Research API** | Massively parallel research backend. Fans out to 10k+ bots, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/hanzoai/playground-deep-research) • [Docs](https://hanzo.bot/examples) |
+| **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://hanzo.bot/examples/complete-bots/rag-evaluator) |
 
-[See all examples →](https://playground.ai/examples)
+[See all examples →](https://hanzo.bot/examples)
 
 ---
 
 ## The Production Gap
 
-Most frameworks stop at "make the LLM call." But production agents need:
+Most frameworks stop at "make the LLM call." But production bots need:
 
-[See the production-ready feature set →](https://playground.ai/docs/why-playground/production-ready-features)
+[See the production-ready feature set →](https://hanzo.bot/docs/why-playground/production-ready-features)
 
 ### Scale & Reliability
-Agents that run for hours or days. Webhooks with automatic retries. Backpressure handling when downstream services are slow.
+Bots that run for hours or days. Webhooks with automatic retries. Backpressure handling when downstream services are slow.
 
 ```python
 # Fire-and-forget: webhook called when done
@@ -282,27 +282,27 @@ result = await app.call(
 )
 ```
 
-### Multi-Agent Coordination
-Agents that discover and invoke each other through the control plane. Every call tracked. Every workflow visualized as a DAG.
+### Multi-Bot Coordination
+Bots that discover and invoke each other through the control plane. Every call tracked. Every workflow visualized as a DAG.
 
 ```python
-# Agent A calls Agent B—routed through control plane, fully traced
+# Bot A calls Bot B—routed through control plane, fully traced
 analysis = await app.call("analyst.evaluate", input={"data": dataset})
 report = await app.call("writer.summarize", input={"analysis": analysis})
 ```
 
 ### Developer Experience
-Standard REST APIs. No magic abstractions. Build agents the way you build microservices.
+Standard REST APIs. No magic abstractions. Build bots the way you build microservices.
 
 ```bash
-# Every agent is an API endpoint
+# Every bot is an API endpoint
 curl -X POST http://localhost:8080/api/v1/execute/researcher.summarize \
   -H "Content-Type: application/json" \
   -d '{"input": {"url": "https://example.com"}}'
 ```
 
 ### Enterprise Ready
-Cryptographic identity for every agent. Tamper-proof audit trails for every action. [Learn more about Identity & Trust](https://playground.ai/docs/core-concepts/identity-and-trust).
+Cryptographic identity for every bot. Tamper-proof audit trails for every action. [Learn more about Identity & Trust](https://hanzo.bot/docs/core-concepts/identity-and-trust).
 
 ---
 
@@ -310,9 +310,9 @@ Cryptographic identity for every agent. Tamper-proof audit trails for every acti
 
 Playground isn't a framework you extend. It's infrastructure you deploy on.
 
-[See how Playground compares to agent frameworks →](https://playground.ai/docs/why-playground/vs-agent-frameworks)
+[See how Playground compares to bot frameworks →](https://hanzo.bot/docs/why-playground/vs-bot-frameworks)
 
-|                    | Agent Frameworks           | DAG/Workflow Engines    | Playground                              |
+|                    | Bot Frameworks           | DAG/Workflow Engines    | Playground                              |
 | ------------------ | -------------------------- | ----------------------- | --------------------------------------- |
 | **Architecture**   | Monolithic scripts         | Predetermined pipelines | Distributed microservices               |
 | **Execution**      | Synchronous, blocking      | Scheduled, batch        | Async-native (webhooks, SSE, WebSocket) |
@@ -341,9 +341,9 @@ Playground isn't a framework you extend. It's infrastructure you deploy on.
 
 <sub>Apple M1. Handler registration + invocation overhead (no LLM). [Methodology →](examples/benchmarks/100k-scale/)</sub>
 
-**Not a DAG builder.** Agents decide what to do next—dynamically. The control plane tracks the execution graph automatically.
+**Not a DAG builder.** Bots decide what to do next—dynamically. The control plane tracks the execution graph automatically.
 
-**Not tool attachment.** You don't just give an LLM a bag of MCP tools and hope. You define **Reasoners** (AI logic) and **Skills** (deterministic code) with explicit boundaries. [Learn more](https://playground.ai/docs/core-concepts/reasoners-and-skills).
+**Not tool attachment.** You don't just give an LLM a bag of MCP tools and hope. You define **Reasoners** (AI logic) and **Skills** (deterministic code) with explicit boundaries. [Learn more](https://hanzo.bot/docs/core-concepts/reasoners-and-skills).
 
 ---
 
@@ -355,26 +355,26 @@ Playground isn't a framework you extend. It's infrastructure you deploy on.
 - **Long-Running**: Tasks that run for hours or days with durable checkpointing
 - **Backpressure**: Built-in queuing and circuit breakers
 
-### Multi-Agent Native
-- **Discovery**: Agents register capabilities. Others find them via API.
-- **Cross-Agent Calls**: `app.call("other.reasoner", input={...})` routed through control plane
+### Multi-Bot Native
+- **Discovery**: Bots register capabilities. Others find them via API.
+- **Cross-Bot Calls**: `app.call("other.reasoner", input={...})` routed through control plane
 - **Workflow DAGs**: Every execution path visualized automatically
-- **Shared Memory**: Scoped to global, agent, session, or run—with vector search
+- **Shared Memory**: Scoped to global, bot, session, or run—with vector search
 
 ### Enterprise Ready
-- **W3C DIDs**: Every agent gets a cryptographic identity
+- **W3C DIDs**: Every bot gets a cryptographic identity
 - **Verifiable Credentials**: Tamper-proof receipts for every action
 - **Prometheus Metrics**: `/metrics` endpoint out of the box
-- **Policy Enforcement**: "Only agents signed by 'Finance' can access this tool"
+- **Policy Enforcement**: "Only bots signed by 'Finance' can access this tool"
 
-[Explore the full feature set →](https://playground.ai/docs/features)
+[Explore the full feature set →](https://hanzo.bot/docs/features)
 
 
 ## Identity & Trust
 
-When agents move from answering questions to making decisions, approving refunds, coordinating supply chains, moving money, "check the logs" isn't enough.
+When bots move from answering questions to making decisions, approving refunds, coordinating supply chains, moving money, "check the logs" isn't enough.
 
-Playground gives every agent a [W3C Decentralized Identifier (DID)](https://www.w3.org/TR/did-core/)—a cryptographic identity. Every execution produces a Verifiable Credential: a tamper-proof receipt showing exactly what happened, who authorized it, and the full delegation chain.
+Playground gives every bot a [W3C Decentralized Identifier (DID)](https://www.w3.org/TR/did-core/)—a cryptographic identity. Every execution produces a Verifiable Credential: a tamper-proof receipt showing exactly what happened, who authorized it, and the full delegation chain.
 
 ```bash
 # Export audit trail for any workflow
@@ -383,9 +383,9 @@ curl http://localhost:8080/api/ui/v1/workflows/{workflow_id}/vc-chain
 
 For compliance teams: mathematical proof, not trust.
 
-📖 **[Read: IAM for AI Backends](https://playground.ai/blog/posts/iam-ai-backends)** — Why OAuth can't secure autonomous software, and what replaces it.
+📖 **[Read: IAM for AI Backends](https://hanzo.bot/blog/posts/iam-ai-backends)** — Why OAuth can't secure autonomous software, and what replaces it.
 
-[Full documentation →](https://playground.ai/docs/core-concepts/identity-and-trust)
+[Full documentation →](https://hanzo.bot/docs/core-concepts/identity-and-trust)
 
 
 
@@ -395,44 +395,44 @@ For compliance teams: mathematical proof, not trust.
 <img src="assets/arch.png" alt="Playground Architecture Diagram" width="80%" />
 </div>
 
-[Learn more about the core architecture →](https://playground.ai/docs/why-playground/core-architecture)
+[Learn more about the core architecture →](https://hanzo.bot/docs/why-playground/core-architecture)
 
 
 
 ## Is Playground for you?
 
 ### Yes if:
-- You're building an **AI backend** - agents that make decisions, not just answer questions
-- You're building **multi-agent systems** that need to coordinate
+- You're building an **AI backend** - bots that make decisions, not just answer questions
+- You're building **multi-bot systems** that need to coordinate
 - You need **production infrastructure**: async, retries, observability
-- You want agents as **standard backend services** with REST APIs
+- You want bots as **standard backend services** with REST APIs
 - You need **audit trails** for compliance or debugging
-- You have **multiple teams** deploying agents independently
+- You have **multiple teams** deploying bots independently
 
 ### Not yet if:
 - You're building a **single chatbot** (prompt orchestration frameworks like LangChain, CrewAI, LlamaIndex etc.. are great for that)
 - You're **prototyping** and don't need production concerns yet
 
-*When you're ready to ship agents to production, we'll be here.*
+*When you're ready to ship bots to production, we'll be here.*
 
 ---
 
-If you are **Backend Engineers** shipping AI into production who want standard APIs, not magic or **Platform Teams** who don't want to build another homegrown orchestrator or **Enterprise Teams** in regulated industries (Finance, Health) needing audit trails or **Frontend Developers** who just want to `fetch()` an agent without Python headaches, Playground is built for you.
+If you are **Backend Engineers** shipping AI into production who want standard APIs, not magic or **Platform Teams** who don't want to build another homegrown orchestrator or **Enterprise Teams** in regulated industries (Finance, Health) needing audit trails or **Frontend Developers** who just want to `fetch()` a bot without Python headaches, Playground is built for you.
 
 ---
 
 ## Learn More
 
-- 📖 **[The AI Backend](https://playground.ai/blog/posts/ai-backend)** — Why every backend needs a reasoning layer
-- 📖 **[IAM for AI Backends](https://playground.ai/blog/posts/iam-ai-backends)** — Why agents need identity, not just API keys
-- 📚 **[Documentation](https://playground.ai/docs)** — Full technical reference
-- 🚀 **[Examples](https://playground.ai/examples)** — Production patterns and use cases
+- 📖 **[The AI Backend](https://hanzo.bot/blog/posts/ai-backend)** — Why every backend needs a reasoning layer
+- 📖 **[IAM for AI Backends](https://hanzo.bot/blog/posts/iam-ai-backends)** — Why bots need identity, not just API keys
+- 📚 **[Documentation](https://hanzo.bot/docs)** — Full technical reference
+- 🚀 **[Examples](https://hanzo.bot/examples)** — Production patterns and use cases
 
 ---
 
 ## Community
 
-**Agents are becoming part of production backends. They need identity, governance, and infrastructure. That's why Playground exists.**
+**Bots are becoming part of production backends. They need identity, governance, and infrastructure. That's why Playground exists.**
 
 <div align="center">
 
@@ -442,12 +442,12 @@ If you are **Backend Engineers** shipping AI into production who want standard A
 
 </div>
 
-- **[Documentation](https://playground.ai/docs)**
+- **[Documentation](https://hanzo.bot/docs)**
 - **[GitHub Issues](https://github.com/hanzoai/playground/issues)**
-- **[Twitter/X](https://x.com/playground_ai)**
-- **[Examples](https://playground.ai/examples)**
+- **[Twitter/X](https://x.com/hanzo.bot)**
+- **[Examples](https://hanzo.bot/examples)**
 
 <p align="center">
-  <strong>Built by developers who got tired of duct-taping agents together.</strong><br>
-  <a href="https://playground.ai">playground.ai</a>
+  <strong>Built by developers who got tired of duct-taping bots together.</strong><br>
+  <a href="https://hanzo.bot">hanzo.bot</a>
 </p>

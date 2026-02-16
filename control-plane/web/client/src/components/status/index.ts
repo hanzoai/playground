@@ -3,7 +3,7 @@ export { UnifiedStatusIndicator, isStatusHealthy, getStatusPriority } from './Un
 export { StatusRefreshButton, useOptimisticStatusRefresh } from './StatusRefreshButton';
 export {
   StatusBadge,
-  AgentStateBadge,
+  BotStateBadge,
   HealthStatusBadge,
   LifecycleStatusBadge,
   getHealthScoreColor,
@@ -11,4 +11,4 @@ export {
 } from './StatusBadge';
 
 // Re-export types for convenience
-export type { AgentStatus, AgentState, AgentStatusUpdate, StatusSource } from '../../types/playground';
+export type { BotStatus, BotState, BotStatusUpdate, StatusSource } from '../../types/playground';

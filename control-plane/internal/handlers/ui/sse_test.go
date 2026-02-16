@@ -76,7 +76,7 @@ func TestStreamExecutionEventsHandler(t *testing.T) {
 		Type:        events.ExecutionCreated,
 		ExecutionID: "exec-test-1",
 		WorkflowID:  "workflow-1",
-		AgentNodeID: "agent-1",
+		NodeID: "agent-1",
 		Status:      "created",
 		Timestamp:   time.Now(),
 	})
@@ -192,7 +192,7 @@ func TestSSEEventDelivery(t *testing.T) {
 			Type:        events.ExecutionUpdated,
 			ExecutionID: "exec-test-" + string(rune(i)),
 			WorkflowID:  "workflow-1",
-			AgentNodeID: "agent-1",
+			NodeID: "agent-1",
 			Status:      "running",
 			Timestamp:   time.Now(),
 		})
@@ -281,7 +281,7 @@ func TestSSEMultipleConnections(t *testing.T) {
 		Type:        events.ExecutionCompleted,
 		ExecutionID: "exec-multi",
 		WorkflowID:  "workflow-1",
-		AgentNodeID: "agent-1",
+		NodeID: "agent-1",
 		Status:      "succeeded",
 		Timestamp:   time.Now(),
 	})
@@ -425,7 +425,7 @@ func TestSSEConcurrentEvents(t *testing.T) {
 				Type:        events.ExecutionUpdated,
 				ExecutionID: "exec-concurrent-" + string(rune(id)),
 				WorkflowID:  "workflow-1",
-				AgentNodeID: "agent-1",
+				NodeID: "agent-1",
 				Status:      "running",
 				Timestamp:   time.Now(),
 			})
@@ -602,7 +602,7 @@ func TestSSEPerformance(t *testing.T) {
 			Type:        events.ExecutionUpdated,
 			ExecutionID: "exec-perf-" + string(rune(i)),
 			WorkflowID:  "workflow-1",
-			AgentNodeID: "agent-1",
+			NodeID: "agent-1",
 			Status:      "running",
 			Timestamp:   time.Now(),
 		})

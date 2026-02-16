@@ -41,38 +41,38 @@ spec:
             - name: grpc
               containerPort: {{ include "playground.controlPlane.grpcPort" . }}
           env:
-            - name: AGENTS_PORT
+            - name: PLAYGROUND_PORT
               value: {{ .Values.controlPlane.service.port | quote }}
-            - name: AGENTS_STORAGE_MODE
+            - name: PLAYGROUND_STORAGE_MODE
               value: {{ .Values.controlPlane.storage.mode | quote }}
             {{- if eq .Values.controlPlane.storage.mode "postgres" }}
             {{- if .Values.postgres.enabled }}
-            - name: AGENTS_STORAGE_POSTGRES_HOST
+            - name: PLAYGROUND_STORAGE_POSTGRES_HOST
               value: {{ include "playground.postgres.fullname" . | quote }}
-            - name: AGENTS_STORAGE_POSTGRES_PORT
+            - name: PLAYGROUND_STORAGE_POSTGRES_PORT
               value: "5432"
-            - name: AGENTS_STORAGE_POSTGRES_DATABASE
+            - name: PLAYGROUND_STORAGE_POSTGRES_DATABASE
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.postgres.secretName" . }}
                   key: {{ .Values.postgres.auth.existingSecretDatabaseKey }}
-            - name: AGENTS_STORAGE_POSTGRES_USER
+            - name: PLAYGROUND_STORAGE_POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.postgres.secretName" . }}
                   key: {{ .Values.postgres.auth.existingSecretUsernameKey }}
-            - name: AGENTS_STORAGE_POSTGRES_PASSWORD
+            - name: PLAYGROUND_STORAGE_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.postgres.secretName" . }}
                   key: {{ .Values.postgres.auth.existingSecretPasswordKey }}
-            - name: AGENTS_STORAGE_POSTGRES_SSLMODE
+            - name: PLAYGROUND_STORAGE_POSTGRES_SSLMODE
               value: "disable"
             {{- else }}
             {{- $postgresUrl := include "playground.controlPlane.postgresUrl" . }}
-            - name: AGENTS_STORAGE_POSTGRES_URL
+            - name: PLAYGROUND_STORAGE_POSTGRES_URL
               value: {{ required "controlPlane.storage.postgresUrl is required when controlPlane.storage.mode=postgres and postgres.enabled=false" $postgresUrl | quote }}
-            - name: AGENTS_POSTGRES_URL
+            - name: PLAYGROUND_POSTGRES_URL
               value: {{ required "controlPlane.storage.postgresUrl is required when controlPlane.storage.mode=postgres and postgres.enabled=false" $postgresUrl | quote }}
             {{- end }}
             {{- end }}
@@ -81,7 +81,7 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- if .Values.apiAuth.enabled }}
-            - name: AGENTS_API_KEY
+            - name: PLAYGROUND_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.apiAuth.secretName" . }}
@@ -92,7 +92,7 @@ spec:
             {{- end }}
           volumeMounts:
             - name: data
-              mountPath: {{ .Values.controlPlane.env.AGENTS_HOME | default "/data" | quote }}
+              mountPath: {{ .Values.controlPlane.env.PLAYGROUND_HOME | default "/data" | quote }}
           livenessProbe:
             httpGet:
               path: /api/v1/health

@@ -1,4 +1,4 @@
-import type { AgentRouter } from '../router/AgentRouter.js';
+import type { BotRouter } from '../router/BotRouter.js';
 import type { SkillDefinition, SkillHandler, SkillOptions } from '../types/skill.js';
 
 export class SkillRegistry {
@@ -12,7 +12,7 @@ export class SkillRegistry {
     this.skills.set(name, { name, handler, options });
   }
 
-  includeRouter(router: AgentRouter) {
+  includeRouter(router: BotRouter) {
     router.skills.forEach((skill) => {
       this.skills.set(skill.name, skill);
     });

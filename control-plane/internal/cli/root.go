@@ -29,10 +29,10 @@ var (
 // NewRootCommand creates and returns the root Cobra command for the Agents CLI.
 func NewRootCommand(runServerFunc func(cmd *cobra.Command, args []string), versionInfo VersionInfo) *cobra.Command {
 	RootCmd := &cobra.Command{
-		Use:     "af",
-		Aliases: []string{"agents"},
-		Short:   "Agents AI Agent Platform",
-		Long:    `Agents is a comprehensive AI agent platform for building, managing, and deploying AI agent capabilities.`,
+		Use:     "playground",
+		Aliases: []string{"af", "agents"},
+		Short:   "Playground - Kubernetes for AI Bots",
+		Long:    `Playground is a control plane for deploying, orchestrating, and observing AI bots across Nodes.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Initialize logging based on verbose flag
 			logger.InitLogger(verbose)
@@ -53,7 +53,7 @@ func NewRootCommand(runServerFunc func(cmd *cobra.Command, args []string), versi
 	originalRun := RootCmd.Run
 	RootCmd.Run = func(cmd *cobra.Command, args []string) {
 		if showVersion {
-			fmt.Printf("Agents Control Plane\n")
+			fmt.Printf("Playground Control Plane\n")
 			fmt.Printf("  Version:    %s\n", versionInfo.Version)
 			fmt.Printf("  Commit:     %s\n", versionInfo.Commit)
 			fmt.Printf("  Built:      %s\n", versionInfo.Date)
@@ -70,7 +70,7 @@ func NewRootCommand(runServerFunc func(cmd *cobra.Command, args []string), versi
 	RootCmd.PersistentFlags().BoolVar(&openBrowserFlag, "open", true, "Open browser to UI (if UI is enabled)")
 	RootCmd.PersistentFlags().BoolVar(&uiDevFlag, "ui-dev", false, "Run with UI development server (proxies to backend)")
 	RootCmd.PersistentFlags().BoolVar(&backendOnlyFlag, "backend-only", false, "Run only backend APIs, UI served separately")
-	RootCmd.PersistentFlags().IntVar(&portFlag, "port", 0, "Port for the af server (overrides config if set)")
+	RootCmd.PersistentFlags().IntVar(&portFlag, "port", 0, "Port for the playground server (overrides config if set)")
 	RootCmd.PersistentFlags().BoolVar(&noVCExecution, "no-vc-execution", false, "Disable generating verifiable credentials for executions")
 	RootCmd.PersistentFlags().BoolVar(&forceVCExecution, "vc-execution", false, "Force-enable generating verifiable credentials for executions")
 	RootCmd.PersistentFlags().StringVar(&storageModeFlag, "storage-mode", "", "Override the storage backend (local or postgres)")
@@ -112,8 +112,8 @@ func NewRootCommand(runServerFunc func(cmd *cobra.Command, args []string), versi
 	// Add the server command
 	serverCmd := &cobra.Command{
 		Use:   "server",
-		Short: "Run the Agents AI Agent Platform server",
-		Long:  `Starts the Agents AI Agent Platform server, providing API endpoints and UI.`,
+		Short: "Run the Playground control plane server",
+		Long:  `Starts the Playground control plane server, providing API endpoints and UI.`,
 		Run:   runServerFunc,
 	}
 	RootCmd.AddCommand(serverCmd)
@@ -130,7 +130,7 @@ func initConfig() {
 		// Search config in current directory and "config" directory
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("./config")
-		viper.SetConfigName("agents")
+		viper.SetConfigName("playground") // Also finds agents.yaml as fallback
 		viper.SetConfigType("yaml")
 	}
 

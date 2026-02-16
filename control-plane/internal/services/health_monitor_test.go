@@ -16,10 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Mock AgentClient for testing
-type mockAgentClient struct {
+// Mock NodeClient for testing
+type mockNodeClient struct {
 	mu                   sync.RWMutex
-	statusResponses      map[string]*interfaces.AgentStatusResponse
+	statusResponses      map[string]*interfaces.BotStatusResponse
 	statusErrors         map[string]error
 	mcpHealthResponses   map[string]*interfaces.MCPHealthResponse
 	mcpHealthErrors      map[string]error
@@ -27,9 +27,9 @@ type mockAgentClient struct {
 	getMCPHealthCallCount map[string]int
 }
 
-func newMockAgentClient() *mockAgentClient {
-	return &mockAgentClient{
-		statusResponses:      make(map[string]*interfaces.AgentStatusResponse),
+func newMockNodeClient() *mockNodeClient {
+	return &mockNodeClient{
+		statusResponses:      make(map[string]*interfaces.BotStatusResponse),
 		statusErrors:         make(map[string]error),
 		mcpHealthResponses:   make(map[string]*interfaces.MCPHealthResponse),
 		mcpHealthErrors:      make(map[string]error),
@@ -38,7 +38,7 @@ func newMockAgentClient() *mockAgentClient {
 	}
 }
 
-func (m *mockAgentClient) GetAgentStatus(ctx context.Context, nodeID string) (*interfaces.AgentStatusResponse, error) {
+func (m *mockNodeClient) GetBotStatus(ctx context.Context, nodeID string) (*interfaces.BotStatusResponse, error) {
 	m.mu.Lock()
 	m.getStatusCallCount[nodeID]++
 	m.mu.Unlock()
@@ -55,7 +55,7 @@ func (m *mockAgentClient) GetAgentStatus(ctx context.Context, nodeID string) (*i
 	return nil, errors.New("agent not found")
 }
 
-func (m *mockAgentClient) GetMCPHealth(ctx context.Context, nodeID string) (*interfaces.MCPHealthResponse, error) {
+func (m *mockNodeClient) GetMCPHealth(ctx context.Context, nodeID string) (*interfaces.MCPHealthResponse, error) {
 	m.mu.Lock()
 	m.getMCPHealthCallCount[nodeID]++
 	m.mu.Unlock()
@@ -72,52 +72,52 @@ func (m *mockAgentClient) GetMCPHealth(ctx context.Context, nodeID string) (*int
 	return nil, errors.New("MCP not available")
 }
 
-func (m *mockAgentClient) RestartMCPServer(ctx context.Context, nodeID, alias string) error {
+func (m *mockNodeClient) RestartMCPServer(ctx context.Context, nodeID, alias string) error {
 	return nil
 }
 
-func (m *mockAgentClient) GetMCPTools(ctx context.Context, nodeID, alias string) (*interfaces.MCPToolsResponse, error) {
+func (m *mockNodeClient) GetMCPTools(ctx context.Context, nodeID, alias string) (*interfaces.MCPToolsResponse, error) {
 	return nil, nil
 }
 
-func (m *mockAgentClient) ShutdownAgent(ctx context.Context, nodeID string, graceful bool, timeoutSeconds int) (*interfaces.AgentShutdownResponse, error) {
+func (m *mockNodeClient) ShutdownNode(ctx context.Context, nodeID string, graceful bool, timeoutSeconds int) (*interfaces.NodeShutdownResponse, error) {
 	return nil, nil
 }
 
-func (m *mockAgentClient) setStatusResponse(nodeID string, status string) {
+func (m *mockNodeClient) setStatusResponse(nodeID string, status string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.statusResponses[nodeID] = &interfaces.AgentStatusResponse{
+	m.statusResponses[nodeID] = &interfaces.BotStatusResponse{
 		Status: status,
 	}
 }
 
-func (m *mockAgentClient) setStatusError(nodeID string, err error) {
+func (m *mockNodeClient) setStatusError(nodeID string, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.statusErrors[nodeID] = err
 }
 
-func (m *mockAgentClient) setMCPHealthResponse(nodeID string, response *interfaces.MCPHealthResponse) {
+func (m *mockNodeClient) setMCPHealthResponse(nodeID string, response *interfaces.MCPHealthResponse) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.mcpHealthResponses[nodeID] = response
 }
 
 
-func (m *mockAgentClient) getStatusCallCountFor(nodeID string) int {
+func (m *mockNodeClient) getStatusCallCountFor(nodeID string) int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.getStatusCallCount[nodeID]
 }
 
-func (m *mockAgentClient) getMCPHealthCallCountFor(nodeID string) int {
+func (m *mockNodeClient) getMCPHealthCallCountFor(nodeID string) int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.getMCPHealthCallCount[nodeID]
 }
 
-func setupHealthMonitorTest(t *testing.T) (*HealthMonitor, storage.StorageProvider, *mockAgentClient, *StatusManager, *PresenceManager) {
+func setupHealthMonitorTest(t *testing.T) (*HealthMonitor, storage.StorageProvider, *mockNodeClient, *StatusManager, *PresenceManager) {
 	t.Helper()
 
 	provider, ctx := setupTestStorage(t)
@@ -137,7 +137,7 @@ func setupHealthMonitorTest(t *testing.T) (*HealthMonitor, storage.StorageProvid
 	presenceManager := NewPresenceManager(statusManager, presenceConfig)
 
 	// Create mock agent client
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	// Create health monitor
 	config := HealthMonitorConfig{
@@ -160,7 +160,7 @@ func TestHealthMonitor_NewHealthMonitor(t *testing.T) {
 
 	statusManager := NewStatusManager(provider, StatusManagerConfig{}, nil, nil)
 	presenceManager := NewPresenceManager(statusManager, PresenceManagerConfig{})
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	config := HealthMonitorConfig{
 		CheckInterval: 10 * time.Second,
@@ -181,7 +181,7 @@ func TestHealthMonitor_NewHealthMonitor_DefaultConfig(t *testing.T) {
 
 	statusManager := NewStatusManager(provider, StatusManagerConfig{}, nil, nil)
 	presenceManager := NewPresenceManager(statusManager, PresenceManagerConfig{})
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	// Pass zero config to test defaults
 	hm := NewHealthMonitor(provider, HealthMonitorConfig{}, nil, mockClient, statusManager, presenceManager)
@@ -190,13 +190,13 @@ func TestHealthMonitor_NewHealthMonitor_DefaultConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Second, hm.config.CheckInterval, "Should use default check interval")
 }
 
-func TestHealthMonitor_RegisterAgent(t *testing.T) {
+func TestHealthMonitor_RegisterNode(t *testing.T) {
 	hm, _, _, _, presenceManager := setupHealthMonitorTest(t)
 
 	nodeID := "test-agent-1"
 	baseURL := "http://localhost:8001"
 
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Verify agent is in active registry
 	hm.agentsMutex.RLock()
@@ -212,7 +212,7 @@ func TestHealthMonitor_RegisterAgent(t *testing.T) {
 	assert.True(t, presenceManager.HasLease(nodeID), "Presence manager should track agent")
 }
 
-func TestHealthMonitor_RegisterAgent_MultipleAgents(t *testing.T) {
+func TestHealthMonitor_RegisterNode_MultipleAgents(t *testing.T) {
 	hm, _, _, _, _ := setupHealthMonitorTest(t)
 
 	agents := map[string]string{
@@ -222,7 +222,7 @@ func TestHealthMonitor_RegisterAgent_MultipleAgents(t *testing.T) {
 	}
 
 	for nodeID, baseURL := range agents {
-		hm.RegisterAgent(nodeID, baseURL)
+		hm.RegisterNode(nodeID, baseURL)
 	}
 
 	hm.agentsMutex.RLock()
@@ -243,15 +243,15 @@ func TestHealthMonitor_UnregisterAgent(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// First register the agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Verify agent is registered
 	require.True(t, presenceManager.HasLease(nodeID))
@@ -291,15 +291,15 @@ func TestHealthMonitor_CheckAgentHealth_Healthy(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set mock to return healthy status
 	mockClient.setStatusResponse(nodeID, "running")
@@ -327,15 +327,15 @@ func TestHealthMonitor_CheckAgentHealth_Inactive(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set mock to return error (simulating agent offline)
 	mockClient.setStatusError(nodeID, errors.New("connection refused"))
@@ -364,15 +364,15 @@ func TestHealthMonitor_CheckAgentHealth_NotRunning(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set mock to return non-running status
 	mockClient.setStatusResponse(nodeID, "stopped")
@@ -400,7 +400,7 @@ func TestHealthMonitor_CheckAgentHealth_StatusTransitions(t *testing.T) {
 	statusManager := NewStatusManager(provider, StatusManagerConfig{ReconcileInterval: 30 * time.Second}, nil, nil)
 	presenceConfig := PresenceManagerConfig{HeartbeatTTL: 5 * time.Second, SweepInterval: 1 * time.Second, HardEvictTTL: 10 * time.Second}
 	presenceManager := NewPresenceManager(statusManager, presenceConfig)
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	config := HealthMonitorConfig{
 		CheckInterval:       100 * time.Millisecond,
@@ -418,11 +418,11 @@ func TestHealthMonitor_CheckAgentHealth_StatusTransitions(t *testing.T) {
 	nodeID := "test-agent-transitions"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 
 	// Test transition: Unknown -> Active
@@ -482,15 +482,15 @@ func TestHealthMonitor_MCP_CheckMCPHealth(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set mock MCP health response
 	mcpResponse := &interfaces.MCPHealthResponse{
@@ -532,15 +532,15 @@ func TestHealthMonitor_MCP_HealthChange(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set agent as healthy
 	mockClient.setStatusResponse(nodeID, "running")
@@ -591,15 +591,15 @@ func TestHealthMonitor_MCP_NoChange(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set agent as healthy
 	mockClient.setStatusResponse(nodeID, "running")
@@ -639,15 +639,15 @@ func TestHealthMonitor_MCP_InactiveAgent(t *testing.T) {
 	baseURL := "http://localhost:8001"
 
 	// Register agent in storage
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: baseURL,
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Register in health monitor
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Set agent as inactive
 	mockClient.setStatusError(nodeID, errors.New("connection refused"))
@@ -697,14 +697,14 @@ func TestHealthMonitor_ConcurrentAccess(t *testing.T) {
 	// Register multiple agents
 	agents := []string{"agent-1", "agent-2", "agent-3", "agent-4", "agent-5"}
 	for _, nodeID := range agents {
-		agent := &types.AgentNode{
+		agent := &types.Node{
 			ID:      nodeID,
 			BaseURL: "http://localhost:800" + nodeID[len(nodeID)-1:],
 		}
-		err := provider.RegisterAgent(ctx, agent)
+		err := provider.RegisterNode(ctx, agent)
 		require.NoError(t, err)
 
-		hm.RegisterAgent(nodeID, agent.BaseURL)
+		hm.RegisterNode(nodeID, agent.BaseURL)
 		mockClient.setStatusResponse(nodeID, "running")
 	}
 
@@ -725,7 +725,7 @@ func TestHealthMonitor_ConcurrentAccess(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			nodeID := "temp-agent-" + string(rune('0'+idx))
-			hm.RegisterAgent(nodeID, "http://localhost:9000")
+			hm.RegisterNode(nodeID, "http://localhost:9000")
 			time.Sleep(10 * time.Millisecond)
 			hm.UnregisterAgent(nodeID)
 		}(i)
@@ -775,7 +775,7 @@ func TestHealthMonitor_PeriodicChecks(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 	defer provider.Close(ctx)
 
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 	statusManager := NewStatusManager(provider, StatusManagerConfig{}, nil, nil)
 	presenceManager := NewPresenceManager(statusManager, PresenceManagerConfig{})
 
@@ -787,14 +787,14 @@ func TestHealthMonitor_PeriodicChecks(t *testing.T) {
 
 	// Register agent
 	nodeID := "test-periodic"
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:      nodeID,
 		BaseURL: "http://localhost:8001",
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
-	hm.RegisterAgent(nodeID, agent.BaseURL)
+	hm.RegisterNode(nodeID, agent.BaseURL)
 	mockClient.setStatusResponse(nodeID, "running")
 
 	// Start monitoring
@@ -847,24 +847,24 @@ func TestHealthMonitor_RecoverFromDatabase_WithNodes(t *testing.T) {
 	ctx := context.Background()
 
 	// Create some agents in the database
-	agent1 := &types.AgentNode{
+	agent1 := &types.Node{
 		ID:      "agent-1",
 		BaseURL: "http://localhost:8001",
 	}
-	agent2 := &types.AgentNode{
+	agent2 := &types.Node{
 		ID:      "agent-2",
 		BaseURL: "http://localhost:8002",
 	}
-	agent3 := &types.AgentNode{
+	agent3 := &types.Node{
 		ID:      "agent-3",
 		BaseURL: "", // No BaseURL - should be skipped
 	}
 
-	err := provider.RegisterAgent(ctx, agent1)
+	err := provider.RegisterNode(ctx, agent1)
 	require.NoError(t, err)
-	err = provider.RegisterAgent(ctx, agent2)
+	err = provider.RegisterNode(ctx, agent2)
 	require.NoError(t, err)
-	err = provider.RegisterAgent(ctx, agent3)
+	err = provider.RegisterNode(ctx, agent3)
 	require.NoError(t, err)
 
 	// Set up mock responses - agent-1 is running, agent-2 is not reachable
@@ -902,12 +902,12 @@ func TestHealthMonitor_RecoverFromDatabase_MarksUnreachableNodesInactive(t *test
 	ctx := context.Background()
 
 	// Create an agent in the database
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:           "unreachable-agent",
 		BaseURL:      "http://localhost:9999",
 		HealthStatus: types.HealthStatusActive, // Was active before restart
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Mock: agent is not reachable
@@ -947,12 +947,12 @@ func TestHealthMonitor_RecoverFromDatabase_MarksReachableNodesActive(t *testing.
 	ctx := context.Background()
 
 	// Create an agent in the database
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:           "reachable-agent",
 		BaseURL:      "http://localhost:8001",
 		HealthStatus: types.HealthStatusInactive, // Was inactive before restart
 	}
-	err := provider.RegisterAgent(ctx, agent)
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
 	// Mock: agent is running
@@ -983,11 +983,11 @@ func TestHealthMonitor_ConsecutiveFailures_SingleFailureKeepsActive(t *testing.T
 	nodeID := "test-single-failure"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// First make agent active
 	mockClient.setStatusResponse(nodeID, "running")
@@ -1017,11 +1017,11 @@ func TestHealthMonitor_ConsecutiveFailures_ThreeFailuresMarksInactive(t *testing
 	nodeID := "test-three-failures"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Make agent active first
 	mockClient.setStatusResponse(nodeID, "running")
@@ -1049,11 +1049,11 @@ func TestHealthMonitor_ConsecutiveFailures_SuccessResetsCounter(t *testing.T) {
 	nodeID := "test-success-resets"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
 
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Make active first
 	mockClient.setStatusResponse(nodeID, "running")
@@ -1098,7 +1098,7 @@ func TestHealthMonitor_RecoveryDebounce_BlocksTooFastRecovery(t *testing.T) {
 	statusManager := NewStatusManager(provider, StatusManagerConfig{ReconcileInterval: 30 * time.Second}, nil, nil)
 	presenceConfig := PresenceManagerConfig{HeartbeatTTL: 5 * time.Second, SweepInterval: 1 * time.Second, HardEvictTTL: 10 * time.Second}
 	presenceManager := NewPresenceManager(statusManager, presenceConfig)
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	config := HealthMonitorConfig{
 		CheckInterval:       100 * time.Millisecond,
@@ -1116,10 +1116,10 @@ func TestHealthMonitor_RecoveryDebounce_BlocksTooFastRecovery(t *testing.T) {
 	nodeID := "test-debounce"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Make active, then inactive
 	mockClient.setStatusResponse(nodeID, "running")
@@ -1165,7 +1165,7 @@ func TestHealthMonitor_Config_ConsecutiveFailuresConfigurable(t *testing.T) {
 	statusManager := NewStatusManager(provider, StatusManagerConfig{ReconcileInterval: 30 * time.Second}, nil, nil)
 	presenceConfig := PresenceManagerConfig{HeartbeatTTL: 5 * time.Second, SweepInterval: 1 * time.Second, HardEvictTTL: 10 * time.Second}
 	presenceManager := NewPresenceManager(statusManager, presenceConfig)
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	// Configure to require 5 consecutive failures
 	config := HealthMonitorConfig{
@@ -1184,10 +1184,10 @@ func TestHealthMonitor_Config_ConsecutiveFailuresConfigurable(t *testing.T) {
 	nodeID := "test-config-failures"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Make active first
 	mockClient.setStatusResponse(nodeID, "running")
@@ -1232,10 +1232,10 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 	provider, ctx := setupTestStorage(t)
 
 	// --- Wire services exactly as production (server.go) ---
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	// StatusManager with short reconciliation and the same mock client
-	// (so UpdateFromHeartbeat -> GetAgentStatus uses mock HTTP too)
+	// (so UpdateFromHeartbeat -> GetBotStatus uses mock HTTP too)
 	statusConfig := StatusManagerConfig{
 		ReconcileInterval:       200 * time.Millisecond,
 		StatusCacheTTL:          50 * time.Millisecond, // Short cache so state changes propagate fast
@@ -1272,24 +1272,24 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 
 	// --- Register agent in storage ---
 	nodeID := "integration-agent-1"
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:              nodeID,
 		TeamID:          "team",
 		BaseURL:         "http://localhost:9999",
 		Version:         "1.0.0",
 		HealthStatus:    types.HealthStatusActive,
-		LifecycleStatus: types.AgentStatusReady,
+		LifecycleStatus: types.BotStatusReady,
 		LastHeartbeat:   time.Now(),
 		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
-	require.NoError(t, provider.RegisterAgent(ctx, node))
+	require.NoError(t, provider.RegisterNode(ctx, node))
 
 	// Agent starts healthy
 	mockClient.setStatusResponse(nodeID, "running")
 
 	// Register with health monitor and presence
-	hm.RegisterAgent(nodeID, "http://localhost:9999")
+	hm.RegisterNode(nodeID, "http://localhost:9999")
 	presenceManager.Touch(nodeID, time.Now())
 
 	// --- Start all 3 services concurrently (like production) ---
@@ -1301,9 +1301,9 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 	time.Sleep(300 * time.Millisecond)
 
 	// Verify agent is active before the test
-	snapshot, err := statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	snapshot, err := statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateActive, snapshot.State,
+	require.Equal(t, types.BotStateActive, snapshot.State,
 		"Agent should be active before flapping test begins")
 
 	// --- THE FLAPPING SCENARIO ---
@@ -1311,7 +1311,7 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 	// sending heartbeats (proving it's alive). The agent should NEVER go inactive.
 
 	// Track all status transitions to detect flapping
-	var statusHistory []types.AgentState
+	var statusHistory []types.BotState
 	var historyMu sync.Mutex
 
 	// Start heartbeat sender goroutine (simulates agent sending heartbeats every 100ms)
@@ -1322,12 +1322,12 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 		defer ticker.Stop()
 		for i := 0; i < 30; i++ { // 30 heartbeats over ~3 seconds
 			<-ticker.C
-			readyStatus := types.AgentStatusReady
+			readyStatus := types.BotStatusReady
 			_ = statusManager.UpdateFromHeartbeat(ctx, nodeID, &readyStatus, nil)
 			presenceManager.Touch(nodeID, time.Now())
 
 			// Record current state
-			snap, err := statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+			snap, err := statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 			if err == nil {
 				historyMu.Lock()
 				statusHistory = append(statusHistory, snap.State)
@@ -1358,9 +1358,9 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 	// --- ASSERTIONS ---
 
 	// 1. Agent should be active now
-	finalSnapshot, err := statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	finalSnapshot, err := statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	assert.Equal(t, types.AgentStateActive, finalSnapshot.State,
+	assert.Equal(t, types.BotStateActive, finalSnapshot.State,
 		"Agent must be active — heartbeats were flowing the entire time")
 
 	// 2. Agent should NEVER have been inactive during the test
@@ -1369,7 +1369,7 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 
 	inactiveCount := 0
 	for _, state := range statusHistory {
-		if state == types.AgentStateInactive {
+		if state == types.BotStateInactive {
 			inactiveCount++
 		}
 	}
@@ -1393,7 +1393,7 @@ func TestIntegration_NoFlapping_HeartbeatsDuringTransientFailures(t *testing.T) 
 func TestIntegration_ProperInactiveWhenHeartbeatsStop(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	statusConfig := StatusManagerConfig{
 		ReconcileInterval:       200 * time.Millisecond,
@@ -1428,21 +1428,21 @@ func TestIntegration_ProperInactiveWhenHeartbeatsStop(t *testing.T) {
 
 	// Register healthy agent
 	nodeID := "integration-agent-down"
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:              nodeID,
 		TeamID:          "team",
 		BaseURL:         "http://localhost:9998",
 		Version:         "1.0.0",
 		HealthStatus:    types.HealthStatusActive,
-		LifecycleStatus: types.AgentStatusReady,
+		LifecycleStatus: types.BotStatusReady,
 		LastHeartbeat:   time.Now(),
 		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
-	require.NoError(t, provider.RegisterAgent(ctx, node))
+	require.NoError(t, provider.RegisterNode(ctx, node))
 
 	mockClient.setStatusResponse(nodeID, "running")
-	hm.RegisterAgent(nodeID, "http://localhost:9998")
+	hm.RegisterNode(nodeID, "http://localhost:9998")
 	presenceManager.Touch(nodeID, time.Now())
 
 	// Start all services
@@ -1453,9 +1453,9 @@ func TestIntegration_ProperInactiveWhenHeartbeatsStop(t *testing.T) {
 	// Let agent stabilize as active
 	time.Sleep(300 * time.Millisecond)
 
-	snapshot, err := statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	snapshot, err := statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateActive, snapshot.State)
+	require.Equal(t, types.BotStateActive, snapshot.State)
 
 	// --- Agent goes down: no more heartbeats, health checks fail ---
 	mockClient.setStatusError(nodeID, errors.New("connection refused"))
@@ -1465,9 +1465,9 @@ func TestIntegration_ProperInactiveWhenHeartbeatsStop(t *testing.T) {
 	time.Sleep(800 * time.Millisecond)
 
 	// Agent should now be inactive
-	finalSnapshot, err := statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	finalSnapshot, err := statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	assert.Equal(t, types.AgentStateInactive, finalSnapshot.State,
+	assert.Equal(t, types.BotStateInactive, finalSnapshot.State,
 		"Agent should be inactive when both heartbeats and health checks have stopped")
 }
 
@@ -1476,7 +1476,7 @@ func TestIntegration_ProperInactiveWhenHeartbeatsStop(t *testing.T) {
 func TestIntegration_RecoveryAfterGenuineOutage(t *testing.T) {
 	provider, ctx := setupTestStorage(t)
 
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	statusConfig := StatusManagerConfig{
 		ReconcileInterval:       200 * time.Millisecond,
@@ -1511,21 +1511,21 @@ func TestIntegration_RecoveryAfterGenuineOutage(t *testing.T) {
 
 	// Register healthy agent
 	nodeID := "integration-agent-recovery"
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:              nodeID,
 		TeamID:          "team",
 		BaseURL:         "http://localhost:9997",
 		Version:         "1.0.0",
 		HealthStatus:    types.HealthStatusActive,
-		LifecycleStatus: types.AgentStatusReady,
+		LifecycleStatus: types.BotStatusReady,
 		LastHeartbeat:   time.Now(),
 		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
-	require.NoError(t, provider.RegisterAgent(ctx, node))
+	require.NoError(t, provider.RegisterNode(ctx, node))
 
 	mockClient.setStatusResponse(nodeID, "running")
-	hm.RegisterAgent(nodeID, "http://localhost:9997")
+	hm.RegisterNode(nodeID, "http://localhost:9997")
 	presenceManager.Touch(nodeID, time.Now())
 
 	// Start all services
@@ -1535,17 +1535,17 @@ func TestIntegration_RecoveryAfterGenuineOutage(t *testing.T) {
 
 	// Phase 1: Agent is healthy
 	time.Sleep(300 * time.Millisecond)
-	snapshot, err := statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	snapshot, err := statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateActive, snapshot.State, "Phase 1: should be active")
+	require.Equal(t, types.BotStateActive, snapshot.State, "Phase 1: should be active")
 
 	// Phase 2: Agent goes down (genuine outage)
 	mockClient.setStatusError(nodeID, errors.New("connection refused"))
 	time.Sleep(800 * time.Millisecond)
 
-	snapshot, err = statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	snapshot, err = statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateInactive, snapshot.State, "Phase 2: should be inactive after outage")
+	require.Equal(t, types.BotStateInactive, snapshot.State, "Phase 2: should be inactive after outage")
 
 	// Phase 3: Agent comes back — health checks pass and heartbeat sent
 	mockClient.mu.Lock()
@@ -1554,20 +1554,20 @@ func TestIntegration_RecoveryAfterGenuineOutage(t *testing.T) {
 	mockClient.setStatusResponse(nodeID, "running")
 
 	// Re-register with health monitor (agent would re-register on reconnect)
-	hm.RegisterAgent(nodeID, "http://localhost:9997")
+	hm.RegisterNode(nodeID, "http://localhost:9997")
 	presenceManager.Touch(nodeID, time.Now())
 
 	// Send a heartbeat to signal recovery
-	readyStatus := types.AgentStatusReady
+	readyStatus := types.BotStatusReady
 	err = statusManager.UpdateFromHeartbeat(ctx, nodeID, &readyStatus, nil)
 	require.NoError(t, err)
 
 	// Wait for health check cycle + debounce
 	time.Sleep(600 * time.Millisecond)
 
-	snapshot, err = statusManager.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	snapshot, err = statusManager.GetBotStatusSnapshot(ctx, nodeID, nil)
 	require.NoError(t, err)
-	assert.Equal(t, types.AgentStateActive, snapshot.State,
+	assert.Equal(t, types.BotStateActive, snapshot.State,
 		"Phase 3: agent should recover to active after coming back")
 }
 
@@ -1579,7 +1579,7 @@ func TestHealthMonitor_Config_ConsecutiveFailuresOne(t *testing.T) {
 	statusManager := NewStatusManager(provider, StatusManagerConfig{ReconcileInterval: 30 * time.Second}, nil, nil)
 	presenceConfig := PresenceManagerConfig{HeartbeatTTL: 5 * time.Second, SweepInterval: 1 * time.Second, HardEvictTTL: 10 * time.Second}
 	presenceManager := NewPresenceManager(statusManager, presenceConfig)
-	mockClient := newMockAgentClient()
+	mockClient := newMockNodeClient()
 
 	config := HealthMonitorConfig{
 		CheckInterval:       100 * time.Millisecond,
@@ -1597,10 +1597,10 @@ func TestHealthMonitor_Config_ConsecutiveFailuresOne(t *testing.T) {
 	nodeID := "test-instant-fail"
 	baseURL := "http://localhost:8001"
 
-	agent := &types.AgentNode{ID: nodeID, BaseURL: baseURL}
-	err := provider.RegisterAgent(ctx, agent)
+	agent := &types.Node{ID: nodeID, BaseURL: baseURL}
+	err := provider.RegisterNode(ctx, agent)
 	require.NoError(t, err)
-	hm.RegisterAgent(nodeID, baseURL)
+	hm.RegisterNode(nodeID, baseURL)
 
 	// Make active first
 	mockClient.setStatusResponse(nodeID, "running")

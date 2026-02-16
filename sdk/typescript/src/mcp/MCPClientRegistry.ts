@@ -1,4 +1,4 @@
-import type { MCPServerConfig } from '../types/agent.js';
+import type { MCPServerConfig } from '../types/bot.js';
 import type { MCPHealthSummary } from '../types/mcp.js';
 import { MCPClient } from './MCPClient.js';
 

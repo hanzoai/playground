@@ -22,13 +22,13 @@ spec:
             - name: grpc
               containerPort: 8180
           env:
-            - name: AGENTS_PORT
+            - name: PLAYGROUND_PORT
               value: "8080"
-            - name: AGENTS_HOME
+            - name: PLAYGROUND_HOME
               value: "/data"
-            - name: AGENTS_CONFIG_FILE
+            - name: PLAYGROUND_CONFIG_FILE
               value: "/dev/null"
-            - name: AGENTS_STORAGE_MODE
+            - name: PLAYGROUND_STORAGE_MODE
               value: "local"
           volumeMounts:
             - name: data

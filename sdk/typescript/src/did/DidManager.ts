@@ -9,8 +9,8 @@ import {
  *
  * This class handles:
  * - Registering the agent with the DID system
- * - Storing the identity package (agent DID, reasoner DIDs, skill DIDs)
- * - Resolving DIDs for specific functions (reasoners/skills)
+ * - Storing the identity package (agent DID, bot DIDs, skill DIDs)
+ * - Resolving DIDs for specific functions (bots/skills)
  */
 export class DidManager {
   private readonly client: DidClient;
@@ -26,17 +26,17 @@ export class DidManager {
   /**
    * Register agent with the DID system and obtain identity package.
    *
-   * @param reasoners - List of reasoner definitions
+   * @param bots - List of bot definitions
    * @param skills - List of skill definitions
    * @returns true if registration succeeded
    */
   async registerAgent(
-    reasoners: Array<{ id: string; [key: string]: any }>,
+    bots: Array<{ id: string; [key: string]: any }>,
     skills: Array<{ id: string; [key: string]: any }>
   ): Promise<boolean> {
     const request: DIDRegistrationRequest = {
       agentNodeId: this.agentNodeId,
-      reasoners,
+      bots,
       skills
     };
 
@@ -67,10 +67,10 @@ export class DidManager {
   }
 
   /**
-   * Get DID for a specific function (reasoner or skill).
+   * Get DID for a specific function (bot or skill).
    * Falls back to agent DID if function not found.
    *
-   * @param functionName - Name of the reasoner or skill
+   * @param functionName - Name of the bot or skill
    * @returns DID string or undefined if not registered
    */
   getFunctionDid(functionName: string): string | undefined {
@@ -78,10 +78,10 @@ export class DidManager {
       return undefined;
     }
 
-    // Check reasoners first
-    const reasonerDid = this.identityPackage.reasonerDids[functionName];
-    if (reasonerDid) {
-      return reasonerDid.did;
+    // Check bots first
+    const botDid = this.identityPackage.botDids[functionName];
+    if (botDid) {
+      return botDid.did;
     }
 
     // Check skills
@@ -113,10 +113,10 @@ export class DidManager {
       enabled: true,
       agentDid: this.identityPackage.agentDid.did,
       playgroundServerId: this.identityPackage.agentsServerId,
-      reasonerCount: Object.keys(this.identityPackage.reasonerDids).length,
+      botCount: Object.keys(this.identityPackage.botDids).length,
       skillCount: Object.keys(this.identityPackage.skillDids).length,
-      reasonerDids: Object.fromEntries(
-        Object.entries(this.identityPackage.reasonerDids).map(([name, identity]) => [name, identity.did])
+      botDids: Object.fromEntries(
+        Object.entries(this.identityPackage.botDids).map(([name, identity]) => [name, identity.did])
       ),
       skillDids: Object.fromEntries(
         Object.entries(this.identityPackage.skillDids).map(([name, identity]) => [name, identity.did])

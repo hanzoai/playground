@@ -39,9 +39,9 @@ func APIKeyAuth(config AuthConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Allow UI static files to load (the React app handles auth prompting)
-		// Also allow root "/" which redirects to /ui/
-		if strings.HasPrefix(c.Request.URL.Path, "/ui") || c.Request.URL.Path == "/" {
+		// Allow UI static files and SPA routes to load (the React app handles auth prompting).
+		// API routes start with /api/ and are checked for auth; everything else is UI.
+		if !strings.HasPrefix(c.Request.URL.Path, "/api/") {
 			c.Next()
 			return
 		}

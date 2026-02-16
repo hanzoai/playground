@@ -31,15 +31,23 @@ var (
 // Test injection points
 var (
 	loadConfigFunc            = loadConfig
-	newAgentsServerFunc   = server.NewAgentsServer
+	newPlaygroundServerFunc   = server.NewPlaygroundServer
 	buildUIFunc               = buildUI
 	openBrowserFunc           = openBrowser
 	sleepFunc                 = time.Sleep
 	waitForShutdownFunc       = func() { select {} }
 	commandRunner             = defaultCommandRunner
 	browserLauncher           = defaultBrowserLauncher
-	startAgentsServerFunc = defaultStartAgentsServer
+	startPlaygroundServerFunc = defaultStartPlaygroundServer
 )
+
+// envWithFallback reads PLAYGROUND_<key> first, then falls back to AGENTS_<key> for backward compatibility.
+func envWithFallback(key string) string {
+	if v := os.Getenv("PLAYGROUND_" + key); v != "" {
+		return v
+	}
+	return os.Getenv("AGENTS_" + key)
+}
 
 // main function now acts as the entry point for the Cobra CLI.
 func main() {
@@ -62,7 +70,7 @@ func main() {
 // runServer contains the original server startup logic.
 // This function will be called by the Cobra command's Run field.
 func runServer(cmd *cobra.Command, args []string) {
-	fmt.Println("Agents server starting...")
+	fmt.Println("Playground server starting...")
 
 	// Load configuration
 	cfgFilePath, _ := cmd.Flags().GetString("config")
@@ -77,8 +85,8 @@ func runServer(cmd *cobra.Command, args []string) {
 		cfg.Agents.Port = port
 	}
 
-	// Override from environment variables
-	if envPort := os.Getenv("AGENTS_PORT"); envPort != "" {
+	// Override from environment variables (PLAYGROUND_ primary, AGENTS_ fallback)
+	if envPort := envWithFallback("PORT"); envPort != "" {
 		if port, err := strconv.Atoi(envPort); err == nil {
 			cfg.Agents.Port = port
 		}
@@ -93,7 +101,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	}
 
 	if !storageModeExplicit {
-		if envMode := os.Getenv("AGENTS_STORAGE_MODE"); envMode != "" {
+		if envMode := envWithFallback("STORAGE_MODE"); envMode != "" {
 			cfg.Storage.Mode = envMode
 		}
 	}
@@ -103,9 +111,9 @@ func runServer(cmd *cobra.Command, args []string) {
 		postgresURL, _ = cmd.Flags().GetString("postgres-url")
 	}
 	if postgresURL == "" {
-		if env := os.Getenv("AGENTS_POSTGRES_URL"); env != "" {
+		if env := envWithFallback("POSTGRES_URL"); env != "" {
 			postgresURL = env
-		} else if env := os.Getenv("AGENTS_STORAGE_POSTGRES_URL"); env != "" {
+		} else if env := envWithFallback("STORAGE_POSTGRES_URL"); env != "" {
 			postgresURL = env
 		}
 	}
@@ -118,24 +126,24 @@ func runServer(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_HOST"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_HOST"); env != "" {
 		cfg.Storage.Postgres.Host = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_PORT"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_PORT"); env != "" {
 		if port, err := strconv.Atoi(env); err == nil {
 			cfg.Storage.Postgres.Port = port
 		}
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_DATABASE"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_DATABASE"); env != "" {
 		cfg.Storage.Postgres.Database = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_USER"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_USER"); env != "" {
 		cfg.Storage.Postgres.User = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_PASSWORD"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_PASSWORD"); env != "" {
 		cfg.Storage.Postgres.Password = env
 	}
-	if env := os.Getenv("AGENTS_STORAGE_POSTGRES_SSLMODE"); env != "" {
+	if env := envWithFallback("STORAGE_POSTGRES_SSLMODE"); env != "" {
 		cfg.Storage.Postgres.SSLMode = env
 	}
 
@@ -191,17 +199,17 @@ func runServer(cmd *cobra.Command, args []string) {
 		fmt.Println("UI is already embedded in binary, skipping build.")
 	}
 
-	// Create Agents server instance
-	agentsServer, err := newAgentsServerFunc(cfg)
+	// Create Playground server instance
+	agentsServer, err := newPlaygroundServerFunc(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create Agents server: %v", err)
+		log.Fatalf("Failed to create Playground server: %v", err)
 	}
 
 	// Start the server in a goroutine so we can open the browser
 	go func() {
-		fmt.Printf("Agents server attempting to start on port %d...\n", cfg.Agents.Port)
-		if err := startAgentsServerFunc(agentsServer); err != nil {
-			log.Fatalf("Failed to start Agents server: %v", err)
+		fmt.Printf("Playground server attempting to start on port %d...\n", cfg.Agents.Port)
+		if err := startPlaygroundServerFunc(agentsServer); err != nil {
+			log.Fatalf("Failed to start Playground server: %v", err)
 		}
 	}()
 
@@ -228,7 +236,7 @@ func runServer(cmd *cobra.Command, args []string) {
 		openBrowserFunc(uiTargetURL)
 	}
 
-	fmt.Printf("Agents server running. Press Ctrl+C to exit.\n")
+	fmt.Printf("Playground server running. Press Ctrl+C to exit.\n")
 	// Keep main goroutine alive
 	waitForShutdownFunc()
 
@@ -237,15 +245,15 @@ func runServer(cmd *cobra.Command, args []string) {
 
 // loadConfig loads configuration from file and environment variables.
 func loadConfig(configFile string) (*config.Config, error) {
-	// Set environment variable prefixes
-	viper.SetEnvPrefix("AGENTS")
+	// Set environment variable prefixes (PLAYGROUND_ primary, AGENTS_ fallback via envWithFallback)
+	viper.SetEnvPrefix("PLAYGROUND")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// Explicitly bind environment variables for API auth config
 	// This is needed because Viper's AutomaticEnv only works for keys that exist in config
-	_ = viper.BindEnv("api.auth.api_key", "AGENTS_API_KEY")
-	_ = viper.BindEnv("api.auth.api_key", "AGENTS_API_AUTH_API_KEY")
+	_ = viper.BindEnv("api.auth.api_key", "PLAYGROUND_API_KEY", "AGENTS_API_KEY")
+	_ = viper.BindEnv("api.auth.api_key", "PLAYGROUND_API_AUTH_API_KEY", "AGENTS_API_AUTH_API_KEY")
 
 	// Skip config file reading if explicitly set to /dev/null or empty
 	if configFile != "/dev/null" && configFile != "" {
@@ -255,10 +263,10 @@ func loadConfig(configFile string) (*config.Config, error) {
 		}
 	} else if configFile == "" {
 		// Check for config file path from environment
-		if envConfigFile := os.Getenv("AGENTS_CONFIG_FILE"); envConfigFile != "" {
+		if envConfigFile := envWithFallback("CONFIG_FILE"); envConfigFile != "" {
 			viper.SetConfigFile(envConfigFile)
 		} else {
-			viper.SetConfigName("agents") // name of config file (without extension)
+			viper.SetConfigName("playground") // name of config file (without extension)
 			viper.SetConfigType("yaml")       // type of the config file
 			// Look for config in user's home directory first, then local paths
 			if homeDir, err := os.UserHomeDir(); err == nil {
@@ -407,9 +415,9 @@ func loadConfig(configFile string) (*config.Config, error) {
 			}
 			cfg.Storage.Local.KVStorePath = kvPath
 		}
-		// Ensure all Agents data directories exist
+		// Ensure all Playground data directories exist
 		if _, err := utils.EnsureDataDirectories(); err != nil {
-			return nil, fmt.Errorf("failed to create Agents data directories: %w", err)
+			return nil, fmt.Errorf("failed to create Playground data directories: %w", err)
 		}
 	}
 
@@ -471,7 +479,7 @@ func defaultBrowserLauncher(name string, args ...string) error {
 	return exec.Command(name, args...).Start()
 }
 
-func defaultStartAgentsServer(s *server.AgentsServer) error {
+func defaultStartPlaygroundServer(s *server.PlaygroundServer) error {
 	return s.Start()
 }
 

@@ -1,8 +1,8 @@
-{{- if .Values.demoAgent.enabled -}}
+{{- if .Values.demoBot.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "playground.demoAgent.fullname" . }}
+  name: {{ include "playground.demoBot.fullname" . }}
   labels:
     {{- include "playground.labels" . | nindent 4 }}
 spec:
@@ -10,12 +10,12 @@ spec:
   selector:
     matchLabels:
       {{- include "playground.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: demo-agent
+      app.kubernetes.io/component: demo-bot
   template:
     metadata:
       labels:
         {{- include "playground.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: demo-agent
+        app.kubernetes.io/component: demo-bot
     spec:
       initContainers:
         - name: wait-control-plane
@@ -28,24 +28,24 @@ spec:
               until curl -sf "http://{{ include "playground.controlPlane.fullname" . }}:{{ .Values.controlPlane.service.port }}/api/v1/health" >/dev/null;
               do echo "waiting for control plane"; sleep 2; done
       containers:
-        - name: demo-agent
-          image: "{{ .Values.demoAgent.image.repository }}:{{ .Values.demoAgent.image.tag }}"
-          imagePullPolicy: {{ .Values.demoAgent.image.pullPolicy }}
+        - name: demo-bot
+          image: "{{ .Values.demoBot.image.repository }}:{{ .Values.demoBot.image.tag }}"
+          imagePullPolicy: {{ .Values.demoBot.image.pullPolicy }}
           args: ["serve"]
           ports:
             - name: http
-              containerPort: {{ .Values.demoAgent.service.port }}
+              containerPort: {{ .Values.demoBot.service.port }}
           env:
-            - name: AGENTS_URL
+            - name: PLAYGROUND_URL
               value: "http://{{ include "playground.controlPlane.fullname" . }}:{{ .Values.controlPlane.service.port }}"
-            - name: AGENT_NODE_ID
-              value: {{ .Values.demoAgent.nodeId | quote }}
-            - name: AGENT_LISTEN_ADDR
-              value: ":{{ .Values.demoAgent.service.port }}"
-            - name: AGENT_PUBLIC_URL
-              value: "http://{{ include "playground.demoAgent.fullname" . }}:{{ .Values.demoAgent.service.port }}"
+            - name: HANZO_NODE_ID
+              value: {{ .Values.demoBot.nodeId | quote }}
+            - name: HANZO_LISTEN_ADDR
+              value: ":{{ .Values.demoBot.service.port }}"
+            - name: HANZO_PUBLIC_URL
+              value: "http://{{ include "playground.demoBot.fullname" . }}:{{ .Values.demoBot.service.port }}"
             {{- if .Values.apiAuth.enabled }}
-            - name: AGENTS_TOKEN
+            - name: PLAYGROUND_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "playground.apiAuth.secretName" . }}

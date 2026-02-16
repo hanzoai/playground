@@ -1,18 +1,18 @@
-{{- if .Values.demoAgent.enabled -}}
+{{- if .Values.demoBot.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "playground.demoAgent.fullname" . }}
+  name: {{ include "playground.demoBot.fullname" . }}
   labels:
     {{- include "playground.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.demoAgent.service.type }}
+  type: {{ .Values.demoBot.service.type }}
   selector:
     {{- include "playground.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: demo-agent
+    app.kubernetes.io/component: demo-bot
   ports:
     - name: http
-      port: {{ .Values.demoAgent.service.port }}
+      port: {{ .Values.demoBot.service.port }}
       targetPort: http
 {{- end }}
 

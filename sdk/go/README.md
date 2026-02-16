@@ -17,23 +17,24 @@ import (
     "context"
     "log"
 
-    playgroundagent "github.com/hanzoai/playground/sdk/go/agent"
+    playgroundbot "github.com/hanzoai/playground/sdk/go/bot"
 )
 
 func main() {
-    agent, err := playgroundagent.New(playgroundagent.Config{
-        NodeID:   "example-agent",
+    bot, err := playgroundbot.New(playgroundbot.Config{
+        NodeID:        "example-bot",
+        Version:       "1.0.0",
         PlaygroundURL: "http://localhost:8080",
     })
     if err != nil {
         log.Fatal(err)
     }
 
-    agent.RegisterSkill("health", func(ctx context.Context, _ map[string]any) (any, error) {
+    bot.RegisterReasoner("health", func(ctx context.Context, _ map[string]any) (any, error) {
         return map[string]any{"status": "ok"}, nil
     })
 
-    if err := agent.Run(context.Background()); err != nil {
+    if err := bot.Run(context.Background()); err != nil {
         log.Fatal(err)
     }
 }
@@ -41,7 +42,7 @@ func main() {
 
 ## Modules
 
-- `agent`: Build Playground-compatible agents and register reasoners/skills.
+- `bot`: Build Playground-compatible bots and register reasoners/skills.
 - `client`: Low-level HTTP client for the Playground control plane.
 - `types`: Shared data structures and contracts.
 - `ai`: Helpers for interacting with AI providers via the control plane.

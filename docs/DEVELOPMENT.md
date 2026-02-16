@@ -47,15 +47,15 @@ The install script performs:
 
 Copy `control-plane/config/.env.example` to `.env` (if available) and adjust:
 
-- `AGENTS_DATABASE_URL` — PostgreSQL connection string.
-- `AGENTS_JWT_SECRET` — Authentication secret (development only).
+- `PLAYGROUND_DATABASE_URL` — PostgreSQL connection string.
+- `PLAYGROUND_JWT_SECRET` — Authentication secret (development only).
 
 ## Database Migrations
 
 ```bash
 cd control-plane
-goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" status
-goose -dir ./migrations postgres "$AGENTS_DATABASE_URL" up
+goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" status
+goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" up
 ```
 
 ## Frontend Development

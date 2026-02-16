@@ -1,4 +1,4 @@
-import type { ConfigurationSchema, AgentConfiguration, AgentPackage, AgentLifecycleInfo } from '../types/playground';
+import type { ConfigurationSchema, BotConfiguration, BotPackage, BotLifecycleInfo } from '../types/playground';
 import { getGlobalApiKey } from './api';
 
 const API_BASE = '/api/ui/v1';
@@ -131,14 +131,14 @@ export const getConfigurationSchema = async (agentId: string): Promise<Configura
 };
 
 // Configuration Management API
-export const getAgentConfiguration = async (agentId: string): Promise<AgentConfiguration> => {
+export const getBotConfiguration = async (agentId: string): Promise<BotConfiguration> => {
   const response = await fetch(`${API_BASE}/agents/${agentId}/config`, addAuthHeaders());
   return handleResponse(response);
 };
 
-export const setAgentConfiguration = async (
+export const setBotConfiguration = async (
   agentId: string,
-  configuration: AgentConfiguration
+  configuration: BotConfiguration
 ): Promise<void> => {
   const response = await fetch(`${API_BASE}/agents/${agentId}/config`, addAuthHeaders({
     method: 'POST',
@@ -152,7 +152,7 @@ export const setAgentConfiguration = async (
 };
 
 // Package Management API
-export const getAgentPackages = async (search?: string): Promise<AgentPackage[]> => {
+export const getBotPackages = async (search?: string): Promise<BotPackage[]> => {
   const url = new URL(`${API_BASE}/agents/packages`, window.location.origin);
   if (search) {
     url.searchParams.set('search', search);
@@ -162,13 +162,13 @@ export const getAgentPackages = async (search?: string): Promise<AgentPackage[]>
   return handleResponse(response);
 };
 
-export const getAgentPackageDetails = async (packageId: string): Promise<AgentPackage> => {
+export const getBotPackageDetails = async (packageId: string): Promise<BotPackage> => {
   const response = await fetch(`${API_BASE}/agents/packages/${packageId}/details`, addAuthHeaders());
   return handleResponse(response);
 };
 
 // Agent Lifecycle Management API
-export const startAgent = async (agentId: string): Promise<AgentLifecycleInfo> => {
+export const startAgent = async (agentId: string): Promise<BotLifecycleInfo> => {
   const response = await fetchWithTimeout(`${API_BASE}/agents/${agentId}/start`, {
     method: 'POST',
     timeout: 5000 // 5 second timeout for start operations
@@ -192,26 +192,26 @@ export const reconcileAgent = async (agentId: string): Promise<any> => {
   return handleResponse(response);
 };
 
-export const getAgentStatus = async (agentId: string): Promise<AgentLifecycleInfo> => {
+export const getBotStatus = async (agentId: string): Promise<BotLifecycleInfo> => {
   const response = await fetch(`${API_BASE}/agents/${agentId}/status`, addAuthHeaders());
   return handleResponse(response);
 };
 
-export const getRunningAgents = async (): Promise<AgentLifecycleInfo[]> => {
+export const getRunningAgents = async (): Promise<BotLifecycleInfo[]> => {
   const response = await fetch(`${API_BASE}/agents/running`, addAuthHeaders());
   return handleResponse(response);
 };
 
 // Utility functions for configuration management
-export const isAgentConfigured = (pkg: AgentPackage): boolean => {
+export const isAgentConfigured = (pkg: BotPackage): boolean => {
   return pkg.configuration_status === 'configured';
 };
 
-export const isAgentPartiallyConfigured = (pkg: AgentPackage): boolean => {
+export const isAgentPartiallyConfigured = (pkg: BotPackage): boolean => {
   return pkg.configuration_status === 'partially_configured';
 };
 
-export const getConfigurationStatusBadge = (status: AgentPackage['configuration_status']) => {
+export const getConfigurationStatusBadge = (status: BotPackage['configuration_status']) => {
   switch (status) {
     case 'configured':
       return { variant: 'default' as const, label: 'Configured', color: 'green' };
@@ -224,7 +224,7 @@ export const getConfigurationStatusBadge = (status: AgentPackage['configuration_
   }
 };
 
-export const getAgentStatusBadge = (status: AgentLifecycleInfo['status']) => {
+export const getBotStatusBadge = (status: BotLifecycleInfo['status']) => {
   switch (status) {
     case 'running':
       return { variant: 'default' as const, label: 'Running', color: 'green' };

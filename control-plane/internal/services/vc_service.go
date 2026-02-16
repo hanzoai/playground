@@ -382,11 +382,11 @@ func (s *VCService) createVCDocument(ctx *types.ExecutionContext, callerIdentity
 		Caller: types.VCCaller{
 			DID:          ctx.CallerDID,
 			Type:         callerIdentity.ComponentType,
-			AgentNodeDID: ctx.AgentNodeDID,
+			NodeDID: ctx.NodeDID,
 		},
 		Target: types.VCTarget{
 			DID:          ctx.TargetDID,
-			AgentNodeDID: ctx.AgentNodeDID,
+			NodeDID: ctx.NodeDID,
 			FunctionName: func() string {
 				if targetIdentity != nil {
 					return targetIdentity.FunctionName
@@ -405,7 +405,7 @@ func (s *VCService) createVCDocument(ctx *types.ExecutionContext, callerIdentity
 			InputDataHash:  inputHash,
 			OutputDataHash: outputHash,
 			Metadata: map[string]interface{}{
-				"agents_version": "1.0.0",
+				"playground_version": "1.0.0",
 				"vc_version":         "1.0",
 			},
 		},
@@ -418,13 +418,13 @@ func (s *VCService) createVCDocument(ctx *types.ExecutionContext, callerIdentity
 	return &types.VCDocument{
 		Context: []string{
 			"https://www.w3.org/2018/credentials/v1",
-			"https://agents.example.com/contexts/execution/v1",
+			"https://playground.hanzo.ai/contexts/execution/v1",
 		},
 		Type: []string{
 			"VerifiableCredential",
-			"AgentsExecutionCredential",
+			"PlaygroundExecutionCredential",
 		},
-		ID:                fmt.Sprintf("urn:agents:vc:%s", vcID),
+		ID:                fmt.Sprintf("urn:playground:vc:%s", vcID),
 		Issuer:            ctx.CallerDID,
 		IssuanceDate:      time.Now().UTC().Format(time.RFC3339),
 		CredentialSubject: credentialSubject,
@@ -565,7 +565,7 @@ func (s *VCService) generateWorkflowVCDocument(workflowID string, executionVCs [
 	}
 
 	// Get af server DID as issuer using dynamic resolution
-	agentsServerID, err := s.didService.GetAgentsServerID()
+	agentsServerID, err := s.didService.GetPlaygroundServerID()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get af server ID: %w", err)
 	}
@@ -647,14 +647,14 @@ func (s *VCService) createWorkflowVCDocument(workflowID, sessionID string, compo
 		SnapshotTime:   time.Now().UTC().Format(time.RFC3339),
 		Orchestrator: types.VCCaller{
 			DID:          issuerDID,
-			Type:         "agents_server",
-			AgentNodeDID: issuerDID,
+			Type:         "playground_server",
+			NodeDID: issuerDID,
 		},
 		Audit: types.VCAudit{
 			InputDataHash:  "", // Workflow-level doesn't have specific input/output
 			OutputDataHash: "",
 			Metadata: map[string]interface{}{
-				"agents_version": "1.0.0",
+				"playground_version": "1.0.0",
 				"vc_version":         "1.0",
 				"workflow_type":      "agent_execution_chain",
 				"total_executions":   len(componentVCIDs),
@@ -670,13 +670,13 @@ func (s *VCService) createWorkflowVCDocument(workflowID, sessionID string, compo
 	return &types.WorkflowVCDocument{
 		Context: []string{
 			"https://www.w3.org/2018/credentials/v1",
-			"https://agents.example.com/contexts/workflow/v1",
+			"https://playground.hanzo.ai/contexts/workflow/v1",
 		},
 		Type: []string{
 			"VerifiableCredential",
-			"AgentsWorkflowCredential",
+			"PlaygroundWorkflowCredential",
 		},
-		ID:                fmt.Sprintf("urn:agents:workflow-vc:%s", vcID),
+		ID:                fmt.Sprintf("urn:playground:workflow-vc:%s", vcID),
 		Issuer:            issuerDID,
 		IssuanceDate:      time.Now().UTC().Format(time.RFC3339),
 		CredentialSubject: credentialSubject,
@@ -1254,14 +1254,14 @@ func (s *VCService) performComplianceChecks(vcDoc *types.VCDocument) ComplianceC
 		})
 	}
 
-	// Check Agents standard compliance
+	// Check Playground standard compliance
 	if !s.checkAgentsStandardCompliance(vcDoc) {
 		result.AgentsStandardCompliance = false
 		result.Issues = append(result.Issues, VerificationIssue{
-			Type:        "agents_compliance_failure",
+			Type:        "playground_compliance_failure",
 			Severity:    "warning",
 			Component:   vcDoc.ID,
-			Description: "VC does not meet Agents standard requirements",
+			Description: "VC does not meet Playground standard requirements",
 		})
 	}
 
@@ -1343,7 +1343,7 @@ func (s *VCService) checkW3CCompliance(vcDoc *types.VCDocument) bool {
 
 func (s *VCService) checkAgentsStandardCompliance(vcDoc *types.VCDocument) bool {
 	// Check Agents-specific compliance requirements
-	requiredTypes := []string{"VerifiableCredential", "AgentsExecutionCredential"}
+	requiredTypes := []string{"VerifiableCredential", "PlaygroundExecutionCredential"}
 	for _, required := range requiredTypes {
 		found := false
 		for _, vcType := range vcDoc.Type {
@@ -1628,7 +1628,7 @@ func (s *VCService) verifyWorkflowVCSignature(vcDoc *types.WorkflowVCDocument, i
 // checkWorkflowVCCompliance checks if a workflow VC meets Agents standard compliance
 func (s *VCService) checkWorkflowVCCompliance(vcDoc *types.WorkflowVCDocument) bool {
 	// Check Agents-specific compliance requirements for workflow VCs
-	requiredTypes := []string{"VerifiableCredential", "AgentsWorkflowCredential"}
+	requiredTypes := []string{"VerifiableCredential", "PlaygroundWorkflowCredential"}
 	for _, required := range requiredTypes {
 		found := false
 		for _, vcType := range vcDoc.Type {

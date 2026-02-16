@@ -18,8 +18,8 @@ import (
 )
 
 func TestLoadConfig_DefaultsApplied(t *testing.T) {
-	t.Setenv("AGENTS_PORT", "")
-	t.Setenv("AGENTS_CONFIG_FILE", "")
+	t.Setenv("PLAYGROUND_PORT", "")
+	t.Setenv("PLAYGROUND_CONFIG_FILE", "")
 	viper.Reset()
 
 	cfg, err := loadConfig("/dev/null")
@@ -151,7 +151,7 @@ func TestBuildUI_RunsInstallAndBuild(t *testing.T) {
 			SourcePath: dir,
 			DistPath:   filepath.Join(dir, "dist"),
 		},
-		Agents: config.AgentsConfig{Port: 8081},
+		Agents: config.PlaygroundConfig{Port: 8081},
 	}
 
 	var mu sync.Mutex
@@ -220,7 +220,7 @@ func TestBuildUI_CommandError(t *testing.T) {
 
 func TestRunServer_AppliesFlagOverrides(t *testing.T) {
 	cfg := &config.Config{
-		Agents: config.AgentsConfig{Port: 4000},
+		Agents: config.PlaygroundConfig{Port: 4000},
 		UI:         config.UIConfig{Enabled: true, Mode: "embedded"},
 		Features: config.FeatureConfig{DID: config.DIDConfig{
 			VCRequirements: config.VCRequirements{
@@ -230,21 +230,21 @@ func TestRunServer_AppliesFlagOverrides(t *testing.T) {
 	}
 
 	loadOrig := loadConfigFunc
-	newOrig := newAgentsServerFunc
+	newOrig := newPlaygroundServerFunc
 	buildOrig := buildUIFunc
 	openOrig := openBrowserFunc
 	sleepOrig := sleepFunc
 	waitOrig := waitForShutdownFunc
-	startOrig := startAgentsServerFunc
+	startOrig := startPlaygroundServerFunc
 
 	defer func() {
 		loadConfigFunc = loadOrig
-		newAgentsServerFunc = newOrig
+		newPlaygroundServerFunc = newOrig
 		buildUIFunc = buildOrig
 		openBrowserFunc = openOrig
 		sleepFunc = sleepOrig
 		waitForShutdownFunc = waitOrig
-		startAgentsServerFunc = startOrig
+		startPlaygroundServerFunc = startOrig
 	}()
 
 	loadConfigFunc = func(path string) (*config.Config, error) {
@@ -255,9 +255,9 @@ func TestRunServer_AppliesFlagOverrides(t *testing.T) {
 	}
 
 	var gotCfg *config.Config
-	newAgentsServerFunc = func(c *config.Config) (*server.AgentsServer, error) {
+	newPlaygroundServerFunc = func(c *config.Config) (*server.PlaygroundServer, error) {
 		gotCfg = c
-		return &server.AgentsServer{}, nil
+		return &server.PlaygroundServer{}, nil
 	}
 
 	buildUIFunc = func(*config.Config) error { return nil }
@@ -266,7 +266,7 @@ func TestRunServer_AppliesFlagOverrides(t *testing.T) {
 	waitForShutdownFunc = func() {}
 
 	started := make(chan struct{})
-	startAgentsServerFunc = func(*server.AgentsServer) error {
+	startPlaygroundServerFunc = func(*server.PlaygroundServer) error {
 		close(started)
 		return nil
 	}
@@ -289,7 +289,7 @@ func TestRunServer_AppliesFlagOverrides(t *testing.T) {
 		t.Fatalf("failed to set no-vc-execution: %v", err)
 	}
 
-	t.Setenv("AGENTS_PORT", "12345")
+	t.Setenv("PLAYGROUND_PORT", "12345")
 
 	runServer(cmd, nil)
 
@@ -311,7 +311,7 @@ func TestRunServer_AppliesFlagOverrides(t *testing.T) {
 
 func TestRunServer_OpensBrowserForDevUI(t *testing.T) {
 	cfg := &config.Config{
-		Agents: config.AgentsConfig{Port: 8800},
+		Agents: config.PlaygroundConfig{Port: 8800},
 		UI: config.UIConfig{
 			Enabled: true,
 			Mode:    "dev",
@@ -321,27 +321,27 @@ func TestRunServer_OpensBrowserForDevUI(t *testing.T) {
 	}
 
 	loadOrig := loadConfigFunc
-	newOrig := newAgentsServerFunc
+	newOrig := newPlaygroundServerFunc
 	openOrig := openBrowserFunc
 	sleepOrig := sleepFunc
 	waitOrig := waitForShutdownFunc
-	startOrig := startAgentsServerFunc
+	startOrig := startPlaygroundServerFunc
 
 	defer func() {
 		loadConfigFunc = loadOrig
-		newAgentsServerFunc = newOrig
+		newPlaygroundServerFunc = newOrig
 		openBrowserFunc = openOrig
 		sleepFunc = sleepOrig
 		waitForShutdownFunc = waitOrig
-		startAgentsServerFunc = startOrig
+		startPlaygroundServerFunc = startOrig
 	}()
 
 	loadConfigFunc = func(string) (*config.Config, error) { return cfg, nil }
-	newAgentsServerFunc = func(*config.Config) (*server.AgentsServer, error) { return &server.AgentsServer{}, nil }
+	newPlaygroundServerFunc = func(*config.Config) (*server.PlaygroundServer, error) { return &server.PlaygroundServer{}, nil }
 	sleepFunc = func(time.Duration) {}
 	waitForShutdownFunc = func() {}
 	started := make(chan struct{})
-	startAgentsServerFunc = func(*server.AgentsServer) error {
+	startPlaygroundServerFunc = func(*server.PlaygroundServer) error {
 		close(started)
 		return nil
 	}

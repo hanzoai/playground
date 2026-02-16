@@ -34,9 +34,9 @@ CREATE INDEX IF NOT EXISTS idx_workflow_executions_status ON workflow_executions
 -- Optimizes: SELECT * FROM workflow_executions WHERE agent_node_id = ?
 CREATE INDEX IF NOT EXISTS idx_workflow_executions_agent_node_id ON workflow_executions(agent_node_id);
 
--- Index on reasoner_id for reasoner-specific queries
--- Optimizes: SELECT * FROM workflow_executions WHERE reasoner_id = ?
-CREATE INDEX IF NOT EXISTS idx_workflow_executions_reasoner_id ON workflow_executions(reasoner_id);
+-- Index on bot_id for reasoner-specific queries
+-- Optimizes: SELECT * FROM workflow_executions WHERE bot_id = ?
+CREATE INDEX IF NOT EXISTS idx_workflow_executions_bot_id ON workflow_executions(bot_id);
 
 -- Composite index for workflow + status queries (common pattern)
 -- Optimizes: SELECT * FROM workflow_executions WHERE workflow_id = ? AND status = ?
@@ -87,7 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow_started_at ON workfl
 --
 -- 6. Agent/Reasoner specific queries:
 --    SELECT * FROM workflow_executions WHERE agent_node_id = ?
---    SELECT * FROM workflow_executions WHERE reasoner_id = ?
+--    SELECT * FROM workflow_executions WHERE bot_id = ?
 --    → Optimized by respective indexes
 --
 -- 7. Combined workflow + status queries:

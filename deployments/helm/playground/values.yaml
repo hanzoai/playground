@@ -26,10 +26,10 @@ controlPlane:
     postgresUrl: ""
 
   env:
-    AGENTS_HOME: /data
+    PLAYGROUND_HOME: /data
     # Use defaults + env vars (avoids relying on a bundled config file).
     # You can set this to a real path if you mount your own config.
-    AGENTS_CONFIG_FILE: /dev/null
+    PLAYGROUND_CONFIG_FILE: /dev/null
 
   extraEnv: []
 
@@ -82,20 +82,20 @@ postgres:
       - ReadWriteOnce
     size: 5Gi
 
-demoAgent:
+demoBot:
   enabled: false
   image:
-    # Build locally from deployments/docker/Dockerfile.demo-go-agent and push/load into your cluster.
-    repository: playground-demo-go-agent
+    # Build locally from deployments/docker/Dockerfile.demo-go-bot and push/load into your cluster.
+    repository: playground-demo-go-bot
     tag: local
     pullPolicy: IfNotPresent
-  nodeId: demo-go-agent
+  nodeId: demo-go-bot
   service:
     type: ClusterIP
     port: 8001
 
-demoPythonAgent:
-  # Demo agent that installs the Python SDK from PyPI at startup (no custom image required).
+demoPythonBot:
+  # Demo bot that installs the Python SDK from PyPI at startup (no custom image required).
   # Intended for evaluation only.
   enabled: false
   image:
@@ -103,7 +103,7 @@ demoPythonAgent:
     tag: "3.11-slim"
     pullPolicy: IfNotPresent
   pipPackage: "playground"
-  nodeId: demo-python-agent
+  nodeId: demo-python-bot
   service:
     type: ClusterIP
     port: 8001

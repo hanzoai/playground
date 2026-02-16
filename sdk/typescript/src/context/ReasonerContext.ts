@@ -2,12 +2,12 @@ import type express from 'express';
 import { ExecutionContext } from './ExecutionContext.js';
 import type { AIClient, AIRequestOptions, AIStream, ZodSchema } from '../ai/AIClient.js';
 import type { MemoryInterface } from '../memory/MemoryInterface.js';
-import type { Agent } from '../agent/Agent.js';
+import { Bot } from '../agent/Bot.js';
 import type { WorkflowReporter } from '../workflow/WorkflowReporter.js';
-import type { DiscoveryOptions } from '../types/agent.js';
+import type { DiscoveryOptions } from '../types/bot.js';
 import type { DidInterface } from '../did/DidInterface.js';
 
-export class ReasonerContext<TInput = any> {
+export class BotContext<TInput = any> {
   readonly input: TInput;
   readonly executionId: string;
   readonly runId?: string;
@@ -20,7 +20,7 @@ export class ReasonerContext<TInput = any> {
   readonly agentNodeDid?: string;
   readonly req: express.Request;
   readonly res: express.Response;
-  readonly agent: Agent;
+  readonly agent: Bot;
   readonly aiClient: AIClient;
   readonly memory: MemoryInterface;
   readonly workflow: WorkflowReporter;
@@ -39,7 +39,7 @@ export class ReasonerContext<TInput = any> {
     agentNodeDid?: string;
     req: express.Request;
     res: express.Response;
-    agent: Agent;
+    agent: Bot;
     aiClient: AIClient;
     memory: MemoryInterface;
     workflow: WorkflowReporter;
@@ -97,11 +97,11 @@ export class ReasonerContext<TInput = any> {
   }
 }
 
-export function getCurrentContext<TInput = any>(): ReasonerContext<TInput> | undefined {
+export function getCurrentContext<TInput = any>(): BotContext<TInput> | undefined {
   const execution = ExecutionContext.getCurrent();
   if (!execution) return undefined;
   const { metadata, input, agent, req, res } = execution;
-  return new ReasonerContext<TInput>({
+  return new BotContext<TInput>({
     input,
     executionId: metadata.executionId,
     runId: metadata.runId,

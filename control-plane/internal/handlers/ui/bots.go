@@ -90,14 +90,14 @@ func (h *BotsHandler) GetAllBotsHandler(c *gin.Context) {
 	}
 
 	// Get all nodes based on status filter
-	var filters types.AgentFilters
+	var filters types.BotFilters
 	if statusFilter == "online" {
 		activeStatus := types.HealthStatusActive
 		filters.HealthStatus = &activeStatus
 	}
 
 	ctx := c.Request.Context()
-	nodes, err := h.storage.ListAgents(ctx, filters)
+	nodes, err := h.storage.ListNodes(ctx, filters)
 	if err != nil {
 		fmt.Printf("❌ Error listing agents for bots: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve nodes"})
@@ -233,7 +233,7 @@ func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
 
 	// Get the node
 	ctx := c.Request.Context()
-	node, err := h.storage.GetAgent(ctx, nodeID)
+	node, err := h.storage.GetNode(ctx, nodeID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 		return

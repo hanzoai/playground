@@ -1,19 +1,19 @@
 /**
  * Discovery + vector memory example.
  *
- * Run with a control plane at AGENTS_URL (defaults to http://localhost:8080):
- *   AGENT_ID=ts-discovery-demo npm run dev:discovery
+ * Run with a control plane at PLAYGROUND_URL (defaults to http://localhost:8080):
+ *   HANZO_NODE_ID=ts-discovery-demo npm run dev:discovery
  * or with ts-node directly:
- *   AGENT_ID=ts-discovery-demo node --loader ts-node/esm discovery-memory/main.ts
+ *   HANZO_NODE_ID=ts-discovery-demo node --loader ts-node/esm discovery-memory/main.ts
  *
- * The reasoner demonstrates:
+ * The bot demonstrates:
  * - Workflow progress updates via ctx.workflow.progress()
  * - Storing/searching vectors with ctx.memory.setVector/searchVector()
  * - Embedding generation helpers via ctx.memory.embedAndSet()/embedText()
  * - Optional cleanup with ctx.memory.deleteVectors()
  * - Discovering other agents via ctx.discover()
  */
-import { Agent, AgentRouter } from '@playground/sdk';
+import { Bot, BotRouter } from '@playground/sdk';
 
 type DemoInput = {
   text?: string;
@@ -28,9 +28,9 @@ type DemoInput = {
   extraChunks?: Array<{ key: string; text?: string; embedding?: number[]; metadata?: Record<string, any> }>;
 };
 
-const router = new AgentRouter({ prefix: 'demo' });
+const router = new BotRouter({ prefix: 'demo' });
 
-router.reasoner<DemoInput, any>('discover-and-vector', async (ctx) => {
+router.bot<DemoInput, any>('discover-and-vector', async (ctx) => {
   await ctx.workflow.progress(5, { result: { stage: 'starting' } });
 
   const storedKeys: string[] = [];
@@ -79,7 +79,7 @@ router.reasoner<DemoInput, any>('discover-and-vector', async (ctx) => {
   });
   await ctx.workflow.progress(60, { result: { stage: 'vector-searched', matchCount: matches.length } });
 
-  // Discover other agents/reasoners by tag
+  // Discover other agents/bots by tag
   const discovery = await ctx.discover({
     tags: ctx.input.discoveryTags,
     includeInputSchema: true,
@@ -107,7 +107,7 @@ router.reasoner<DemoInput, any>('discover-and-vector', async (ctx) => {
     discoverySummary: discovery.json
       ? {
           totalAgents: discovery.json.totalAgents,
-          totalReasoners: discovery.json.totalReasoners,
+          totalBots: discovery.json.totalBots,
           totalSkills: discovery.json.totalSkills
         }
       : undefined,
@@ -120,10 +120,10 @@ router.reasoner<DemoInput, any>('discover-and-vector', async (ctx) => {
 });
 
 async function main() {
-  const agent = new Agent({
-    nodeId: process.env.AGENT_ID ?? 'ts-discovery-demo',
+  const bot = new Bot({
+    nodeId: process.env.HANZO_NODE_ID ?? 'ts-discovery-demo',
     port: Number(process.env.PORT ?? 8004),
-    playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
+    playgroundUrl: process.env.PLAYGROUND_URL ?? 'http://localhost:8080',
     aiConfig: {
       provider: 'openai',
       model: 'gpt-4o',
@@ -132,11 +132,11 @@ async function main() {
     devMode: true
   });
 
-  agent.includeRouter(router);
+  bot.includeRouter(router);
 
-  await agent.serve();
+  await bot.serve();
   // eslint-disable-next-line no-console
-  console.log(`Discovery/memory demo agent listening on ${agent.config.port}`);
+  console.log(`Discovery/memory demo bot listening on ${bot.config.port}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

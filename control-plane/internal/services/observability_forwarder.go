@@ -28,8 +28,8 @@ type ObservabilityWebhookStore interface {
 	GetDeadLetterQueue(ctx context.Context, limit, offset int) ([]types.ObservabilityDeadLetterEntry, error)
 	DeleteFromDeadLetterQueue(ctx context.Context, ids []int64) error
 	ClearDeadLetterQueue(ctx context.Context) error
-	// ListAgents is used for periodic system state snapshots
-	ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error)
+	// ListNodes is used for periodic system state snapshots
+	ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error)
 }
 
 // ObservabilityForwarder subscribes to all event buses and forwards events to configured webhook.
@@ -468,7 +468,7 @@ func (f *observabilityForwarder) publishSnapshot() {
 	}
 
 	// Query all agents
-	agents, err := f.store.ListAgents(context.Background(), types.AgentFilters{})
+	agents, err := f.store.ListNodes(context.Background(), types.BotFilters{})
 	if err != nil {
 		logger.Logger.Warn().Err(err).Msg("failed to query agents for system state snapshot")
 		return
@@ -489,7 +489,7 @@ func (f *observabilityForwarder) publishSnapshot() {
 
 		// Count by lifecycle status
 		switch agent.LifecycleStatus {
-		case types.AgentStatusReady:
+		case types.BotStatusReady:
 			activeCount++
 		default:
 			inactiveCount++
@@ -755,7 +755,7 @@ func (f *observabilityForwarder) transformExecutionEvent(e events.ExecutionEvent
 	data := map[string]interface{}{
 		"execution_id":  e.ExecutionID,
 		"workflow_id":   e.WorkflowID,
-		"agent_node_id": e.AgentNodeID,
+		"node_id": e.NodeID,
 		"status":        e.Status,
 	}
 	if e.Data != nil {
@@ -801,9 +801,9 @@ func (f *observabilityForwarder) transformNodeEvent(e events.NodeEvent) types.Ob
 
 func (f *observabilityForwarder) transformBotEvent(e events.BotEvent) types.ObservabilityEvent {
 	data := map[string]interface{}{
-		"bot_id": e.BotID,
-		"node_id":     e.NodeID,
-		"status":      e.Status,
+		"bot_id":  e.BotID,
+		"node_id": e.NodeID,
+		"status":  e.Status,
 	}
 	if e.Data != nil {
 		data["payload"] = e.Data

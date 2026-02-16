@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir /tmp/python-sdk && \
     rm -rf /tmp/python-sdk
 
-# Copy the demo agent source.
-COPY examples/python_agent_nodes/docker_hello_world /app
+# Copy the demo bot source.
+COPY examples/python_bots/docker_hello_world /app
 
 EXPOSE 8001
 CMD ["python", "main.py"]

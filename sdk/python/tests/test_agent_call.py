@@ -2,12 +2,12 @@ from types import MethodType, SimpleNamespace
 
 import pytest
 
-from playground.agent import Agent
-from playground.agent_registry import set_current_agent, clear_current_agent
+from playground.bot import Agent
+from playground.bot_registry import set_current_bot, clear_current_bot
 
 
 @pytest.mark.asyncio
-async def test_call_local_reasoner_argument_mapping():
+async def test_call_local_bot_argument_mapping():
     agent = object.__new__(Agent)
     agent.node_id = "node"
     agent.agents_connected = True
@@ -28,19 +28,19 @@ async def test_call_local_reasoner_argument_mapping():
 
     agent.client = SimpleNamespace(execute=fake_execute)
 
-    async def local_reasoner(self, a, b, execution_context=None, extra=None):
+    async def local_bot(self, a, b, execution_context=None, extra=None):
         return a + b
 
-    agent.local_reasoner = MethodType(local_reasoner, agent)
+    agent.local_bot = MethodType(local_bot, agent)
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
-        result = await agent.call("node.local_reasoner", 2, 3, extra=4)
+        result = await agent.call("node.local_bot", 2, 3, extra=4)
     finally:
-        clear_current_agent()
+        clear_current_bot()
 
     assert result == {"ok": True}
-    assert recorded["target"] == "node.local_reasoner"
+    assert recorded["target"] == "node.local_bot"
     assert recorded["input_data"] == {"a": 2, "b": 3, "extra": 4}
     assert "X-Execution-ID" in recorded["headers"]
 
@@ -66,14 +66,14 @@ async def test_call_remote_target_uses_generic_arg_names():
 
     agent.client = SimpleNamespace(execute=fake_execute)
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
-        result = await agent.call("other.remote_reasoner", 5, 6)
+        result = await agent.call("other.remote_bot", 5, 6)
     finally:
-        clear_current_agent()
+        clear_current_bot()
 
     assert result == {"value": 10}
-    assert recorded["target"] == "other.remote_reasoner"
+    assert recorded["target"] == "other.remote_bot"
     assert recorded["input_data"] == {"arg_0": 5, "arg_1": 6}
 
 
@@ -90,9 +90,9 @@ async def test_call_raises_when_playground_disconnected():
     agent._current_execution_context = None
     agent.client = SimpleNamespace()
 
-    set_current_agent(agent)
+    set_current_bot(agent)
     try:
         with pytest.raises(Exception):
-            await agent.call("other.reasoner", 1)
+            await agent.call("other.bot", 1)
     finally:
-        clear_current_agent()
+        clear_current_bot()

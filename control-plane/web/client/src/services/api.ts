@@ -1,8 +1,8 @@
 import type {
-  AgentNode,
-  AgentNodeSummary,
-  AgentNodeDetailsForUI,
-  AgentNodeDetailsForUIWithPackage,
+  Node,
+  NodeSummary,
+  NodeDetailsForUI,
+  NodeDetailsForUIWithPackage,
   MCPHealthResponse,
   MCPServerActionResponse,
   MCPToolsResponse,
@@ -17,8 +17,8 @@ import type {
   EnvResponse,
   SetEnvRequest,
   ConfigSchemaResponse,
-  AgentStatus,
-  AgentStatusUpdate
+  BotStatus,
+  BotStatusUpdate
 } from '../types/playground';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
@@ -145,12 +145,12 @@ async function retryMCPOperation<T>(
   throw lastError!;
 }
 
-export async function getNodesSummary(): Promise<{ nodes: AgentNodeSummary[], count: number }> {
-  return fetchWrapper<{ nodes: AgentNodeSummary[], count: number }>('/nodes/summary');
+export async function getNodesSummary(): Promise<{ nodes: NodeSummary[], count: number }> {
+  return fetchWrapper<{ nodes: NodeSummary[], count: number }>('/nodes/summary');
 }
 
-export async function getNodeDetails(nodeId: string): Promise<AgentNode> {
-  return fetchWrapper<AgentNode>(`/nodes/${nodeId}/details`);
+export async function getNodeDetails(nodeId: string): Promise<Node> {
+  return fetchWrapper<Node>(`/nodes/${nodeId}/details`);
 }
 
 export function streamNodeEvents(): EventSource {
@@ -238,8 +238,8 @@ export async function getOverallMCPStatus(
 export async function getNodeDetailsWithMCP(
   nodeId: string,
   mode: AppMode = 'user'
-): Promise<AgentNodeDetailsForUI> {
-  return fetchWrapper<AgentNodeDetailsForUI>(`/nodes/${nodeId}/details?include_mcp=true&mode=${mode}`, {
+): Promise<NodeDetailsForUI> {
+  return fetchWrapper<NodeDetailsForUI>(`/nodes/${nodeId}/details?include_mcp=true&mode=${mode}`, {
     timeout: 8000 // 8 second timeout for node details
   });
 }
@@ -379,9 +379,9 @@ export async function updateMCPServerConfig(
 // ============================================================================
 
 /**
- * Get environment variables for an agent
+ * Get environment variables for a bot
  */
-export async function getAgentEnvironmentVariables(
+export async function getBotEnvironmentVariables(
   agentId: string,
   packageId: string
 ): Promise<EnvResponse> {
@@ -389,9 +389,9 @@ export async function getAgentEnvironmentVariables(
 }
 
 /**
- * Update environment variables for an agent
+ * Update environment variables for a bot
  */
-export async function updateAgentEnvironmentVariables(
+export async function updateBotEnvironmentVariables(
   agentId: string,
   packageId: string,
   variables: Record<string, string>
@@ -409,9 +409,9 @@ export async function updateAgentEnvironmentVariables(
 }
 
 /**
- * Get configuration schema for an agent
+ * Get configuration schema for a bot
  */
-export async function getAgentConfigurationSchema(
+export async function getBotConfigurationSchema(
   agentId: string,
   packageId: string
 ): Promise<ConfigSchemaResponse> {
@@ -424,8 +424,8 @@ export async function getAgentConfigurationSchema(
 export async function getNodeDetailsWithPackageInfo(
   nodeId: string,
   mode: AppMode = 'user'
-): Promise<AgentNodeDetailsForUIWithPackage> {
-  return fetchWrapper<AgentNodeDetailsForUIWithPackage>(`/nodes/${nodeId}/details?include_mcp=true&mode=${mode}`, {
+): Promise<NodeDetailsForUIWithPackage> {
+  return fetchWrapper<NodeDetailsForUIWithPackage>(`/nodes/${nodeId}/details?include_mcp=true&mode=${mode}`, {
     timeout: 8000 // 8 second timeout for node details
   });
 }
@@ -437,15 +437,15 @@ export async function getNodeDetailsWithPackageInfo(
 /**
  * Get unified status for a specific node
  */
-export async function getNodeStatus(nodeId: string): Promise<AgentStatus> {
-  return fetchWrapper<AgentStatus>(`/nodes/${nodeId}/status`);
+export async function getNodeStatus(nodeId: string): Promise<BotStatus> {
+  return fetchWrapper<BotStatus>(`/nodes/${nodeId}/status`);
 }
 
 /**
  * Refresh status for a specific node (manual refresh)
  */
-export async function refreshNodeStatus(nodeId: string): Promise<AgentStatus> {
-  return fetchWrapper<AgentStatus>(`/nodes/${nodeId}/status/refresh`, {
+export async function refreshNodeStatus(nodeId: string): Promise<BotStatus> {
+  return fetchWrapper<BotStatus>(`/nodes/${nodeId}/status/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
@@ -454,8 +454,8 @@ export async function refreshNodeStatus(nodeId: string): Promise<AgentStatus> {
 /**
  * Get status for multiple nodes (bulk operation)
  */
-export async function bulkNodeStatus(nodeIds: string[]): Promise<Record<string, AgentStatus>> {
-  return fetchWrapper<Record<string, AgentStatus>>('/nodes/status/bulk', {
+export async function bulkNodeStatus(nodeIds: string[]): Promise<Record<string, BotStatus>> {
+  return fetchWrapper<Record<string, BotStatus>>('/nodes/status/bulk', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ node_ids: nodeIds })
@@ -467,9 +467,9 @@ export async function bulkNodeStatus(nodeIds: string[]): Promise<Record<string, 
  */
 export async function updateNodeStatus(
   nodeId: string,
-  update: AgentStatusUpdate
-): Promise<AgentStatus> {
-  return fetchWrapper<AgentStatus>(`/nodes/${nodeId}/status`, {
+  update: BotStatusUpdate
+): Promise<BotStatus> {
+  return fetchWrapper<BotStatus>(`/nodes/${nodeId}/status`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update)
@@ -477,20 +477,20 @@ export async function updateNodeStatus(
 }
 
 /**
- * Start an agent with proper state transitions
+ * Start a bot with proper state transitions
  */
-export async function startAgentWithStatus(nodeId: string): Promise<AgentStatus> {
-  return fetchWrapper<AgentStatus>(`/nodes/${nodeId}/start`, {
+export async function startBotWithStatus(nodeId: string): Promise<BotStatus> {
+  return fetchWrapper<BotStatus>(`/nodes/${nodeId}/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
 }
 
 /**
- * Stop an agent with proper state transitions
+ * Stop a bot with proper state transitions
  */
-export async function stopAgentWithStatus(nodeId: string): Promise<AgentStatus> {
-  return fetchWrapper<AgentStatus>(`/nodes/${nodeId}/stop`, {
+export async function stopBotWithStatus(nodeId: string): Promise<BotStatus> {
+  return fetchWrapper<BotStatus>(`/nodes/${nodeId}/stop`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
@@ -508,14 +508,14 @@ export function subscribeToUnifiedStatusEvents(): EventSource {
 }
 
 // ============================================================================
-// Serverless Agent Registration API Functions
+// Serverless Bot Registration API Functions
 // ============================================================================
 
 /**
- * Register a serverless agent by providing its invocation URL
- * The backend will discover the agent's capabilities automatically
+ * Register a serverless bot by providing its invocation URL
+ * The backend will discover the bot's capabilities automatically
  */
-export async function registerServerlessAgent(invocationUrl: string): Promise<{
+export async function registerServerlessBot(invocationUrl: string): Promise<{
   success: boolean;
   message: string;
   node: {

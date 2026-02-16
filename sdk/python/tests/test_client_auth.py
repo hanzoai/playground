@@ -132,7 +132,7 @@ class TestAPIKeyAuthentication:
         monkeypatch.setattr(client_mod.requests, "get", fake_get)
 
         client = PlaygroundClient(base_url="http://example.com", api_key="secret-key")
-        result = client.execute_sync("node.reasoner", {"payload": 1})
+        result = client.execute_sync("node.bot", {"payload": 1})
 
         assert result["status"] == "succeeded"
         assert captured["post_headers"]["X-API-Key"] == "secret-key"
@@ -170,7 +170,7 @@ class TestAPIKeyAuthentication:
         monkeypatch.setattr(client_mod.requests, "get", fake_get)
 
         client = PlaygroundClient(base_url="http://example.com")
-        result = client.execute_sync("node.reasoner", {"payload": 1})
+        result = client.execute_sync("node.bot", {"payload": 1})
 
         assert result["status"] == "succeeded"
         assert "X-API-Key" not in captured["post_headers"]
@@ -204,7 +204,7 @@ class TestAPIKeyAuthentication:
         install_httpx_stub(monkeypatch, on_request=on_request)
 
         client = PlaygroundClient(base_url="http://example.com", api_key="async-key")
-        result = await client.execute("node.reasoner", {"payload": 1})
+        result = await client.execute("node.bot", {"payload": 1})
 
         assert result["result"] == {"async": True}
         assert captured["POST"]["X-API-Key"] == "async-key"
@@ -265,7 +265,7 @@ class TestAPIKeyAuthentication:
 
         client = PlaygroundClient(base_url="http://example.com", api_key="secret-key")
         client.execute_sync(
-            "node.reasoner",
+            "node.bot",
             {"payload": 1},
             headers={"X-Custom-Header": "custom-value"},
         )
@@ -306,7 +306,7 @@ class TestAPIKeyAuthentication:
         client = PlaygroundClient(base_url="http://example.com", api_key="configured-key")
         # Try to override with custom header
         client.execute_sync(
-            "node.reasoner",
+            "node.bot",
             {"payload": 1},
             headers={"X-API-Key": "override-attempt"},
         )
@@ -330,10 +330,10 @@ class TestAPIKeyAuthentication:
 
         install_httpx_stub(monkeypatch, on_request=on_request)
 
-        from playground.types import AgentStatus, HeartbeatData
+        from playground.types import BotStatus, HeartbeatData
 
         client = PlaygroundClient(base_url="http://example.com", api_key="heartbeat-key")
-        heartbeat = HeartbeatData(status=AgentStatus.READY, mcp_servers=[], timestamp="now")
+        heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
 
         result = await client.send_enhanced_heartbeat("node-1", heartbeat)
 
@@ -357,10 +357,10 @@ class TestAPIKeyAuthentication:
 
         monkeypatch.setattr(client_mod.requests, "post", fake_post)
 
-        from playground.types import AgentStatus, HeartbeatData
+        from playground.types import BotStatus, HeartbeatData
 
         client = PlaygroundClient(base_url="http://example.com", api_key="heartbeat-key")
-        heartbeat = HeartbeatData(status=AgentStatus.READY, mcp_servers=[], timestamp="now")
+        heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
 
         result = client.send_enhanced_heartbeat_sync("node-1", heartbeat)
 
@@ -369,8 +369,8 @@ class TestAPIKeyAuthentication:
         # This documents current behavior
 
     @pytest.mark.asyncio
-    async def test_register_agent_includes_api_key(self, monkeypatch):
-        """register_agent should include X-API-Key header."""
+    async def test_register_bot_includes_api_key(self, monkeypatch):
+        """register_bot should include X-API-Key header."""
         captured = {}
 
         def on_request(method, url, **kwargs):
@@ -380,17 +380,17 @@ class TestAPIKeyAuthentication:
         install_httpx_stub(monkeypatch, on_request=on_request)
 
         client = PlaygroundClient(base_url="http://example.com", api_key="register-key")
-        ok, payload = await client.register_agent(
+        ok, payload = await client.register_bot(
             "node-1", [], [], base_url="http://agent"
         )
 
         assert ok is True
-        # Note: register_agent may not use _get_auth_headers currently
+        # Note: register_bot may not use _get_auth_headers currently
         # This test documents the current behavior
 
     @pytest.mark.asyncio
-    async def test_register_agent_with_status_includes_api_key(self, monkeypatch):
-        """register_agent_with_status should include X-API-Key header."""
+    async def test_register_bot_with_status_includes_api_key(self, monkeypatch):
+        """register_bot_with_status should include X-API-Key header."""
         captured = {}
 
         def on_request(method, url, **kwargs):
@@ -399,11 +399,11 @@ class TestAPIKeyAuthentication:
 
         install_httpx_stub(monkeypatch, on_request=on_request)
 
-        from playground.types import AgentStatus
+        from playground.types import BotStatus
 
         client = PlaygroundClient(base_url="http://example.com", api_key="register-key")
-        ok, payload = await client.register_agent_with_status(
-            "node-1", [], [], base_url="http://agent", status=AgentStatus.STARTING
+        ok, payload = await client.register_bot_with_status(
+            "node-1", [], [], base_url="http://agent", status=BotStatus.STARTING
         )
 
         assert ok is True
@@ -435,11 +435,11 @@ class TestAPIKeyPrecedence:
 
 
 class TestAgentAPIKey:
-    """Test API key exposure at Agent and AgentRouter level."""
+    """Test API key exposure at Agent and BotRouter level."""
 
     def test_agent_stores_api_key(self):
         """Agent should store the API key and pass it to the client."""
-        from playground.agent import Agent
+        from playground.bot import Agent
 
         agent = Agent(node_id="test-agent", api_key="agent-secret-key")
 
@@ -448,7 +448,7 @@ class TestAgentAPIKey:
 
     def test_agent_without_api_key(self):
         """Agent should work without an API key."""
-        from playground.agent import Agent
+        from playground.bot import Agent
 
         agent = Agent(node_id="test-agent")
 
@@ -456,12 +456,12 @@ class TestAgentAPIKey:
         assert agent.client.api_key is None
 
     def test_router_delegates_api_key_to_agent(self):
-        """AgentRouter should delegate api_key access to attached agent."""
-        from playground.agent import Agent
-        from playground.router import AgentRouter
+        """BotRouter should delegate api_key access to attached agent."""
+        from playground.bot import Agent
+        from playground.router import BotRouter
 
         agent = Agent(node_id="test-agent", api_key="router-test-key")
-        router = AgentRouter(prefix="/test")
+        router = BotRouter(prefix="/test")
 
         agent.include_router(router)
 
@@ -471,12 +471,12 @@ class TestAgentAPIKey:
         assert router.client.api_key == "router-test-key"
 
     def test_router_delegates_client_to_agent(self):
-        """AgentRouter should delegate client access to attached agent."""
-        from playground.agent import Agent
-        from playground.router import AgentRouter
+        """BotRouter should delegate client access to attached agent."""
+        from playground.bot import Agent
+        from playground.router import BotRouter
 
         agent = Agent(node_id="test-agent", api_key="client-test-key")
-        router = AgentRouter(prefix="/test")
+        router = BotRouter(prefix="/test")
 
         agent.include_router(router)
 
@@ -485,10 +485,10 @@ class TestAgentAPIKey:
         assert router.client._get_auth_headers() == {"X-API-Key": "client-test-key"}
 
     def test_unattached_router_raises_error(self):
-        """AgentRouter should raise error when accessing api_key without agent."""
-        from playground.router import AgentRouter
+        """BotRouter should raise error when accessing api_key without agent."""
+        from playground.router import BotRouter
 
-        router = AgentRouter(prefix="/test")
+        router = BotRouter(prefix="/test")
 
         with pytest.raises(RuntimeError, match="Router not attached to an agent"):
             _ = router.api_key

@@ -32,12 +32,12 @@ func (m *MockStorageProvider) GetWorkflowExecution(ctx context.Context, executio
 	return args.Get(0).(*types.WorkflowExecution), args.Error(1)
 }
 
-func (m *MockStorageProvider) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+func (m *MockStorageProvider) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*types.AgentNode), args.Error(1)
+	return args.Get(0).(*types.Node), args.Error(1)
 }
 
 func (m *MockStorageProvider) CleanupOldExecutions(ctx context.Context, retentionPeriod time.Duration, batchSize int) (int, error) {
@@ -54,13 +54,13 @@ func (m *MockStorageProvider) MarkStaleExecutions(ctx context.Context, staleAfte
 func (m *MockStorageProvider) Initialize(ctx context.Context, config interface{}) error { return nil }
 func (m *MockStorageProvider) Close(ctx context.Context) error                          { return nil }
 func (m *MockStorageProvider) HealthCheck(ctx context.Context) error                    { return nil }
-func (m *MockStorageProvider) StoreExecution(ctx context.Context, execution *types.AgentExecution) error {
+func (m *MockStorageProvider) StoreExecution(ctx context.Context, execution *types.BotExecution) error {
 	return nil
 }
-func (m *MockStorageProvider) GetExecution(ctx context.Context, id int64) (*types.AgentExecution, error) {
+func (m *MockStorageProvider) GetExecution(ctx context.Context, id int64) (*types.BotExecution, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.AgentExecution, error) {
+func (m *MockStorageProvider) QueryExecutions(ctx context.Context, filters types.ExecutionFilters) ([]*types.BotExecution, error) {
 	return nil, nil
 }
 func (m *MockStorageProvider) StoreWorkflowExecution(ctx context.Context, execution *types.WorkflowExecution) error {
@@ -146,22 +146,22 @@ func (m *MockStorageProvider) RenewLock(ctx context.Context, lockID string) (*ty
 func (m *MockStorageProvider) GetLockStatus(ctx context.Context, key string) (*types.DistributedLock, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) RegisterAgent(ctx context.Context, agent *types.AgentNode) error {
+func (m *MockStorageProvider) RegisterNode(ctx context.Context, agent *types.Node) error {
 	return nil
 }
-func (m *MockStorageProvider) ListAgents(ctx context.Context, filters types.AgentFilters) ([]*types.AgentNode, error) {
+func (m *MockStorageProvider) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) UpdateAgentHealth(ctx context.Context, id string, status types.HealthStatus) error {
+func (m *MockStorageProvider) UpdateNodeHealth(ctx context.Context, id string, status types.HealthStatus) error {
 	return nil
 }
-func (m *MockStorageProvider) UpdateAgentHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
+func (m *MockStorageProvider) UpdateNodeHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error {
 	return nil
 }
-func (m *MockStorageProvider) UpdateAgentHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
+func (m *MockStorageProvider) UpdateNodeHeartbeat(ctx context.Context, id string, heartbeatTime time.Time) error {
 	return nil
 }
-func (m *MockStorageProvider) UpdateAgentLifecycleStatus(ctx context.Context, id string, status types.AgentLifecycleStatus) error {
+func (m *MockStorageProvider) UpdateBotLifecycleStatus(ctx context.Context, id string, status types.BotLifecycleStatus) error {
 	return nil
 }
 func (m *MockStorageProvider) SetConfig(ctx context.Context, key string, value interface{}) error {
@@ -176,37 +176,37 @@ func (m *MockStorageProvider) GetBotPerformanceMetrics(ctx context.Context, botI
 func (m *MockStorageProvider) GetBotExecutionHistory(ctx context.Context, botID string, page, limit int) (*types.BotExecutionHistory, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+func (m *MockStorageProvider) StoreBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	return nil
 }
-func (m *MockStorageProvider) GetAgentConfiguration(ctx context.Context, agentID, packageID string) (*types.AgentConfiguration, error) {
+func (m *MockStorageProvider) GetBotConfiguration(ctx context.Context, agentID, packageID string) (*types.BotConfiguration, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) QueryAgentConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.AgentConfiguration, error) {
+func (m *MockStorageProvider) QueryBotConfigurations(ctx context.Context, filters types.ConfigurationFilters) ([]*types.BotConfiguration, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) UpdateAgentConfiguration(ctx context.Context, config *types.AgentConfiguration) error {
+func (m *MockStorageProvider) UpdateBotConfiguration(ctx context.Context, config *types.BotConfiguration) error {
 	return nil
 }
-func (m *MockStorageProvider) DeleteAgentConfiguration(ctx context.Context, agentID, packageID string) error {
+func (m *MockStorageProvider) DeleteBotConfiguration(ctx context.Context, agentID, packageID string) error {
 	return nil
 }
-func (m *MockStorageProvider) ValidateAgentConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
+func (m *MockStorageProvider) ValidateBotConfiguration(ctx context.Context, agentID, packageID string, config map[string]interface{}) (*types.ConfigurationValidationResult, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+func (m *MockStorageProvider) StoreBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	return nil
 }
-func (m *MockStorageProvider) GetAgentPackage(ctx context.Context, packageID string) (*types.AgentPackage, error) {
+func (m *MockStorageProvider) GetBotPackage(ctx context.Context, packageID string) (*types.BotPackage, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) QueryAgentPackages(ctx context.Context, filters types.PackageFilters) ([]*types.AgentPackage, error) {
+func (m *MockStorageProvider) QueryBotPackages(ctx context.Context, filters types.PackageFilters) ([]*types.BotPackage, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) UpdateAgentPackage(ctx context.Context, pkg *types.AgentPackage) error {
+func (m *MockStorageProvider) UpdateBotPackage(ctx context.Context, pkg *types.BotPackage) error {
 	return nil
 }
-func (m *MockStorageProvider) DeleteAgentPackage(ctx context.Context, packageID string) error {
+func (m *MockStorageProvider) DeleteBotPackage(ctx context.Context, packageID string) error {
 	return nil
 }
 func (m *MockStorageProvider) SubscribeToMemoryChanges(ctx context.Context, scope, scopeID string) (<-chan types.MemoryChangeEvent, error) {
@@ -225,22 +225,22 @@ func (m *MockStorageProvider) GetDID(ctx context.Context, did string) (*types.DI
 func (m *MockStorageProvider) ListDIDs(ctx context.Context) ([]*types.DIDRegistryEntry, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentsServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
+func (m *MockStorageProvider) StorePlaygroundServerDID(ctx context.Context, agentsServerID, rootDID string, masterSeed []byte, createdAt, lastKeyRotation time.Time) error {
 	return nil
 }
-func (m *MockStorageProvider) GetAgentsServerDID(ctx context.Context, agentsServerID string) (*types.AgentsServerDIDInfo, error) {
+func (m *MockStorageProvider) GetPlaygroundServerDID(ctx context.Context, agentsServerID string) (*types.PlaygroundServerDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) ListAgentsServerDIDs(ctx context.Context) ([]*types.AgentsServerDIDInfo, error) {
+func (m *MockStorageProvider) ListPlaygroundServerDIDs(ctx context.Context) ([]*types.PlaygroundServerDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
+func (m *MockStorageProvider) StoreNodeDID(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int) error {
 	return nil
 }
-func (m *MockStorageProvider) GetAgentDID(ctx context.Context, agentID string) (*types.AgentDIDInfo, error) {
+func (m *MockStorageProvider) GetNodeDID(ctx context.Context, agentID string) (*types.NodeDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) ListAgentDIDs(ctx context.Context) ([]*types.AgentDIDInfo, error) {
+func (m *MockStorageProvider) ListNodeDIDs(ctx context.Context) ([]*types.NodeDIDInfo, error) {
 	return nil, nil
 }
 func (m *MockStorageProvider) StoreComponentDID(ctx context.Context, componentID, componentDID, agentDID, componentType, componentName string, derivationIndex int) error {
@@ -252,7 +252,7 @@ func (m *MockStorageProvider) GetComponentDID(ctx context.Context, componentID s
 func (m *MockStorageProvider) ListComponentDIDs(ctx context.Context, agentDID string) ([]*types.ComponentDIDInfo, error) {
 	return nil, nil
 }
-func (m *MockStorageProvider) StoreAgentDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []interface{}) error {
+func (m *MockStorageProvider) StoreNodeDIDWithComponents(ctx context.Context, agentID, agentDID, agentsServerDID, publicKeyJWK string, derivationIndex int, components []interface{}) error {
 	return nil
 }
 func (m *MockStorageProvider) StoreExecutionVC(ctx context.Context, vcID, executionID, workflowID, sessionID, issuerDID, targetDID, callerDID, inputHash, outputHash, status string, vcDocument []byte, signature string, storageURI string, documentSizeBytes int64) error {
@@ -297,7 +297,7 @@ func TestBatchExecutionStatusHandler(t *testing.T) {
 				execution1 := &types.WorkflowExecution{
 					ExecutionID: "exec-1",
 					WorkflowID:  "workflow-1",
-					AgentNodeID: "agent-1",
+					NodeID: "agent-1",
 					BotID:  "bot-1",
 					Status:      string(types.ExecutionStatusSucceeded),
 					StartedAt:   time.Now(),
@@ -307,13 +307,13 @@ func TestBatchExecutionStatusHandler(t *testing.T) {
 				execution2 := &types.WorkflowExecution{
 					ExecutionID: "exec-2",
 					WorkflowID:  "workflow-2",
-					AgentNodeID: "agent-1",
+					NodeID: "agent-1",
 					BotID:  "bot-2",
 					Status:      "running",
 					StartedAt:   time.Now(),
 				}
 
-				agent := &types.AgentNode{
+				agent := &types.Node{
 					ID: "agent-1",
 					Bots: []types.Bot{
 						{ID: "bot-1"},
@@ -323,7 +323,7 @@ func TestBatchExecutionStatusHandler(t *testing.T) {
 
 				mockStorage.On("GetWorkflowExecution", mock.Anything, "exec-1").Return(execution1, nil)
 				mockStorage.On("GetWorkflowExecution", mock.Anything, "exec-2").Return(execution2, nil)
-				mockStorage.On("GetAgent", mock.Anything, "agent-1").Return(agent, nil)
+				mockStorage.On("GetNode", mock.Anything, "agent-1").Return(agent, nil)
 			},
 			expectedStatus: http.StatusOK,
 			expectedCount:  2,

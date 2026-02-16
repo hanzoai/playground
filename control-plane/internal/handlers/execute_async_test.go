@@ -26,19 +26,19 @@ func TestExecuteAsyncHandler_QueueSaturation(t *testing.T) {
 	// Note: This only works if the pool hasn't been initialized yet
 	// In a real scenario, the pool is initialized once, so this test
 	// verifies the queue saturation logic when the queue is actually full
-	originalCapacity := os.Getenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY")
+	originalCapacity := os.Getenv("PLAYGROUND_EXEC_ASYNC_QUEUE_CAPACITY")
 	defer func() {
 		if originalCapacity != "" {
-			os.Setenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", originalCapacity)
+			os.Setenv("PLAYGROUND_EXEC_ASYNC_QUEUE_CAPACITY", originalCapacity)
 		} else {
-			os.Unsetenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY")
+			os.Unsetenv("PLAYGROUND_EXEC_ASYNC_QUEUE_CAPACITY")
 		}
 	}()
 
 	// Set a very small capacity to make saturation easier to test
-	os.Setenv("AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", "2")
+	os.Setenv("PLAYGROUND_EXEC_ASYNC_QUEUE_CAPACITY", "2")
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -121,7 +121,7 @@ func TestExecuteAsyncHandler_WithWebhook(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -170,7 +170,7 @@ func TestExecuteAsyncHandler_WithWebhook(t *testing.T) {
 func TestExecuteAsyncHandler_InvalidWebhook(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   "http://agent.example",
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -216,7 +216,7 @@ func TestHandleSync_AsyncAcknowledgment(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -300,7 +300,7 @@ func TestCallAgent_HTTP202Response(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -339,7 +339,7 @@ func TestCallAgent_ErrorResponse(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -380,7 +380,7 @@ func TestCallAgent_Timeout(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -432,7 +432,7 @@ func TestCallAgent_ReadResponseError(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},
@@ -474,7 +474,7 @@ func TestCallAgent_HeaderPropagation(t *testing.T) {
 	}))
 	defer agentServer.Close()
 
-	agent := &types.AgentNode{
+	agent := &types.Node{
 		ID:        "node-1",
 		BaseURL:   agentServer.URL,
 		Bots: []types.BotDefinition{{ID: "bot-a"}},

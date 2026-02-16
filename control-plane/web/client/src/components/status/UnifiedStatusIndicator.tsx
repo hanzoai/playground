@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { AgentState, AgentStatus } from "@/types/playground";
+import type { BotState, BotStatus } from "@/types/playground";
 import { cn } from "@/lib/utils";
 import { statusTone, type StatusTone } from "@/lib/theme";
 import type { ComponentProps } from "react";
@@ -13,14 +13,14 @@ import {
 import type { IconComponent } from "@/components/ui/icon-bridge";
 
 interface UnifiedStatusIndicatorProps {
-  status: AgentStatus;
+  status: BotStatus;
   showDetails?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 // Status configuration mapping
-const STATUS_CONFIG: Record<AgentState, {
+const STATUS_CONFIG: Record<BotState, {
   icon: IconComponent;
   tone: StatusTone;
   badgeVariant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
@@ -32,35 +32,35 @@ const STATUS_CONFIG: Record<AgentState, {
     tone: "success",
     badgeVariant: "success",
     label: "Active",
-    description: "Agent is running and healthy",
+    description: "Bot is running and healthy",
   },
   inactive: {
     icon: XCircle,
     tone: "neutral",
     badgeVariant: "unknown",
     label: "Inactive",
-    description: "Agent is not responding or offline",
+    description: "Bot is not responding or offline",
   },
   starting: {
     icon: ClockClockwise,
     tone: "info",
     badgeVariant: "running",
     label: "Starting",
-    description: "Agent is initializing",
+    description: "Bot is initializing",
   },
   stopping: {
     icon: PauseCircle,
     tone: "warning",
     badgeVariant: "pending",
     label: "Stopping",
-    description: "Agent is shutting down",
+    description: "Bot is shutting down",
   },
   error: {
     icon: WarningOctagon,
     tone: "error",
     badgeVariant: "failed",
     label: "Error",
-    description: "Agent encountered an error",
+    description: "Bot encountered an error",
   },
 };
 
@@ -175,12 +175,12 @@ export function UnifiedStatusIndicator({
 }
 
 // Helper function to determine if status is healthy
-export function isStatusHealthy(status: AgentStatus): boolean {
+export function isStatusHealthy(status: BotStatus): boolean {
   return status.state === "active" && (status.health_score ?? 0) >= 70;
 }
 
 // Helper function to get status priority for sorting
-export function getStatusPriority(state: AgentState): number {
+export function getStatusPriority(state: BotState): number {
   const priorities = {
     active: 1,
     starting: 2,

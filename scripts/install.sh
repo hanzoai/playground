@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Playground CLI Installer
 # Usage:
-#   Production:  curl -fsSL https://playground.ai/install.sh | bash
-#   Staging:     curl -fsSL https://playground.ai/install.sh | bash -s -- --staging
-#   Version pin: VERSION=v1.0.0 curl -fsSL https://playground.ai/install.sh | bash
+#   Production:  curl -fsSL https://hanzo.bot/install.sh | bash
+#   Staging:     curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
+#   Version pin: VERSION=v1.0.0 curl -fsSL https://hanzo.bot/install.sh | bash
 
 set -e
 
@@ -46,8 +46,8 @@ parse_args() {
         echo "Playground CLI Installer"
         echo ""
         echo "Usage:"
-        echo "  curl -fsSL https://playground.ai/install.sh | bash"
-        echo "  curl -fsSL https://playground.ai/install.sh | bash -s -- --staging"
+        echo "  curl -fsSL https://hanzo.bot/install.sh | bash"
+        echo "  curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging"
         echo ""
         echo "Options:"
         echo "  --staging    Install latest prerelease/staging version"
@@ -59,7 +59,7 @@ parse_args() {
         echo "  STAGING=1            Same as --staging flag"
         echo "  VERBOSE=1            Same as --verbose flag"
         echo "  SKIP_PATH_CONFIG=1   Skip PATH configuration"
-        echo "  AGENTS_INSTALL_DIR  Custom install directory"
+        echo "  PLAYGROUND_INSTALL_DIR  Custom install directory"
         exit 0
         ;;
       *)
@@ -73,11 +73,11 @@ parse_args() {
 # Set install directory based on channel
 set_install_dir() {
   if [[ "$STAGING" == "1" ]]; then
-    INSTALL_DIR="${AGENTS_INSTALL_DIR:-$HOME/.hanzo/agents-staging/bin}"
-    SYMLINK_NAME="af-staging"
+    INSTALL_DIR="${PLAYGROUND_INSTALL_DIR:-$HOME/.hanzo/playground-staging/bin}"
+    SYMLINK_NAME="playground-staging"
   else
-    INSTALL_DIR="${AGENTS_INSTALL_DIR:-$HOME/.hanzo/agents/bin}"
-    SYMLINK_NAME="af"
+    INSTALL_DIR="${PLAYGROUND_INSTALL_DIR:-$HOME/.hanzo/playground/bin}"
+    SYMLINK_NAME="playground"
   fi
 }
 
@@ -108,7 +108,7 @@ print_banner() {
     printf "${MAGENTA}╚%s╝${NC}\n" "$horizontal_line"
     printf "\n"
     printf "${YELLOW}WARNING: This installs a STAGING/PRE-RELEASE version.${NC}\n"
-    printf "${YELLOW}For production use: curl -fsSL https://playground.ai/install.sh | bash${NC}\n"
+    printf "${YELLOW}For production use: curl -fsSL https://hanzo.bot/install.sh | bash${NC}\n"
     printf "\n"
   else
     printf "${CYAN}╔%s╗${NC}\n" "$horizontal_line"
@@ -491,7 +491,7 @@ print_success_message() {
     printf "${YELLOW}╚══════════════════════════════════════════════════════════════╝${NC}\n"
     printf "\n"
     printf "${YELLOW}NOTE: This is a STAGING version for testing purposes.${NC}\n"
-    printf "${YELLOW}It is installed separately from production in ~/.hanzo/agents-staging${NC}\n"
+    printf "${YELLOW}It is installed separately from production in ~/.hanzo/playground-staging${NC}\n"
   else
     printf "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}\n"
     printf "${GREEN}║${NC}  ${BOLD}Playground CLI installed successfully!${NC}                      ${GREEN}║${NC}\n"
@@ -537,13 +537,13 @@ print_success_message() {
     printf "  TypeScript:\n"
     printf "     ${CYAN}npm install @playground/sdk@next${NC}\n"
   else
-    printf "  3. Initialize your first agent:\n"
-    printf "     ${CYAN}playground init my-agent${NC}\n"
+    printf "  3. Initialize your first bot:\n"
+    printf "     ${CYAN}playground init my-bot${NC}\n"
   fi
 
   printf "\n"
   printf "${BOLD}Resources:${NC}\n"
-  printf "  Documentation: ${BLUE}https://playground.ai/docs${NC}\n"
+  printf "  Documentation: ${BLUE}https://hanzo.bot/docs${NC}\n"
   printf "  GitHub:        ${BLUE}https://github.com/$REPO${NC}\n"
   printf "  Releases:      ${BLUE}https://github.com/$REPO/releases${NC}\n"
   printf "\n"

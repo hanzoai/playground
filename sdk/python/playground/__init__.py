@@ -1,12 +1,15 @@
-from .agent import Agent
-from .router import AgentRouter
+from .bot import Bot
+from .router import BotRouter
+
+# Deprecated alias for backward compatibility
+Agent = Bot
 from .types import (
     AIConfig,
     CompactDiscoveryResponse,
     DiscoveryResponse,
     DiscoveryResult,
     MemoryConfig,
-    ReasonerDefinition,
+    BotDefinition,
     SkillDefinition,
 )
 from .multimodal import (
@@ -40,15 +43,16 @@ from .media_providers import (
 )
 
 __all__ = [
-    "Agent",
+    "Bot",
+    "Agent",  # Deprecated alias
     "AIConfig",
     "MemoryConfig",
-    "ReasonerDefinition",
+    "BotDefinition",
     "SkillDefinition",
     "DiscoveryResponse",
     "CompactDiscoveryResponse",
     "DiscoveryResult",
-    "AgentRouter",
+    "BotRouter",
     # Input multimodal classes
     "Text",
     "Image",
@@ -78,4 +82,4 @@ __all__ = [
     "register_provider",
 ]
 
-__version__ = "0.1.41-rc.8"
+__version__ = "0.1.41-rc.7"

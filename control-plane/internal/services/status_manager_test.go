@@ -18,17 +18,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeAgentClient struct {
-	statusResponse *interfaces.AgentStatusResponse
+type fakeNodeClient struct {
+	statusResponse *interfaces.BotStatusResponse
 	err            error
 	calls          int
 }
 
-func (f *fakeAgentClient) setError(err error) {
+func (f *fakeNodeClient) setError(err error) {
 	f.err = err
 }
 
-func (f *fakeAgentClient) GetAgentStatus(ctx context.Context, nodeID string) (*interfaces.AgentStatusResponse, error) {
+func (f *fakeNodeClient) GetBotStatus(ctx context.Context, nodeID string) (*interfaces.BotStatusResponse, error) {
 	f.calls++
 	if f.err != nil {
 		err := f.err
@@ -38,19 +38,19 @@ func (f *fakeAgentClient) GetAgentStatus(ctx context.Context, nodeID string) (*i
 	return f.statusResponse, nil
 }
 
-func (f *fakeAgentClient) GetMCPHealth(ctx context.Context, nodeID string) (*interfaces.MCPHealthResponse, error) {
+func (f *fakeNodeClient) GetMCPHealth(ctx context.Context, nodeID string) (*interfaces.MCPHealthResponse, error) {
 	return nil, nil
 }
 
-func (f *fakeAgentClient) RestartMCPServer(ctx context.Context, nodeID, alias string) error {
+func (f *fakeNodeClient) RestartMCPServer(ctx context.Context, nodeID, alias string) error {
 	return nil
 }
 
-func (f *fakeAgentClient) GetMCPTools(ctx context.Context, nodeID, alias string) (*interfaces.MCPToolsResponse, error) {
+func (f *fakeNodeClient) GetMCPTools(ctx context.Context, nodeID, alias string) (*interfaces.MCPToolsResponse, error) {
 	return nil, nil
 }
 
-func (f *fakeAgentClient) ShutdownAgent(ctx context.Context, nodeID string, graceful bool, timeoutSeconds int) (*interfaces.AgentShutdownResponse, error) {
+func (f *fakeNodeClient) ShutdownNode(ctx context.Context, nodeID string, graceful bool, timeoutSeconds int) (*interfaces.NodeShutdownResponse, error) {
 	return nil, nil
 }
 
@@ -82,22 +82,22 @@ func setupStatusManagerStorage(t *testing.T) (storage.StorageProvider, context.C
 func registerTestAgent(t *testing.T, provider storage.StorageProvider, ctx context.Context, nodeID string) {
 	t.Helper()
 
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:              nodeID,
 		TeamID:          "team",
 		BaseURL:         "http://localhost",
 		Version:         "1.0.0",
 		HealthStatus:    types.HealthStatusInactive,
-		LifecycleStatus: types.AgentStatusOffline,
+		LifecycleStatus: types.BotStatusOffline,
 		LastHeartbeat:   time.Now().Add(-1 * time.Minute),
 		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
 
-	require.NoError(t, provider.RegisterAgent(ctx, node))
+	require.NoError(t, provider.RegisterNode(ctx, node))
 }
 
-func ptrAgentState(state types.AgentState) *types.AgentState {
+func ptrBotState(state types.BotState) *types.BotState {
 	return &state
 }
 
@@ -105,34 +105,34 @@ func TestStatusManagerCachingAndFallback(t *testing.T) {
 	provider, ctx := setupStatusManagerStorage(t)
 	registerTestAgent(t, provider, ctx, "node-1")
 
-	fakeClient := &fakeAgentClient{statusResponse: &interfaces.AgentStatusResponse{Status: "running"}}
+	fakeClient := &fakeNodeClient{statusResponse: &interfaces.BotStatusResponse{Status: "running"}}
 	sm := NewStatusManager(provider, StatusManagerConfig{
 		ReconcileInterval: 100 * time.Millisecond,
 		StatusCacheTTL:    30 * time.Second,
 		MaxTransitionTime: time.Second,
 	}, nil, fakeClient)
 
-	status, err := sm.GetAgentStatus(ctx, "node-1")
+	status, err := sm.GetBotStatus(ctx, "node-1")
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateActive, status.State)
+	require.Equal(t, types.BotStateActive, status.State)
 	require.Equal(t, 1, fakeClient.calls)
 
 	// Subsequent call within cache window should not re-hit client even if error is configured.
 	fakeClient.setError(errors.New("boom"))
-	statusCached, err := sm.GetAgentStatus(ctx, "node-1")
+	statusCached, err := sm.GetBotStatus(ctx, "node-1")
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateActive, statusCached.State)
+	require.Equal(t, types.BotStateActive, statusCached.State)
 	require.Equal(t, 1, fakeClient.calls)
 
 	// After cache expiry, a new health check should occur and fall back to inactive state on failure.
 	time.Sleep(1100 * time.Millisecond)
 	fakeClient.setError(errors.New("still failing"))
-	statusAfterError, err := sm.GetAgentStatus(ctx, "node-1")
+	statusAfterError, err := sm.GetBotStatus(ctx, "node-1")
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateInactive, statusAfterError.State)
+	require.Equal(t, types.BotStateInactive, statusAfterError.State)
 	require.Equal(t, 2, fakeClient.calls)
 
-	storedAgent, err := provider.GetAgent(ctx, "node-1")
+	storedAgent, err := provider.GetNode(ctx, "node-1")
 	require.NoError(t, err)
 	require.Equal(t, types.HealthStatusInactive, storedAgent.HealthStatus)
 }
@@ -143,17 +143,17 @@ func TestStatusManagerAllowsInactiveToActiveTransition(t *testing.T) {
 
 	sm := NewStatusManager(provider, StatusManagerConfig{}, nil, nil)
 
-	update := &types.AgentStatusUpdate{
-		State:  ptrAgentState(types.AgentStateActive),
+	update := &types.BotStatusUpdate{
+		State:  ptrBotState(types.BotStateActive),
 		Source: types.StatusSourceHeartbeat,
 		Reason: "heartbeat indicates agent active",
 	}
 
-	require.NoError(t, sm.UpdateAgentStatus(ctx, "node-transition", update))
+	require.NoError(t, sm.UpdateBotStatus(ctx, "node-transition", update))
 
-	status, err := sm.GetAgentStatus(ctx, "node-transition")
+	status, err := sm.GetBotStatus(ctx, "node-transition")
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateActive, status.State)
+	require.Equal(t, types.BotStateActive, status.State)
 }
 
 func TestStatusManagerSnapshotUsesStorage(t *testing.T) {
@@ -162,40 +162,40 @@ func TestStatusManagerSnapshotUsesStorage(t *testing.T) {
 
 	sm := NewStatusManager(provider, StatusManagerConfig{}, nil, nil)
 
-	snapshot, err := sm.GetAgentStatusSnapshot(ctx, "node-snapshot", nil)
+	snapshot, err := sm.GetBotStatusSnapshot(ctx, "node-snapshot", nil)
 	require.NoError(t, err)
 	require.Equal(t, types.StatusSourceReconcile, snapshot.Source)
-	require.Equal(t, types.AgentStatusOffline, snapshot.LifecycleStatus)
+	require.Equal(t, types.BotStatusOffline, snapshot.LifecycleStatus)
 
 	// Ensure snapshot is cached and returned without additional storage lookups when provided with cached node data.
 	smNoCache := NewStatusManager(provider, StatusManagerConfig{}, nil, nil)
-	node := &types.AgentNode{ID: "node-snapshot", HealthStatus: types.HealthStatusActive, LifecycleStatus: types.AgentStatusReady, LastHeartbeat: time.Now()}
-	snapshot2, err := smNoCache.GetAgentStatusSnapshot(ctx, "node-snapshot", node)
+	node := &types.Node{ID: "node-snapshot", HealthStatus: types.HealthStatusActive, LifecycleStatus: types.BotStatusReady, LastHeartbeat: time.Now()}
+	snapshot2, err := smNoCache.GetBotStatusSnapshot(ctx, "node-snapshot", node)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStatusReady, snapshot2.LifecycleStatus)
+	require.Equal(t, types.BotStatusReady, snapshot2.LifecycleStatus)
 }
 
 // TestStatusManagerBroadcastsNodeOfflineEvent verifies that when a node transitions
 // from active to inactive, the proper events are broadcast. This tests the fix for
-// the race condition where UpdateAgentStatus was calling GetAgentStatus (with live
-// health check) instead of GetAgentStatusSnapshot, causing oldStatus == newStatus
+// the race condition where UpdateBotStatus was calling GetBotStatus (with live
+// health check) instead of GetBotStatusSnapshot, causing oldStatus == newStatus
 // and preventing events from being broadcast.
 func TestStatusManagerBroadcastsNodeOfflineEvent(t *testing.T) {
 	provider, ctx := setupStatusManagerStorage(t)
 
 	// Register an agent that starts as ACTIVE
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:              "node-offline-test",
 		TeamID:          "team",
 		BaseURL:         "http://localhost",
 		Version:         "1.0.0",
 		HealthStatus:    types.HealthStatusActive,
-		LifecycleStatus: types.AgentStatusReady,
+		LifecycleStatus: types.BotStatusReady,
 		LastHeartbeat:   time.Now(),
 		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
-	require.NoError(t, provider.RegisterAgent(ctx, node))
+	require.NoError(t, provider.RegisterNode(ctx, node))
 
 	// Subscribe to node events to capture broadcasts
 	var mu sync.Mutex
@@ -233,12 +233,12 @@ func TestStatusManagerBroadcastsNodeOfflineEvent(t *testing.T) {
 
 	// Prime the cache with active status
 	sm.cacheMutex.Lock()
-	sm.statusCache["node-offline-test"] = &cachedAgentStatus{
-		Status: &types.AgentStatus{
-			State:           types.AgentStateActive,
+	sm.statusCache["node-offline-test"] = &cachedBotStatus{
+		Status: &types.BotStatus{
+			State:           types.BotStateActive,
 			HealthScore:     85,
 			HealthStatus:    types.HealthStatusActive,
-			LifecycleStatus: types.AgentStatusReady,
+			LifecycleStatus: types.BotStatusReady,
 			LastSeen:        time.Now(),
 			LastUpdated:     time.Now(),
 			Source:          types.StatusSourceHeartbeat,
@@ -248,16 +248,16 @@ func TestStatusManagerBroadcastsNodeOfflineEvent(t *testing.T) {
 	sm.cacheMutex.Unlock()
 
 	// Now simulate node going offline - this is what the health monitor does
-	inactiveState := types.AgentStateInactive
+	inactiveState := types.BotStateInactive
 	healthScore := 0
-	update := &types.AgentStatusUpdate{
+	update := &types.BotStatusUpdate{
 		State:       &inactiveState,
 		HealthScore: &healthScore,
 		Source:      types.StatusSourceHealthCheck,
 		Reason:      "HTTP health check failed",
 	}
 
-	err := sm.UpdateAgentStatus(ctx, "node-offline-test", update)
+	err := sm.UpdateBotStatus(ctx, "node-offline-test", update)
 	require.NoError(t, err)
 
 	// Give events time to propagate
@@ -331,12 +331,12 @@ func TestStatusManagerBroadcastsNodeOnlineEvent(t *testing.T) {
 
 	// Prime the cache with inactive status (as it would be from storage)
 	sm.cacheMutex.Lock()
-	sm.statusCache["node-online-test"] = &cachedAgentStatus{
-		Status: &types.AgentStatus{
-			State:           types.AgentStateInactive,
+	sm.statusCache["node-online-test"] = &cachedBotStatus{
+		Status: &types.BotStatus{
+			State:           types.BotStateInactive,
 			HealthScore:     0,
 			HealthStatus:    types.HealthStatusInactive,
-			LifecycleStatus: types.AgentStatusOffline,
+			LifecycleStatus: types.BotStatusOffline,
 			LastSeen:        time.Now().Add(-1 * time.Minute),
 			LastUpdated:     time.Now().Add(-1 * time.Minute),
 			Source:          types.StatusSourceReconcile,
@@ -346,10 +346,10 @@ func TestStatusManagerBroadcastsNodeOnlineEvent(t *testing.T) {
 	sm.cacheMutex.Unlock()
 
 	// Simulate node coming online - this is what heartbeat processing does
-	activeState := types.AgentStateActive
+	activeState := types.BotStateActive
 	healthScore := 85
-	lifecycleStatus := types.AgentStatusReady
-	update := &types.AgentStatusUpdate{
+	lifecycleStatus := types.BotStatusReady
+	update := &types.BotStatusUpdate{
 		State:           &activeState,
 		HealthScore:     &healthScore,
 		LifecycleStatus: &lifecycleStatus,
@@ -357,7 +357,7 @@ func TestStatusManagerBroadcastsNodeOnlineEvent(t *testing.T) {
 		Reason:          "agent heartbeat received",
 	}
 
-	err := sm.UpdateAgentStatus(ctx, "node-online-test", update)
+	err := sm.UpdateBotStatus(ctx, "node-online-test", update)
 	require.NoError(t, err)
 
 	// Give events time to propagate
@@ -386,40 +386,40 @@ func TestStatusManagerBroadcastsNodeOnlineEvent(t *testing.T) {
 		"Expected NodeOnline or NodeUnifiedStatusChanged event, got events: %+v", receivedEvents)
 }
 
-// TestStatusManagerPreservesOldStatusForEventBroadcast verifies that UpdateAgentStatus
+// TestStatusManagerPreservesOldStatusForEventBroadcast verifies that UpdateBotStatus
 // correctly captures the old status before applying updates, ensuring that status change
 // events are broadcast with accurate old/new state information.
 func TestStatusManagerPreservesOldStatusForEventBroadcast(t *testing.T) {
 	provider, ctx := setupStatusManagerStorage(t)
 
 	// Register an agent that starts as ACTIVE
-	node := &types.AgentNode{
+	node := &types.Node{
 		ID:              "node-preserve-test",
 		TeamID:          "team",
 		BaseURL:         "http://localhost",
 		Version:         "1.0.0",
 		HealthStatus:    types.HealthStatusActive,
-		LifecycleStatus: types.AgentStatusReady,
+		LifecycleStatus: types.BotStatusReady,
 		LastHeartbeat:   time.Now(),
 		Bots:       []types.BotDefinition{},
 		Skills:          []types.SkillDefinition{},
 	}
-	require.NoError(t, provider.RegisterAgent(ctx, node))
+	require.NoError(t, provider.RegisterNode(ctx, node))
 
 	// Track event handler calls to verify old/new status
 	var mu sync.Mutex
 	var statusChanges []struct {
-		OldState types.AgentState
-		NewState types.AgentState
+		OldState types.BotState
+		NewState types.BotState
 	}
 
 	handler := &testStatusEventHandler{
-		onStatusChanged: func(nodeID string, oldStatus, newStatus *types.AgentStatus) {
+		onStatusChanged: func(nodeID string, oldStatus, newStatus *types.BotStatus) {
 			if nodeID == "node-preserve-test" {
 				mu.Lock()
 				statusChanges = append(statusChanges, struct {
-					OldState types.AgentState
-					NewState types.AgentState
+					OldState types.BotState
+					NewState types.BotState
 				}{
 					OldState: oldStatus.State,
 					NewState: newStatus.State,
@@ -439,12 +439,12 @@ func TestStatusManagerPreservesOldStatusForEventBroadcast(t *testing.T) {
 
 	// Prime the cache with active status
 	sm.cacheMutex.Lock()
-	sm.statusCache["node-preserve-test"] = &cachedAgentStatus{
-		Status: &types.AgentStatus{
-			State:           types.AgentStateActive,
+	sm.statusCache["node-preserve-test"] = &cachedBotStatus{
+		Status: &types.BotStatus{
+			State:           types.BotStateActive,
 			HealthScore:     85,
 			HealthStatus:    types.HealthStatusActive,
-			LifecycleStatus: types.AgentStatusReady,
+			LifecycleStatus: types.BotStatusReady,
 			LastSeen:        time.Now(),
 			LastUpdated:     time.Now(),
 			Source:          types.StatusSourceHeartbeat,
@@ -454,16 +454,16 @@ func TestStatusManagerPreservesOldStatusForEventBroadcast(t *testing.T) {
 	sm.cacheMutex.Unlock()
 
 	// Update to inactive
-	inactiveState := types.AgentStateInactive
+	inactiveState := types.BotStateInactive
 	healthScore := 0
-	update := &types.AgentStatusUpdate{
+	update := &types.BotStatusUpdate{
 		State:       &inactiveState,
 		HealthScore: &healthScore,
 		Source:      types.StatusSourceHealthCheck,
 		Reason:      "HTTP health check failed",
 	}
 
-	err := sm.UpdateAgentStatus(ctx, "node-preserve-test", update)
+	err := sm.UpdateBotStatus(ctx, "node-preserve-test", update)
 	require.NoError(t, err)
 
 	// Give event handler time to be called
@@ -474,16 +474,16 @@ func TestStatusManagerPreservesOldStatusForEventBroadcast(t *testing.T) {
 	defer mu.Unlock()
 
 	require.Len(t, statusChanges, 1, "Expected exactly one status change event")
-	require.Equal(t, types.AgentStateActive, statusChanges[0].OldState, "Old state should be Active")
-	require.Equal(t, types.AgentStateInactive, statusChanges[0].NewState, "New state should be Inactive")
+	require.Equal(t, types.BotStateActive, statusChanges[0].OldState, "Old state should be Active")
+	require.Equal(t, types.BotStateInactive, statusChanges[0].NewState, "New state should be Inactive")
 }
 
 // testStatusEventHandler is a test implementation of StatusEventHandler
 type testStatusEventHandler struct {
-	onStatusChanged func(nodeID string, oldStatus, newStatus *types.AgentStatus)
+	onStatusChanged func(nodeID string, oldStatus, newStatus *types.BotStatus)
 }
 
-func (h *testStatusEventHandler) OnStatusChanged(nodeID string, oldStatus, newStatus *types.AgentStatus) {
+func (h *testStatusEventHandler) OnStatusChanged(nodeID string, oldStatus, newStatus *types.BotStatus) {
 	if h.onStatusChanged != nil {
 		h.onStatusChanged(nodeID, oldStatus, newStatus)
 	}
@@ -502,35 +502,35 @@ func TestStatusManager_UpdateFromHeartbeat_NeverDropped(t *testing.T) {
 
 	// First, mark the agent as inactive via a health check source
 	// (simulating what HealthMonitor would do)
-	inactiveState := types.AgentStateInactive
+	inactiveState := types.BotStateInactive
 	healthScore := 0
-	update := &types.AgentStatusUpdate{
+	update := &types.BotStatusUpdate{
 		State:       &inactiveState,
 		HealthScore: &healthScore,
 		Source:      types.StatusSourceHealthCheck,
 		Reason:      "HTTP health check failed",
 	}
-	err := sm.UpdateAgentStatus(ctx, "node-heartbeat-priority", update)
+	err := sm.UpdateBotStatus(ctx, "node-heartbeat-priority", update)
 	require.NoError(t, err)
 
 	// Verify agent is inactive
-	status, err := sm.GetAgentStatusSnapshot(ctx, "node-heartbeat-priority", nil)
+	status, err := sm.GetBotStatusSnapshot(ctx, "node-heartbeat-priority", nil)
 	require.NoError(t, err)
-	require.Equal(t, types.AgentStateInactive, status.State)
+	require.Equal(t, types.BotStateInactive, status.State)
 	require.Equal(t, types.StatusSourceHealthCheck, status.Source)
 
 	// Now send a heartbeat IMMEDIATELY (within what used to be the 10s drop window).
 	// Previously this heartbeat would be silently ignored. Now it MUST be processed.
-	readyStatus := types.AgentStatusReady
+	readyStatus := types.BotStatusReady
 	err = sm.UpdateFromHeartbeat(ctx, "node-heartbeat-priority", &readyStatus, nil)
 	require.NoError(t, err, "Heartbeat should never be dropped")
 
 	// Verify the heartbeat was processed — agent should no longer be inactive
-	status, err = sm.GetAgentStatusSnapshot(ctx, "node-heartbeat-priority", nil)
+	status, err = sm.GetBotStatusSnapshot(ctx, "node-heartbeat-priority", nil)
 	require.NoError(t, err)
 	require.Equal(t, types.StatusSourceHeartbeat, status.Source,
 		"Source should be heartbeat, proving it was processed")
-	require.NotEqual(t, types.AgentStateInactive, status.State,
+	require.NotEqual(t, types.BotStateInactive, status.State,
 		"Agent should not be inactive after receiving a heartbeat")
 }
 
@@ -544,7 +544,7 @@ func TestStatusManager_Reconciliation_UsesConfiguredThreshold(t *testing.T) {
 	}, nil, nil)
 
 	// Agent with heartbeat 45 seconds ago — should NOT need reconciliation
-	recentAgent := &types.AgentNode{
+	recentAgent := &types.Node{
 		ID:            "node-recent",
 		HealthStatus:  types.HealthStatusActive,
 		LastHeartbeat: time.Now().Add(-45 * time.Second),
@@ -553,7 +553,7 @@ func TestStatusManager_Reconciliation_UsesConfiguredThreshold(t *testing.T) {
 		"Agent with 45s-old heartbeat should NOT need reconciliation (threshold is 60s)")
 
 	// Agent with heartbeat 65 seconds ago — SHOULD need reconciliation
-	staleAgent := &types.AgentNode{
+	staleAgent := &types.Node{
 		ID:            "node-stale",
 		HealthStatus:  types.HealthStatusActive,
 		LastHeartbeat: time.Now().Add(-65 * time.Second),
@@ -562,7 +562,7 @@ func TestStatusManager_Reconciliation_UsesConfiguredThreshold(t *testing.T) {
 		"Agent with 65s-old heartbeat should need reconciliation (threshold is 60s)")
 
 	// Agent already inactive — should NOT need reconciliation even if stale
-	inactiveAgent := &types.AgentNode{
+	inactiveAgent := &types.Node{
 		ID:            "node-inactive",
 		HealthStatus:  types.HealthStatusInactive,
 		LastHeartbeat: time.Now().Add(-120 * time.Second),

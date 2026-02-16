@@ -1,5 +1,5 @@
 import { getNodesSummary } from './api';
-import type { AgentNodeSummary } from '../types/playground';
+import type { NodeSummary } from '../types/playground';
 
 export interface SearchResult {
   id: string;
@@ -58,13 +58,13 @@ class SearchService {
     try {
       const { nodes } = await getNodesSummary();
       const filteredNodes = nodes
-        .filter((node: AgentNodeSummary) =>
+        .filter((node: NodeSummary) =>
           node.id.toLowerCase().includes(query.toLowerCase()) ||
           node.base_url.toLowerCase().includes(query.toLowerCase())
         )
         .slice(0, limit);
 
-      return filteredNodes.map((node: AgentNodeSummary) => ({
+      return filteredNodes.map((node: NodeSummary) => ({
         id: node.id,
         type: 'agent' as const,
         title: node.id,

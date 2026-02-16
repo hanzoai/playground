@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities to: contact@playground.ai
+Please report security vulnerabilities to: contact@hanzo.bot
 
 **Do NOT open public issues for security vulnerabilities.**
 

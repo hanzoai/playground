@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { bulkNodeStatus, refreshNodeStatus } from "@/services/api";
-import type { AgentStatus } from "@/types/playground";
+import type { BotStatus } from "@/types/playground";
 import { ArrowClockwise } from "@/components/ui/icon-bridge";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { statusTone } from "@/lib/theme";
 interface StatusRefreshButtonProps {
   nodeId?: string;
   nodeIds?: string[];
-  onRefresh?: (status: AgentStatus | Record<string, AgentStatus>) => void;
+  onRefresh?: (status: BotStatus | Record<string, BotStatus>) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
   size?: "sm" | "default" | "lg";
@@ -41,7 +41,7 @@ export function StatusRefreshButton({
     setIsRefreshing(true);
 
     try {
-      let result: AgentStatus | Record<string, AgentStatus>;
+      let result: BotStatus | Record<string, BotStatus>;
 
       if (nodeId) {
         // Single node refresh
@@ -151,10 +151,10 @@ export function StatusRefreshButton({
 // Hook for optimistic UI updates
 export function useOptimisticStatusRefresh() {
   const [optimisticUpdates, setOptimisticUpdates] = useState<
-    Record<string, AgentStatus>
+    Record<string, BotStatus>
   >({});
 
-  const setOptimisticStatus = (nodeId: string, status: AgentStatus) => {
+  const setOptimisticStatus = (nodeId: string, status: BotStatus) => {
     setOptimisticUpdates((prev) => ({
       ...prev,
       [nodeId]: status,
@@ -176,7 +176,7 @@ export function useOptimisticStatusRefresh() {
     });
   };
 
-  const getOptimisticStatus = (nodeId: string): AgentStatus | null => {
+  const getOptimisticStatus = (nodeId: string): BotStatus | null => {
     return optimisticUpdates[nodeId] || null;
   };
 

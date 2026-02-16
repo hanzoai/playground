@@ -11,18 +11,18 @@ import {
 } from "@/components/ui/icon-bridge";
 import { cn } from "../../lib/utils";
 import { statusTone, type StatusTone as StatusToneKey } from "../../lib/theme";
-import { agentColorManager } from "../../utils/agentColorManager";
+import { botColorManager } from "../../utils/botColorManager";
 import {
   getStatusLabel,
   normalizeExecutionStatus,
   type CanonicalStatus,
 } from "../../utils/status";
-import { AgentBadge } from "./AgentBadge";
+import { BotBadge } from "./BotBadge";
 
 interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -71,7 +71,7 @@ const StatusPlaceholder = memo(
     data,
   }: {
     status: CanonicalStatus;
-    agentColor: ReturnType<typeof agentColorManager.getAgentColor>;
+    agentColor: ReturnType<typeof botColorManager.getAgentColor>;
     data: WorkflowNodeData;
   }) => {
     const toneKey = STATUS_TONE_TOKEN_MAP[status] ?? "neutral";
@@ -263,9 +263,9 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
   const statusBorderVar = `var(--status-${toneKey}-border)`;
   const statusGlowVar = `color-mix(in srgb, var(--status-${toneKey}) 38%, transparent)`;
 
-  const agentColor = agentColorManager.getAgentColor(
-    data.agent_name || data.agent_node_id,
-    data.agent_node_id
+  const agentColor = botColorManager.getAgentColor(
+    data.agent_name || data.node_id,
+    data.node_id
   );
 
   const tokenFor = (token: StatusToneKey | "primary") => {
@@ -326,7 +326,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
 
   // Calculate optimal node width based on content
   const taskText = data.task_name || data.bot_id;
-  const agentText = data.agent_name || data.agent_node_id;
+  const agentText = data.agent_name || data.node_id;
   const nodeWidth = calculateOptimalWidth(taskText, agentText);
 
   // Early return for simplified view when zoomed out
@@ -380,9 +380,9 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
 
       {/* Agent Badge - positioned in top-left */}
       <div className="absolute top-2 left-2 z-10">
-        <AgentBadge
-          agentName={data.agent_name || data.agent_node_id}
-          agentId={data.agent_node_id}
+        <BotBadge
+          agentName={data.agent_name || data.node_id}
+          agentId={data.node_id}
           size="sm"
           showTooltip={false}
         />
@@ -543,7 +543,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
                 Agent:
               </span>
               <span className="font-medium text-foreground">
-                {humanizeText(data.agent_name || data.agent_node_id)}
+                {humanizeText(data.agent_name || data.node_id)}
               </span>
             </div>
 

@@ -164,7 +164,7 @@ func (m initModel) View() string {
 	var s strings.Builder
 
 	// Title
-	s.WriteString(titleStyle.Render("🎯 Creating Agents Agent") + "\n\n")
+	s.WriteString(titleStyle.Render("🎯 Creating Playground Bot") + "\n\n")
 
 	switch m.step {
 	case 0: // Project name
@@ -210,23 +210,23 @@ func NewInitCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "init [project-name]",
-		Short: "Initialize a new Agents agent project",
-		Long: `Initialize a new Agents agent project with a predefined
+		Short: "Initialize a new Playground bot project",
+		Long: `Initialize a new Playground bot project with a predefined
 directory structure and essential files.
 
 This command sets up a new project, including:
 - Language-specific project structure (Python, Go, or TypeScript)
-- Basic agent implementation with example bot
+- Basic bot implementation with example bot
 - README.md and .gitignore files
-- Configuration for connecting to the Agents control plane
+- Configuration for connecting to the Playground control plane
 
 Example:
-  af init                    # Interactive mode
-  af init my-new-agent       # With project name
-  af init my-agent --language python
-  af init my-agent --defaults # Use defaults with no prompts
-  af init my-agent -l go --author "John Doe" --email "john@example.com"
-  af init my-agent -l typescript`,
+  playground init                    # Interactive mode
+  playground init my-new-bot        # With project name
+  playground init my-bot --language python
+  playground init my-bot --defaults # Use defaults with no prompts
+  playground init my-bot -l go --author "John Doe" --email "john@example.com"
+  playground init my-bot -l typescript`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var projectName string
@@ -397,7 +397,7 @@ Example:
 				fmt.Println("  2. npm install")
 			}
 
-			fmt.Println("  3. af server                    # Start Agents server")
+			fmt.Println("  3. playground server             # Start Playground server")
 
 			if language == "python" {
 				fmt.Println("  4. python main.py                  # Start your agent")
@@ -432,7 +432,7 @@ Example:
 
 			fmt.Println("  4. Restart your agent")
 			fmt.Println()
-			printInfo("Learn more: https://agents.ai/docs")
+			printInfo("Learn more: https://playground.hanzo.ai/docs")
 			fmt.Println()
 			printSuccess("Happy building! 🎉")
 

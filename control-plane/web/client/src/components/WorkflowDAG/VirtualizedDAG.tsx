@@ -13,7 +13,7 @@ import {
 } from "@xyflow/react";
 import React, { useCallback, useMemo, useRef } from "react";
 
-import { AgentLegend } from "./AgentLegend";
+import { BotLegend } from "./BotLegend";
 import { LayoutControls } from "./LayoutControls";
 import FloatingConnectionLine from "./FloatingConnectionLine";
 import type { AllLayoutType } from "./layouts/LayoutManager";
@@ -168,7 +168,7 @@ export function VirtualizedDAG({
 
       {/* Agent Legend */}
       <Panel position="top-left" className="z-10">
-        <AgentLegend
+        <BotLegend
           onAgentFilter={onAgentFilter}
           selectedAgent={selectedAgent}
           compact={nodes.length <= 20}

@@ -53,7 +53,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 	}
 
 	// Get af server ID dynamically
-	agentsServerID, err := h.didService.GetAgentsServerID()
+	agentsServerID, err := h.didService.GetPlaygroundServerID()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
@@ -79,7 +79,7 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 	}
 
 	// Get agent info for this node
-	agentInfo, exists := registry.AgentNodes[nodeID]
+	agentInfo, exists := registry.Nodes[nodeID]
 	if !exists {
 		c.JSON(http.StatusOK, gin.H{
 			"has_did":        false,
@@ -99,8 +99,8 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"did":                  agentInfo.DID,
-		"agent_node_id":        nodeID,
-		"agents_server_id": registry.AgentsServerID,
+		"node_id":        nodeID,
+		"playground_server_id": registry.PlaygroundServerID,
 		"public_key_jwk":       agentInfo.PublicKeyJWK,
 		"derivation_path":      agentInfo.DerivationPath,
 		"bots":            agentInfo.Bots,
@@ -649,7 +649,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 	var resolutionStatus string = "not_found"
 
 	// Try to find the DID in agent DIDs
-	agentDIDs, err := h.storage.ListAgentDIDs(c.Request.Context())
+	agentDIDs, err := h.storage.ListNodeDIDs(c.Request.Context())
 	if err == nil {
 		for _, agentDID := range agentDIDs {
 			if agentDID.DID == did {
@@ -675,8 +675,8 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 					"service": []gin.H{
 						{
 							"id":              did + "#agent-service",
-							"type":            "AgentService",
-							"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.AgentNodeID),
+							"type":            "BotService",
+							"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.NodeID),
 						},
 					},
 				}
@@ -693,8 +693,8 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 				// Add service endpoints
 				serviceEndpoints = append(serviceEndpoints, gin.H{
 					"id":              did + "#agent-service",
-					"type":            "AgentService",
-					"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.AgentNodeID),
+					"type":            "BotService",
+					"serviceEndpoint": fmt.Sprintf("https://agents-server/agents/%s", agentDID.NodeID),
 				})
 
 				// Add component DIDs (bots and skills)
@@ -742,7 +742,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 							{
 								"id":         did + "#key-1",
 								"type":       "JsonWebKey2020",
-								"controller": componentDID.AgentDID,
+								"controller": componentDID.NodeDID,
 							},
 						},
 						"authentication":  []string{did + "#key-1"},

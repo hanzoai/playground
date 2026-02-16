@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from 'axios';
-import type { MCPServerConfig } from '../types/agent.js';
+import type { MCPServerConfig } from '../types/bot.js';
 import type { MCPTool } from '../types/mcp.js';
 import { httpAgent, httpsAgent } from '../utils/httpAgents.js';
 

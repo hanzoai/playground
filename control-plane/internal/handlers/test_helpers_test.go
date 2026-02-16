@@ -11,7 +11,7 @@ import (
 
 type testExecutionStorage struct {
 	mu                        sync.Mutex
-	agent                     *types.AgentNode
+	agent                     *types.Node
 	workflowExecutions        map[string]*types.WorkflowExecution
 	executionRecords          map[string]*types.Execution
 	runs                      map[string]*types.WorkflowRun
@@ -23,7 +23,7 @@ type testExecutionStorage struct {
 	updateCh                  chan string
 }
 
-func newTestExecutionStorage(agent *types.AgentNode) *testExecutionStorage {
+func newTestExecutionStorage(agent *types.Node) *testExecutionStorage {
 	return &testExecutionStorage{
 		agent:                     agent,
 		workflowExecutions:        make(map[string]*types.WorkflowExecution),
@@ -38,7 +38,7 @@ func newTestExecutionStorage(agent *types.AgentNode) *testExecutionStorage {
 	}
 }
 
-func (s *testExecutionStorage) GetAgent(ctx context.Context, id string) (*types.AgentNode, error) {
+func (s *testExecutionStorage) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	if s.agent != nil && s.agent.ID == id {
 		return s.agent, nil
 	}

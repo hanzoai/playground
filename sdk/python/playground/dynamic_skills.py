@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Type
 from pydantic import BaseModel, create_model
 from fastapi import Request
 
-from playground.agent_utils import AgentUtils
+from playground.bot_utils import BotUtils
 from playground.execution_context import ExecutionContext
 from playground.logger import log_debug, log_error, log_info, log_warn
 
@@ -88,7 +88,7 @@ class DynamicMCPSkillManager:
                 # Register each tool as a skill
                 for tool in tools:
                     try:
-                        skill_name = AgentUtils.generate_skill_name(
+                        skill_name = BotUtils.generate_skill_name(
                             server_alias, tool.get("name", "")
                         )
                         await self._register_mcp_tool_as_skill(
@@ -283,7 +283,7 @@ class DynamicMCPSkillManager:
         field_definitions = {}
 
         for field_name, field_def in properties.items():
-            field_type = AgentUtils.map_json_type_to_python(
+            field_type = BotUtils.map_json_type_to_python(
                 field_def.get("type", "string")
             )
             default_value = field_def.get("default")

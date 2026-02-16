@@ -86,4 +86,4 @@ kubectl apply -k deployments/kubernetes/overlays/postgres-demo
 ## Notes
 
 - The Python demo agent installs the SDK at startup; your cluster needs outbound network access.
-- For agent nodes, always register a `Service` DNS name (`AGENT_PUBLIC_URL` / `AGENT_CALLBACK_URL`), not `localhost`.
+- For bot nodes, always register a `Service` DNS name (`HANZO_PUBLIC_URL` / `HANZO_CALLBACK_URL`), not `localhost`.

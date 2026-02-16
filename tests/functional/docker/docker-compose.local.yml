@@ -5,8 +5,8 @@ services:
       dockerfile: deployments/docker/Dockerfile.control-plane
     container_name: playground-control-plane-local
     environment:
-      AGENTS_STORAGE_MODE: local
-      AGENTS_PORT: 8080
+      PLAYGROUND_STORAGE_MODE: local
+      PLAYGROUND_PORT: 8080
       AGENTS_CONFIG_FILE: /etc/playground/agents-test.yaml
       AGENTS_HOME: /data/playground
     ports:

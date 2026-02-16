@@ -176,7 +176,7 @@ export interface ActiveWorkflowRun {
   name?: string;
   started_at: string;
   elapsed_ms: number;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
 }
@@ -197,7 +197,7 @@ export interface IncidentItem {
   status: string;
   started_at: string;
   completed_at?: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   error?: string;
 }

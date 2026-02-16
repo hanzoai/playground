@@ -17,14 +17,14 @@ export interface DIDIdentity {
 
 export interface DIDIdentityPackage {
   agentDid: DIDIdentity;
-  reasonerDids: Record<string, DIDIdentity>;
+  botDids: Record<string, DIDIdentity>;
   skillDids: Record<string, DIDIdentity>;
   playgroundServerId: string;
 }
 
 export interface DIDRegistrationRequest {
   agentNodeId: string;
-  reasoners: Array<{ id: string; [key: string]: any }>;
+  bots: Array<{ id: string; [key: string]: any }>;
   skills: Array<{ id: string; [key: string]: any }>;
 }
 
@@ -132,7 +132,7 @@ export class DidClient {
   async registerAgent(request: DIDRegistrationRequest): Promise<DIDRegistrationResponse> {
     const payload = {
       agent_node_id: request.agentNodeId,
-      reasoners: request.reasoners,
+      bots: request.bots,
       skills: request.skills
     };
 
@@ -165,10 +165,10 @@ export class DidClient {
       functionName: data?.function_name
     });
 
-    const reasonerDids: Record<string, DIDIdentity> = {};
-    if (pkg?.reasoner_dids) {
-      for (const [name, data] of Object.entries(pkg.reasoner_dids)) {
-        reasonerDids[name] = parseIdentity(data);
+    const botDids: Record<string, DIDIdentity> = {};
+    if (pkg?.bot_dids) {
+      for (const [name, data] of Object.entries(pkg.bot_dids)) {
+        botDids[name] = parseIdentity(data);
       }
     }
 
@@ -181,7 +181,7 @@ export class DidClient {
 
     return {
       agentDid: parseIdentity(pkg?.agent_did),
-      reasonerDids,
+      botDids,
       skillDids,
       playgroundServerId: pkg?.agents_server_id ?? ''
     };

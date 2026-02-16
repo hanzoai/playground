@@ -260,7 +260,7 @@ export function EnhancedWorkflowIdentity({ workflow, vcChain }: EnhancedWorkflow
       icon: User,
       value: workflow.agent_name || "Anonymous agent",
       hint: workflow.session_id ? `Session ${workflow.session_id.slice(0, 8)}…` : "Session pending",
-      badgeLabel: workflow.actor_id ? "Actor linked" : "Agent only",
+      badgeLabel: workflow.actor_id ? "Actor linked" : "Bot only",
       badgeTone: workflow.actor_id ? "succeeded" : "pending",
     },
     {
@@ -531,7 +531,7 @@ export function EnhancedWorkflowIdentity({ workflow, vcChain }: EnhancedWorkflow
                               </div>
                               {credentialSubject?.caller?.agentNodeDid && (
                                 <p className="mt-1 text-body-small">
-                                  Agent node: {credentialSubject.caller.agentNodeDid}
+                                  node: {credentialSubject.caller.agentNodeDid}
                                 </p>
                               )}
                             </div>
@@ -552,7 +552,7 @@ export function EnhancedWorkflowIdentity({ workflow, vcChain }: EnhancedWorkflow
                               </div>
                               {credentialSubject?.target?.agentNodeDid && (
                                 <p className="mt-1 text-body-small">
-                                  Agent node: {credentialSubject.target.agentNodeDid}
+                                  node: {credentialSubject.target.agentNodeDid}
                                 </p>
                               )}
                             </div>
@@ -669,7 +669,7 @@ export function EnhancedWorkflowIdentity({ workflow, vcChain }: EnhancedWorkflow
                               )}
                             </div>
                             {callerAgent && (
-                              <p className="mt-1 text-body-small">Agent node: {callerAgent}</p>
+                              <p className="mt-1 text-body-small">node: {callerAgent}</p>
                             )}
                           </div>
                           <div>
@@ -686,7 +686,7 @@ export function EnhancedWorkflowIdentity({ workflow, vcChain }: EnhancedWorkflow
                               )}
                             </div>
                             {targetAgent && (
-                              <p className="mt-1 text-body-small">Agent node: {targetAgent}</p>
+                              <p className="mt-1 text-body-small">node: {targetAgent}</p>
                             )}
                           </div>
                           <div>

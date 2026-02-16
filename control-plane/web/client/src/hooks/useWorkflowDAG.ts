@@ -6,7 +6,7 @@ import { normalizeExecutionStatus } from '../utils/status';
 interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -357,7 +357,7 @@ function transformRunDetailToDag(detail: WorkflowRunDetailResponse): WorkflowDAG
     const node: WorkflowDAGNode = {
       workflow_id: exec.workflow_id,
       execution_id: exec.execution_id,
-      agent_node_id: exec.agent_node_id,
+      node_id: exec.node_id,
       bot_id: exec.bot_id,
       status: exec.status,
       started_at: exec.started_at,
@@ -408,7 +408,7 @@ function transformRunDetailToDag(detail: WorkflowRunDetailResponse): WorkflowDAG
   const fallbackRoot: WorkflowDAGNode = {
     workflow_id: detail.run.root_workflow_id,
     execution_id: rootExecutionId ?? detail.run.root_workflow_id,
-    agent_node_id: rootNode?.agent_node_id ?? '',
+    node_id: rootNode?.node_id ?? '',
     bot_id: rootNode?.bot_id ?? detail.run.root_workflow_id,
     status: normalizedStatus,
     started_at: detail.run.created_at,

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, isAxiosError } from 'axios';
-import type { MemoryScope } from '../types/agent.js';
+import type { MemoryScope } from '../types/bot.js';
 import { httpAgent, httpsAgent } from '../utils/httpAgents.js';
 
 export interface MemoryRequestMetadata {

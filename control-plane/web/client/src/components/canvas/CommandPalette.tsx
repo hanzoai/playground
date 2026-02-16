@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useAgentStore } from '@/stores/agentStore';
+import { useBotStore } from '@/stores/botStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { usePermissionModeStore } from '@/stores/permissionModeStore';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const agents = useAgentStore((s) => s.agents);
+  const agents = useBotStore((s) => s.agents);
   const selectNode = useCanvasStore((s) => s.selectNode);
   const nodes = useCanvasStore((s) => s.nodes);
   const cycleGlobal = usePermissionModeStore((s) => s.cycleGlobal);

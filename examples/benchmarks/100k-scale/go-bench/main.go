@@ -215,7 +215,7 @@ func benchmarkRegistration(numHandlers, iterations, warmup int, verbose bool) []
 
 		for j := 0; j < numHandlers; j++ {
 			idx := j
-			a.RegisterReasoner(
+			a.RegisterBot(
 				fmt.Sprintf("handler-%d", j),
 				func(ctx context.Context, input map[string]any) (any, error) {
 					return map[string]any{"id": idx, "processed": true}, nil
@@ -262,7 +262,7 @@ func benchmarkMemory(numHandlers, iterations, warmup int, verbose bool) []float6
 
 		for j := 0; j < numHandlers; j++ {
 			idx := j
-			a.RegisterReasoner(
+			a.RegisterBot(
 				fmt.Sprintf("handler-%d", j),
 				func(ctx context.Context, input map[string]any) (any, error) {
 					return map[string]any{"id": idx}, nil
@@ -317,7 +317,7 @@ func benchmarkColdStart(iterations, warmup int, verbose bool) []float64 {
 			DisableLeaseLoop: true,
 		})
 		// Register one handler to be "ready"
-		a.RegisterReasoner("ping", func(ctx context.Context, input map[string]any) (any, error) {
+		a.RegisterBot("ping", func(ctx context.Context, input map[string]any) (any, error) {
 			return map[string]any{"pong": true}, nil
 		})
 		elapsed := time.Since(start)
@@ -365,7 +365,7 @@ func benchmarkRequestProcessing(numHandlers, numRequests int, verbose bool) []fl
 			}, nil
 		}
 		handlers[i] = handlerEntry{name: fmt.Sprintf("handler-%d", i), handler: h}
-		a.RegisterReasoner(handlers[i].name, h)
+		a.RegisterBot(handlers[i].name, h)
 	}
 
 	// Warm up
@@ -408,7 +408,7 @@ func runServer(numHandlers int) {
 
 	for i := 0; i < numHandlers; i++ {
 		idx := i
-		a.RegisterReasoner(
+		a.RegisterBot(
 			fmt.Sprintf("handler-%d", i),
 			func(ctx context.Context, input map[string]any) (any, error) {
 				atomic.AddUint64(&requestCount, 1)
@@ -450,7 +450,7 @@ func benchmarkConcurrentRequests(numHandlers int, concurrency int, duration time
 		handlers[i] = func(ctx context.Context, input map[string]any) (any, error) {
 			return map[string]any{"id": idx}, nil
 		}
-		a.RegisterReasoner(fmt.Sprintf("h%d", i), handlers[i])
+		a.RegisterBot(fmt.Sprintf("h%d", i), handlers[i])
 	}
 
 	var totalRequests uint64

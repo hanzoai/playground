@@ -124,14 +124,14 @@ export interface AgentSummary {
   emoji?: string;
   avatar?: string;
   workspace?: string;
-  status: AgentStatus;
+  status: BotStatus;
   sessionKey?: string;
   model?: string;
   lastActivity?: string;
   createdAt?: string;
 }
 
-export type AgentStatus =
+export type BotStatus =
   | 'idle'
   | 'busy'
   | 'waiting'

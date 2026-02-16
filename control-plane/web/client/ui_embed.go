@@ -1,6 +1,6 @@
 //go:build embedded
 
-// UI embedding and route registration (embedded build).
+// UI embedding and route registration for Playground (embedded build).
 
 package client
 

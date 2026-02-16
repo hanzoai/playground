@@ -7,25 +7,25 @@ import (
 
 // DIDRegistry represents the master DID registry for a af server.
 type DIDRegistry struct {
-	AgentsServerID string                  `json:"agents_server_id" db:"agents_server_id"`
+	PlaygroundServerID string                  `json:"playground_server_id" db:"playground_server_id"`
 	MasterSeed         []byte                  `json:"master_seed" db:"master_seed_encrypted"`
 	RootDID            string                  `json:"root_did" db:"root_did"`
-	AgentNodes         map[string]AgentDIDInfo `json:"agent_nodes" db:"agent_nodes"`
+	Nodes         map[string]NodeDIDInfo `json:"nodes" db:"nodes"`
 	TotalDIDs          int                     `json:"total_dids" db:"total_dids"`
 	CreatedAt          time.Time               `json:"created_at" db:"created_at"`
 	LastKeyRotation    time.Time               `json:"last_key_rotation" db:"last_key_rotation"`
 }
 
-// AgentDIDInfo represents DID information for an agent node.
-type AgentDIDInfo struct {
+// NodeDIDInfo represents DID information for an agent node.
+type NodeDIDInfo struct {
 	DID                string                     `json:"did" db:"did"`
-	AgentNodeID        string                     `json:"agent_node_id" db:"agent_node_id"`
-	AgentsServerID string                     `json:"agents_server_id" db:"agents_server_id"`
+	NodeID        string                     `json:"node_id" db:"node_id"`
+	PlaygroundServerID string                     `json:"playground_server_id" db:"playground_server_id"`
 	PublicKeyJWK       json.RawMessage            `json:"public_key_jwk" db:"public_key_jwk"`
 	DerivationPath     string                     `json:"derivation_path" db:"derivation_path"`
 	Bots          map[string]BotDIDInfo `json:"bots" db:"bots"`
 	Skills             map[string]SkillDIDInfo    `json:"skills" db:"skills"`
-	Status             AgentDIDStatus             `json:"status" db:"status"`
+	Status             HanzoDIDStatus             `json:"status" db:"status"`
 	RegisteredAt       time.Time                  `json:"registered_at" db:"registered_at"`
 }
 
@@ -51,13 +51,13 @@ type SkillDIDInfo struct {
 	CreatedAt      time.Time       `json:"created_at" db:"created_at"`
 }
 
-// AgentDIDStatus represents the status of an agent DID.
-type AgentDIDStatus string
+// HanzoDIDStatus represents the status of an agent DID.
+type HanzoDIDStatus string
 
 const (
-	AgentDIDStatusActive   AgentDIDStatus = "active"
-	AgentDIDStatusInactive AgentDIDStatus = "inactive"
-	AgentDIDStatusRevoked  AgentDIDStatus = "revoked"
+	HanzoDIDStatusActive   HanzoDIDStatus = "active"
+	HanzoDIDStatusInactive HanzoDIDStatus = "inactive"
+	HanzoDIDStatusRevoked  HanzoDIDStatus = "revoked"
 )
 
 // ExecutionVC represents a verifiable credential for an execution.
@@ -66,7 +66,7 @@ type ExecutionVC struct {
 	ExecutionID  string          `json:"execution_id" db:"execution_id"`
 	WorkflowID   string          `json:"workflow_id" db:"workflow_id"`
 	SessionID    string          `json:"session_id" db:"session_id"`
-	AgentNodeID  *string         `json:"agent_node_id,omitempty" db:"agent_node_id"`
+	NodeID  *string         `json:"node_id,omitempty" db:"node_id"`
 	WorkflowName *string         `json:"workflow_name,omitempty" db:"workflow_name"`
 	IssuerDID    string          `json:"issuer_did" db:"issuer_did"`
 	TargetDID    string          `json:"target_did" db:"target_did"`
@@ -104,10 +104,10 @@ type WorkflowVC struct {
 
 // DIDIdentityPackage represents the complete DID identity package for an agent.
 type DIDIdentityPackage struct {
-	AgentDID           DIDIdentity            `json:"agent_did"`
+	NodeDID           DIDIdentity            `json:"agent_did"`
 	BotDIDs       map[string]DIDIdentity `json:"bot_dids"`
 	SkillDIDs          map[string]DIDIdentity `json:"skill_dids"`
-	AgentsServerID string                 `json:"agents_server_id"`
+	PlaygroundServerID string                 `json:"playground_server_id"`
 }
 
 // DIDIdentity represents a single DID identity with keys.
@@ -127,7 +127,7 @@ type ExecutionContext struct {
 	SessionID    string    `json:"session_id"`
 	CallerDID    string    `json:"caller_did"`
 	TargetDID    string    `json:"target_did"`
-	AgentNodeDID string    `json:"agent_node_did"`
+	NodeDID string    `json:"agent_node_did"`
 	Timestamp    time.Time `json:"timestamp"`
 }
 
@@ -183,13 +183,13 @@ type WorkflowVCCredentialSubject struct {
 type VCCaller struct {
 	DID          string `json:"did"`
 	Type         string `json:"type"`
-	AgentNodeDID string `json:"agentNodeDid"`
+	NodeDID string `json:"agentNodeDid"`
 }
 
 // VCTarget represents the target information in a VC.
 type VCTarget struct {
 	DID          string `json:"did"`
-	AgentNodeDID string `json:"agentNodeDid"`
+	NodeDID string `json:"agentNodeDid"`
 	FunctionName string `json:"functionName"`
 }
 
@@ -221,10 +221,10 @@ type VCProof struct {
 
 // DIDFilters holds filters for querying DIDs.
 type DIDFilters struct {
-	AgentsServerID *string         `json:"agents_server_id,omitempty"`
-	AgentNodeID        *string         `json:"agent_node_id,omitempty"`
+	PlaygroundServerID *string         `json:"playground_server_id,omitempty"`
+	NodeID        *string         `json:"node_id,omitempty"`
 	ComponentType      *string         `json:"component_type,omitempty"`
-	Status             *AgentDIDStatus `json:"status,omitempty"`
+	Status             *HanzoDIDStatus `json:"status,omitempty"`
 	ExposureLevel      *string         `json:"exposure_level,omitempty"`
 	CreatedAfter       *time.Time      `json:"created_after,omitempty"`
 	CreatedBefore      *time.Time      `json:"created_before,omitempty"`
@@ -238,7 +238,7 @@ type VCFilters struct {
 	WorkflowID    *string    `json:"workflow_id,omitempty"`
 	SessionID     *string    `json:"session_id,omitempty"`
 	IssuerDID     *string    `json:"issuer_did,omitempty"`
-	AgentNodeID   *string    `json:"agent_node_id,omitempty"`
+	NodeID   *string    `json:"node_id,omitempty"`
 	CallerDID     *string    `json:"caller_did,omitempty"`
 	TargetDID     *string    `json:"target_did,omitempty"`
 	Status        *string    `json:"status,omitempty"`
@@ -251,7 +251,7 @@ type VCFilters struct {
 
 // DIDRegistrationRequest represents a request to register an agent with DIDs.
 type DIDRegistrationRequest struct {
-	AgentNodeID string               `json:"agent_node_id"`
+	NodeID string               `json:"node_id"`
 	Bots   []BotDefinition `json:"bots"`
 	Skills      []SkillDefinition    `json:"skills"`
 }
@@ -351,7 +351,7 @@ type DIDRegistryEntry struct {
 type ComponentDIDInfo struct {
 	ComponentID     string    `json:"component_id" db:"component_id"`
 	ComponentDID    string    `json:"component_did" db:"component_did"`
-	AgentDID        string    `json:"agent_did" db:"agent_did"`
+	NodeDID        string    `json:"agent_did" db:"agent_did"`
 	ComponentType   string    `json:"component_type" db:"component_type"`
 	ComponentName   string    `json:"component_name" db:"component_name"`
 	DerivationIndex int       `json:"derivation_index" db:"derivation_index"`
@@ -364,7 +364,7 @@ type ExecutionVCInfo struct {
 	ExecutionID  string    `json:"execution_id" db:"execution_id"`
 	WorkflowID   string    `json:"workflow_id" db:"workflow_id"`
 	SessionID    string    `json:"session_id" db:"session_id"`
-	AgentNodeID  *string   `json:"agent_node_id,omitempty" db:"agent_node_id"`
+	NodeID  *string   `json:"node_id,omitempty" db:"node_id"`
 	WorkflowName *string   `json:"workflow_name,omitempty" db:"workflow_name"`
 	IssuerDID    string    `json:"issuer_did" db:"issuer_did"`
 	TargetDID    string    `json:"target_did" db:"target_did"`
@@ -392,9 +392,9 @@ type WorkflowVCInfo struct {
 	DocumentSize   int64      `json:"document_size_bytes" db:"document_size_bytes"`
 }
 
-// AgentsServerDIDInfo represents af server-level DID information stored in the database.
-type AgentsServerDIDInfo struct {
-	AgentsServerID string    `json:"agents_server_id" db:"agents_server_id"`
+// PlaygroundServerDIDInfo represents af server-level DID information stored in the database.
+type PlaygroundServerDIDInfo struct {
+	PlaygroundServerID string    `json:"playground_server_id" db:"playground_server_id"`
 	RootDID            string    `json:"root_did" db:"root_did"`
 	MasterSeed         []byte    `json:"master_seed" db:"master_seed_encrypted"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
@@ -412,7 +412,7 @@ const (
 
 // EnhancedDIDRegistrationRequest represents an enhanced request to register an agent with DIDs.
 type EnhancedDIDRegistrationRequest struct {
-	AgentNodeID      string               `json:"agent_node_id"`
+	NodeID      string               `json:"node_id"`
 	Bots        []BotDefinition `json:"bots"`
 	Skills           []SkillDefinition    `json:"skills"`
 	RegistrationType RegistrationType     `json:"registration_type"`
@@ -432,7 +432,7 @@ type DifferentialAnalysisResult struct {
 
 // PartialDIDRegistrationRequest represents a request for partial DID registration.
 type PartialDIDRegistrationRequest struct {
-	AgentNodeID        string               `json:"agent_node_id"`
+	NodeID        string               `json:"node_id"`
 	NewBotIDs     []string             `json:"new_bot_ids"`
 	NewSkillIDs        []string             `json:"new_skill_ids"`
 	UpdatedBotIDs []string             `json:"updated_bot_ids"`
@@ -443,7 +443,7 @@ type PartialDIDRegistrationRequest struct {
 
 // ComponentDeregistrationRequest represents a request to deregister specific components.
 type ComponentDeregistrationRequest struct {
-	AgentNodeID         string   `json:"agent_node_id"`
+	NodeID         string   `json:"node_id"`
 	BotIDsToRemove []string `json:"bot_ids_to_remove"`
 	SkillIDsToRemove    []string `json:"skill_ids_to_remove"`
 }

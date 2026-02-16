@@ -59,7 +59,7 @@ func TestSyncPackagesSkipsExistingEntries(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(agentsHome, "installed.yaml"), []byte(installed), 0o644))
 
 	storage := newStubPackageStorage()
-	storage.packages["existing-agent"] = &types.AgentPackage{ID: "existing-agent", Name: "Existing", InstalledAt: time.Now()}
+	storage.packages["existing-agent"] = &types.BotPackage{ID: "existing-agent", Name: "Existing", InstalledAt: time.Now()}
 
 	require.NoError(t, SyncPackagesFromRegistry(agentsHome, storage))
 

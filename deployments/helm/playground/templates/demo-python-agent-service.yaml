@@ -1,18 +1,18 @@
-{{- if .Values.demoPythonAgent.enabled -}}
+{{- if .Values.demoPythonBot.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "playground.fullname" . }}-demo-python-agent
+  name: {{ include "playground.fullname" . }}-demo-python-bot
   labels:
     {{- include "playground.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.demoPythonAgent.service.type }}
+  type: {{ .Values.demoPythonBot.service.type }}
   selector:
     {{- include "playground.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: demo-python-agent
+    app.kubernetes.io/component: demo-python-bot
   ports:
     - name: http
-      port: {{ .Values.demoPythonAgent.service.port }}
+      port: {{ .Values.demoPythonBot.service.port }}
       targetPort: http
 {{- end }}
 

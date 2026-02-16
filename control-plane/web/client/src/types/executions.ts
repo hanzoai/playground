@@ -7,7 +7,7 @@ export interface ExecutionSummary {
   execution_id: string;
   workflow_id: string;
   session_id?: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: CanonicalStatus;
   duration_ms: number;
@@ -34,7 +34,7 @@ export interface GroupedExecutionSummary {
 }
 
 export interface ExecutionFilters {
-  agent_node_id?: string;
+  node_id?: string;
   workflow_id?: string;
   session_id?: string;
   actor_id?: string;
@@ -101,7 +101,7 @@ export interface WorkflowExecution {
   agents_request_id: string;
   session_id?: string;
   actor_id?: string;
-  agent_node_id: string;
+  node_id: string;
   parent_workflow_id?: string;
   root_workflow_id?: string;
   workflow_depth: number;

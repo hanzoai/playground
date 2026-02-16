@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -73,8 +73,8 @@ export function TechnicalSection({
       icon: <Code size={14} className="text-muted-foreground" />,
     },
     {
-      label: "Agent Node ID",
-      value: node.agent_node_id,
+      label: "Node ID",
+      value: node.node_id,
       copyable: true,
       icon: <Chip size={14} className="text-muted-foreground" />,
     },

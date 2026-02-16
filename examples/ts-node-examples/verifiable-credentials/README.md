@@ -209,7 +209,7 @@ Each generated VC follows W3C Verifiable Credentials format:
 {
   "@context": [
     "https://www.w3.org/2018/credentials/v1",
-    "https://playground.ai/credentials/v1"
+    "https://hanzo.bot/credentials/v1"
   ],
   "type": ["VerifiableCredential", "AgentExecutionCredential"],
   "id": "urn:uuid:vc-abc123",

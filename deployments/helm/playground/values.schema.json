@@ -72,14 +72,14 @@
         }
       }
     },
-    "demoAgent": {
+    "demoBot": {
       "type": "object",
       "properties": {
         "enabled": { "type": "boolean" },
         "nodeId": { "type": "string" }
       }
     },
-    "demoPythonAgent": {
+    "demoPythonBot": {
       "type": "object",
       "properties": {
         "enabled": { "type": "boolean" },

@@ -11,10 +11,10 @@ import {
 import { memo, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { startAgent, stopAgent, reconcileAgent } from "../services/configurationApi";
-import { AgentControlButton, type AgentState } from "@/components/ui/AgentControlButton";
+import { BotControlButton, type BotState } from "@/components/ui/BotControlButton";
 import { useDIDStatus } from "../hooks/useDIDInfo";
 import { cn } from "../lib/utils";
-import type { AgentNodeSummary } from "../types/playground";
+import type { NodeSummary } from "../types/playground";
 import type { DensityMode } from "./DensityToggle";
 import { CompositeDIDStatus } from "./did/DIDStatusBadge";
 import { DIDIdentityBadge } from "./did/DIDDisplay";
@@ -23,18 +23,18 @@ import { MCPHealthDot, MCPHealthIndicator } from "./mcp/MCPHealthIndicator";
 import { getNodeStatusPresentation } from "@/utils/node-status";
 
 interface NodeCardProps {
-  nodeSummary: AgentNodeSummary;
+  nodeSummary: NodeSummary;
   searchQuery?: string;
   density?: DensityMode;
 }
 
 /**
  * Enhanced NodeCard component for direct navigation to NodeDetailPage with MCP integration.
- * Displays agent node summary with health status, capabilities, and MCP server information.
+ * Displays hanzo node summary with health status, capabilities, and MCP server information.
  * Optimized for navigation-focused interaction with comprehensive accessibility support.
  *
  * @param {NodeCardProps} props - The props for the NodeCard component.
- * @param {AgentNodeSummary} props.nodeSummary - Summary data for the agent node.
+ * @param {NodeSummary} props.nodeSummary - Summary data for the hanzo node.
  * @param {string} [props.searchQuery] - Optional search query to highlight text.
  * @param {DensityMode} [props.density='comfortable'] - Visual density mode for the card.
  */
@@ -208,7 +208,7 @@ const NodeCard = memo(
     };
 
     // Determine current agent state for the control button
-    const getAgentState = (): AgentState => {
+    const getBotState = (): BotState => {
       if (actionLoading === 'start') return 'starting';
       if (actionLoading === 'stop') return 'stopping';
       if (actionLoading === 'reconcile') return 'reconciling';
@@ -398,9 +398,9 @@ const NodeCard = memo(
           </div>
           <div className="flex items-center gap-2 pl-2">
             <div onClick={(e) => e.stopPropagation()}>
-              <AgentControlButton
+              <BotControlButton
                 agentId={nodeSummary.id}
-                currentState={getAgentState()}
+                currentState={getBotState()}
                 onToggle={handleAgentAction}
                 size="sm"
                 variant="minimal"

@@ -83,14 +83,14 @@ func (a *zapAdminNode) listBots() *zap.Message {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	nodes, err := a.storage.ListAgents(ctx, types.AgentFilters{})
+	nodes, err := a.storage.ListNodes(ctx, types.BotFilters{})
 	if err != nil {
 		return zapRespond(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	type botInfo struct {
 		BotID  string `json:"bot_id"`
-		AgentNodeID string `json:"agent_node_id"`
+		NodeID string `json:"node_id"`
 		Name        string `json:"name"`
 		Description string `json:"description"`
 		Status      string `json:"status"`
@@ -106,7 +106,7 @@ func (a *zapAdminNode) listBots() *zap.Message {
 		for _, r := range node.Bots {
 			bots = append(bots, botInfo{
 				BotID:  fmt.Sprintf("%s.%s", node.ID, r.ID),
-				AgentNodeID: node.ID,
+				NodeID: node.ID,
 				Name:        r.ID,
 				Description: fmt.Sprintf("Bot %s from node %s", r.ID, node.ID),
 				Status:      string(node.HealthStatus),
@@ -141,7 +141,7 @@ func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) 
 	{
 		admin.GET("/bots", func(c *gin.Context) {
 			ctx := c.Request.Context()
-			nodes, err := store.ListAgents(ctx, types.AgentFilters{})
+			nodes, err := store.ListNodes(ctx, types.BotFilters{})
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -149,7 +149,7 @@ func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) 
 
 			type botInfo struct {
 				BotID  string `json:"bot_id"`
-				AgentNodeID string `json:"agent_node_id"`
+				NodeID string `json:"node_id"`
 				Name        string `json:"name"`
 				Description string `json:"description"`
 				Status      string `json:"status"`
@@ -165,7 +165,7 @@ func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) 
 				for _, r := range node.Bots {
 					bots = append(bots, botInfo{
 						BotID:  fmt.Sprintf("%s.%s", node.ID, r.ID),
-						AgentNodeID: node.ID,
+						NodeID: node.ID,
 						Name:        r.ID,
 						Description: fmt.Sprintf("Bot %s from node %s", r.ID, node.ID),
 						Status:      string(node.HealthStatus),

@@ -5,12 +5,12 @@ import (
 	"time"
 )
 
-// AgentExecution represents a single execution of a bot or skill.
-type AgentExecution struct {
+// BotExecution represents a single execution of a bot or skill.
+type BotExecution struct {
 	ID          int64   `json:"id" db:"id"`
 	WorkflowID  string  `json:"workflow_id" db:"workflow_id"`
 	SessionID   *string `json:"session_id,omitempty" db:"session_id"`
-	AgentNodeID string  `json:"agent_node_id" db:"agent_node_id"`
+	NodeID string  `json:"node_id" db:"node_id"`
 	BotID  string  `json:"bot_id" db:"bot_id"`
 
 	InputData  json.RawMessage `json:"input_data" db:"input_data"`
@@ -23,7 +23,6 @@ type AgentExecution struct {
 	ErrorMessage *string `json:"error_message,omitempty" db:"error_message"`
 
 	UserID *string `json:"user_id,omitempty" db:"user_id"`
-	NodeID *string `json:"node_id,omitempty" db:"node_id"`
 
 	Metadata ExecutionMetadata `json:"metadata" db:"metadata"`
 
@@ -154,8 +153,8 @@ type AccessControlMetadata struct {
 	AuditAccess    bool     `json:"audit_access"`
 }
 
-// AgentNode represents a registered agent service.
-type AgentNode struct {
+// Node represents a registered agent service.
+type Node struct {
 	ID      string `json:"id" db:"id"`
 	TeamID  string `json:"team_id" db:"team_id"`
 	BaseURL string `json:"base_url" db:"base_url"`
@@ -172,12 +171,12 @@ type AgentNode struct {
 	CommunicationConfig CommunicationConfig  `json:"communication_config" db:"communication_config"`
 
 	HealthStatus    HealthStatus         `json:"health_status" db:"health_status"`
-	LifecycleStatus AgentLifecycleStatus `json:"lifecycle_status" db:"lifecycle_status"`
+	LifecycleStatus BotLifecycleStatus `json:"lifecycle_status" db:"lifecycle_status"`
 	LastHeartbeat   time.Time            `json:"last_heartbeat" db:"last_heartbeat"`
 	RegisteredAt    time.Time            `json:"registered_at" db:"registered_at"`
 
-	Features AgentFeatures `json:"features" db:"features"`
-	Metadata AgentMetadata `json:"metadata" db:"metadata"`
+	Features BotFeatures `json:"features" db:"features"`
+	Metadata BotMetadata `json:"metadata" db:"metadata"`
 }
 
 // CallbackDiscoveryInfo captures how the Agents server resolved an agent callback URL.
@@ -240,26 +239,26 @@ const (
 	HealthStatusUnknown  HealthStatus = "unknown"
 )
 
-// AgentLifecycleStatus represents the lifecycle status of an agent node.
-type AgentLifecycleStatus string
+// BotLifecycleStatus represents the lifecycle status of an agent node.
+type BotLifecycleStatus string
 
 const (
-	AgentStatusStarting AgentLifecycleStatus = "starting" // Initializing (covers registering + initializing)
-	AgentStatusReady    AgentLifecycleStatus = "ready"    // Fully operational
-	AgentStatusDegraded AgentLifecycleStatus = "degraded" // Partial functionality
-	AgentStatusOffline  AgentLifecycleStatus = "offline"  // Not responding
+	BotStatusStarting BotLifecycleStatus = "starting" // Initializing (covers registering + initializing)
+	BotStatusReady    BotLifecycleStatus = "ready"    // Fully operational
+	BotStatusDegraded BotLifecycleStatus = "degraded" // Partial functionality
+	BotStatusOffline  BotLifecycleStatus = "offline"  // Not responding
 )
 
-// AgentStatus represents the unified status model for agent nodes.
+// BotStatus represents the unified status model for agent nodes.
 // This simplifies the current complex status system by providing a single source of truth.
-type AgentStatus struct {
+type BotStatus struct {
 	// Core status fields
-	State       AgentState `json:"state"`        // Primary state: active, inactive, starting, stopping
+	State       BotState `json:"state"`        // Primary state: active, inactive, starting, stopping
 	HealthScore int        `json:"health_score"` // Health score from 0-100
 	LastSeen    time.Time  `json:"last_seen"`    // Last heartbeat timestamp
 
 	// Lifecycle information
-	LifecycleStatus AgentLifecycleStatus `json:"lifecycle_status"` // Backward compatibility
+	LifecycleStatus BotLifecycleStatus `json:"lifecycle_status"` // Backward compatibility
 	HealthStatus    HealthStatus         `json:"health_status"`    // Backward compatibility
 
 	// MCP status (optional)
@@ -274,14 +273,14 @@ type AgentStatus struct {
 	Source       StatusSource `json:"source"`                  // Source of this status update
 }
 
-// AgentState represents the primary state of an agent (simplified from complex status types)
-type AgentState string
+// BotState represents the primary state of an agent (simplified from complex status types)
+type BotState string
 
 const (
-	AgentStateActive   AgentState = "active"   // Agent is running and healthy
-	AgentStateInactive AgentState = "inactive" // Agent is not responding or offline
-	AgentStateStarting AgentState = "starting" // Agent is initializing
-	AgentStateStopping AgentState = "stopping" // Agent is shutting down
+	BotStateActive   BotState = "active"   // Agent is running and healthy
+	BotStateInactive BotState = "inactive" // Agent is not responding or offline
+	BotStateStarting BotState = "starting" // Agent is initializing
+	BotStateStopping BotState = "stopping" // Agent is shutting down
 )
 
 // MCPStatusInfo represents MCP server status information
@@ -296,8 +295,8 @@ type MCPStatusInfo struct {
 
 // StateTransition represents an ongoing state transition
 type StateTransition struct {
-	From      AgentState `json:"from"`
-	To        AgentState `json:"to"`
+	From      BotState `json:"from"`
+	To        BotState `json:"to"`
 	StartedAt time.Time  `json:"started_at"`
 	Reason    string     `json:"reason,omitempty"`
 }
@@ -313,30 +312,30 @@ const (
 	StatusSourcePresence    StatusSource = "presence"     // From presence lease expirations
 )
 
-// AgentStatusUpdate represents a status update request
-type AgentStatusUpdate struct {
-	State           *AgentState           `json:"state,omitempty"`
+// BotStatusUpdate represents a status update request
+type BotStatusUpdate struct {
+	State           *BotState           `json:"state,omitempty"`
 	HealthScore     *int                  `json:"health_score,omitempty"`
-	LifecycleStatus *AgentLifecycleStatus `json:"lifecycle_status,omitempty"`
+	LifecycleStatus *BotLifecycleStatus `json:"lifecycle_status,omitempty"`
 	MCPStatus       *MCPStatusInfo        `json:"mcp_status,omitempty"`
 	Source          StatusSource          `json:"source"`
 	Reason          string                `json:"reason,omitempty"`
 }
 
-// Helper methods for AgentStatus
+// Helper methods for BotStatus
 
 // IsHealthy returns true if the agent is in a healthy state
-func (as *AgentStatus) IsHealthy() bool {
-	return as.State == AgentStateActive && as.HealthScore >= 70
+func (as *BotStatus) IsHealthy() bool {
+	return as.State == BotStateActive && as.HealthScore >= 70
 }
 
 // IsTransitioning returns true if the agent is currently transitioning between states
-func (as *AgentStatus) IsTransitioning() bool {
+func (as *BotStatus) IsTransitioning() bool {
 	return as.StateTransition != nil
 }
 
 // GetEffectiveState returns the current effective state, considering transitions
-func (as *AgentStatus) GetEffectiveState() AgentState {
+func (as *BotStatus) GetEffectiveState() BotState {
 	if as.IsTransitioning() {
 		return as.StateTransition.To
 	}
@@ -344,19 +343,19 @@ func (as *AgentStatus) GetEffectiveState() AgentState {
 }
 
 // ToLegacyHealthStatus converts the unified status to legacy HealthStatus for backward compatibility
-func (as *AgentStatus) ToLegacyHealthStatus() HealthStatus {
+func (as *BotStatus) ToLegacyHealthStatus() HealthStatus {
 	switch as.State {
-	case AgentStateActive:
+	case BotStateActive:
 		return HealthStatusActive
-	case AgentStateInactive, AgentStateStopping:
+	case BotStateInactive, BotStateStopping:
 		return HealthStatusInactive
 	default:
 		return HealthStatusUnknown
 	}
 }
 
-// ToLegacyLifecycleStatus converts the unified status to legacy AgentLifecycleStatus for backward compatibility
-func (as *AgentStatus) ToLegacyLifecycleStatus() AgentLifecycleStatus {
+// ToLegacyLifecycleStatus converts the unified status to legacy BotLifecycleStatus for backward compatibility
+func (as *BotStatus) ToLegacyLifecycleStatus() BotLifecycleStatus {
 	// If we have explicit lifecycle status, use it
 	if as.LifecycleStatus != "" {
 		return as.LifecycleStatus
@@ -364,26 +363,26 @@ func (as *AgentStatus) ToLegacyLifecycleStatus() AgentLifecycleStatus {
 
 	// Otherwise, derive from state
 	switch as.State {
-	case AgentStateActive:
+	case BotStateActive:
 		if as.HealthScore >= 90 {
-			return AgentStatusReady
+			return BotStatusReady
 		} else if as.HealthScore >= 50 {
-			return AgentStatusDegraded
+			return BotStatusDegraded
 		}
-		return AgentStatusReady
-	case AgentStateStarting:
-		return AgentStatusStarting
-	case AgentStateInactive, AgentStateStopping:
-		return AgentStatusOffline
+		return BotStatusReady
+	case BotStateStarting:
+		return BotStatusStarting
+	case BotStateInactive, BotStateStopping:
+		return BotStatusOffline
 	default:
-		return AgentStatusOffline
+		return BotStatusOffline
 	}
 }
 
-// NewAgentStatus creates a new AgentStatus with default values
-func NewAgentStatus(state AgentState, source StatusSource) *AgentStatus {
+// NewBotStatus creates a new BotStatus with default values
+func NewBotStatus(state BotState, source StatusSource) *BotStatus {
 	now := time.Now()
-	return &AgentStatus{
+	return &BotStatus{
 		State:       state,
 		HealthScore: 100, // Default to healthy
 		LastSeen:    now,
@@ -391,44 +390,44 @@ func NewAgentStatus(state AgentState, source StatusSource) *AgentStatus {
 		Source:      source,
 		// Set backward compatibility fields
 		HealthStatus:    HealthStatusUnknown,
-		LifecycleStatus: AgentStatusStarting,
+		LifecycleStatus: BotStatusStarting,
 	}
 }
 
-// FromLegacyStatus creates a unified AgentStatus from legacy status fields
-func FromLegacyStatus(healthStatus HealthStatus, lifecycleStatus AgentLifecycleStatus, lastHeartbeat time.Time) *AgentStatus {
+// FromLegacyStatus creates a unified BotStatus from legacy status fields
+func FromLegacyStatus(healthStatus HealthStatus, lifecycleStatus BotLifecycleStatus, lastHeartbeat time.Time) *BotStatus {
 	now := time.Now()
 
 	// Determine primary state from legacy statuses
-	var state AgentState
+	var state BotState
 	var healthScore int
 
 	switch healthStatus {
 	case HealthStatusActive:
-		state = AgentStateActive
+		state = BotStateActive
 		healthScore = 85 // Good health
 	case HealthStatusInactive:
-		state = AgentStateInactive
+		state = BotStateInactive
 		healthScore = 0 // No health
 	default:
 		// Derive from lifecycle status
 		switch lifecycleStatus {
-		case AgentStatusReady:
-			state = AgentStateActive
+		case BotStatusReady:
+			state = BotStateActive
 			healthScore = 90
-		case AgentStatusStarting:
-			state = AgentStateStarting
+		case BotStatusStarting:
+			state = BotStateStarting
 			healthScore = 50
-		case AgentStatusDegraded:
-			state = AgentStateActive
+		case BotStatusDegraded:
+			state = BotStateActive
 			healthScore = 60
 		default:
-			state = AgentStateInactive
+			state = BotStateInactive
 			healthScore = 0
 		}
 	}
 
-	return &AgentStatus{
+	return &BotStatus{
 		State:           state,
 		HealthScore:     healthScore,
 		LastSeen:        lastHeartbeat,
@@ -440,7 +439,7 @@ func FromLegacyStatus(healthStatus HealthStatus, lifecycleStatus AgentLifecycleS
 }
 
 // UpdateFromHeartbeat updates the status based on heartbeat data
-func (as *AgentStatus) UpdateFromHeartbeat(lifecycleStatus *AgentLifecycleStatus, mcpStatus *MCPStatusInfo) {
+func (as *BotStatus) UpdateFromHeartbeat(lifecycleStatus *BotLifecycleStatus, mcpStatus *MCPStatusInfo) {
 	now := time.Now()
 	as.LastSeen = now
 	as.LastUpdated = now
@@ -452,19 +451,19 @@ func (as *AgentStatus) UpdateFromHeartbeat(lifecycleStatus *AgentLifecycleStatus
 
 		// Update primary state based on lifecycle status
 		switch *lifecycleStatus {
-		case AgentStatusReady:
-			as.State = AgentStateActive
+		case BotStatusReady:
+			as.State = BotStateActive
 			if as.HealthScore < 70 {
 				as.HealthScore = 85 // Boost health score for ready agents
 			}
-		case AgentStatusStarting:
-			as.State = AgentStateStarting
+		case BotStatusStarting:
+			as.State = BotStateStarting
 			as.HealthScore = 50
-		case AgentStatusDegraded:
-			as.State = AgentStateActive
+		case BotStatusDegraded:
+			as.State = BotStateActive
 			as.HealthScore = 60
-		case AgentStatusOffline:
-			as.State = AgentStateInactive
+		case BotStatusOffline:
+			as.State = BotStateInactive
 			as.HealthScore = 0
 		}
 	}
@@ -485,7 +484,7 @@ func (as *AgentStatus) UpdateFromHeartbeat(lifecycleStatus *AgentLifecycleStatus
 }
 
 // StartTransition begins a state transition
-func (as *AgentStatus) StartTransition(to AgentState, reason string) {
+func (as *BotStatus) StartTransition(to BotState, reason string) {
 	as.StateTransition = &StateTransition{
 		From:      as.State,
 		To:        to,
@@ -496,7 +495,7 @@ func (as *AgentStatus) StartTransition(to AgentState, reason string) {
 }
 
 // CompleteTransition completes the current state transition
-func (as *AgentStatus) CompleteTransition() {
+func (as *BotStatus) CompleteTransition() {
 	if as.StateTransition != nil {
 		as.State = as.StateTransition.To
 		as.StateTransition = nil
@@ -516,8 +515,8 @@ func min(a, b int) int {
 	return b
 }
 
-// AgentFeatures holds feature flags for an agent node.
-type AgentFeatures struct {
+// BotFeatures holds feature flags for an agent node.
+type BotFeatures struct {
 	ABTesting       bool            `json:"ab_testing"`
 	AdvancedMetrics bool            `json:"advanced_metrics"`
 	Compliance      bool            `json:"compliance"`
@@ -526,10 +525,10 @@ type AgentFeatures struct {
 	Experimental    map[string]bool `json:"experimental,omitempty"`
 }
 
-// AgentMetadata holds extensible metadata for an agent node.
-type AgentMetadata struct {
+// BotMetadata holds extensible metadata for an agent node.
+type BotMetadata struct {
 	Deployment  *DeploymentMetadata       `json:"deployment,omitempty"`
-	Performance *AgentPerformanceMetadata `json:"performance,omitempty"`
+	Performance *BotPerformanceMetadata `json:"performance,omitempty"`
 	Custom      map[string]interface{}    `json:"custom,omitempty"`
 }
 
@@ -541,8 +540,8 @@ type DeploymentMetadata struct {
 	Tags        map[string]string `json:"tags,omitempty"`
 }
 
-// AgentPerformanceMetadata holds performance-related metadata for an agent node.
-type AgentPerformanceMetadata struct {
+// BotPerformanceMetadata holds performance-related metadata for an agent node.
+type BotPerformanceMetadata struct {
 	LatencyMS    int `json:"latency_ms"`
 	ThroughputPS int `json:"throughput_ps"`
 }
@@ -551,7 +550,7 @@ type AgentPerformanceMetadata struct {
 type ExecutionFilters struct {
 	WorkflowID  *string    `json:"workflow_id,omitempty"`
 	SessionID   *string    `json:"session_id,omitempty"`
-	AgentNodeID *string    `json:"agent_node_id,omitempty"`
+	NodeID *string    `json:"node_id,omitempty"`
 	BotID  *string    `json:"bot_id,omitempty"`
 	Status      *string    `json:"status,omitempty"`
 	UserID      *string    `json:"user_id,omitempty"`
@@ -562,8 +561,8 @@ type ExecutionFilters struct {
 	Offset      int        `json:"offset,omitempty"`
 }
 
-// AgentFilters holds filters for querying agent nodes.
-type AgentFilters struct {
+// BotFilters holds filters for querying agent nodes.
+type BotFilters struct {
 	TeamID       *string       `json:"team_id,omitempty"`
 	HealthStatus *HealthStatus `json:"health_status,omitempty"`
 	Features     []string      `json:"features,omitempty"`
@@ -631,7 +630,7 @@ type WorkflowExecution struct {
 	RunID               *string `json:"run_id,omitempty" db:"run_id"`
 	SessionID           *string `json:"session_id,omitempty" db:"session_id"`
 	ActorID             *string `json:"actor_id,omitempty" db:"actor_id"`
-	AgentNodeID         string  `json:"agent_node_id" db:"agent_node_id"`
+	NodeID         string  `json:"node_id" db:"node_id"`
 
 	// DAG Relationship Fields
 	ParentWorkflowID  *string `json:"parent_workflow_id,omitempty" db:"parent_workflow_id"`
@@ -758,7 +757,7 @@ type WorkflowStep struct {
 	RunID        string          `json:"run_id" db:"run_id"`
 	ParentStepID *string         `json:"parent_step_id,omitempty" db:"parent_step_id"`
 	ExecutionID  *string         `json:"execution_id,omitempty" db:"execution_id"`
-	AgentNodeID  *string         `json:"agent_node_id,omitempty" db:"agent_node_id"`
+	NodeID  *string         `json:"node_id,omitempty" db:"node_id"`
 	Target       *string         `json:"target,omitempty" db:"target"`
 	Status       string          `json:"status" db:"status"`
 	Attempt      int             `json:"attempt" db:"attempt"`
@@ -855,7 +854,7 @@ type WorkflowExecutionFilters struct {
 	ParentExecutionID *string    `json:"parent_execution_id,omitempty"`
 	SessionID         *string    `json:"session_id,omitempty"`
 	ActorID           *string    `json:"actor_id,omitempty"`
-	AgentNodeID       *string    `json:"agent_node_id,omitempty"`
+	NodeID       *string    `json:"node_id,omitempty"`
 	Status            *string    `json:"status,omitempty"`
 	StartTime         *time.Time `json:"start_time,omitempty"`
 	EndTime           *time.Time `json:"end_time,omitempty"`
@@ -887,7 +886,7 @@ type WorkflowRunFilters struct {
 type WorkflowFilters struct {
 	SessionID   *string    `json:"session_id,omitempty"`
 	ActorID     *string    `json:"actor_id,omitempty"`
-	AgentNodeID *string    `json:"agent_node_id,omitempty"`
+	NodeID *string    `json:"node_id,omitempty"`
 	Status      *string    `json:"status,omitempty"`
 	StartTime   *time.Time `json:"start_time,omitempty"`
 	EndTime     *time.Time `json:"end_time,omitempty"`
@@ -950,7 +949,7 @@ type WorkflowSummaryData struct {
 	LatestActivity  time.Time `json:"latest_activity" db:"latest_activity"`
 	StartedAt       time.Time `json:"started_at" db:"started_at"`
 	RootBot    *string   `json:"root_bot" db:"root_bot"`
-	AgentNodeID     *string   `json:"agent_node_id" db:"agent_node_id"`
+	NodeID     *string   `json:"node_id" db:"node_id"`
 	WorkflowStatus  *string   `json:"workflow_status" db:"workflow_status"`
 	TotalDurationMS *int64    `json:"total_duration_ms" db:"total_duration_ms"`
 	MaxDepth        int       `json:"max_depth" db:"max_depth"`

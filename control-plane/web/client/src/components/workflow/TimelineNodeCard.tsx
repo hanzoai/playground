@@ -13,7 +13,7 @@ import { normalizeExecutionStatus } from "../../utils/status";
 interface WorkflowDAGNode {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -130,7 +130,7 @@ export function TimelineNodeCard({
     }
   }, [forceExpanded, isExpanded]);
 
-  const agentName = humanizeText(node.agent_name || node.agent_node_id);
+  const agentName = humanizeText(node.agent_name || node.node_id);
   const botName = humanizeText(node.task_name || node.bot_id);
   const hasNotes = notes.length > 0;
   const compactPreview = getCompactNotesPreview(notes);

@@ -54,7 +54,7 @@ export async function resolveDID(did: string): Promise<{
 }
 
 /**
- * Get DID information for a specific agent node
+ * Get DID information for a specific hanzo node
  */
 export async function getAgentDIDInfo(nodeId: string): Promise<AgentDIDInfo> {
   return fetchWrapper<AgentDIDInfo>(`/nodes/${nodeId}/did`);

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Playground CLI Uninstaller
-# Usage: curl -fsSL https://playground.ai/uninstall.sh | bash
+# Usage: curl -fsSL https://hanzo.bot/uninstall.sh | bash
 # Or: bash scripts/uninstall.sh
 
 set -e
 
 # Configuration
-INSTALL_DIR="${AGENTS_INSTALL_DIR:-$HOME/.hanzo/agents}"
+INSTALL_DIR="${PLAYGROUND_INSTALL_DIR:-${AGENTS_INSTALL_DIR:-$HOME/.hanzo/playground}}"
 VERBOSE="${VERBOSE:-0}"
 
 # Color codes
@@ -160,7 +160,7 @@ main() {
   echo -e "     ${CYAN}ls ~/*.bak.hanzo/agents${NC}"
   echo ""
   echo "  3. To reinstall Playground:"
-  echo -e "     ${CYAN}curl -fsSL https://playground.ai/install.sh | bash${NC}"
+  echo -e "     ${CYAN}curl -fsSL https://hanzo.bot/install.sh | bash${NC}"
   echo ""
   echo "Thank you for using Playground!"
   echo ""

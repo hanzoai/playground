@@ -194,7 +194,7 @@ func TestRegisterNode(t *testing.T) {
 				TeamID:    "team-1",
 				BaseURL:   "https://example.com",
 				Version:   "1.0.0",
-				Reasoners: []types.ReasonerDefinition{},
+				Bots: []types.BotDefinition{},
 				Skills:    []types.SkillDefinition{},
 				CommunicationConfig: types.CommunicationConfig{
 					Protocols: []string{"http"},
@@ -835,7 +835,7 @@ func TestRegisterNodeWithAPIKey(t *testing.T) {
 		TeamID:    "team-1",
 		BaseURL:   "https://example.com",
 		Version:   "1.0.0",
-		Reasoners: []types.ReasonerDefinition{},
+		Bots: []types.BotDefinition{},
 		Skills:    []types.SkillDefinition{},
 		CommunicationConfig: types.CommunicationConfig{
 			Protocols: []string{"http"},

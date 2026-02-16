@@ -54,7 +54,7 @@ func TestExecutionEventBus_Publish(t *testing.T) {
 		Type:        ExecutionCreated,
 		ExecutionID: "exec-1",
 		WorkflowID:  "workflow-1",
-		AgentNodeID: "agent-1",
+		NodeID: "agent-1",
 		Status:      "created",
 		Timestamp:   time.Now(),
 	}
@@ -87,7 +87,7 @@ func TestExecutionEventBus_MultipleSubscribers(t *testing.T) {
 		Type:        ExecutionCreated,
 		ExecutionID: "exec-multi",
 		WorkflowID:  "workflow-1",
-		AgentNodeID: "agent-1",
+		NodeID: "agent-1",
 		Status:      "created",
 		Timestamp:   time.Now(),
 	}
@@ -125,7 +125,7 @@ func TestExecutionEventBus_ConcurrentPublish(t *testing.T) {
 				Type:        ExecutionCreated,
 				ExecutionID: "exec-" + string(rune(id)),
 				WorkflowID:  "workflow-1",
-				AgentNodeID: "agent-1",
+				NodeID: "agent-1",
 				Status:      "created",
 				Timestamp:   time.Now(),
 			}
@@ -233,7 +233,7 @@ func TestExecutionEvent_ToJSON(t *testing.T) {
 		Type:        ExecutionCreated,
 		ExecutionID: "exec-json",
 		WorkflowID:  "workflow-1",
-		AgentNodeID: "agent-1",
+		NodeID: "agent-1",
 		Status:      "created",
 		Timestamp:   time.Now(),
 		Data:        map[string]interface{}{"key": "value"},

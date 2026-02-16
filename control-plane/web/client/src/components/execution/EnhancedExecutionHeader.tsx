@@ -285,20 +285,20 @@ export function EnhancedExecutionHeader({
             <div className="flex items-center gap-2 group">
               <span>Agent:</span>
               <code className="font-mono text-body-small text-foreground bg-muted/30 px-1.5 py-0.5 rounded">
-                {execution.agent_node_id}
+                {execution.node_id}
               </code>
               <CopyButton
-                value={execution.agent_node_id}
+                value={execution.node_id}
                 variant="ghost"
                 size="icon"
                 className="h-4 w-4 p-0 opacity-0 transition-opacity group-hover:opacity-100 [&_svg]:h-3 [&_svg]:w-3"
-                tooltip="Copy agent node ID"
+                tooltip="Copy hanzo node ID"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <span>DID:</span>
-              <DIDDisplay nodeId={execution.agent_node_id} variant="inline" className="text-body-small" />
+              <DIDDisplay nodeId={execution.node_id} variant="inline" className="text-body-small" />
             </div>
 
             <div className="flex items-center gap-2 group">

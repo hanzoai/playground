@@ -3,12 +3,12 @@ import threading
 import pytest
 import requests
 
-from playground.agent_field_handler import PlaygroundHandler
+from playground.bot_field_handler import PlaygroundHandler
 from tests.helpers import StubAgent, DummyPlaygroundClient
 
 
 @pytest.mark.asyncio
-async def test_register_with_agents_server_sets_base_url(monkeypatch):
+async def test_register_with_playground_server_sets_base_url(monkeypatch):
     agent = StubAgent(callback_url="agent.local", base_url=None)
     agent.client = DummyPlaygroundClient()
     agent.agents_connected = False
@@ -24,7 +24,7 @@ async def test_register_with_agents_server_sets_base_url(monkeypatch):
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
-    await playground.register_with_agents_server(port=8080)
+    await playground.register_with_playground_server(port=8080)
 
     assert agent.base_url == "http://resolved:8080"
     assert agent.agents_connected is True
@@ -32,13 +32,13 @@ async def test_register_with_agents_server_sets_base_url(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_register_with_agents_server_handles_failure(monkeypatch):
+async def test_register_with_playground_server_handles_failure(monkeypatch):
     async def failing_register(*args, **kwargs):
         raise RuntimeError("boom")
 
     agent = StubAgent(callback_url=None, base_url="http://already", dev_mode=True)
     agent.client = DummyPlaygroundClient()
-    monkeypatch.setattr(agent.client, "register_agent", failing_register)
+    monkeypatch.setattr(agent.client, "register_bot", failing_register)
     monkeypatch.setattr(
         "playground.agent._build_callback_candidates",
         lambda value, port, include_defaults=True: [],
@@ -48,7 +48,7 @@ async def test_register_with_agents_server_handles_failure(monkeypatch):
     playground = PlaygroundHandler(agent)
     agent.agents_connected = True
 
-    await playground.register_with_agents_server(port=9000)
+    await playground.register_with_playground_server(port=9000)
     assert agent.agents_connected is False
 
 
@@ -64,7 +64,7 @@ async def test_register_with_playground_updates_existing_port(monkeypatch):
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
-    await playground.register_with_agents_server(port=6000)
+    await playground.register_with_playground_server(port=6000)
 
     assert agent.base_url == "http://host:6000"
     assert agent.client.register_calls[0]["base_url"] == "http://host:6000"
@@ -86,13 +86,13 @@ async def test_register_with_playground_preserves_container_urls(monkeypatch):
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: True)
 
     playground = PlaygroundHandler(agent)
-    await playground.register_with_agents_server(port=7000)
+    await playground.register_with_playground_server(port=7000)
 
     assert agent.base_url == "http://service.railway.internal:5000"
 
 
 @pytest.mark.asyncio
-async def test_register_with_agents_server_resolves_when_no_candidates(monkeypatch):
+async def test_register_with_playground_server_resolves_when_no_candidates(monkeypatch):
     agent = StubAgent(callback_url=None, base_url=None)
     agent.client = DummyPlaygroundClient()
 
@@ -106,14 +106,14 @@ async def test_register_with_agents_server_resolves_when_no_candidates(monkeypat
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
-    await playground.register_with_agents_server(port=7100)
+    await playground.register_with_playground_server(port=7100)
 
     assert agent.base_url == "http://resolved:7100"
     assert agent.agents_connected is True
 
 
 @pytest.mark.asyncio
-async def test_register_with_agents_server_reorders_candidates(monkeypatch):
+async def test_register_with_playground_server_reorders_candidates(monkeypatch):
     agent = StubAgent(callback_url=None, base_url="http://preferred:8000")
     agent.client = DummyPlaygroundClient()
     agent.callback_candidates = ["http://other:8000", "http://preferred:8000"]
@@ -125,13 +125,13 @@ async def test_register_with_agents_server_reorders_candidates(monkeypatch):
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
-    await playground.register_with_agents_server(port=8000)
+    await playground.register_with_playground_server(port=8000)
 
     assert agent.callback_candidates[0] == "http://preferred:8000"
 
 
 @pytest.mark.asyncio
-async def test_register_with_agents_server_propagates_request_exception(
+async def test_register_with_playground_server_propagates_request_exception(
     monkeypatch,
 ):
     class DummyResponse:
@@ -147,7 +147,7 @@ async def test_register_with_agents_server_propagates_request_exception(
 
     agent = StubAgent(callback_url=None, base_url="http://already", dev_mode=False)
     agent.client = DummyPlaygroundClient()
-    monkeypatch.setattr(agent.client, "register_agent", failing_register)
+    monkeypatch.setattr(agent.client, "register_bot", failing_register)
     monkeypatch.setattr(
         "playground.agent._build_callback_candidates", lambda *a, **k: []
     )
@@ -158,19 +158,19 @@ async def test_register_with_agents_server_propagates_request_exception(
 
     playground = PlaygroundHandler(agent)
     with pytest.raises(requests.exceptions.RequestException):
-        await playground.register_with_agents_server(port=9001)
+        await playground.register_with_playground_server(port=9001)
     assert agent.agents_connected is False
 
 
 @pytest.mark.asyncio
-async def test_register_with_agents_server_unsuccessful_response(monkeypatch):
+async def test_register_with_playground_server_unsuccessful_response(monkeypatch):
     agent = StubAgent(callback_url=None, base_url="http://host:5000")
     agent.client = DummyPlaygroundClient()
 
     async def register_returns_false(*args, **kwargs):
         return False, None
 
-    monkeypatch.setattr(agent.client, "register_agent", register_returns_false)
+    monkeypatch.setattr(agent.client, "register_bot", register_returns_false)
     monkeypatch.setattr(
         "playground.agent._build_callback_candidates", lambda *a, **k: []
     )
@@ -180,7 +180,7 @@ async def test_register_with_agents_server_unsuccessful_response(monkeypatch):
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
-    await playground.register_with_agents_server(port=5000)
+    await playground.register_with_playground_server(port=5000)
     assert agent.agents_connected is False
 
 
@@ -193,7 +193,7 @@ async def test_register_with_playground_applies_discovery_payload(monkeypatch):
 
     async def fake_register(
         node_id,
-        reasoners,
+        bots,
         skills,
         base_url,
         discovery=None,
@@ -207,14 +207,14 @@ async def test_register_with_playground_applies_discovery_payload(monkeypatch):
             },
         }
 
-    monkeypatch.setattr(playground_client, "register_agent", fake_register)
+    monkeypatch.setattr(playground_client, "register_bot", fake_register)
     monkeypatch.setattr(
         "playground.agent._build_callback_candidates",
         lambda value, port, include_defaults=True: [f"http://detected:{port}"],
     )
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
-    await agent.agents_handler.register_with_agents_server(port=9000)
+    await agent.agents_handler.register_with_playground_server(port=9000)
 
     assert agent.base_url == "https://public:9000"
     assert agent.callback_candidates[0] == "https://public:9000"

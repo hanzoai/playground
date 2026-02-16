@@ -1,43 +1,43 @@
-import { Agent } from '@playground/sdk';
+import { Bot } from '@playground/sdk';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const agent = new Agent({
-  nodeId: process.env.AGENT_NODE_ID ?? 'ts-serverless-hello',
+const bot = new Bot({
+  nodeId: process.env.HANZO_NODE_ID ?? 'ts-serverless-hello',
   version: '1.0.0',
   deploymentType: 'serverless',
-  playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
+  playgroundUrl: process.env.PLAYGROUND_URL ?? 'http://localhost:8080',
   devMode: true
 });
 
-agent.reasoner('hello', async (ctx) => ({
+bot.bot('hello', async (ctx) => ({
   greeting: `Hello, ${ctx.input.name ?? 'Playground'}!`,
   runId: ctx.runId,
   executionId: ctx.executionId
 }));
 
-agent.reasoner('relay', async (ctx) => {
+bot.bot('relay', async (ctx) => {
   const target = (process.env.CHILD_TARGET ?? ctx.input.target) as string | undefined;
   if (!target) {
     return { error: 'target is required' };
   }
 
-  const downstream = await agent.call(target, { message: ctx.input.message ?? 'ping' });
+  const downstream = await bot.call(target, { message: ctx.input.message ?? 'ping' });
   return { target, downstream };
 });
 
 // Exported handler works for AWS Lambda/Cloud Functions and raw HTTP (Vercel/Netlify).
 // You can adapt any platform-specific event shape here (e.g., Supabase/Netlify payloads).
-export const handler = agent.handler((event) => {
+export const handler = bot.handler((event) => {
   const body = typeof event?.body === 'string' ? safeJson(event.body) : event?.body;
   const input = event?.input ?? body?.input ?? body ?? {};
   return {
     path: event?.rawPath || event?.path || '/execute',
     headers: event?.headers ?? {},
     queryStringParameters: event?.queryStringParameters ?? event?.query ?? {},
-    reasoner: event?.reasoner ?? event?.target,
-    target: event?.target ?? event?.reasoner,
+    bot: event?.bot ?? event?.target,
+    target: event?.target ?? event?.bot,
     input,
     executionContext: event?.executionContext ?? event?.execution_context
   };

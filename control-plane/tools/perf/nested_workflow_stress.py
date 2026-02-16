@@ -97,7 +97,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--base-url", default=os.getenv("AGENTS_BASE_URL", "http://localhost:8080")
     )
-    parser.add_argument("--target", required=True, help="Target in node.reasoner form")
+    parser.add_argument("--target", required=True, help="Target in node.bot form")
     parser.add_argument("--mode", choices=["sync", "async"], default="sync")
     parser.add_argument("--requests", type=int, default=100)
     parser.add_argument("--concurrency", type=int, default=8)
@@ -111,13 +111,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--depth",
         type=int,
         default=0,
-        help="Hint for nested reasoners (added to payload)",
+        help="Hint for nested bots (added to payload)",
     )
     parser.add_argument(
         "--width",
         type=int,
         default=0,
-        help="Hint for nested reasoners (added to payload)",
+        help="Hint for nested bots (added to payload)",
     )
     parser.add_argument(
         "--body-template", type=Path, help="Path to JSON template for request body"

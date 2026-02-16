@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Agent, type AIConfig } from '@playground/sdk';
+import { Bot, type AIConfig } from '@playground/sdk';
 import {
   aggregationRouter,
   decisionRouter,
@@ -31,7 +31,7 @@ const aiConfig: AIConfig =
         apiKey: process.env.OPENAI_API_KEY
       };
 
-const agent = new Agent({
+const bot = new Bot({
   nodeId: 'simulation-engine',
   aiConfig,
   host: 'localhost',
@@ -39,19 +39,19 @@ const agent = new Agent({
 });
 
 [scenarioRouter, entityRouter, decisionRouter, aggregationRouter, simulationRouter].forEach((router) =>
-  agent.includeRouter(router)
+  bot.includeRouter(router)
 );
 
-agent.reasoner<{ message: string }, { echo: string }>('echo', async (ctx) => ({
+bot.bot<{ message: string }, { echo: string }>('echo', async (ctx) => ({
   echo: ctx.input.message
 }));
 
-agent
+bot
   .serve()
   .then(() => {
-    console.log('Simulation agent serving on port 8001');
+    console.log('Simulation bot serving on port 8001');
   })
   .catch((err) => {
-    console.error('Failed to start simulation agent', err);
+    console.error('Failed to start simulation bot', err);
     process.exit(1);
   });

@@ -1,6 +1,6 @@
 # Playground Architecture
 
-Playground provides a modular platform for orchestrating AI agents. The system is composed of a Go-based control plane, SDKs for client languages, and optional runtime services.
+Playground provides a modular platform for orchestrating AI bots. The system is composed of a Go-based control plane, SDKs for client languages, and optional runtime services.
 
 ## High-Level Overview
 
@@ -33,7 +33,7 @@ Playground provides a modular platform for orchestrating AI agents. The system i
 
 ## Control Plane
 
-The control plane orchestrates agent workflows, provides API endpoints, manages credentials, and serves a React-based administration UI.
+The control plane orchestrates bot workflows, provides API endpoints, manages credentials, and serves a React-based administration UI.
 
 - **`cmd/`** – entry points for binaries (HTTP server, background workers).
 - **`internal/`** – business logic, services, repositories, and use-cases.
@@ -56,20 +56,20 @@ The control plane orchestrates agent workflows, provides API endpoints, manages 
 ### Python (`sdk/python`)
 
 - Thin client for the control plane REST API.
-- Async and sync helpers for agent execution.
+- Async and sync helpers for bot execution.
 - Type hints for common primitives.
 - PyPI-ready project built with `pyproject.toml`.
 
 ### Go (`sdk/go`)
 
-- Idiomatic Go client with `agent`, `client`, `types`, and `ai` packages.
+- Idiomatic Go client with `bot`, `client`, `types`, and `ai` packages.
 - Implements interfaces shared by the control plane.
 - Ready for consumption via `go get`.
 
 ## Deployment
 
 - `deployments/docker/Dockerfile.control-plane` builds the Go binary and bundles the web UI.
-- `deployments/docker/Dockerfile.python-agent` and `Dockerfile.go-agent` provide reference runtime images.
+- `deployments/docker/Dockerfile.python-bot` and `Dockerfile.go-bot` provide reference runtime images.
 - `deployments/docker/docker-compose.yml` orchestrates a local stack (control plane + dependencies).
 
 ## Extensibility

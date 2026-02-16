@@ -2,7 +2,7 @@ import asyncio
 import pytest
 import httpx
 import time
-from playground.agent import Agent
+from playground.bot import Agent
 
 
 # Mock the client to avoid network calls
@@ -30,9 +30,9 @@ def mock_client(monkeypatch):
     monkeypatch.setattr("playground.agent.PlaygroundClient", MockClient)
     monkeypatch.setattr("playground.client.PlaygroundClient", MockClient)
 
-    # Also mock AgentUtils.is_port_available to avoid binding issues
+    # Also mock BotUtils.is_port_available to avoid binding issues
     monkeypatch.setattr(
-        "playground.agent_utils.AgentUtils.is_port_available", lambda p: True
+        "playground.agent_utils.BotUtils.is_port_available", lambda p: True
     )
 
 
@@ -52,7 +52,7 @@ def resilient_agent(mock_client):
 async def test_concurrent_execution_resilience(resilient_agent):
     """Test that the agent can handle multiple concurrent requests without blocking."""
 
-    @resilient_agent.reasoner()
+    @resilient_agent.bot()
     async def slow_echo(value: int) -> dict:
         await asyncio.sleep(0.1)
         return {"value": value}
@@ -64,7 +64,7 @@ async def test_concurrent_execution_resilience(resilient_agent):
         tasks = []
         num_requests = 50
         for i in range(num_requests):
-            tasks.append(client.post("/reasoners/slow_echo", json={"value": i}))
+            tasks.append(client.post("/bots/slow_echo", json={"value": i}))
 
         start_time = time.time()
         responses = await asyncio.gather(*tasks)
@@ -86,13 +86,13 @@ async def test_concurrent_execution_resilience(resilient_agent):
 
 @pytest.mark.asyncio
 async def test_error_containment(resilient_agent):
-    """Test that a crashing reasoner doesn't bring down the agent."""
+    """Test that a crashing bot doesn't bring down the agent."""
 
-    @resilient_agent.reasoner()
+    @resilient_agent.bot()
     async def crasher():
         raise ValueError("Boom!")
 
-    @resilient_agent.reasoner()
+    @resilient_agent.bot()
     async def ping():
         return {"status": "ok"}
 
@@ -102,11 +102,11 @@ async def test_error_containment(resilient_agent):
     ) as client:
         # 1. Call the crashing endpoint
         # FastAPI usually catches exceptions and returns 500
-        response = await client.post("/reasoners/crasher", json={})
+        response = await client.post("/bots/crasher", json={})
         assert response.status_code == 500
 
         # 2. Ensure the agent is still responsive
-        resp2 = await client.post("/reasoners/ping", json={})
+        resp2 = await client.post("/bots/ping", json={})
         assert resp2.status_code == 200
         assert resp2.json() == {"status": "ok"}
 
@@ -115,7 +115,7 @@ async def test_error_containment(resilient_agent):
 async def test_input_validation_resilience(resilient_agent):
     """Test that malformed inputs are handled gracefully."""
 
-    @resilient_agent.reasoner()
+    @resilient_agent.bot()
     async def typed_input(x: int, y: str) -> dict:
         return {"result": f"{y}-{x}"}
 
@@ -123,18 +123,18 @@ async def test_input_validation_resilience(resilient_agent):
         transport=httpx.ASGITransport(app=resilient_agent), base_url="http://test"
     ) as client:
         # 1. Missing fields
-        resp = await client.post("/reasoners/typed_input", json={"x": 1})
+        resp = await client.post("/bots/typed_input", json={"x": 1})
         assert resp.status_code == 422  # Validation error
 
         # 2. Wrong types
         resp = await client.post(
-            "/reasoners/typed_input", json={"x": "not-int", "y": "ok"}
+            "/bots/typed_input", json={"x": "not-int", "y": "ok"}
         )
         assert resp.status_code == 422
 
         # 3. Malformed JSON
         resp = await client.post(
-            "/reasoners/typed_input",
+            "/bots/typed_input",
             content="{ bad json }",
             headers={"Content-Type": "application/json"},
         )

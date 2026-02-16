@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentRouter } from '@playground/sdk';
+import { BotRouter } from '@playground/sdk';
 import {
   EntityDecisionSchema,
   EntityProfileSchema,
@@ -10,9 +10,9 @@ import {
 } from '../schemas.js';
 import { formatContext } from '../utils.js';
 
-export const decisionRouter = new AgentRouter({ prefix: 'decision' });
+export const decisionRouter = new BotRouter({ prefix: 'decision' });
 
-decisionRouter.reasoner(
+decisionRouter.bot(
   'simulateEntityDecision',
   async (ctx) => {
     const { entity, scenario, scenarioAnalysis, context = [] } = ctx.input as {
@@ -88,7 +88,7 @@ RESPONSE FORMAT: Return ONLY valid JSON with fields decision, confidence, keyFac
   }
 );
 
-decisionRouter.reasoner(
+decisionRouter.bot(
   'simulateBatchDecisions',
   async (ctx) => {
     const {

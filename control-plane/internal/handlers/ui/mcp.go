@@ -14,14 +14,14 @@ import (
 // MCPHandler provides handlers for MCP-related operations
 type MCPHandler struct {
 	uiService   *services.UIService
-	agentClient interfaces.AgentClient
+	nodeClient interfaces.NodeClient
 }
 
 // NewMCPHandler creates a new MCPHandler
-func NewMCPHandler(uiService *services.UIService, agentClient interfaces.AgentClient) *MCPHandler {
+func NewMCPHandler(uiService *services.UIService, nodeClient interfaces.NodeClient) *MCPHandler {
 	return &MCPHandler{
-		uiService:   uiService,
-		agentClient: agentClient,
+		uiService:  uiService,
+		nodeClient: nodeClient,
 	}
 }
 
@@ -103,7 +103,7 @@ func (h *MCPHandler) RestartMCPServerHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Call agent client to restart the MCP server
-	err := h.agentClient.RestartMCPServer(ctx, nodeID, alias)
+	err := h.nodeClient.RestartMCPServer(ctx, nodeID, alias)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to restart MCP server: " + err.Error()})
 		return
@@ -148,7 +148,7 @@ func (h *MCPHandler) GetMCPToolsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Call agent client to get MCP tools
-	toolsResponse, err := h.agentClient.GetMCPTools(ctx, nodeID, alias)
+	toolsResponse, err := h.nodeClient.GetMCPTools(ctx, nodeID, alias)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get MCP tools: " + err.Error()})
 		return

@@ -132,9 +132,9 @@ class ConnectionManager:
             payload: Optional[Dict[str, Any]] = None
 
             try:
-                success, payload = await self.agent.client.register_agent_with_status(
+                success, payload = await self.agent.client.register_bot_with_status(
                     node_id=self.agent.node_id,
-                    reasoners=self.agent.reasoners,
+                    bots=self.agent.bots,
                     skills=self.agent.skills,
                     base_url=self.agent.base_url,
                     status=self.agent._current_status,
@@ -142,7 +142,7 @@ class ConnectionManager:
                     suppress_errors=True,  # Suppress verbose error logging for connection attempts
                     vc_metadata=self.agent._build_vc_metadata(),
                     version=self.agent.version,
-                    agent_metadata=self.agent._build_agent_metadata(),
+                    agent_metadata=self.agent._build_bot_metadata(),
                 )
             finally:
                 # Restore original logging levels
@@ -153,7 +153,7 @@ class ConnectionManager:
                 if payload:
                     self.agent._apply_discovery_response(payload)
                 if self.agent.did_manager and not self.agent.did_enabled:
-                    self.agent._register_agent_with_did()
+                    self.agent._register_bot_with_did()
                 self.state = ConnectionState.CONNECTED
                 return True
             else:

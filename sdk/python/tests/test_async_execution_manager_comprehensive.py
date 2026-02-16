@@ -94,7 +94,7 @@ async def test_submit_execution_success(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"key": "value"},
             priority=ExecutionPriority.NORMAL,
         )
@@ -147,7 +147,7 @@ async def test_submit_execution_with_webhook(manager):
         }
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"key": "value"},
             webhook=webhook_config,
         )
@@ -195,7 +195,7 @@ async def test_get_execution_status(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         status = await manager.get_execution_status(execution_id)
@@ -248,7 +248,7 @@ async def test_poll_execution_status_success(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         # Polling happens in background via private methods
@@ -296,7 +296,7 @@ async def test_poll_execution_status_timeout(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         # Polling happens in background, just verify execution exists
@@ -343,7 +343,7 @@ async def test_poll_execution_status_error(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         # Polling happens in background, just verify execution exists
@@ -400,7 +400,7 @@ async def test_batch_poll_executions(manager):
         execution_ids = []
         for i in range(3):
             exec_id = await manager.submit_execution(
-                target="agent.reasoner", input_data={"index": i}
+                target="agent.bot", input_data={"index": i}
             )
             execution_ids.append(exec_id)
 
@@ -502,7 +502,7 @@ async def test_cleanup_completed_executions(manager):
 
         # Submit and mark as completed
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         execution = manager._executions.get(execution_id)
@@ -559,7 +559,7 @@ async def test_context_propagation(manager):
         # Note: submit_execution doesn't have a context parameter
         # Context would be passed via headers instead
         execution_id = await manager.submit_execution(
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"key": "value"},
             headers={
                 "X-Context": '{"parent_id": "parent-123", "session_id": "session-456"}'
@@ -608,7 +608,7 @@ async def test_event_stream_subscription(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         # Mock event stream
@@ -664,7 +664,7 @@ async def test_event_stream_reconnection(manager):
         # This would test the reconnection logic when stream disconnects
         # Simplified test for now
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         assert execution_id in manager._executions
@@ -718,13 +718,13 @@ async def test_priority_handling(manager):
 
         # Submit executions with different priorities
         high_priority_id = await manager.submit_execution(
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"key": "value"},
             priority=ExecutionPriority.HIGH,
         )
 
         normal_priority_id = await manager.submit_execution(
-            target="agent.reasoner",
+            target="agent.bot",
             input_data={"key": "value"},
             priority=ExecutionPriority.NORMAL,
         )
@@ -780,7 +780,7 @@ async def test_metrics_tracking(manager):
 
         # Submit and complete an execution
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         execution = manager._executions.get(execution_id)
@@ -816,7 +816,7 @@ async def test_error_handling_during_polling(manager):
         # Submit will fail, but we can test error handling
         try:
             execution_id = await manager.submit_execution(
-                target="agent.reasoner", input_data={"key": "value"}
+                target="agent.bot", input_data={"key": "value"}
             )
             # If it succeeds, verify execution exists
             status = await manager.get_execution_status(execution_id)
@@ -873,7 +873,7 @@ async def test_concurrent_execution_submission(manager):
 
         async def submit():
             return await manager.submit_execution(
-                target="agent.reasoner", input_data={"key": "value"}
+                target="agent.bot", input_data={"key": "value"}
             )
 
         # Submit multiple executions concurrently
@@ -921,7 +921,7 @@ async def test_result_cache_integration(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         execution_id = await manager.submit_execution(
-            target="agent.reasoner", input_data={"key": "value"}
+            target="agent.bot", input_data={"key": "value"}
         )
 
         # Mock successful execution

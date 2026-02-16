@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanzoai/playground/control-plane/internal/cloud"
 	"github.com/hanzoai/playground/control-plane/internal/config"
 	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
 	coreservices "github.com/hanzoai/playground/control-plane/internal/core/services" // Core services
@@ -22,8 +24,10 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/infrastructure/process"
 	infrastorage "github.com/hanzoai/playground/control-plane/internal/infrastructure/storage"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/proxy"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services" // Services
+	"github.com/hanzoai/playground/control-plane/internal/spaces"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/internal/utils"
 	client "github.com/hanzoai/playground/control-plane/web/client"
@@ -33,8 +37,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// AgentsServer represents the core Agents orchestration service.
-type AgentsServer struct {
+// PlaygroundServer represents the core Playground control plane service.
+type PlaygroundServer struct {
 	storage               storage.StorageProvider
 	cache                 storage.CacheProvider
 	Router                *gin.Engine
@@ -43,8 +47,8 @@ type AgentsServer struct {
 	healthMonitor         *services.HealthMonitor
 	presenceManager       *services.PresenceManager
 	statusManager         *services.StatusManager // Add StatusManager for unified status management
-	agentService          interfaces.AgentService // Add AgentService for lifecycle management
-	agentClient           interfaces.AgentClient  // Add AgentClient for MCP communication
+	botService          interfaces.BotService // Add BotService for lifecycle management
+	nodeClient           interfaces.NodeClient  // Add NodeClient for MCP communication
 	config                *config.Config
 	storageHealthOverride func(context.Context) gin.H
 	cacheHealthOverride   func(context.Context) gin.H
@@ -53,7 +57,7 @@ type AgentsServer struct {
 	didService      *services.DIDService
 	vcService       *services.VCService
 	didRegistry     *services.DIDRegistry
-	agentsHome  string
+	playgroundHome  string
 	// Cleanup service
 	cleanupService        *handlers.ExecutionCleanupService
 	payloadStore          services.PayloadStore
@@ -62,18 +66,23 @@ type AgentsServer struct {
 	zapAdminPort          int
 	webhookDispatcher        services.WebhookDispatcher
 	observabilityForwarder   services.ObservabilityForwarder
+	cloudProvisioner         *cloud.Provisioner
+	spaceStore               spaces.Store
 }
 
-// NewAgentsServer creates a new instance of the AgentsServer.
-func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
-	// Define agentsHome at the very top
-	agentsHome := os.Getenv("AGENTS_HOME")
-	if agentsHome == "" {
+// NewPlaygroundServer creates a new instance of the PlaygroundServer.
+func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
+	// Define playgroundHome at the very top (PLAYGROUND_HOME preferred, AGENTS_HOME fallback)
+	playgroundHome := os.Getenv("PLAYGROUND_HOME")
+	if playgroundHome == "" {
+		playgroundHome = os.Getenv("AGENTS_HOME") // Legacy fallback
+	}
+	if playgroundHome == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return nil, err
 		}
-		agentsHome = filepath.Join(homeDir, ".hanzo/agents")
+		playgroundHome = filepath.Join(homeDir, ".hanzo/playground")
 	}
 
 	dirs, err := utils.EnsureDataDirectories()
@@ -90,20 +99,20 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 	Router := gin.Default()
 
 	// Sync installed.yaml to database for package visibility
-	_ = SyncPackagesFromRegistry(agentsHome, storageProvider)
+	_ = SyncPackagesFromRegistry(playgroundHome, storageProvider)
 
 	// Initialize agent client for communication with agent nodes
-	agentClient := communication.NewHTTPAgentClient(storageProvider, 5*time.Second)
+	nodeClient := communication.NewHTTPNodeClient(storageProvider, 5*time.Second)
 
-	// Create infrastructure components for AgentService
+	// Create infrastructure components for BotService
 	fileSystem := infrastorage.NewFileSystemAdapter()
-	registryPath := filepath.Join(agentsHome, "installed.json")
+	registryPath := filepath.Join(playgroundHome, "installed.json")
 	registryStorage := infrastorage.NewLocalRegistryStorage(fileSystem, registryPath)
 	processManager := process.NewProcessManager()
 	portManager := process.NewPortManager()
 
-	// Create AgentService
-	agentService := coreservices.NewAgentService(processManager, portManager, registryStorage, agentClient, agentsHome)
+	// Create BotService
+	botService := coreservices.NewBotService(processManager, portManager, registryStorage, nodeClient, playgroundHome)
 
 	// Initialize StatusManager for unified status management
 	statusManagerConfig := services.StatusManagerConfig{
@@ -114,13 +123,13 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 	}
 
 	// Create UIService first (without StatusManager)
-	uiService := services.NewUIService(storageProvider, agentClient, agentService, nil)
+	uiService := services.NewUIService(storageProvider, nodeClient, botService, nil)
 
-	// Create StatusManager with UIService and AgentClient
-	statusManager := services.NewStatusManager(storageProvider, statusManagerConfig, uiService, agentClient)
+	// Create StatusManager with UIService and NodeClient
+	statusManager := services.NewStatusManager(storageProvider, statusManagerConfig, uiService, nodeClient)
 
 	// Update UIService with StatusManager reference
-	uiService = services.NewUIService(storageProvider, agentClient, agentService, statusManager)
+	uiService = services.NewUIService(storageProvider, nodeClient, botService, statusManager)
 
 	// Presence manager tracks node leases so stale nodes age out quickly
 	presenceConfig := services.PresenceManagerConfig{
@@ -139,7 +148,7 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 		ConsecutiveFailures: cfg.Agents.NodeHealth.ConsecutiveFailures,
 		RecoveryDebounce:    cfg.Agents.NodeHealth.RecoveryDebounce,
 	}
-	healthMonitor := services.NewHealthMonitor(storageProvider, healthMonitorConfig, uiService, agentClient, statusManager, presenceManager)
+	healthMonitor := services.NewHealthMonitor(storageProvider, healthMonitorConfig, uiService, nodeClient, statusManager, presenceManager)
 	presenceManager.SetExpireCallback(healthMonitor.UnregisterAgent)
 
 	// Initialize DID services if enabled
@@ -190,7 +199,7 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 		}
 
 		// Generate af server ID based on agents home directory
-		agentsServerID := generateAgentsServerID(agentsHome)
+		agentsServerID := generatePlaygroundServerID(playgroundHome)
 
 		// Initialize af server DID with dynamic ID
 		fmt.Printf("🧠 Initializing af server DID (ID: %s)...\n", agentsServerID)
@@ -207,7 +216,7 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 			return nil, fmt.Errorf("af server DID validation failed: registry or root DID is empty")
 		}
 
-		fmt.Printf("✅ Agents server DID created successfully: %s\n", registry.RootDID)
+		fmt.Printf("✅ Playground server DID created successfully: %s\n", registry.RootDID)
 
 		// Backfill existing nodes with DIDs
 		fmt.Println("🔄 Starting DID backfill for existing nodes...")
@@ -252,15 +261,73 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 	cleanupService := handlers.NewExecutionCleanupService(storageProvider, cfg.Agents.ExecutionCleanup)
 
 	adminPort := cfg.Agents.Port + 100
-	if envPort := os.Getenv("AGENTS_ADMIN_GRPC_PORT"); envPort != "" {
+	envPort := os.Getenv("PLAYGROUND_ADMIN_GRPC_PORT")
+	if envPort == "" {
+		envPort = os.Getenv("AGENTS_ADMIN_GRPC_PORT") // Legacy fallback
+	}
+	if envPort != "" {
 		if parsedPort, parseErr := strconv.Atoi(envPort); parseErr == nil {
 			adminPort = parsedPort
 		} else {
-			logger.Logger.Warn().Err(parseErr).Str("value", envPort).Msg("invalid AGENTS_ADMIN_GRPC_PORT, using default offset")
+			logger.Logger.Warn().Err(parseErr).Str("value", envPort).Msg("invalid PLAYGROUND_ADMIN_GRPC_PORT, using default offset")
 		}
 	}
 
-	return &AgentsServer{
+	// Initialize cloud provisioner if K8s cloud mode is enabled
+	var cloudProvisioner *cloud.Provisioner
+	if cfg.Cloud.Enabled && cfg.Cloud.Kubernetes.Enabled {
+		logger.Logger.Info().
+			Str("namespace", cfg.Cloud.Kubernetes.Namespace).
+			Str("image", cfg.Cloud.Kubernetes.BotImage).
+			Int("max_agents_per_org", cfg.Cloud.Kubernetes.MaxAgentsPerOrg).
+			Msg("initializing cloud agent provisioner")
+
+		k8sClient, err := cloud.NewInClusterClient()
+		if err != nil {
+			logger.Logger.Warn().Err(err).Msg("K8s in-cluster client unavailable — cloud provisioning disabled")
+		} else {
+			cloudProvisioner = cloud.NewProvisioner(cfg.Cloud, k8sClient)
+			// Sync existing cloud agents from K8s
+			go func() {
+				ctx := context.Background()
+				if err := cloudProvisioner.Sync(ctx); err != nil {
+					logger.Logger.Warn().Err(err).Msg("failed to sync cloud nodes from K8s")
+				}
+			}()
+		}
+	}
+
+	// Initialize Space store based on storage mode.
+	// SpaceStore uses the same database connection as the main storage provider.
+	var spaceStore spaces.Store
+	if cfg.Storage.Mode == "postgres" {
+		// For postgres mode, get the *sql.DB from the storage provider.
+		// The postgres storage exposes DB() for this purpose.
+		if pgStore, ok := storageProvider.(interface{ RawDB() interface{} }); ok {
+			if db, ok := pgStore.RawDB().(*sql.DB); ok {
+				spaceStore = spaces.NewPostgresStore(db)
+			}
+		}
+		if spaceStore == nil {
+			// Fallback: create a standalone connection using the postgres DSN.
+			logger.Logger.Warn().Msg("Space store: falling back to standalone postgres connection")
+		}
+	}
+	if spaceStore == nil {
+		// Local mode: use SQLite space store with the same data directory.
+		dbPath := filepath.Join(dirs.DataDir, "spaces.db")
+		sqliteDB, err := sql.Open("sqlite3", dbPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open spaces SQLite DB: %w", err)
+		}
+		sqliteStore := spaces.NewSQLiteStore(sqliteDB)
+		if err := sqliteStore.Initialize(context.Background()); err != nil {
+			return nil, fmt.Errorf("failed to initialize spaces SQLite store: %w", err)
+		}
+		spaceStore = sqliteStore
+	}
+
+	return &PlaygroundServer{
 		storage:               storageProvider,
 		cache:                 cacheProvider,
 		Router:                Router,
@@ -269,25 +336,27 @@ func NewAgentsServer(cfg *config.Config) (*AgentsServer, error) {
 		healthMonitor:         healthMonitor,
 		presenceManager:       presenceManager,
 		statusManager:         statusManager,
-		agentService:          agentService,
-		agentClient:           agentClient,
+		botService:          botService,
+		nodeClient:           nodeClient,
 		config:                cfg,
 		keystoreService:       keystoreService,
 		didService:            didService,
 		vcService:             vcService,
 		didRegistry:           didRegistry,
-		agentsHome:        agentsHome,
+		playgroundHome:        playgroundHome,
 		cleanupService:        cleanupService,
 		payloadStore:          payloadStore,
 		webhookDispatcher:        webhookDispatcher,
 		observabilityForwarder:   observabilityForwarder,
 		registryWatcherCancel:    nil,
 		zapAdminPort:             adminPort,
+		cloudProvisioner:         cloudProvisioner,
+		spaceStore:               spaceStore,
 	}, nil
 }
 
-// Start initializes and starts the AgentsServer.
-func (s *AgentsServer) Start() error {
+// Start initializes and starts the PlaygroundServer.
+func (s *PlaygroundServer) Start() error {
 	// Setup routes
 	s.setupRoutes()
 
@@ -331,7 +400,7 @@ func (s *AgentsServer) Start() error {
 	events.StartNodeHeartbeat(30 * time.Second)
 
 	if s.registryWatcherCancel == nil {
-		cancel, err := StartPackageRegistryWatcher(context.Background(), s.agentsHome, s.storage)
+		cancel, err := StartPackageRegistryWatcher(context.Background(), s.playgroundHome, s.storage)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("failed to start package registry watcher")
 		} else {
@@ -354,8 +423,8 @@ func (s *AgentsServer) Start() error {
 	return s.Router.Run(":" + strconv.Itoa(s.config.Agents.Port))
 }
 
-// Stop gracefully shuts down the AgentsServer.
-func (s *AgentsServer) Stop() error {
+// Stop gracefully shuts down the PlaygroundServer.
+func (s *PlaygroundServer) Stop() error {
 	if s.zapAdmin != nil {
 		s.zapAdmin.stop()
 	}
@@ -403,7 +472,7 @@ func (s *AgentsServer) Stop() error {
 }
 
 // unregisterAgentFromMonitoring removes an agent from health monitoring
-func (s *AgentsServer) unregisterAgentFromMonitoring(c *gin.Context) {
+func (s *PlaygroundServer) unregisterAgentFromMonitoring(c *gin.Context) {
 	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "node_id is required"})
@@ -422,7 +491,7 @@ func (s *AgentsServer) unregisterAgentFromMonitoring(c *gin.Context) {
 }
 
 // healthCheckHandler provides comprehensive health check for container orchestration
-func (s *AgentsServer) healthCheckHandler(c *gin.Context) {
+func (s *PlaygroundServer) healthCheckHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
@@ -476,7 +545,7 @@ func (s *AgentsServer) healthCheckHandler(c *gin.Context) {
 }
 
 // checkStorageHealth performs storage-specific health checks
-func (s *AgentsServer) checkStorageHealth(ctx context.Context) gin.H {
+func (s *PlaygroundServer) checkStorageHealth(ctx context.Context) gin.H {
 	if s.storageHealthOverride != nil {
 		return s.storageHealthOverride(ctx)
 	}
@@ -499,7 +568,7 @@ func (s *AgentsServer) checkStorageHealth(ctx context.Context) gin.H {
 }
 
 // checkCacheHealth performs cache-specific health checks
-func (s *AgentsServer) checkCacheHealth(ctx context.Context) gin.H {
+func (s *PlaygroundServer) checkCacheHealth(ctx context.Context) gin.H {
 	if s.cacheHealthOverride != nil {
 		return s.cacheHealthOverride(ctx)
 	}
@@ -545,7 +614,7 @@ func (s *AgentsServer) checkCacheHealth(ctx context.Context) gin.H {
 	}
 }
 
-func (s *AgentsServer) setupRoutes() {
+func (s *PlaygroundServer) setupRoutes() {
 	// Configure CORS from configuration
 	corsConfig := cors.Config{
 		AllowOrigins:     s.config.API.CORS.AllowedOrigins,
@@ -594,6 +663,28 @@ func (s *AgentsServer) setupRoutes() {
 		c.Next()
 	})
 
+	// IAM token authentication middleware (validates Bearer JWTs against hanzo.id)
+	// Runs BEFORE API key auth — if IAM validates, request proceeds.
+	// If no JWT present, falls through to API key auth.
+	s.Router.Use(middleware.IAMAuth(middleware.IAMConfig{
+		Enabled:        s.config.IAM.Enabled,
+		Endpoint:       s.config.IAM.Endpoint,
+		PublicEndpoint: s.config.IAM.PublicEndpoint,
+		ClientID:       s.config.IAM.ClientID,
+		ClientSecret:   s.config.IAM.ClientSecret,
+		Organization:   s.config.IAM.Organization,
+		Application:    s.config.IAM.Application,
+		SkipPaths:      s.config.API.Auth.SkipPaths,
+	}))
+	if s.config.IAM.Enabled {
+		logger.Logger.Info().
+			Str("endpoint", s.config.IAM.Endpoint).
+			Str("public_endpoint", s.config.IAM.PublicEndpoint).
+			Str("client_id", s.config.IAM.ClientID).
+			Str("org", s.config.IAM.Organization).
+			Msg("🔐 IAM authentication enabled")
+	}
+
 	// API key authentication middleware (supports headers + api_key query param)
 	s.Router.Use(middleware.APIKeyAuth(middleware.AuthConfig{
 		APIKey:    s.config.API.Auth.APIKey,
@@ -618,43 +709,21 @@ func (s *AgentsServer) setupRoutes() {
 			fmt.Println("Using embedded UI files")
 		} else {
 			// Use filesystem UI
-			distPath := s.config.UI.DistPath
-			if distPath == "" {
-				// Get the executable path and find UI dist relative to it
-				execPath, err := os.Executable()
-				if err != nil {
-					distPath = filepath.Join("apps", "platform", "agents", "web", "client", "dist")
-					if _, statErr := os.Stat(distPath); os.IsNotExist(statErr) {
-						distPath = filepath.Join("web", "client", "dist")
-					}
-				} else {
-					execDir := filepath.Dir(execPath)
-					// Look for web/client/dist relative to the executable directory
-					distPath = filepath.Join(execDir, "web", "client", "dist")
+			distPath := s.resolveUIDistPath()
 
-					// If that doesn't exist, try going up one level (if binary is in apps/platform/agents/)
-					if _, err := os.Stat(distPath); os.IsNotExist(err) {
-						distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client", "dist")
-					}
-
-					// Final fallback to current working directory
-					if _, err := os.Stat(distPath); os.IsNotExist(err) {
-						altPath := filepath.Join("apps", "platform", "agents", "web", "client", "dist")
-						if _, altErr := os.Stat(altPath); altErr == nil {
-							distPath = altPath
-						} else {
-							distPath = filepath.Join("web", "client", "dist")
-						}
-					}
-				}
-			}
-
-			// Serve static files from filesystem
-			s.Router.StaticFS("/ui", http.Dir(distPath))
-
-			// Root redirect
+			// Serve index.html at root
 			s.Router.GET("/", func(c *gin.Context) {
-				c.Redirect(http.StatusMovedPermanently, "/ui/")
+				c.File(filepath.Join(distPath, "index.html"))
+			})
+
+			// Backward compatibility: redirect /ui/* to /*
+			s.Router.GET("/ui/*filepath", func(c *gin.Context) {
+				path := c.Param("filepath")
+				if path == "" || path == "/" {
+					c.Redirect(http.StatusMovedPermanently, "/")
+				} else {
+					c.Redirect(http.StatusMovedPermanently, path)
+				}
 			})
 
 			fmt.Printf("Using filesystem UI files from: %s\n", distPath)
@@ -674,7 +743,7 @@ func (s *AgentsServer) setupRoutes() {
 				agents.GET("/packages/:packageId/details", packagesHandler.GetPackageDetailsHandler)
 
 				// Agent lifecycle management endpoints
-				lifecycleHandler := ui.NewLifecycleHandler(s.storage, s.agentService)
+				lifecycleHandler := ui.NewLifecycleHandler(s.storage, s.botService)
 				agents.GET("/running", lifecycleHandler.ListRunningAgentsHandler)
 
 				// Individual agent operations
@@ -682,7 +751,7 @@ func (s *AgentsServer) setupRoutes() {
 					// TODO: Implement agent details
 					c.JSON(http.StatusOK, gin.H{"message": "Agent details endpoint"})
 				})
-				agents.GET("/:agentId/status", lifecycleHandler.GetAgentStatusHandler)
+				agents.GET("/:agentId/status", lifecycleHandler.GetBotStatusHandler)
 				agents.POST("/:agentId/start", lifecycleHandler.StartAgentHandler)
 				agents.POST("/:agentId/stop", lifecycleHandler.StopAgentHandler)
 				agents.POST("/:agentId/reconcile", lifecycleHandler.ReconcileAgentHandler)
@@ -694,7 +763,7 @@ func (s *AgentsServer) setupRoutes() {
 				agents.POST("/:agentId/config", configHandler.SetConfigHandler)
 
 				// Environment file endpoints
-				envHandler := ui.NewEnvHandler(s.storage, s.agentService, s.agentsHome)
+				envHandler := ui.NewEnvHandler(s.storage, s.botService, s.playgroundHome)
 				agents.GET("/:agentId/env", envHandler.GetEnvHandler)
 				agents.PUT("/:agentId/env", envHandler.PutEnvHandler)
 				agents.PATCH("/:agentId/env", envHandler.PatchEnvHandler)
@@ -729,7 +798,7 @@ func (s *AgentsServer) setupRoutes() {
 				nodes.GET("/:nodeId/vc-status", didHandler.GetNodeVCStatusHandler)
 
 				// MCP management endpoints for nodes
-				mcpHandler := ui.NewMCPHandler(s.uiService, s.agentClient)
+				mcpHandler := ui.NewMCPHandler(s.uiService, s.nodeClient)
 				nodes.GET("/:nodeId/mcp/health", mcpHandler.GetMCPHealthHandler)
 				nodes.GET("/:nodeId/mcp/events", mcpHandler.GetMCPEventsHandler)
 				nodes.GET("/:nodeId/mcp/metrics", mcpHandler.GetMCPMetricsHandler)
@@ -801,14 +870,14 @@ func (s *AgentsServer) setupRoutes() {
 			// MCP system-wide endpoints
 			mcp := uiAPI.Group("/mcp")
 			{
-				mcpHandler := ui.NewMCPHandler(s.uiService, s.agentClient)
+				mcpHandler := ui.NewMCPHandler(s.uiService, s.nodeClient)
 				mcp.GET("/status", mcpHandler.GetMCPStatusHandler)
 			}
 
 			// Dashboard endpoints
 			dashboard := uiAPI.Group("/dashboard")
 			{
-				dashboardHandler := ui.NewDashboardHandler(s.storage, s.agentService)
+				dashboardHandler := ui.NewDashboardHandler(s.storage, s.botService)
 				dashboard.GET("/summary", dashboardHandler.GetDashboardSummaryHandler)
 				dashboard.GET("/enhanced", dashboardHandler.GetEnhancedDashboardSummaryHandler)
 			}
@@ -942,17 +1011,17 @@ func (s *AgentsServer) setupRoutes() {
 
 			// Add af server DID endpoint
 			agentAPI.GET("/did/agents-server", func(c *gin.Context) {
-				// Get af server ID dynamically
-				agentsServerID, err := s.didService.GetAgentsServerID()
+				// Get playground server ID dynamically
+				agentsServerID, err := s.didService.GetPlaygroundServerID()
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
-						"error":   "Failed to get af server ID",
-						"details": fmt.Sprintf("Agents server ID error: %v", err),
+						"error":   "Failed to get playground server ID",
+						"details": fmt.Sprintf("Playground server ID error: %v", err),
 					})
 					return
 				}
 
-				// Get the actual af server DID from the registry
+				// Get the actual playground server DID from the registry
 				registry, err := s.didService.GetRegistry(agentsServerID)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
@@ -964,24 +1033,24 @@ func (s *AgentsServer) setupRoutes() {
 
 				if registry == nil {
 					c.JSON(http.StatusNotFound, gin.H{
-						"error":   "Agents server DID not found",
-						"details": "No DID registry exists for af server 'default'. The DID system may not be properly initialized.",
+						"error":   "Playground server DID not found",
+						"details": "No DID registry exists for playground server 'default'. The DID system may not be properly initialized.",
 					})
 					return
 				}
 
 				if registry.RootDID == "" {
 					c.JSON(http.StatusInternalServerError, gin.H{
-						"error":   "Agents server DID is empty",
+						"error":   "Playground server DID is empty",
 						"details": "Registry exists but root DID is empty. The DID system may be corrupted.",
 					})
 					return
 				}
 
 				c.JSON(http.StatusOK, gin.H{
-					"agents_server_id":  "default",
-					"agents_server_did": registry.RootDID,
-					"message":               "Agents server DID retrieved successfully",
+					"playground_server_id":  "default",
+					"playground_server_did": registry.RootDID,
+					"message":               "Playground server DID retrieved successfully",
 				})
 			})
 		} else {
@@ -992,6 +1061,59 @@ func (s *AgentsServer) setupRoutes() {
 				Msg("DID routes NOT registered - conditions not met")
 		}
 		// Note: Removed unused/unimplemented DID endpoint placeholders for system simplification
+
+		// Cloud provisioning endpoints — full cloud nodes on DOKS
+		if s.cloudProvisioner != nil {
+			cloudAPI := agentAPI.Group("/cloud")
+			{
+				cloudAPI.POST("/nodes/provision", handlers.CloudProvisionHandler(s.cloudProvisioner))
+				cloudAPI.DELETE("/nodes/:node_id", handlers.CloudDeprovisionHandler(s.cloudProvisioner))
+				cloudAPI.GET("/nodes", handlers.CloudListNodesHandler(s.cloudProvisioner))
+				cloudAPI.GET("/nodes/:node_id", handlers.CloudGetNodeHandler(s.cloudProvisioner))
+				cloudAPI.GET("/nodes/:node_id/logs", handlers.CloudGetLogsHandler(s.cloudProvisioner))
+				cloudAPI.POST("/nodes/sync", handlers.CloudSyncHandler(s.cloudProvisioner))
+				cloudAPI.POST("/teams/provision", handlers.TeamProvisionHandler(s.cloudProvisioner))
+			}
+			logger.Logger.Info().Msg("☁️  Cloud provisioning routes registered")
+		}
+
+		// Space API routes — IAM-scoped project workspaces
+		if s.spaceStore != nil {
+			spacesAPI := agentAPI.Group("/spaces")
+			{
+				spaceHandler := handlers.NewSpaceHandler(s.spaceStore)
+				spacesAPI.POST("", spaceHandler.CreateSpace)
+				spacesAPI.GET("", spaceHandler.ListSpaces)
+				spacesAPI.GET("/:id", spaceHandler.GetSpace)
+				spacesAPI.PUT("/:id", spaceHandler.UpdateSpace)
+				spacesAPI.DELETE("/:id", spaceHandler.DeleteSpace)
+
+				// Members
+				spacesAPI.POST("/:id/members", spaceHandler.AddMember)
+				spacesAPI.GET("/:id/members", spaceHandler.ListMembers)
+				spacesAPI.DELETE("/:id/members/:uid", spaceHandler.RemoveMember)
+
+				// Nodes within a space
+				spaceNodeHandler := handlers.NewSpaceNodeHandler(s.spaceStore)
+				spacesAPI.POST("/:id/nodes/register", spaceNodeHandler.RegisterNode)
+				spacesAPI.GET("/:id/nodes", spaceNodeHandler.ListNodes)
+				spacesAPI.DELETE("/:id/nodes/:nid", spaceNodeHandler.RemoveNode)
+				spacesAPI.POST("/:id/nodes/:nid/heartbeat", spaceNodeHandler.Heartbeat)
+
+				// Bots within a space
+				spaceBotHandler := handlers.NewSpaceBotHandler(s.spaceStore)
+				spacesAPI.POST("/:id/bots", spaceBotHandler.CreateBot)
+				spacesAPI.GET("/:id/bots", spaceBotHandler.ListBots)
+				spacesAPI.DELETE("/:id/bots/:bid", spaceBotHandler.RemoveBot)
+				spacesAPI.POST("/:id/bots/:bid/chat", spaceBotHandler.ChatMessage)
+				spacesAPI.GET("/:id/bots/:bid/chat", spaceBotHandler.ChatHistory)
+
+				// Node V2 API proxy — forward any request to the hanzo/node
+				nodeProxy := proxy.NewNodeProxy(s.spaceStore)
+				spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)
+			}
+			logger.Logger.Info().Msg("🚀 Space API routes registered")
+		}
 
 		// Settings API routes (observability webhook configuration)
 		settings := agentAPI.Group("/settings")
@@ -1010,16 +1132,7 @@ func (s *AgentsServer) setupRoutes() {
 	// SPA fallback — serve index.html for all non-API routes
 	// Only add this if we're NOT using embedded UI (since embedded UI handles its own NoRoute)
 	if s.config.UI.Enabled && (s.config.UI.Mode != "embedded" || !client.IsUIEmbedded()) {
-		distPath := s.config.UI.DistPath
-		if distPath == "" {
-			distPath = filepath.Join("web", "client", "dist")
-			if execPath, err := os.Executable(); err == nil {
-				candidate := filepath.Join(filepath.Dir(execPath), "web", "client", "dist")
-				if _, err := os.Stat(candidate); err == nil {
-					distPath = candidate
-				}
-			}
-		}
+		distPath := s.resolveUIDistPath()
 
 		// Serve static assets from dist
 		s.Router.Static("/assets", filepath.Join(distPath, "assets"))
@@ -1056,14 +1169,49 @@ func (s *AgentsServer) setupRoutes() {
 	}
 }
 
-// generateAgentsServerID creates a deterministic af server ID based on the agents home directory.
+// resolveUIDistPath returns the filesystem path to the UI dist directory.
+func (s *PlaygroundServer) resolveUIDistPath() string {
+	distPath := s.config.UI.DistPath
+	if distPath != "" {
+		return distPath
+	}
+
+	execPath, err := os.Executable()
+	if err != nil {
+		distPath = filepath.Join("apps", "platform", "agents", "web", "client", "dist")
+		if _, statErr := os.Stat(distPath); os.IsNotExist(statErr) {
+			distPath = filepath.Join("web", "client", "dist")
+		}
+		return distPath
+	}
+
+	execDir := filepath.Dir(execPath)
+	distPath = filepath.Join(execDir, "web", "client", "dist")
+
+	if _, err := os.Stat(distPath); os.IsNotExist(err) {
+		distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client", "dist")
+	}
+
+	if _, err := os.Stat(distPath); os.IsNotExist(err) {
+		altPath := filepath.Join("apps", "platform", "agents", "web", "client", "dist")
+		if _, altErr := os.Stat(altPath); altErr == nil {
+			distPath = altPath
+		} else {
+			distPath = filepath.Join("web", "client", "dist")
+		}
+	}
+
+	return distPath
+}
+
+// generatePlaygroundServerID creates a deterministic af server ID based on the agents home directory.
 // This ensures each agents instance has a unique ID while being deterministic for the same installation.
-func generateAgentsServerID(agentsHome string) string {
+func generatePlaygroundServerID(playgroundHome string) string {
 	// Use the absolute path of agents home to generate a deterministic ID
-	absPath, err := filepath.Abs(agentsHome)
+	absPath, err := filepath.Abs(playgroundHome)
 	if err != nil {
 		// Fallback to the original path if absolute path fails
-		absPath = agentsHome
+		absPath = playgroundHome
 	}
 
 	// Create a hash of the agents home path to generate a unique but deterministic ID

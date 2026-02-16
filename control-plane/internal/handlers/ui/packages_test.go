@@ -17,14 +17,14 @@ import (
 )
 
 // setupRouterAndServices is a helper function to set up the router and mock services for package tests
-func setupRouterAndServices() (*gin.Engine, *MockStorageProvider, *MockAgentServiceForLifecycle) {
+func setupRouterAndServices() (*gin.Engine, *MockStorageProvider, *MockBotServiceForLifecycle) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	mockStorage := &MockStorageProvider{}
-	mockAgentService := &MockAgentServiceForLifecycle{} // Assuming this is the correct mock service
+	mockBotService := &MockBotServiceForLifecycle{} // Assuming this is the correct mock service
 
 	packageHandler := NewPackageHandler(mockStorage)
-	// lifecycleHandler := NewLifecycleHandler(mockStorage, mockAgentService) // If needed for other routes
+	// lifecycleHandler := NewLifecycleHandler(mockStorage, mockBotService) // If needed for other routes
 
 	v1 := router.Group("/api/ui/v1")
 	{
@@ -39,14 +39,14 @@ func setupRouterAndServices() (*gin.Engine, *MockStorageProvider, *MockAgentServ
 		// 	agents.POST("/:agentId/start", lifecycleHandler.StartAgentHandler)
 		// }
 	}
-	return router, mockStorage, mockAgentService
+	return router, mockStorage, mockBotService
 }
 
 func TestListPackagesHandler(t *testing.T) {
 	// Test data
 	description := "Test package description"
 	author := "Test Author"
-	packages := []*types.AgentPackage{
+	packages := []*types.BotPackage{
 		{
 			ID:                  "test-package-1",
 			Name:                "Test Package 1",
@@ -70,9 +70,9 @@ func TestListPackagesHandler(t *testing.T) {
 	t.Run("successful list packages", func(t *testing.T) {
 		router, mockStorage, _ := setupRouterAndServices()
 		// Setup mocks
-		mockStorage.On("QueryAgentPackages", mock.AnythingOfType("context.Context"), mock.AnythingOfType("types.PackageFilters")).Return(packages, nil).Once()
-		mockStorage.On("GetAgentConfiguration", mock.AnythingOfType("context.Context"), "test-package-1", "test-package-1").Return(nil, assert.AnError).Once()
-		mockStorage.On("GetAgentConfiguration", mock.AnythingOfType("context.Context"), "test-package-2", "test-package-2").Return(nil, assert.AnError).Once()
+		mockStorage.On("QueryBotPackages", mock.AnythingOfType("context.Context"), mock.AnythingOfType("types.PackageFilters")).Return(packages, nil).Once()
+		mockStorage.On("GetBotConfiguration", mock.AnythingOfType("context.Context"), "test-package-1", "test-package-1").Return(nil, assert.AnError).Once()
+		mockStorage.On("GetBotConfiguration", mock.AnythingOfType("context.Context"), "test-package-2", "test-package-2").Return(nil, assert.AnError).Once()
 
 		// Make request
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/packages", nil)
@@ -112,7 +112,7 @@ func TestListPackagesHandler(t *testing.T) {
 	t.Run("storage error", func(t *testing.T) {
 		router, mockStorage, _ := setupRouterAndServices()
 		// Setup mocks
-		mockStorage.On("QueryAgentPackages", mock.AnythingOfType("context.Context"), mock.AnythingOfType("types.PackageFilters")).Return([]*types.AgentPackage{}, assert.AnError).Once()
+		mockStorage.On("QueryBotPackages", mock.AnythingOfType("context.Context"), mock.AnythingOfType("types.PackageFilters")).Return([]*types.BotPackage{}, assert.AnError).Once()
 
 		// Make request
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/packages", nil)
@@ -151,7 +151,7 @@ func TestGetPackageDetailsHandler(t *testing.T) {
 		}
 	}`)
 
-	pkg := &types.AgentPackage{
+	pkg := &types.BotPackage{
 		ID:                  "test-package",
 		Name:                "Test Package",
 		Version:             "1.0.0",
@@ -164,8 +164,8 @@ func TestGetPackageDetailsHandler(t *testing.T) {
 	t.Run("successful get package details", func(t *testing.T) {
 		router, mockStorage, _ := setupRouterAndServices()
 		// Setup mocks
-		mockStorage.On("GetAgentPackage", mock.AnythingOfType("context.Context"), "test-package").Return(pkg, nil).Once()
-		mockStorage.On("GetAgentConfiguration", mock.AnythingOfType("context.Context"), "test-package", "test-package").Return(nil, assert.AnError).Once()
+		mockStorage.On("GetBotPackage", mock.AnythingOfType("context.Context"), "test-package").Return(pkg, nil).Once()
+		mockStorage.On("GetBotConfiguration", mock.AnythingOfType("context.Context"), "test-package", "test-package").Return(nil, assert.AnError).Once()
 
 		// Make request
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/packages/test-package/details", nil)
@@ -199,7 +199,7 @@ func TestGetPackageDetailsHandler(t *testing.T) {
 	t.Run("package not found", func(t *testing.T) {
 		router, mockStorage, _ := setupRouterAndServices()
 		// Setup mocks
-		mockStorage.On("GetAgentPackage", mock.AnythingOfType("context.Context"), "nonexistent").Return((*types.AgentPackage)(nil), assert.AnError).Once()
+		mockStorage.On("GetBotPackage", mock.AnythingOfType("context.Context"), "nonexistent").Return((*types.BotPackage)(nil), assert.AnError).Once()
 
 		// Make request
 		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/packages/nonexistent/details", nil)
@@ -238,7 +238,7 @@ func TestMatchesSearch(t *testing.T) {
 
 	description := "A test package for testing"
 	author := "Test Author"
-	pkg := &types.AgentPackage{
+	pkg := &types.BotPackage{
 		ID:          "test-package-id",
 		Name:        "Test Package Name",
 		Description: &description,
@@ -276,7 +276,7 @@ func TestMatchesSearch(t *testing.T) {
 	})
 
 	t.Run("nil description and author", func(t *testing.T) {
-		pkgWithNils := &types.AgentPackage{
+		pkgWithNils := &types.BotPackage{
 			ID:          "test-id",
 			Name:        "Test Name",
 			Description: nil,

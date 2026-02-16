@@ -12,13 +12,13 @@ def make_package():
             "derivation_path": "m/0",
             "component_type": "agent",
         },
-        "reasoner_dids": {
-            "reasoner_a": {
-                "did": "did:reasoner:a",
+        "bot_dids": {
+            "bot_a": {
+                "did": "did:bot:a",
                 "private_key_jwk": "priv_a",
                 "public_key_jwk": "pub_a",
                 "derivation_path": "m/1",
-                "component_type": "reasoner",
+                "component_type": "bot",
             }
         },
         "skill_dids": {
@@ -34,7 +34,7 @@ def make_package():
     }
 
 
-def test_register_agent_success(monkeypatch):
+def test_register_bot_success(monkeypatch):
     manager = DIDManager("http://playground", "node")
 
     class DummyResponse:
@@ -46,15 +46,15 @@ def test_register_agent_success(monkeypatch):
 
     monkeypatch.setattr("requests.post", lambda *a, **k: DummyResponse())
 
-    ok = manager.register_agent([], [])
+    ok = manager.register_bot([], [])
     assert ok is True
     assert manager.is_enabled() is True
-    assert manager.get_agent_did() == "did:agent:123"
-    assert manager.get_function_did("reasoner_a") == "did:reasoner:a"
+    assert manager.get_bot_did() == "did:agent:123"
+    assert manager.get_function_did("bot_a") == "did:bot:a"
     assert manager.get_function_did("unknown") == "did:agent:123"
 
 
-def test_register_agent_failure_status(monkeypatch):
+def test_register_bot_failure_status(monkeypatch):
     manager = DIDManager("http://playground", "node")
 
     class DummyResponse:
@@ -62,7 +62,7 @@ def test_register_agent_failure_status(monkeypatch):
         text = "boom"
 
     monkeypatch.setattr("requests.post", lambda *a, **k: DummyResponse())
-    ok = manager.register_agent([], [])
+    ok = manager.register_bot([], [])
     assert ok is False
     assert manager.is_enabled() is False
 
@@ -78,11 +78,11 @@ def test_create_execution_context(monkeypatch):
         execution_id="exec1",
         workflow_id="wf1",
         session_id="sess",
-        caller_function="reasoner_a",
+        caller_function="bot_a",
         target_function="skill_b",
     )
     assert ctx is not None
-    assert ctx.caller_did == "did:reasoner:a"
+    assert ctx.caller_did == "did:bot:a"
     assert ctx.target_did == "did:skill:b"
     assert isinstance(ctx.timestamp, datetime.datetime)
 

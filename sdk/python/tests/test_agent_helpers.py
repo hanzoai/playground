@@ -1,4 +1,4 @@
-from playground.agent import _resolve_callback_url, _build_callback_candidates
+from playground.bot import _resolve_callback_url, _build_callback_candidates
 
 
 def test_resolve_callback_url_prefers_explicit_url():
@@ -10,15 +10,40 @@ def test_resolve_callback_url_prefers_explicit_url():
 
 
 def test_resolve_callback_url_uses_env(monkeypatch):
-    monkeypatch.setenv("AGENT_CALLBACK_URL", "https://env.example.com")
+    monkeypatch.setenv("HANZO_CALLBACK_URL", "https://env.example.com")
+    monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
     try:
         url = _resolve_callback_url(None, port=5000)
         assert url == "https://env.example.com:5000"
     finally:
+        monkeypatch.delenv("HANZO_CALLBACK_URL", raising=False)
+
+
+def test_resolve_callback_url_uses_agent_env_fallback(monkeypatch):
+    """AGENT_CALLBACK_URL is still honoured as a fallback when HANZO_CALLBACK_URL is not set."""
+    monkeypatch.delenv("HANZO_CALLBACK_URL", raising=False)
+    monkeypatch.setenv("AGENT_CALLBACK_URL", "https://legacy.example.com")
+    try:
+        url = _resolve_callback_url(None, port=5000)
+        assert url == "https://legacy.example.com:5000"
+    finally:
+        monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
+
+
+def test_resolve_callback_url_hanzo_takes_precedence(monkeypatch):
+    """HANZO_CALLBACK_URL takes precedence over AGENT_CALLBACK_URL."""
+    monkeypatch.setenv("HANZO_CALLBACK_URL", "https://hanzo.example.com")
+    monkeypatch.setenv("AGENT_CALLBACK_URL", "https://legacy.example.com")
+    try:
+        url = _resolve_callback_url(None, port=5000)
+        assert url == "https://hanzo.example.com:5000"
+    finally:
+        monkeypatch.delenv("HANZO_CALLBACK_URL", raising=False)
         monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
 
 
 def test_resolve_callback_url_handles_container_overrides(monkeypatch):
+    monkeypatch.delenv("HANZO_CALLBACK_URL", raising=False)
     monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
     monkeypatch.setenv("RAILWAY_SERVICE_NAME", "my-service")
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", "prod")
@@ -32,6 +57,7 @@ def test_resolve_callback_url_handles_container_overrides(monkeypatch):
 
 
 def test_resolve_callback_url_fallback_to_detected_ips(monkeypatch):
+    monkeypatch.delenv("HANZO_CALLBACK_URL", raising=False)
     monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
     monkeypatch.delenv("RAILWAY_SERVICE_NAME", raising=False)
     monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
@@ -50,6 +76,7 @@ def test_resolve_callback_url_fallback_to_detected_ips(monkeypatch):
 
 
 def test_resolve_callback_url_final_fallback(monkeypatch):
+    monkeypatch.delenv("HANZO_CALLBACK_URL", raising=False)
     monkeypatch.delenv("AGENT_CALLBACK_URL", raising=False)
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
     monkeypatch.setattr("playground.agent._detect_local_ip", lambda: None)

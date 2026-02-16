@@ -19,9 +19,8 @@ func TestQueryRunSummariesParsesTextTimestamps(t *testing.T) {
 		{
 			ExecutionID: "exec-a",
 			RunID:       runID,
-			AgentNodeID: "agent-1",
+			NodeID:      "agent-1",
 			BotID:  "bot.a",
-			NodeID:      "node-a",
 			Status:      string(types.ExecutionStatusSucceeded),
 			StartedAt:   base.Add(-3 * time.Minute),
 			CompletedAt: pointerTime(base.Add(-2 * time.Minute)),
@@ -31,9 +30,8 @@ func TestQueryRunSummariesParsesTextTimestamps(t *testing.T) {
 		{
 			ExecutionID: "exec-b",
 			RunID:       runID,
-			AgentNodeID: "agent-1",
+			NodeID:      "agent-1",
 			BotID:  "bot.b",
-			NodeID:      "node-b",
 			Status:      string(types.ExecutionStatusRunning),
 			StartedAt:   base.Add(-1 * time.Minute),
 			CreatedAt:   base.Add(-1 * time.Minute),

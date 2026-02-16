@@ -13,8 +13,15 @@ export const navigationSections: NavigationSection[] = [
         description: 'Real-time system overview and operational metrics'
       },
       {
+        id: 'spaces',
+        label: 'Spaces',
+        href: '/spaces',
+        icon: 'data-center',
+        description: 'Project workspaces for bots, nodes, and teams'
+      },
+      {
         id: 'playground',
-        label: 'Playground',
+        label: 'Canvas',
         href: '/canvas',
         icon: 'bot',
         description: 'Visual bot orchestration playground'
@@ -29,12 +36,12 @@ export const navigationSections: NavigationSection[] = [
     ]
   },
   {
-    id: 'agent-hub',
-    title: 'Agent Hub',
+    id: 'bot-hub',
+    title: 'Bot Hub',
     items: [
       {
         id: 'node-overview',
-        label: 'Agent Node',
+        label: 'Node',
         href: '/nodes',
         icon: 'data-center',
         description: 'Node infrastructure and status'
@@ -57,7 +64,7 @@ export const navigationSections: NavigationSection[] = [
         label: 'Individual Executions',
         href: '/executions',
         icon: 'run',
-        description: 'Single agent executions and calls'
+        description: 'Single bot executions and calls'
       },
       {
         id: 'workflow-executions',
@@ -77,7 +84,7 @@ export const navigationSections: NavigationSection[] = [
         label: 'DID Explorer',
         href: '/identity/dids',
         icon: 'identification',
-        description: 'Explore decentralized identifiers for agents and bots'
+        description: 'Explore decentralized identifiers for bots and bots'
       },
       {
         id: 'credentials',

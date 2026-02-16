@@ -4,7 +4,7 @@ import { NodeDetailSidebar } from "./NodeDetailSidebar";
 interface WorkflowNodeData {
   workflow_id: string;
   execution_id: string;
-  agent_node_id: string;
+  node_id: string;
   bot_id: string;
   status: string;
   started_at: string;
@@ -64,7 +64,7 @@ export function WorkflowDAGWithSidebar({
                 </div>
                 <div className="text-body-small mt-1">
                   Status: {node.status} | Agent:{" "}
-                  {node.agent_name || node.agent_node_id}
+                  {node.agent_name || node.node_id}
                 </div>
               </button>
             ))}
@@ -89,7 +89,7 @@ export function ExampleWorkflowDAGUsage() {
     {
       workflow_id: "wf_123456789",
       execution_id: "exec_987654321",
-      agent_node_id: "agent_001",
+      node_id: "agent_001",
       bot_id: "sentiment_analyzer",
       status: "succeeded",
       started_at: "2024-01-15T10:30:00Z",
@@ -102,7 +102,7 @@ export function ExampleWorkflowDAGUsage() {
     {
       workflow_id: "wf_123456789",
       execution_id: "exec_987654322",
-      agent_node_id: "agent_002",
+      node_id: "agent_002",
       bot_id: "response_generator",
       status: "running",
       started_at: "2024-01-15T10:30:05Z",
@@ -114,7 +114,7 @@ export function ExampleWorkflowDAGUsage() {
     {
       workflow_id: "wf_123456789",
       execution_id: "exec_987654323",
-      agent_node_id: "agent_003",
+      node_id: "agent_003",
       bot_id: "quality_checker",
       status: "failed",
       started_at: "2024-01-15T10:30:10Z",

@@ -7,7 +7,7 @@
 
 import { gateway } from '@/services/gatewayClient';
 import { useCanvasStore } from './canvasStore';
-import { useAgentStore } from './agentStore';
+import { useBotStore } from './botStore';
 import { useActionPillStore } from './actionPillStore';
 import { usePermissionModeStore } from './permissionModeStore';
 import { useTeamStore } from './teamStore';
@@ -15,7 +15,7 @@ import { useTeamStore } from './teamStore';
 export function resetAllStores(): void {
   gateway.disconnect();
   useCanvasStore.getState().reset();
-  useAgentStore.getState().reset();
+  useBotStore.getState().reset();
   useActionPillStore.getState().reset();
   usePermissionModeStore.getState().reset();
   useTeamStore.getState().reset();

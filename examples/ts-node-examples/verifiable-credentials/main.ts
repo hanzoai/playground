@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { Agent } from '@playground/sdk';
-import { reasonersRouter } from './reasoners.js';
+import { Bot } from '@playground/sdk';
+import { botsRouter } from './bots.js';
 
 /**
  * Verifiable Credentials Example
@@ -9,7 +9,7 @@ import { reasonersRouter } from './reasoners.js';
  * Verifiable Credentials (VCs) in Playground to create cryptographically
  * verifiable audit trails for agent executions.
  *
- * Each reasoner in this example generates a VC that:
+ * Each bot in this example generates a VC that:
  * - Records input/output hashes for tamper detection
  * - Links to caller and target DIDs for accountability
  * - Is signed by the control plane's issuer DID
@@ -29,9 +29,9 @@ import { reasonersRouter } from './reasoners.js';
  */
 
 async function main() {
-  const agent = new Agent({
-    nodeId: process.env.AGENT_ID ?? 'vc-demo',
-    playgroundUrl: process.env.AGENTS_URL ?? 'http://localhost:8080',
+  const bot = new Bot({
+    nodeId: process.env.HANZO_NODE_ID ?? 'vc-demo',
+    playgroundUrl: process.env.PLAYGROUND_URL ?? 'http://localhost:8080',
     port: Number(process.env.PORT ?? 8006),
     version: '1.0.0',
     devMode: true,
@@ -39,7 +39,7 @@ async function main() {
     // DID/VC is enabled by default, but we explicitly set it here for clarity
     didEnabled: true,
 
-    // Optional: AI config for the AI-powered reasoner
+    // Optional: AI config for the AI-powered bot
     aiConfig: {
       provider: 'openai',
       model: 'gpt-4o-mini',
@@ -47,20 +47,20 @@ async function main() {
     },
   });
 
-  // Include the VC-enabled reasoners
-  agent.includeRouter(reasonersRouter);
+  // Include the VC-enabled bots
+  bot.includeRouter(botsRouter);
 
-  await agent.serve();
+  await bot.serve();
 
   console.log(`
 ╔════════════════════════════════════════════════════════════════════╗
-║           Verifiable Credentials Demo Agent Started                ║
+║           Verifiable Credentials Demo Bot Started                  ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  Agent ID:     ${agent.config.nodeId.padEnd(50)}║
-║  Port:         ${String(agent.config.port).padEnd(50)}║
-║  DID Enabled:  ${String(agent.config.didEnabled).padEnd(50)}║
+║  Bot ID:       ${bot.config.nodeId.padEnd(50)}║
+║  Port:         ${String(bot.config.port).padEnd(50)}║
+║  DID Enabled:  ${String(bot.config.didEnabled).padEnd(50)}║
 ╠════════════════════════════════════════════════════════════════════╣
-║  Available Reasoners:                                              ║
+║  Available Bots:                                              ║
 ║  • vc_process      - Basic processing with VC generation           ║
 ║  • vc_analyze      - AI analysis with VC audit trail               ║
 ║  • vc_transform    - Data transformation with VC proof             ║
@@ -80,7 +80,7 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err) => {
-    console.error('Failed to start agent:', err);
+    console.error('Failed to start bot:', err);
     process.exit(1);
   });
 }

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, CheckCircle2, Server } from '@/components/ui/icon-bridge';
-import { registerServerlessAgent } from '@/services/api';
+import { registerServerlessBot } from '@/services/api';
 
 interface ServerlessRegistrationModalProps {
   isOpen: boolean;
@@ -57,7 +57,7 @@ export function ServerlessRegistrationModal({
     setSuccess(null);
 
     try {
-      const response = await registerServerlessAgent(invocationUrl);
+      const response = await registerServerlessBot(invocationUrl);
 
       if (response.success) {
         setSuccess({
@@ -78,8 +78,8 @@ export function ServerlessRegistrationModal({
         setError('Registration failed. Please check the URL and try again.');
       }
     } catch (err: any) {
-      console.error('Failed to register serverless agent:', err);
-      setError(err.message || 'Failed to register serverless agent. Please check the URL and try again.');
+      console.error('Failed to register serverless bot:', err);
+      setError(err.message || 'Failed to register serverless bot. Please check the URL and try again.');
     } finally {
       setIsLoading(false);
     }

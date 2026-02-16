@@ -1,16 +1,16 @@
-import type { ReasonerContext } from '../context/ReasonerContext.js';
+import type { BotContext } from '../context/BotContext.js';
 
-export interface ReasonerDefinition<TInput = any, TOutput = any> {
+export interface BotDefinition<TInput = any, TOutput = any> {
   name: string;
-  handler: ReasonerHandler<TInput, TOutput>;
-  options?: ReasonerOptions;
+  handler: BotHandler<TInput, TOutput>;
+  options?: BotOptions;
 }
 
-export type ReasonerHandler<TInput = any, TOutput = any> = (
-  ctx: ReasonerContext<TInput>
+export type BotHandler<TInput = any, TOutput = any> = (
+  ctx: BotContext<TInput>
 ) => Promise<TOutput> | TOutput;
 
-export interface ReasonerOptions {
+export interface BotOptions {
   tags?: string[];
   description?: string;
   inputSchema?: any;
