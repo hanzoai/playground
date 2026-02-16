@@ -5,7 +5,6 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development'
-  const isProd = mode === 'production'
 
   // Environment variables with defaults
   const devPort = parseInt(process.env.VITE_DEV_PORT || '5173')
