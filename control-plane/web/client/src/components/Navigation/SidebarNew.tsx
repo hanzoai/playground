@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
 
 import type { NavigationSection } from "./types";
 import {
@@ -14,8 +15,50 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/ui/icon";
+import { ChevronDown } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Hanzo "H" logo mark — inline SVG so it works without external assets.
+function HanzoLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M5 4V20M19 4V20M5 12H19"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const ORGS = [
+  { id: "hanzo", name: "Hanzo" },
+  { id: "lux", name: "Lux" },
+  { id: "zoo", name: "Zoo" },
+];
+
+const PROJECTS = [
+  { id: "default", name: "Default" },
+  { id: "staging", name: "Staging" },
+  { id: "production", name: "Production" },
+];
 
 interface SidebarNewProps {
   sections: NavigationSection[];
@@ -24,17 +67,21 @@ interface SidebarNewProps {
 export function SidebarNew({ sections }: SidebarNewProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { isAuthenticated, authRequired, clearAuth } = useAuth();
+  const [activeOrg, setActiveOrg] = useState(ORGS[0]);
+  const [activeProject, setActiveProject] = useState(PROJECTS[0]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
-      {/* Header - Add bottom spacing and subtle border separator for visual hierarchy */}
-      <SidebarHeader className="pb-3 border-b border-border/40">
+      {/* Header — Hanzo logo + org/project selectors */}
+      <SidebarHeader className="pb-2 border-b border-border/40">
         <SidebarMenu>
+          {/* Brand row */}
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="active:scale-[0.98] transition-transform">
               <NavLink to="/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-                  <Icon name="dashboard" size={16} />
+                  <HanzoLogo className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold tracking-tight">Hanzo Bot</span>
@@ -43,18 +90,78 @@ export function SidebarNew({ sections }: SidebarNewProps) {
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
+          {/* Org selector */}
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  className="h-8 text-[13px] justify-between"
+                  tooltip={isCollapsed ? `Org: ${activeOrg.name}` : undefined}
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon name="users" size={14} className="text-muted-foreground" />
+                    <span className="truncate">{activeOrg.name}</span>
+                  </span>
+                  <ChevronDown size={12} className="text-muted-foreground shrink-0" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start" className="w-48">
+                <DropdownMenuLabel>Organization</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ORGS.map((org) => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    onClick={() => setActiveOrg(org)}
+                    className={cn(org.id === activeOrg.id && "bg-accent")}
+                  >
+                    {org.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+
+          {/* Project selector */}
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  className="h-8 text-[13px] justify-between"
+                  tooltip={isCollapsed ? `Project: ${activeProject.name}` : undefined}
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon name="package" size={14} className="text-muted-foreground" />
+                    <span className="truncate">{activeProject.name}</span>
+                  </span>
+                  <ChevronDown size={12} className="text-muted-foreground shrink-0" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start" className="w-48">
+                <DropdownMenuLabel>Project</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {PROJECTS.map((proj) => (
+                  <DropdownMenuItem
+                    key={proj.id}
+                    onClick={() => setActiveProject(proj)}
+                    className={cn(proj.id === activeProject.id && "bg-accent")}
+                  >
+                    {proj.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Content - Add spacing between groups */}
+      {/* Content */}
       <SidebarContent className="space-y-4 px-2">
         {sections.map((section) => (
           <SidebarGroup key={section.id} className="space-y-0.5">
-            {/* Apply caption styling for clear header differentiation */}
             <SidebarGroupLabel className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 px-2 mb-1">
               {section.title}
             </SidebarGroupLabel>
-            {/* Add gap after header */}
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => (
@@ -102,31 +209,59 @@ export function SidebarNew({ sections }: SidebarNewProps) {
         ))}
       </SidebarContent>
 
+      {/* Footer — user menu + links */}
       <SidebarFooter className="border-t border-border/40 pt-2">
         <SidebarMenu>
+          {/* User dropdown */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Documentation">
-              <a href="https://hanzo.ai/docs" target="_blank" rel="noopener noreferrer">
-                <Icon name="documentation" size={15} className="text-muted-foreground" />
-                <span>Documentation</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="GitHub">
-              <a href="https://github.com/hanzoai/bot" target="_blank" rel="noopener noreferrer">
-                <Icon name="github" size={15} className="text-muted-foreground" />
-                <span>GitHub</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Support">
-              <a href="https://github.com/hanzoai/bot/issues" target="_blank" rel="noopener noreferrer">
-                <Icon name="support" size={15} className="text-muted-foreground" />
-                <span>Support</span>
-              </a>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  className="h-9 text-[13px]"
+                  tooltip={isCollapsed ? "Account" : undefined}
+                >
+                  <div className="flex aspect-square size-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
+                    {isAuthenticated ? "U" : "?"}
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate text-xs font-medium">
+                      {isAuthenticated ? "User" : "Not signed in"}
+                    </span>
+                    <span className="truncate text-[10px] text-muted-foreground">
+                      {activeOrg.name}
+                    </span>
+                  </div>
+                  <ChevronDown size={12} className="text-muted-foreground shrink-0" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-48">
+                <DropdownMenuLabel>Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <a href="https://hanzo.ai/docs" target="_blank" rel="noopener noreferrer">
+                    Documentation
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="https://github.com/hanzoai/bot" target="_blank" rel="noopener noreferrer">
+                    GitHub
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="https://github.com/hanzoai/bot/issues" target="_blank" rel="noopener noreferrer">
+                    Support
+                  </a>
+                </DropdownMenuItem>
+                {authRequired && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={clearAuth} className="text-destructive">
+                      Sign out
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

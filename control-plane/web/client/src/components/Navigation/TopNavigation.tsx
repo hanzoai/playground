@@ -46,6 +46,7 @@ export function TopNavigation() {
       packages: { label: "Packages", href: "/packages" },
       settings: { label: "Settings", href: "/settings" },
       agents: { label: "My Agents", href: "/agents" },
+      canvas: { label: "Playground", href: "/canvas" },
       dashboard: { label: "Dashboard", href: "/dashboard" },
       "dashboard/enhanced": {
         label: "Enhanced Dashboard",
