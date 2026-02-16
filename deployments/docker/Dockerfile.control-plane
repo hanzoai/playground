@@ -40,7 +40,7 @@ RUN mkdir -p /tmp/playground-data && chown 65532:65532 /tmp/playground-data
 FROM gcr.io/distroless/base-debian12
 
 LABEL org.opencontainers.image.source=https://github.com/hanzoai/playground
-LABEL org.opencontainers.image.description="Hanzo Playground - Agent Control Plane"
+LABEL org.opencontainers.image.description="Hanzo Bot - Agent Control Plane"
 LABEL org.opencontainers.image.licenses=MIT
 
 COPY --from=go-builder /app/bin/playground-server /usr/local/bin/playground-server

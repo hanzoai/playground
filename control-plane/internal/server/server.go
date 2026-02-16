@@ -1007,76 +1007,51 @@ func (s *AgentsServer) setupRoutes() {
 		}
 	}
 
-	// SPA fallback - serve index.html for all /ui/* routes that don't match static files
+	// SPA fallback — serve index.html for all non-API routes
 	// Only add this if we're NOT using embedded UI (since embedded UI handles its own NoRoute)
 	if s.config.UI.Enabled && (s.config.UI.Mode != "embedded" || !client.IsUIEmbedded()) {
-		s.Router.NoRoute(func(c *gin.Context) {
-			// Only handle /ui/* paths
-			if strings.HasPrefix(c.Request.URL.Path, "/ui/") {
-				// Check if it's a static asset by looking for common web asset file extensions
-				// This prevents bot IDs with dots (like "deepresearchagent.meta_research_methodology_bot")
-				// from being treated as static assets
-				path := strings.ToLower(c.Request.URL.Path)
-				isStaticAsset := strings.HasSuffix(path, ".js") ||
-					strings.HasSuffix(path, ".css") ||
-					strings.HasSuffix(path, ".html") ||
-					strings.HasSuffix(path, ".ico") ||
-					strings.HasSuffix(path, ".png") ||
-					strings.HasSuffix(path, ".jpg") ||
-					strings.HasSuffix(path, ".jpeg") ||
-					strings.HasSuffix(path, ".gif") ||
-					strings.HasSuffix(path, ".svg") ||
-					strings.HasSuffix(path, ".woff") ||
-					strings.HasSuffix(path, ".woff2") ||
-					strings.HasSuffix(path, ".ttf") ||
-					strings.HasSuffix(path, ".eot") ||
-					strings.HasSuffix(path, ".map") ||
-					strings.HasSuffix(path, ".json") ||
-					strings.HasSuffix(path, ".xml") ||
-					strings.HasSuffix(path, ".txt")
-
-				if isStaticAsset {
-					// Let it 404 for missing static assets
-					c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
-					return
+		distPath := s.config.UI.DistPath
+		if distPath == "" {
+			distPath = filepath.Join("web", "client", "dist")
+			if execPath, err := os.Executable(); err == nil {
+				candidate := filepath.Join(filepath.Dir(execPath), "web", "client", "dist")
+				if _, err := os.Stat(candidate); err == nil {
+					distPath = candidate
 				}
-
-				// For SPA routes (including bot detail pages), serve index.html from filesystem
-				distPath := s.config.UI.DistPath
-				if distPath == "" {
-					// Get the executable path and find UI dist relative to it
-					execPath, err := os.Executable()
-					if err != nil {
-						distPath = filepath.Join("apps", "platform", "agents", "web", "client", "dist")
-						if _, statErr := os.Stat(distPath); os.IsNotExist(statErr) {
-							distPath = filepath.Join("web", "client", "dist")
-						}
-					} else {
-						execDir := filepath.Dir(execPath)
-						// Look for web/client/dist relative to the executable directory
-						distPath = filepath.Join(execDir, "web", "client", "dist")
-
-						// If that doesn't exist, try going up one level (if binary is in apps/platform/agents/)
-						if _, err := os.Stat(distPath); os.IsNotExist(err) {
-							distPath = filepath.Join(filepath.Dir(execDir), "apps", "platform", "agents", "web", "client", "dist")
-						}
-
-						// Final fallback to current working directory
-						if _, err := os.Stat(distPath); os.IsNotExist(err) {
-							altPath := filepath.Join("apps", "platform", "agents", "web", "client", "dist")
-							if _, altErr := os.Stat(altPath); altErr == nil {
-								distPath = altPath
-							} else {
-								distPath = filepath.Join("web", "client", "dist")
-							}
-						}
-					}
-				}
-				c.File(filepath.Join(distPath, "index.html"))
-			} else {
-				// For non-UI paths, return 404
-				c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
 			}
+		}
+
+		// Serve static assets from dist
+		s.Router.Static("/assets", filepath.Join(distPath, "assets"))
+		s.Router.StaticFile("/favicon.svg", filepath.Join(distPath, "favicon.svg"))
+
+		// Serve root
+		s.Router.GET("/", func(c *gin.Context) {
+			c.File(filepath.Join(distPath, "index.html"))
+		})
+
+		// Redirect legacy /ui paths to root
+		s.Router.GET("/ui", func(c *gin.Context) {
+			c.Redirect(http.StatusMovedPermanently, "/")
+		})
+		s.Router.GET("/ui/*filepath", func(c *gin.Context) {
+			p := c.Param("filepath")
+			if p == "/" || p == "" {
+				c.Redirect(http.StatusMovedPermanently, "/")
+			} else {
+				c.Redirect(http.StatusMovedPermanently, p)
+			}
+		})
+
+		s.Router.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			// Don't intercept API routes
+			if strings.HasPrefix(path, "/api/") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
+				return
+			}
+			// SPA fallback
+			c.File(filepath.Join(distPath, "index.html"))
 		})
 	}
 }

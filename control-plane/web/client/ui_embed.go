@@ -1,12 +1,11 @@
 //go:build embedded
 
-// UI embedding and route registration for Agents (embedded build).
+// UI embedding and route registration (embedded build).
 
 package client
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -18,9 +17,8 @@ import (
 var UIFiles embed.FS
 
 // RegisterUIRoutes registers the UI routes with the Gin engine.
+// The UI is served at the root path /.
 func RegisterUIRoutes(router *gin.Engine) {
-	fmt.Println("Registering embedded UI routes...")
-
 	// Create a sub-filesystem that strips the "dist" prefix
 	uiFS, err := fs.Sub(UIFiles, "dist")
 	if err != nil {
@@ -29,90 +27,82 @@ func RegisterUIRoutes(router *gin.Engine) {
 
 	fileServer := http.FileServer(http.FS(uiFS))
 
+	// Serve root
+	router.GET("/", func(c *gin.Context) {
+		serveIndex(c)
+	})
+
+	// Redirect legacy /ui paths to root
+	router.GET("/ui", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/")
+	})
 	router.GET("/ui/*filepath", func(c *gin.Context) {
 		path := c.Param("filepath")
-
-		// If accessing root UI path or a directory, serve index.html
-		if path == "/" || path == "" || strings.HasSuffix(path, "/") {
-			indexHTML, err := UIFiles.ReadFile("dist/index.html")
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": "Failed to load UI index",
-				})
-				return
-			}
-			c.Header("Content-Type", "text/html; charset=utf-8")
-			c.String(http.StatusOK, string(indexHTML))
-			return
-		}
-
-		// Check if it's a static asset by looking for common web asset file extensions
-		// This prevents bot IDs with dots (like "deepresearchagent.meta_research_methodology_bot")
-		// from being treated as static assets
-		pathLower := strings.ToLower(path)
-		isStaticAsset := strings.HasSuffix(pathLower, ".js") ||
-			strings.HasSuffix(pathLower, ".css") ||
-			strings.HasSuffix(pathLower, ".html") ||
-			strings.HasSuffix(pathLower, ".ico") ||
-			strings.HasSuffix(pathLower, ".png") ||
-			strings.HasSuffix(pathLower, ".jpg") ||
-			strings.HasSuffix(pathLower, ".jpeg") ||
-			strings.HasSuffix(pathLower, ".gif") ||
-			strings.HasSuffix(pathLower, ".svg") ||
-			strings.HasSuffix(pathLower, ".woff") ||
-			strings.HasSuffix(pathLower, ".woff2") ||
-			strings.HasSuffix(pathLower, ".ttf") ||
-			strings.HasSuffix(pathLower, ".eot") ||
-			strings.HasSuffix(pathLower, ".map") ||
-			strings.HasSuffix(pathLower, ".json") ||
-			strings.HasSuffix(pathLower, ".xml") ||
-			strings.HasSuffix(pathLower, ".txt")
-
-		if isStaticAsset {
-			// Try to serve the static file
-			http.StripPrefix("/ui", fileServer).ServeHTTP(c.Writer, c.Request)
-			return
-		}
-
-		// For all other paths (SPA routes), serve index.html
-		indexHTML, err := UIFiles.ReadFile("dist/index.html")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to load UI index",
-			})
-			return
-		}
-		c.Header("Content-Type", "text/html; charset=utf-8")
-		c.String(http.StatusOK, string(indexHTML))
-	})
-
-	// Root redirect to embedded UI
-	router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/ui/")
-	})
-
-	// SPA fallback - serve index.html for all /ui/* routes that don't match static files
-	router.NoRoute(func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/ui/") {
-			indexHTML, err := UIFiles.ReadFile("dist/index.html")
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": "Failed to load UI",
-				})
-				return
-			}
-			c.Header("Content-Type", "text/html; charset=utf-8")
-			c.String(http.StatusOK, string(indexHTML))
+		if path == "/" || path == "" {
+			c.Redirect(http.StatusMovedPermanently, "/")
 		} else {
-			// For non-UI paths, return 404
-			c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
+			c.Redirect(http.StatusMovedPermanently, path)
 		}
 	})
+
+	// Serve known static asset directories from the Vite build
+	router.GET("/assets/*filepath", func(c *gin.Context) {
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
+
+	// Serve specific root-level static files
+	for _, name := range []string{"favicon.svg", "favicon.ico", "robots.txt", "manifest.json"} {
+		name := name
+		router.GET("/"+name, func(c *gin.Context) {
+			fileServer.ServeHTTP(c.Writer, c.Request)
+		})
+	}
+
+	// SPA fallback — serve index.html for all routes that don't match API or static files
+	router.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// Don't intercept API routes
+		if strings.HasPrefix(path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
+			return
+		}
+
+		// Check if it looks like a static asset request
+		if isStaticAssetPath(path) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+			return
+		}
+
+		// SPA fallback — serve index.html
+		serveIndex(c)
+	})
+}
+
+func serveIndex(c *gin.Context) {
+	indexHTML, err := UIFiles.ReadFile("dist/index.html")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load UI"})
+		return
+	}
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, string(indexHTML))
+}
+
+func isStaticAssetPath(path string) bool {
+	p := strings.ToLower(path)
+	exts := []string{".js", ".css", ".html", ".ico", ".png", ".jpg", ".jpeg", ".gif",
+		".svg", ".woff", ".woff2", ".ttf", ".eot", ".map", ".json", ".xml", ".txt"}
+	for _, ext := range exts {
+		if strings.HasSuffix(p, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsUIEmbedded checks if UI files are embedded in the binary.
 func IsUIEmbedded() bool {
-	// Try to read a file that should exist in the embedded UI
 	_, err := UIFiles.ReadFile("dist/index.html")
 	return err == nil
 }

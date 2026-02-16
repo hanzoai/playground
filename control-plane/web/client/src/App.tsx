@@ -123,7 +123,7 @@ function App() {
       <ModeProvider>
         <AuthProvider>
           <AuthGuard>
-            <Router basename={import.meta.env.VITE_BASE_PATH || "/ui"}>
+            <Router basename={import.meta.env.VITE_BASE_PATH || "/"}>
               <AppContent />
             </Router>
           </AuthGuard>

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   // Environment variables with defaults
   const devPort = parseInt(process.env.VITE_DEV_PORT || '5173')
   const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080'
-  const basePath = process.env.VITE_BASE_PATH || (isProd ? '/ui/' : '/')
+  const basePath = process.env.VITE_BASE_PATH || '/'
 
   return {
     plugins: [react()],
