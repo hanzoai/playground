@@ -1,17 +1,6 @@
 name: Release
 
 on:
-  # Automatic staging releases on push to main
-  push:
-    branches:
-      - main
-    paths:
-      - 'control-plane/**'
-      - 'sdk/**'
-      - 'VERSION'
-      - '.github/workflows/release.yml'
-
-  # Manual releases (production or staging)
   workflow_dispatch:
     inputs:
       release_environment:
