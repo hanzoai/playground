@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.12] - 2026-02-17
+
+
+### Fixed
+
+- Fix: rename cmd/af to cmd/playground for goreleaser, fix .gitignore (eb122f1)
+
 ## [0.1.41-rc.11] - 2026-02-17
 
 
