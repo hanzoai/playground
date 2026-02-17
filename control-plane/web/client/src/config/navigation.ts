@@ -21,7 +21,7 @@ export const navigationSections: NavigationSection[] = [
       },
       {
         id: 'playground',
-        label: 'Canvas',
+        label: 'Playground',
         href: '/canvas',
         icon: 'bot',
         description: 'Visual bot orchestration playground'

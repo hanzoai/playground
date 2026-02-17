@@ -44,7 +44,7 @@ export function CanvasPage() {
 
   return (
     <ReactFlowProvider>
-      <div className="relative flex h-full w-full overflow-hidden">
+      <div className="absolute inset-0 flex overflow-hidden">
         {/* Sidebar */}
         <CanvasSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -96,7 +96,7 @@ export function CanvasPage() {
               <div className="flex flex-col items-center gap-3 text-center pointer-events-auto px-4">
                 <h2 className="text-lg font-semibold">No space selected</h2>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Go to <a href="/ui/spaces" className="text-primary underline">Spaces</a> to create or select a workspace.
+                  Go to <a href="/spaces" className="text-primary underline">Spaces</a> to create or select a workspace.
                 </p>
               </div>
             </div>

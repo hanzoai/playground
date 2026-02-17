@@ -28,22 +28,15 @@ import { ChevronDown } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Hanzo "H" logo mark — inline SVG so it works without external assets.
+// Hanzo "H" logo mark — geometric H from official brand assets.
 function HanzoLogo({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <path
-        d="M5 4V20M19 4V20M5 12H19"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 67 67" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M22.21 67V44.6369H0V67H22.21Z" fill="currentColor"/>
+      <path d="M66.7038 22.3184H22.2534L0.0878906 44.6367H44.4634L66.7038 22.3184Z" fill="currentColor"/>
+      <path d="M22.21 0H0V22.3184H22.21V0Z" fill="currentColor"/>
+      <path d="M66.7198 0H44.5098V22.3184H66.7198V0Z" fill="currentColor"/>
+      <path d="M66.7198 67V44.6369H44.5098V67H66.7198Z" fill="currentColor"/>
     </svg>
   );
 }
@@ -84,7 +77,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   <HanzoLogo className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold tracking-tight">Hanzo Space</span>
+                  <span className="truncate font-semibold tracking-tight">Hanzo Bot</span>
                   <span className="truncate text-[10px] text-muted-foreground font-mono">v1.0.0</span>
                 </div>
               </NavLink>
@@ -243,12 +236,12 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="https://github.com/hanzoai/playground" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/hanzoai/bot" target="_blank" rel="noopener noreferrer">
                     GitHub
                   </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="https://github.com/hanzoai/playground/issues" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/hanzoai/bot/issues" target="_blank" rel="noopener noreferrer">
                     Support
                   </a>
                 </DropdownMenuItem>
