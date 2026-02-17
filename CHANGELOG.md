@@ -6,6 +6,98 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.10] - 2026-02-17
+
+
+### Added
+
+- Feat: add Hanzo H logo, org/project selectors, user dropdown to sidebar
+
+Replace dashboard grid icon with Hanzo "H" SVG mark in sidebar header.
+Add org selector (Hanzo/Lux/Zoo) and project selector dropdowns.
+Add user account dropdown in footer with sign-out option.
+Rename "Canvas" nav item back to "Playground". (8fc7abd)
+
+
+
+### Changed
+
+- Refactor: rename Agent→Bot, AgentNode→Node, Reasoner→Bot, AGENTS_*→PLAYGROUND_*
+
+Complete terminology overhaul across the entire codebase:
+
+- Types: AgentNode→Node, AgentExecution→BotExecution, AgentStatus→BotStatus,
+  AgentFilters→BotFilters, ReasonerDefinition→BotDefinition
+- Storage: AgentNodeModel→NodeModel, agent_node_id→node_id columns,
+  GetAgent→GetNode, ListAgents→ListNodes
+- CLI: af→playground binary, AGENTS_* env vars→PLAYGROUND_* with fallback
+- SDK Go: agent/ package→bot/, Agent struct→Bot, Reasoner→BotHandler
+- SDK Python: agent_*.py→bot_*.py, Agent class→Bot with backward compat shim
+- Web UI: Agent Node→Node, Reasoner→Bot throughout components
+- API routes: /agents/→/bots/ (with redirects for backward compat)
+- Examples: agent_nodes/→bots/, Reasoner constructors→Bot
+- Tests: functional/agents/→functional/bots/
+- Deployments: env var names updated across docker/k8s/helm
+
+All Go builds pass, all tests pass. (e133fee)
+
+- Refactor: rename reasoner → bot throughout codebase
+
+- Renamed all Go/TypeScript types, handlers, services from Reasoner* to Bot*
+- Updated API routes: /reasoners → /bots
+- Updated UI routes: /reasoners/all → /bots/all
+- Updated UI branding: "Playground" → "Hanzo Bot" in sidebar, title, headers
+- Renamed files: reasoners.go → bots.go, ReasonerCard.tsx → BotCard.tsx, etc.
+- Updated event types: reasoner_online → bot_online, etc.
+- Updated navigation: "Reasoners" → "Bots", "Playground" → "Canvas" (b42d69c)
+
+
+
+### Fixed
+
+- Fix: remove leftover old-name files, fix duplicate route registration and TS build
+
+- Delete old Agent*/Reasoner* UI components superseded by Bot* equivalents
+- Remove duplicate SPA route registration causing Gin panic in tests
+- Fix botStatus→agentStatus prop mismatch in NodeDetailPage
+- Fix agent→bot references in functional test Go sources
+- Bump version to 0.1.41-rc.9 (002106b)
+
+- Fix: use real Hanzo favicon/logo, fix Playground page layout
+
+- Replace chat-bubble favicon with official Hanzo geometric H mark
+  from hanzo/logo repo
+- Use official Hanzo geometric H paths in sidebar logo (not letter H)
+- Fix Playground (canvas) page not rendering: give it flex-1 min-h-0
+  wrapper and absolute positioning so ReactFlow gets proper height
+  inside the overflow-y-auto main container (8943a8b)
+
+- Fix: remove unused isProd variable (TS build error) (9b8952b)
+
+- Fix: serve UI at root path, add proper favicon
+
+- Remove /ui prefix — UI now serves at / with redirect from /ui → /
+- Replace Vite default favicon with Hanzo Bot icon
+- Vite base path always '/' (no more /ui/ in production)
+- Router basename set to '/' (fixes "Ui" breadcrumb)
+- Go embedded handler serves static assets at /assets/*
+- SPA fallback for all non-API routes
+- Legacy /ui/* paths redirect to root equivalents (ebf6f54)
+
+- Fix: set VITE_BASE_PATH=/ to match Go server root serving
+
+The Go embed server (ui_embed.go) serves the React UI at root `/` and
+redirects `/ui/*` to `/*`. But the Vite build had VITE_BASE_PATH=/ui/,
+causing React Router basename mismatch: Router couldn't match URL "/"
+because it doesn't start with "/ui/", resulting in a blank white page
+at app.hanzo.bot. (adff4e7)
+
+- Fix: disable broken CI workflows
+
+- Remove update-download-stats.yml (missing GIST_TOKEN, PEPY_API_KEY secrets)
+- Make release.yml manual-only (was auto-triggering without PyPI/npm credentials)
+- Remove main branch from functional-tests push trigger (needs OPENROUTER_API_KEY) (75c1039)
+
 ## [0.1.41-rc.7] - 2026-02-15
 
 
