@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.11] - 2026-02-17
+
+
+### Fixed
+
+- Fix: resolve all TypeScript compilation errors from rename leftovers
+
+- AgentNodesTable: AgentNodeSummary/AgentNode → NodeSummary/Node
+- AgentPackageCard: AgentPackage → BotPackage, AgentLifecycleInfo → BotLifecycleInfo, getAgentStatusBadge → getBotStatusBadge
+- AgentPackageList: getAgentPackages → getBotPackages, agentStatus → botStatus prop
+- ReasonerGrid: fix imports to use correct export names from sibling files
+- NodeDetailPage: botStatus → agentStatus prop on BotsSkillsTable
+- agentStore: AgentStatus → BotStatus from gateway types
+- Include upstream auth changes from rebase (f1dbdfa)
+
 ## [0.1.41-rc.10] - 2026-02-17
 
 
