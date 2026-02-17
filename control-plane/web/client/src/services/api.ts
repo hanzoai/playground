@@ -23,6 +23,7 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
 const STORAGE_KEY = "af_api_key";
+const IAM_TOKEN_KEY = "af_iam_token";
 
 // Simple obfuscation for localStorage; not meant as real security.
 const decryptKey = (value: string): string => {
@@ -33,20 +34,42 @@ const decryptKey = (value: string): string => {
   }
 };
 
-// Initialize API key from localStorage immediately when this module loads
-// This ensures the key is available before any API calls are made
-let globalApiKey: string | null = (() => {
+// Auth state: IAM token takes priority over API key
+let globalIamToken: string | null = null;
+let globalApiKey: string | null = null;
+
+// Initialize from localStorage immediately when this module loads
+(() => {
   try {
+    // Check IAM token first
+    const storedToken = localStorage.getItem(IAM_TOKEN_KEY);
+    if (storedToken) {
+      globalIamToken = storedToken;
+      return;
+    }
+    // Fall back to API key
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const key = decryptKey(stored);
-      if (key) return key;
+      if (key) globalApiKey = key;
     }
   } catch {
     // localStorage might not be available
   }
-  return null;
 })();
+
+export function setGlobalIamToken(token: string | null) {
+  globalIamToken = token;
+  if (token) {
+    localStorage.setItem(IAM_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(IAM_TOKEN_KEY);
+  }
+}
+
+export function getGlobalIamToken(): string | null {
+  return globalIamToken;
+}
 
 export function setGlobalApiKey(key: string | null) {
   globalApiKey = key;
@@ -56,6 +79,13 @@ export function getGlobalApiKey(): string | null {
   return globalApiKey;
 }
 
+/** Returns the current auth credential for SSE/EventSource query params */
+export function getAuthQueryParam(): string {
+  if (globalIamToken) return `access_token=${encodeURIComponent(globalIamToken)}`;
+  if (globalApiKey) return `api_key=${encodeURIComponent(globalApiKey)}`;
+  return '';
+}
+
 /**
  * Enhanced fetch wrapper with MCP-specific error handling, retry logic, and timeout support
  */
@@ -63,7 +93,9 @@ async function fetchWrapper<T>(url: string, options?: RequestInit & { timeout?: 
   const { timeout = 10000, ...fetchOptions } = options || {};
 
   const headers = new Headers(fetchOptions.headers || {});
-  if (globalApiKey) {
+  if (globalIamToken) {
+    headers.set('Authorization', `Bearer ${globalIamToken}`);
+  } else if (globalApiKey) {
     headers.set('X-API-Key', globalApiKey);
   }
 
@@ -154,9 +186,9 @@ export async function getNodeDetails(nodeId: string): Promise<Node> {
 }
 
 export function streamNodeEvents(): EventSource {
-  const apiKey = getGlobalApiKey();
-  const url = apiKey
-    ? `${API_BASE_URL}/nodes/events?api_key=${encodeURIComponent(apiKey)}`
+  const authParam = getAuthQueryParam();
+  const url = authParam
+    ? `${API_BASE_URL}/nodes/events?${authParam}`
     : `${API_BASE_URL}/nodes/events`;
   return new EventSource(url);
 }
@@ -293,9 +325,9 @@ export async function getMCPServerMetrics(
  * Subscribe to MCP health events via Server-Sent Events
  */
 export function subscribeMCPHealthEvents(nodeId: string): EventSource {
-  const apiKey = getGlobalApiKey();
-  const url = apiKey
-    ? `${API_BASE_URL}/nodes/${nodeId}/mcp/events?api_key=${encodeURIComponent(apiKey)}`
+  const authParam = getAuthQueryParam();
+  const url = authParam
+    ? `${API_BASE_URL}/nodes/${nodeId}/mcp/events?${authParam}`
     : `${API_BASE_URL}/nodes/${nodeId}/mcp/events`;
   return new EventSource(url);
 }
@@ -500,9 +532,9 @@ export async function stopBotWithStatus(nodeId: string): Promise<BotStatus> {
  * Subscribe to unified status events via Server-Sent Events
  */
 export function subscribeToUnifiedStatusEvents(): EventSource {
-  const apiKey = getGlobalApiKey();
-  const url = apiKey
-    ? `${API_BASE_URL}/nodes/events?api_key=${encodeURIComponent(apiKey)}`
+  const authParam = getAuthQueryParam();
+  const url = authParam
+    ? `${API_BASE_URL}/nodes/events?${authParam}`
     : `${API_BASE_URL}/nodes/events`;
   return new EventSource(url);
 }
@@ -537,7 +569,9 @@ export async function registerServerlessBot(invocationUrl: string): Promise<{
 
   try {
     const headers = new Headers({ 'Content-Type': 'application/json' });
-    if (globalApiKey) {
+    if (globalIamToken) {
+      headers.set('Authorization', `Bearer ${globalIamToken}`);
+    } else if (globalApiKey) {
       headers.set('X-API-Key', globalApiKey);
     }
 

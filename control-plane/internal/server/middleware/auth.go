@@ -27,6 +27,12 @@ func APIKeyAuth(config AuthConfig) gin.HandlerFunc {
 			return
 		}
 
+		// If IAM middleware already authenticated this request, skip API key check.
+		if _, exists := c.Get(ContextKeyUser); exists {
+			c.Next()
+			return
+		}
+
 		// Skip explicit paths
 		if _, ok := skipPathSet[c.Request.URL.Path]; ok {
 			c.Next()
