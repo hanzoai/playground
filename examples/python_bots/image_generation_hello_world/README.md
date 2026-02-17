@@ -45,7 +45,7 @@ generate_artwork (entry point)
 1. **Playground Control Plane** running at `http://localhost:8080`
    ```bash
    cd control-plane
-   go run ./cmd/af dev
+   go run ./cmd/playground dev
    ```
 
 2. **API Keys** (choose based on provider):
@@ -350,7 +350,7 @@ export OPENAI_API_KEY="sk-..."
 Start the control plane:
 ```bash
 cd control-plane
-go run ./cmd/af dev
+go run ./cmd/playground dev
 ```
 
 ### "litellm is not installed"

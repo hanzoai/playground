@@ -33,7 +33,7 @@ COPY control-plane ./control-plane
 COPY --from=ui-builder /app/web/dist ./control-plane/web/client/dist
 RUN mkdir -p /build/bin && \
     cd control-plane && \
-    go build -tags "embedded sqlite_fts5" -o /build/bin/af ./cmd/af
+    go build -tags "embedded sqlite_fts5" -o /build/bin/af ./cmd/playground
 
 # Build Go functional agent binaries
 COPY sdk/go ./sdk/go
