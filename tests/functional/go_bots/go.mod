@@ -1,4 +1,4 @@
-module github.com/hanzoai/playground/tests/functional/go_agents
+module github.com/hanzoai/playground/tests/functional/go_bots
 
 go 1.21
 

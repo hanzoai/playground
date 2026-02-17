@@ -33,7 +33,7 @@ func main() {
 		Token:         os.Getenv("AGENTS_TOKEN"),
 		ListenAddress: listenAddr,
 		PublicURL:     publicURL,
-		CLIConfig: &agent.CLIConfig{
+		CLIConfig: &bot.CLIConfig{
 			AppName:        "go-agent-hello",
 			AppDescription: "Functional test agent for Go SDK CLI + control plane flows",
 			HelpPreamble:   "Pass --set message=YourName to customize the greeting.",
@@ -65,7 +65,7 @@ func main() {
 		msg := fmt.Sprintf("%v", input["message"])
 		return addEmojiLocal(msg), nil
 	},
-		agent.WithDescription("Adds a friendly emoji to a message"),
+		bot.WithDescription("Adds a friendly emoji to a message"),
 	)
 
 	ag.RegisterBot("say_hello", func(ctx context.Context, input map[string]any) (any, error) {
@@ -91,8 +91,8 @@ func main() {
 			"name":     name,
 		}, nil
 	},
-		agent.WithCLI(),
-		agent.WithDescription("Greets a user, enriching the message via add_emoji"),
+		bot.WithCLI(),
+		bot.WithDescription("Greets a user, enriching the message via add_emoji"),
 	)
 
 	ag.RegisterBot("demo_echo", func(ctx context.Context, input map[string]any) (any, error) {
@@ -109,10 +109,10 @@ func main() {
 
 		return ag.Execute(ctx, "say_hello", map[string]any{"name": message})
 	},
-		agent.WithCLI(),
-		agent.WithDefaultCLI(),
-		agent.WithDescription("Echo entry point chaining say_hello -> add_emoji"),
-		agent.WithCLIFormatter(func(ctx context.Context, result any, err error) {
+		bot.WithCLI(),
+		bot.WithDefaultCLI(),
+		bot.WithDescription("Echo entry point chaining say_hello -> add_emoji"),
+		bot.WithCLIFormatter(func(ctx context.Context, result any, err error) {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				return
@@ -126,7 +126,7 @@ func main() {
 	)
 
 	if err := ag.Run(context.Background()); err != nil {
-		if cliErr, ok := err.(*agent.CLIError); ok {
+		if cliErr, ok := err.(*bot.CLIError); ok {
 			os.Exit(cliErr.ExitCode())
 		}
 		log.Fatal(err)

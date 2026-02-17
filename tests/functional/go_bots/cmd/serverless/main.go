@@ -31,7 +31,7 @@ func main() {
 	}
 
 	srv.RegisterBot("hello", func(ctx context.Context, input map[string]any) (any, error) {
-		exec := agent.ExecutionContextFrom(ctx)
+		exec := bot.ExecutionContextFrom(ctx)
 		name := strings.TrimSpace(defaultString(asString(input["name"]), "Playground"))
 		return map[string]any{
 			"greeting":            "Hello, " + name + "!",

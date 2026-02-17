@@ -932,7 +932,7 @@ function NodeDetailPageContent() {
                 botDIDs={didInfo?.bots}
                 skillDIDs={didInfo?.skills}
                 agentDID={didInfo?.did}
-                botStatus={botStatusForTable}
+                agentStatus={botStatusForTable}
                 nodeId={nodeId}
                 className="w-full"
               />

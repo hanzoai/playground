@@ -711,12 +711,19 @@ func (s *PlaygroundServer) setupRoutes() {
 			// Use filesystem UI
 			distPath := s.resolveUIDistPath()
 
+			// Serve static assets from dist
+			s.Router.Static("/assets", filepath.Join(distPath, "assets"))
+			s.Router.StaticFile("/favicon.svg", filepath.Join(distPath, "favicon.svg"))
+
 			// Serve index.html at root
 			s.Router.GET("/", func(c *gin.Context) {
 				c.File(filepath.Join(distPath, "index.html"))
 			})
 
-			// Backward compatibility: redirect /ui/* to /*
+			// Redirect legacy /ui paths to root
+			s.Router.GET("/ui", func(c *gin.Context) {
+				c.Redirect(http.StatusMovedPermanently, "/")
+			})
 			s.Router.GET("/ui/*filepath", func(c *gin.Context) {
 				path := c.Param("filepath")
 				if path == "" || path == "/" {
@@ -724,6 +731,16 @@ func (s *PlaygroundServer) setupRoutes() {
 				} else {
 					c.Redirect(http.StatusMovedPermanently, path)
 				}
+			})
+
+			// SPA fallback
+			s.Router.NoRoute(func(c *gin.Context) {
+				path := c.Request.URL.Path
+				if strings.HasPrefix(path, "/api/") {
+					c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
+					return
+				}
+				c.File(filepath.Join(distPath, "index.html"))
 			})
 
 			fmt.Printf("Using filesystem UI files from: %s\n", distPath)
@@ -1129,44 +1146,6 @@ func (s *PlaygroundServer) setupRoutes() {
 		}
 	}
 
-	// SPA fallback — serve index.html for all non-API routes
-	// Only add this if we're NOT using embedded UI (since embedded UI handles its own NoRoute)
-	if s.config.UI.Enabled && (s.config.UI.Mode != "embedded" || !client.IsUIEmbedded()) {
-		distPath := s.resolveUIDistPath()
-
-		// Serve static assets from dist
-		s.Router.Static("/assets", filepath.Join(distPath, "assets"))
-		s.Router.StaticFile("/favicon.svg", filepath.Join(distPath, "favicon.svg"))
-
-		// Serve root
-		s.Router.GET("/", func(c *gin.Context) {
-			c.File(filepath.Join(distPath, "index.html"))
-		})
-
-		// Redirect legacy /ui paths to root
-		s.Router.GET("/ui", func(c *gin.Context) {
-			c.Redirect(http.StatusMovedPermanently, "/")
-		})
-		s.Router.GET("/ui/*filepath", func(c *gin.Context) {
-			p := c.Param("filepath")
-			if p == "/" || p == "" {
-				c.Redirect(http.StatusMovedPermanently, "/")
-			} else {
-				c.Redirect(http.StatusMovedPermanently, p)
-			}
-		})
-
-		s.Router.NoRoute(func(c *gin.Context) {
-			path := c.Request.URL.Path
-			// Don't intercept API routes
-			if strings.HasPrefix(path, "/api/") {
-				c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
-				return
-			}
-			// SPA fallback
-			c.File(filepath.Join(distPath, "index.html"))
-		})
-	}
 }
 
 // resolveUIDistPath returns the filesystem path to the UI dist directory.

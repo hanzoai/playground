@@ -83,58 +83,58 @@ func main() {
 	}
 }
 
-func buildDiscoveryOptionsFromEnv() []agent.DiscoveryOption {
-	var opts []agent.DiscoveryOption
+func buildDiscoveryOptionsFromEnv() []bot.DiscoveryOption {
+	var opts []bot.DiscoveryOption
 
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_AGENT")); v != "" {
-		opts = append(opts, agent.WithAgent(v))
+		opts = append(opts, bot.WithBot(v))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_NODE_ID")); v != "" {
-		opts = append(opts, agent.WithNodeID(v))
+		opts = append(opts, bot.WithNodeID(v))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_AGENT_IDS")); v != "" {
-		opts = append(opts, agent.WithAgentIDs(splitCSV(v)))
+		opts = append(opts, bot.WithBotIDs(splitCSV(v)))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_NODE_IDS")); v != "" {
-		opts = append(opts, agent.WithNodeIDs(splitCSV(v)))
+		opts = append(opts, bot.WithNodeIDs(splitCSV(v)))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_REASONER_PATTERN")); v != "" {
-		opts = append(opts, agent.WithBotPattern(v))
+		opts = append(opts, bot.WithBotPattern(v))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_SKILL_PATTERN")); v != "" {
-		opts = append(opts, agent.WithSkillPattern(v))
+		opts = append(opts, bot.WithSkillPattern(v))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_TAGS")); v != "" {
-		opts = append(opts, agent.WithTags(splitCSV(v)))
+		opts = append(opts, bot.WithTags(splitCSV(v)))
 	}
 
 	if parseEnvBool("DISCOVERY_INCLUDE_INPUT_SCHEMA") {
-		opts = append(opts, agent.WithDiscoveryInputSchema(true))
+		opts = append(opts, bot.WithDiscoveryInputSchema(true))
 	}
 	if parseEnvBool("DISCOVERY_INCLUDE_OUTPUT_SCHEMA") {
-		opts = append(opts, agent.WithDiscoveryOutputSchema(true))
+		opts = append(opts, bot.WithDiscoveryOutputSchema(true))
 	}
 	if val, ok := parseEnvBoolStrict("DISCOVERY_INCLUDE_DESCRIPTIONS"); ok {
-		opts = append(opts, agent.WithDiscoveryDescriptions(val))
+		opts = append(opts, bot.WithDiscoveryDescriptions(val))
 	}
 	if val, ok := parseEnvBoolStrict("DISCOVERY_INCLUDE_EXAMPLES"); ok {
-		opts = append(opts, agent.WithDiscoveryExamples(val))
+		opts = append(opts, bot.WithDiscoveryExamples(val))
 	}
 
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_FORMAT")); v != "" {
-		opts = append(opts, agent.WithFormat(v))
+		opts = append(opts, bot.WithFormat(v))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_HEALTH_STATUS")); v != "" {
-		opts = append(opts, agent.WithHealthStatus(v))
+		opts = append(opts, bot.WithHealthStatus(v))
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_LIMIT")); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil {
-			opts = append(opts, agent.WithLimit(parsed))
+			opts = append(opts, bot.WithLimit(parsed))
 		}
 	}
 	if v := strings.TrimSpace(os.Getenv("DISCOVERY_OFFSET")); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil {
-			opts = append(opts, agent.WithOffset(parsed))
+			opts = append(opts, bot.WithOffset(parsed))
 		}
 	}
 	return opts
