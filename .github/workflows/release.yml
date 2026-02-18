@@ -415,12 +415,16 @@ jobs:
           path: sdk/python/dist
 
       - name: Publish to PyPI
-        if: needs.prepare.outputs.publish_pypi == 'true' && secrets.PYPI_API_TOKEN != ''
+        if: needs.prepare.outputs.publish_pypi == 'true'
         working-directory: sdk/python
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
+          if [ -z "$TWINE_PASSWORD" ]; then
+            echo "::warning::PYPI_API_TOKEN not set, skipping PyPI publish"
+            exit 0
+          fi
           python -m pip install --upgrade twine
           twine upload --skip-existing dist/*
 
