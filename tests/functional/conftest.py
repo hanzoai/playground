@@ -347,8 +347,8 @@ async def registered_bot(
 
     # Register with control plane
     try:
-        await bot.hanzo_bots_handler.register_with_playground_server(port)
-        bot.hanzo_bots_server = None
+        await bot.agents_handler.register_with_playground_server(port)
+        bot.agents_server = None
 
         # Wait for registration to complete
         await asyncio.sleep(1)

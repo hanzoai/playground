@@ -80,8 +80,8 @@ async def run_bot_server(
     await asyncio.sleep(startup_delay)
 
     try:
-        await bot.hanzo_bots_handler.register_with_playground_server(port)
-        bot.hanzo_bots_server = None
+        await bot.agents_handler.register_with_playground_server(port)
+        bot.agents_server = None
 
         # Registration runs on the pytest event loop, but bots execute on the
         # uvicorn event loop inside a background thread. Reset the Playground client
