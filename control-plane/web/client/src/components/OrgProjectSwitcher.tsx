@@ -1,43 +1,38 @@
 /**
  * Org/Project Switcher Component
  *
- * Dropdown for switching between organizations and projects.
- * Only rendered in IAM auth mode when orgs are available.
- * Syncs selection to the Zustand tenant store so useGateway picks it up.
+ * Wraps the shared @hanzo/auth OrgProjectSwitcher with playground-specific
+ * tenant store syncing. Uses @hanzo/iam/react for org/project data.
  */
 
-import { useEffect } from "react";
+import { useCallback } from "react";
 import { useOrganizations } from "@hanzo/iam/react";
 import { useTenantStore } from "../stores/tenantStore";
+import { OrgProjectSwitcher as OrgProjectSwitcherBase } from "@hanzo/auth";
 
 export function OrgProjectSwitcher() {
-  const {
-    organizations,
-    currentOrgId,
-    switchOrg,
-  } = useOrganizations();
+  const orgState = useOrganizations();
 
   const setTenantOrg = useTenantStore((s) => s.setOrg);
+  const setTenantProject = useTenantStore((s) => s.setProject);
 
-  // Sync org selection to tenant store for useGateway
-  useEffect(() => {
-    setTenantOrg(currentOrgId);
-  }, [currentOrgId, setTenantOrg]);
-
-  if (organizations.length <= 1) return null;
+  const handleTenantChange = useCallback(
+    (orgId: string | null, projectId: string | null) => {
+      setTenantOrg(orgId);
+      setTenantProject(projectId);
+    },
+    [setTenantOrg, setTenantProject],
+  );
 
   return (
-    <select
-      value={currentOrgId ?? ""}
-      onChange={(e) => switchOrg(e.target.value)}
-      className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-      aria-label="Switch organization"
-    >
-      {organizations.map((org) => (
-        <option key={org.name} value={org.name}>
-          {org.displayName || org.name}
-        </option>
-      ))}
-    </select>
+    <OrgProjectSwitcherBase
+      organizations={orgState.organizations}
+      currentOrgId={orgState.currentOrgId}
+      switchOrg={orgState.switchOrg}
+      projects={orgState.projects}
+      currentProjectId={orgState.currentProjectId}
+      switchProject={orgState.switchProject}
+      onTenantChange={handleTenantChange}
+    />
   );
 }
