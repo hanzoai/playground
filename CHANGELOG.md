@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.16] - 2026-02-18
+
+
+### Added
+
+- Feat: wire org/project switcher with @hanzo/auth shared component
+
+Add @hanzo/auth dep for shared OrgProjectSwitcher. Fix import path
+to use main entry point. Bump @hanzo/iam to ^0.2.0 for project support.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (190c7a4)
+
 ## [0.1.41-rc.15] - 2026-02-18
 
 
