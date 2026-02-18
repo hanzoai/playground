@@ -33,6 +33,6 @@ async def test_cross_bot_app_call_workflow(async_http_client):
 
         assert result["original"] == "Playground rocks"
         delegated = result["delegated"]
-        assert delegated["upper"] == "AGENTS ROCKS"
+        assert delegated["upper"] == "PLAYGROUND ROCKS"
         assert delegated["length"] == len("Playground rocks")
         assert result["tokens"] == 2

@@ -28,7 +28,7 @@ app = Bot(
     node_id="rag-evaluation",
     version="1.0.0",
     description="Multi-bot RAG evaluation with adversarial debate, jury consensus, and hybrid ML+LLM verification",
-    playground_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
+    agents_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("AI_MODEL", "openrouter/deepseek/deepseek-chat-v3-0324"),
     ),

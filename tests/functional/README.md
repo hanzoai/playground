@@ -89,14 +89,14 @@ The `agents/` directory stores normal-looking Playground nodes (complete with `i
 - (optional) `create_agent_from_env()` so the agent can run as `python -m agents.xxx`
 
 Shared helpers such as the `run_agent_server` async context manager and `unique_node_id` live in `utils/` so every test can start/stop agents the same way without duplicating boilerplate.
-`utils.go_agent_runner` provides similar helpers for Go binaries, and the Dockerfile automatically builds every agent under `go_agents/cmd/*` into `go-agent-<name>` binaries on the PATH.
+`utils.go_bot_runner` provides similar helpers for Go binaries, and the Dockerfile automatically builds every bot under `go_bots/cmd/*` into `go-bot-<name>` binaries on the PATH.
 
-### Go Agents
+### Go Bots
 
-- Each Go agent lives under `go_agents/cmd/<name>`.
-- `go mod` in `go_agents/` already points at `sdk/go` via a replace, so you can import the real SDK.
-- Docker builds every command into `/usr/local/bin/go-agent-<name>` and exposes `utils.run_go_agent` to launch them in tests.
-- Add new Go functional tests by reusing those binaries (server mode + CLI mode) just like Python agents.
+- Each Go bot lives under `go_bots/cmd/<name>`.
+- `go mod` in `go_bots/` already points at `sdk/go` via a replace, so you can import the real SDK.
+- Docker builds every command into `/usr/local/bin/go-bot-<name>` and exposes `utils.run_go_bot` to launch them in tests.
+- Add new Go functional tests by reusing those binaries (server mode + CLI mode) just like Python bots.
 
 ### Test Flow
 

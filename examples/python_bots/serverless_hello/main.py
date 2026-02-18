@@ -15,7 +15,7 @@ from playground.async_config import AsyncConfig
 # capabilities via /discover and invokes via /execute.
 app = Bot(
     node_id=os.getenv("HANZO_NODE_ID", "python-serverless-hello"),
-    playground_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
+    agents_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
     auto_register=False,
     dev_mode=True,
     async_config=AsyncConfig(enable_async_execution=False, fallback_to_sync=True),

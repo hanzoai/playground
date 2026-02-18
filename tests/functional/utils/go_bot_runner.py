@@ -17,7 +17,7 @@ GoAgentProcess = GoBotProcess
 
 
 def get_go_bot_binary(bot_name: str) -> str:
-    binary_name = f"go-agent-{bot_name}"
+    binary_name = f"go-bot-{bot_name}"
     path = shutil.which(binary_name)
     if not path:
         raise FileNotFoundError(f"{binary_name} not found on PATH")

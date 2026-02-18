@@ -17,7 +17,7 @@ from routers import planning_router, research_router
 
 app = Bot(
     node_id="deep-research",
-    playground_server=f"{os.getenv('PLAYGROUND_URL', 'http://localhost:8080')}",
+    agents_server=f"{os.getenv('PLAYGROUND_URL', 'http://localhost:8080')}",
     ai_config=AIConfig(
         model=os.getenv("AI_MODEL", "openrouter/deepseek/deepseek-v3.1-terminus"),
     ),

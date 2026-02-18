@@ -13,7 +13,7 @@ class GoAgentProcess:
 
 
 def get_go_agent_binary(agent_name: str) -> str:
-    binary_name = f"go-agent-{agent_name}"
+    binary_name = f"go-bot-{agent_name}"
     path = shutil.which(binary_name)
     if not path:
         raise FileNotFoundError(f"{binary_name} not found on PATH")

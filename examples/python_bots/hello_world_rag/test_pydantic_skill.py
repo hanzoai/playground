@@ -31,7 +31,7 @@ class IngestResult(BaseModel):
 # Create agent
 app = Bot(
     node_id="pydantic-demo",
-    playground_server="http://localhost:8080",
+    agents_server="http://localhost:8080",
 )
 
 

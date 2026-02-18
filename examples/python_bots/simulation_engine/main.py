@@ -30,7 +30,7 @@ from routers import (
 
 app = Bot(
     node_id="simulation-enginepy",
-    playground_server=f"{os.getenv('PLAYGROUND_URL', 'http://localhost:8080')}",
+    agents_server=f"{os.getenv('PLAYGROUND_URL', 'http://localhost:8080')}",
     dev_mode=True,
     ai_config=AIConfig(
         model="openrouter/deepseek/deepseek-v3.1-terminus",  # LiteLLM auto-detects provider from model name

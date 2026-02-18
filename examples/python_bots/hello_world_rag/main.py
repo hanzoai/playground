@@ -21,7 +21,7 @@ from pydantic import BaseModel
 # Initialize bot
 app = Bot(
     node_id="hello-world-rag",
-    playground_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
+    agents_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("SMALL_MODEL", "openrouter/meta-llama/llama-4-maverick")
     ),

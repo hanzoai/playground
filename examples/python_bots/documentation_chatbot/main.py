@@ -24,7 +24,7 @@ from routers import (
 
 app = Bot(
     node_id="documentation-chatbot",
-    playground_server=f"{os.getenv('PLAYGROUND_URL')}",
+    agents_server=f"{os.getenv('PLAYGROUND_URL')}",
     api_key=os.getenv("PLAYGROUND_API_KEY"),
     ai_config=AIConfig(
         model=os.getenv("AI_MODEL", "openrouter/openai/gpt-4o-mini"),

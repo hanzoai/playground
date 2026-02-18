@@ -35,14 +35,14 @@ const agent = new Agent({
   devMode: true
 });
 
-agent.reasoner('hello', async (ctx) => ({
+agent.bot('hello', async (ctx) => ({
   greeting: `Hello, ${ctx.input.name ?? 'Playground'}!`,
   runId: ctx.runId,
   executionId: ctx.executionId,
   parentExecutionId: ctx.parentExecutionId
 }));
 
-agent.reasoner('relay', async (ctx) => {
+agent.bot('relay', async (ctx) => {
   const target = process.env.TS_CHILD_TARGET ?? ctx.input.target;
   if (!target) {
     return { error: 'target is required' };

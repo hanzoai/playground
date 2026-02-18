@@ -39,7 +39,7 @@ const agent = new Agent({
   devMode: false
 });
 
-agent.reasoner('echo', async (ctx) => ({
+agent.bot('echo', async (ctx) => ({
   echoed: ctx.input.message,
   runId: ctx.runId,
   workflowId: ctx.workflowId

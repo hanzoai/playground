@@ -77,7 +77,7 @@ def benchmark_agent_init(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         bot = Bot(
             node_id=f"init-bench-{i}",
-            playground_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -109,7 +109,7 @@ def benchmark_handler_registration(num_handlers: int, iterations: int, warmup: i
         # Create Agent OUTSIDE the measurement
         bot = Bot(
             node_id=f"handler-bench-{i}",
-            playground_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -154,7 +154,7 @@ def benchmark_agent_memory(iterations: int, warmup: int, verbose: bool) -> list[
 
         bot = Bot(
             node_id=f"agent-mem-{i}",
-            playground_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -191,7 +191,7 @@ def benchmark_handler_memory(num_handlers: int, iterations: int, warmup: int, ve
         # Create Agent BEFORE starting memory tracking
         bot = Bot(
             node_id=f"handler-mem-{i}",
-            playground_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )
@@ -242,7 +242,7 @@ def benchmark_cold_start(iterations: int, warmup: int, verbose: bool) -> list[fl
 
         bot = Bot(
             node_id=f"cold-{i}",
-            playground_server="http://localhost:8080",
+            agents_server="http://localhost:8080",
             auto_register=False,
             enable_mcp=False,  # MCP disabled by default
         )

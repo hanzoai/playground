@@ -15,7 +15,7 @@ import os
 # Initialize bot
 app = Bot(
     node_id="hello-world",
-    playground_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
+    agents_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
     ai_config=AIConfig(
         model=os.getenv("SMALL_MODEL", "openai/gpt-4o-mini"), temperature=0.7
     ),

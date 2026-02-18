@@ -34,8 +34,8 @@ func main() {
 		ListenAddress: listenAddr,
 		PublicURL:     publicURL,
 		CLIConfig: &bot.CLIConfig{
-			AppName:        "go-agent-hello",
-			AppDescription: "Functional test agent for Go SDK CLI + control plane flows",
+			AppName:        "go-bot-hello",
+			AppDescription: "Functional test bot for Go SDK CLI + control plane flows",
 			HelpPreamble:   "Pass --set message=YourName to customize the greeting.",
 			EnvironmentVars: []string{
 				"AGENTS_URL (optional) Control plane URL for server mode",

@@ -15,7 +15,7 @@ from playground import Bot
 
 app = Bot(
     node_id=os.getenv("HANZO_NODE_ID", "demo-python-bot"),
-    playground_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
+    agents_server=os.getenv("PLAYGROUND_URL", "http://localhost:8080"),
     dev_mode=True,
 )
 

@@ -43,7 +43,7 @@ API_KEY, API_BASE = _api_settings()
 
 app = Bot(
     node_id="image-generator",
-    playground_server="http://localhost:8080",
+    agents_server="http://localhost:8080",
     ai_config=AIConfig(
         model=os.getenv("SMALL_MODEL", "openai/gpt-4o-mini"),
         temperature=0.8,
