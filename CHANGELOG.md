@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.26] - 2026-02-18
+
+
+### Added
+
+- Feat: multi-environment provisioning with terminal mode and auto-VM creation
+
+Add CreateMachine to VisorClient for launching VMs via Visor's cloud
+provider API. Update provisionVM() to auto-create VMs when no matching
+machine found, instead of just logging a warning.
+
+Add terminal-only mode (OS="terminal"): provisions K8s pod with lightweight
+ttyd sidecar instead of full operative desktop — ideal for xterm + Claude
+Code usage without desktop overhead.
+
+Supported environments:
+- terminal: K8s pod + ttyd (xterm/Claude Code)
+- linux: K8s pod + operative desktop (VNC)
+- macos: AWS EC2 mac2.metal via Visor (VNC)
+- windows: AWS EC2 t3.medium via Visor (RDP) (0d2e78e)
+
 ## [0.1.41-rc.25] - 2026-02-18
 
 
