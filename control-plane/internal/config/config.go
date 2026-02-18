@@ -1,13 +1,14 @@
 package config
 
 import (
-	"fmt"           // Added for fmt.Errorf
-	"os"            // Added for os.Stat, os.ReadFile
-	"path/filepath" // Added for filepath.Join
+	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
-	"gopkg.in/yaml.v3" // Added for yaml.Unmarshal
+	"github.com/go-viper/mapstructure/v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
@@ -168,9 +169,28 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read configuration file %s: %w", configPath, err)
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	// First unmarshal into a generic map so we can decode via mapstructure
+	// which supports time.Duration string parsing (e.g. "24h", "90s").
+	var rawMap map[string]any
+	if err := yaml.Unmarshal(data, &rawMap); err != nil {
 		return nil, fmt.Errorf("failed to parse configuration file %s: %w", configPath, err)
+	}
+
+	var cfg Config
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.TextUnmarshallerHookFunc(),
+		),
+		Result:           &cfg,
+		TagName:          "yaml",
+		WeaklyTypedInput: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create config decoder: %w", err)
+	}
+	if err := decoder.Decode(rawMap); err != nil {
+		return nil, fmt.Errorf("failed to decode configuration from %s: %w", configPath, err)
 	}
 
 	// Apply defaults for new config sections

@@ -97,11 +97,3 @@ features:
       backup_enabled: false
       backup_interval: "24h"
 
-agents:
-  discovery:
-    scan_interval: "30s"
-    health_check_interval: "10s"
-  scaling:
-    auto_scale: false
-    min_replicas: 1
-    max_replicas: 5
