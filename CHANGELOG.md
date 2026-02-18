@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.24] - 2026-02-18
+
+
+### Fixed
+
+- Fix: rename TS SDK files and fix type conflicts for build
+
+- Rename ReasonerRegistry.ts -> BotRegistry.ts, ReasonerContext.ts -> BotContext.ts,
+  AgentFieldClient.ts -> PlaygroundClient.ts to match import paths
+- Merge generic BotDefinition/BotHandler/BotOptions types into types/bot.ts
+- Rename non-generic serverless handler to ServerHandler to avoid conflict
+- Fix duplicate BotCapability interface (now NodeCapability + BotCapability)
+- Fix DidManager.ts referencing old agentsServerId property
+- Remove duplicate export line in index.ts
+- Update release workflow to use PYPI_TOKEN secret name (f9dd3f2)
+
 ## [0.1.41-rc.23] - 2026-02-18
 
 
