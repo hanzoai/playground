@@ -23,7 +23,7 @@ from playground import Agent
 
 agent = Agent(
     node_id="example-agent",
-    playground_server="http://localhost:8080",
+    agents_server="http://localhost:8080",
     dev_mode=True,
 )
 

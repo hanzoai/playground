@@ -277,7 +277,7 @@ def make_test_bot(control_plane_url: str) -> Callable[..., Bot]:
             node_id = f"test-bot-{uuid.uuid4().hex[:8]}"
 
         # Set sensible defaults for testing
-        kwargs.setdefault("playground_server", control_plane_url)
+        kwargs.setdefault("agents_server", control_plane_url)
         kwargs.setdefault("dev_mode", True)
         kwargs.setdefault("callback_url", "http://test-bot")
 

@@ -32,7 +32,7 @@ def create_bot(
     bot_kwargs.setdefault("dev_mode", True)
     bot_kwargs.setdefault("callback_url", callback_url or "http://test-bot")
     bot_kwargs.setdefault(
-        "playground_server", os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
+        "agents_server", os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
     )
 
     bot = Bot(

@@ -41,7 +41,7 @@ def create_worker_bot(
     bot_kwargs.setdefault("dev_mode", True)
     bot_kwargs.setdefault("callback_url", callback_url or "http://test-bot")
     bot_kwargs.setdefault(
-        "playground_server", os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
+        "agents_server", os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
     )
 
     bot = Bot(node_id=resolved_node_id, **bot_kwargs)
@@ -70,7 +70,7 @@ def create_orchestrator_bot(
     bot_kwargs.setdefault("dev_mode", True)
     bot_kwargs.setdefault("callback_url", callback_url or "http://test-bot")
     bot_kwargs.setdefault(
-        "playground_server", os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
+        "agents_server", os.environ.get("PLAYGROUND_SERVER", os.environ.get("AGENTS_SERVER", "http://localhost:8080"))
     )
 
     bot = Bot(node_id=resolved_node_id, **bot_kwargs)

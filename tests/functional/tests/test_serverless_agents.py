@@ -148,7 +148,7 @@ async def run_python_serverless_bot(node_id: str, control_plane_url: str) -> Asy
     """
     bot = Bot(
         node_id=node_id,
-        playground_server=control_plane_url,
+        agents_server=control_plane_url,
         auto_register=False,
         dev_mode=True,
         async_config=AsyncConfig(enable_async_execution=False, fallback_to_sync=True),
