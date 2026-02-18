@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.33] - 2026-02-18
+
+
+### Fixed
+
+- Fix: restore correct attribute names in functional tests and export Agent alias
+
+- Fix hanzo_bots_handler → agents_handler (actual Bot class attribute)
+- Fix hanzo_bots_server → agents_server (actual Bot class attribute)
+- Export Agent/AgentRouter backward-compat aliases from TS SDK index (ce2a1c8)
+
+- Fix: drop Python 3.8 from CI matrix to match requires-python>=3.9 (39d4215)
+
 ## [0.1.41-rc.32] - 2026-02-18
 
 
