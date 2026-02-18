@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.30] - 2026-02-18
+
+
+### Fixed
+
+- Fix: remove agents_server_id column references, use playground_server_id only
+
+Fresh databases only have playground_server_id column (renamed via migration
+018). Remove backward-compat COALESCE/OR queries from local.go, update
+TypeScript types and UI components to use playground_server_id, fix UI
+handler test mock expectations. (b5268a0)
+
 ## [0.1.41-rc.29] - 2026-02-18
 
 
