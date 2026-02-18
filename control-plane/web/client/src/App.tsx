@@ -27,6 +27,7 @@ import { SpacesPage } from "./pages/SpacesPage";
 import { SpaceSettingsPage } from "./pages/SpaceSettingsPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
+import { AuthCallbackPage } from "./components/AuthCallbackPage";
 
 // Placeholder pages for new routes
 
@@ -116,6 +117,23 @@ function AppContent() {
   );
 }
 
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* OAuth callback must be outside AuthGuard */}
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route
+        path="/*"
+        element={
+          <AuthGuard>
+            <AppContent />
+          </AuthGuard>
+        }
+      />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider
@@ -126,11 +144,9 @@ function App() {
     >
       <ModeProvider>
         <AuthProvider>
-          <AuthGuard>
-            <Router basename={import.meta.env.VITE_BASE_PATH || "/"}>
-              <AppContent />
-            </Router>
-          </AuthGuard>
+          <Router basename={import.meta.env.VITE_BASE_PATH || "/"}>
+            <AppRoutes />
+          </Router>
         </AuthProvider>
       </ModeProvider>
     </ThemeProvider>

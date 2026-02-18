@@ -1,22 +1,21 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { setGlobalApiKey, setGlobalIamToken } from "../services/api";
+import { setGlobalApiKey } from "../services/api";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { apiKey, iamToken, setApiKey, isAuthenticated, authRequired, loginWithIAM } = useAuth();
+  const {
+    apiKey,
+    setApiKey,
+    isAuthenticated,
+    authRequired,
+    authMode,
+    iamLogin,
+  } = useAuth();
   const [inputKey, setInputKey] = useState("");
   const [error, setError] = useState("");
   const [validating, setValidating] = useState(false);
   const [showApiKeyForm, setShowApiKeyForm] = useState(false);
-
-  useEffect(() => {
-    if (iamToken) {
-      setGlobalIamToken(iamToken);
-    } else {
-      setGlobalApiKey(apiKey);
-    }
-  }, [apiKey, iamToken]);
 
   const handleApiKeySubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -45,6 +44,45 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // IAM mode — show "Sign in with Hanzo" button
+  if (authMode === "iam" && iamLogin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full">
+          {/* Hanzo Logo */}
+          <div className="flex items-center gap-3 mb-6">
+            <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M256 0L512 256L256 512L0 256L256 0Z" fill="currentColor" className="text-primary" />
+              <path d="M256 96L416 256L256 416L96 256L256 96Z" fill="currentColor" className="text-background" />
+              <path d="M256 160L352 256L256 352L160 256L256 160Z" fill="currentColor" className="text-primary" />
+            </svg>
+            <div>
+              <h2 className="text-2xl font-semibold">Hanzo Playground</h2>
+              <p className="text-muted-foreground text-sm">Agent Control Plane</p>
+            </div>
+          </div>
+
+          {error && <p className="text-destructive mb-4">{error}</p>}
+
+          <button
+            onClick={() => {
+              setError("");
+              iamLogin().catch((err) =>
+                setError(
+                  err instanceof Error ? err.message : "Login failed",
+                ),
+              );
+            }}
+            className="w-full bg-primary text-primary-foreground p-3 rounded-md font-medium hover:opacity-90 transition-opacity"
+          >
+            Sign in with Hanzo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // API key mode — show Hanzo branding + API key form with optional IAM
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full">
@@ -61,25 +99,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Primary: Sign in with Hanzo IAM */}
-        <button
-          onClick={loginWithIAM}
-          className="w-full bg-primary text-primary-foreground p-3 rounded-md font-medium mb-4 hover:opacity-90 transition-opacity"
-        >
-          Sign in with Hanzo
-        </button>
-
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">or</span>
-          </div>
-        </div>
-
-        {/* Secondary: API Key */}
+        {/* API Key */}
         {showApiKeyForm ? (
           <form onSubmit={handleApiKeySubmit}>
             <input
