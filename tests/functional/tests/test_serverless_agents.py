@@ -103,7 +103,7 @@ async def _register_serverless_via_cli(invocation_url: str):
         return {"ok": False, "error": "missing-cli", "candidates": candidates}
 
     env = os.environ.copy()
-    env.setdefault("PLAYGROUND_SERVER", env.get("CONTROL_PLANE_URL", "http://localhost:8080"))
+    env.setdefault("PLAYGROUND_SERVER", env.get("CONTROL_PLANE_URL", env.get("AGENTS_SERVER", "http://localhost:8080")))
     # Backward-compatible fallback
     env.setdefault("AGENTS_SERVER", env.get("PLAYGROUND_SERVER", "http://localhost:8080"))
     token = env.get("PLAYGROUND_TOKEN") or env.get("AGENTS_TOKEN")

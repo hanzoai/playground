@@ -5,9 +5,9 @@ set -e
 
 CONTROL_PLANE_URL="${PLAYGROUND_SERVER:-${AGENTS_SERVER:-http://control-plane:8080}}"
 HEALTH_ENDPOINT="${CONTROL_PLANE_URL}/api/v1/health"
-# Reduced from 60*2s=120s to 30*1s=30s - control plane typically starts in ~10-15s
-MAX_ATTEMPTS="${MAX_ATTEMPTS:-30}"
-SLEEP_INTERVAL="${SLEEP_INTERVAL:-1}"
+# Allow up to 60*2s=120s for control plane to start (includes Docker build time in CI)
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"
+SLEEP_INTERVAL="${SLEEP_INTERVAL:-2}"
 
 echo "Waiting for Playground control plane at ${CONTROL_PLANE_URL}..."
 
