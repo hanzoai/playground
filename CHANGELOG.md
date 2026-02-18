@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.18] - 2026-02-18
+
+
+### Chores
+
+- Chore: bump @hanzo/iam to ^0.3.0 for OrgProjectSwitcher support
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (a3810b0)
+
 ## [0.1.41-rc.17] - 2026-02-18
 
 
