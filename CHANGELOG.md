@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.17] - 2026-02-18
+
+
+### Changed
+
+- Refactor: use @hanzo/iam/react exclusively, remove @hanzo/auth
+
+OrgProjectSwitcher now imports from @hanzo/iam/react. One auth package.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (dd75af8)
+
 ## [0.1.41-rc.16] - 2026-02-18
 
 
