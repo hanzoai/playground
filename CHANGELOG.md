@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.28] - 2026-02-18
+
+
+### Fixed
+
+- Fix: remove visor.go stub that duplicates visor_client.go
+
+The visor.go stub was created as a temporary fix before the full
+visor_client.go implementation landed. Now that visor_client.go
+exists with the complete implementation, the stub causes redeclaration
+errors. (92c3806)
+
 ## [0.1.41-rc.27] - 2026-02-18
 
 
