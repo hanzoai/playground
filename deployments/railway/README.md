@@ -152,4 +152,4 @@ docker compose up
 - [Documentation](https://github.com/hanzoai/playground)
 - [Examples](https://github.com/hanzoai/playground/tree/main/examples)
 - [Python SDK](https://pypi.org/project/playground/)
-- [TypeScript SDK](https://www.npmjs.com/package/@playground/sdk)
+- [TypeScript SDK](https://www.npmjs.com/package/@hanzo/playground)

@@ -8,7 +8,7 @@
         "dev": "tsx main.ts"
     },
     "dependencies": {
-        "@playground/sdk": "^0.1.36",
+        "@hanzo/playground": "^0.1.36",
         "dotenv": "^16.4.5",
         "zod": "^3.22.4"
     },

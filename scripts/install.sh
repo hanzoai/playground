@@ -532,10 +532,10 @@ print_success_message() {
   if [[ "$STAGING" == "1" ]]; then
     printf "${BOLD}Testing SDKs:${NC}\n"
     printf "  Python (prerelease):\n"
-    printf "     ${CYAN}pip install --pre playground${NC}\n"
+    printf "     ${CYAN}pip install --pre hanzo-playground${NC}\n"
     printf "\n"
     printf "  TypeScript:\n"
-    printf "     ${CYAN}npm install @playground/sdk@next${NC}\n"
+    printf "     ${CYAN}npm install @hanzo/playground@next${NC}\n"
   else
     printf "  3. Initialize your first bot:\n"
     printf "     ${CYAN}playground init my-bot${NC}\n"

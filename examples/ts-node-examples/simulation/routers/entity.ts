@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BotRouter } from '@playground/sdk';
+import { BotRouter } from '@hanzo/playground';
 import {
   EntityProfileSchema,
   FactorGraphSchema,

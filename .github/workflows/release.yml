@@ -368,10 +368,10 @@ jobs:
             curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
 
             # Python SDK (prerelease - requires --pre flag)
-            pip install --pre playground
+            pip install --pre hanzo-playground
 
             # TypeScript SDK
-            npm install @playground/sdk@next
+            npm install @hanzo/playground@next
             ```' || '```bash
             curl -fsSL https://hanzo.bot/install.sh | bash
             ```' }}

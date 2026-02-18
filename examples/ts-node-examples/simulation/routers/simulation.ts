@@ -1,4 +1,4 @@
-import { BotRouter } from '@playground/sdk';
+import { BotRouter } from '@hanzo/playground';
 import {
   EntityDecisionSchema,
   EntityProfileSchema,

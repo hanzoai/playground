@@ -4,7 +4,7 @@
  * Measures: registration time, memory footprint, cold start, request latency
  */
 
-import { Bot } from '@playground/sdk';
+import { Bot } from '@hanzo/playground';
 
 interface BenchmarkResult {
   metric: string;

@@ -50,7 +50,7 @@ The following secrets must be configured in GitHub repository settings:
 
 | Secret | Description |
 |--------|-------------|
-| `PYPI_API_TOKEN` | PyPI token (for all Python releases) |
+| `PYPI_TOKEN` | PyPI token (for all Python releases) |
 | `NPM_TOKEN` | npm registry token |
 | `DOCKERHUB_USERNAME` | Docker Hub username |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
@@ -80,7 +80,7 @@ Staging releases are **automatically triggered** when code is pushed to `main`. 
 5. Creates GitHub pre-release
 
 **Artifacts published to:**
-- Python: PyPI as prerelease (`pip install --pre playground`)
+- Python: PyPI as prerelease (`pip install --pre hanzo-playground`)
 - TypeScript: npm with `@next` tag
 - Docker: `playground/control-plane:staging-X.Y.Z-rc.N`
 - Binaries: GitHub Pre-release
@@ -104,10 +104,10 @@ curl -fsSL https://hanzo.bot/install.sh | bash -s -- --staging
 curl -fsSL https://raw.githubusercontent.com/hanzoai/playground/main/scripts/install.sh | bash -s -- --staging
 
 # Python (prerelease - requires --pre flag)
-pip install --pre playground
+pip install --pre hanzo-playground
 
 # TypeScript
-npm install @playground/sdk@next
+npm install @hanzo/playground@next
 
 # Docker
 docker pull playground/control-plane:staging-0.1.28-rc.4
@@ -154,10 +154,10 @@ Production releases are **manually triggered** via GitHub Actions workflow dispa
 curl -fsSL https://hanzo.bot/install.sh | bash
 
 # Python
-pip install playground
+pip install hanzo-playground
 
 # TypeScript
-npm install @playground/sdk
+npm install @hanzo/playground
 
 # Docker
 docker pull playground/control-plane:latest
@@ -182,8 +182,8 @@ playground-X.Y.Z.tar.gz             # Python source distribution
 
 | Registry | Staging | Production |
 |----------|---------|------------|
-| PyPI | `pip install --pre playground` | `pip install playground` |
-| npm | `@playground/sdk@next` | `@playground/sdk@latest` |
+| PyPI | `pip install --pre hanzo-playground` | `pip install hanzo-playground` |
+| npm | `@hanzo/playground@next` | `@hanzo/playground@latest` |
 | Docker | `playground/control-plane:staging-*` | `playground/control-plane:v*` |
 
 ---
@@ -249,7 +249,7 @@ After merging a PR or pushing to `main`:
    - [ ] Workflow triggered automatically
    - [ ] Version bumped to `X.Y.Z-rc.N` (e.g., `0.1.19-rc.1`)
    - [ ] Python prerelease package appears on PyPI
-   - [ ] `npm install @playground/sdk@next` installs new version
+   - [ ] `npm install @hanzo/playground@next` installs new version
    - [ ] GitHub release marked as "Pre-release"
    - [ ] Docker image tagged `staging-X.Y.Z-rc.N`
 3. Test staging install:
@@ -274,7 +274,7 @@ All previous staging artifacts remain available.
 2. Verify:
    - [ ] Version finalizes to `X.Y.Z` (e.g., `0.1.19`, no `-rc.N` suffix)
    - [ ] Python package appears on PyPI
-   - [ ] `npm install @playground/sdk` gets new version
+   - [ ] `npm install @hanzo/playground` gets new version
    - [ ] GitHub release NOT marked as "Pre-release"
    - [ ] Docker image tagged `vX.Y.Z` and `latest`
 3. Test `install.sh`:
@@ -292,7 +292,7 @@ All previous staging artifacts remain available.
 | Component | Procedure |
 |-----------|-----------|
 | PyPI prerelease | Cannot re-upload same version; must yank + bump rc number |
-| npm @next | `npm unpublish @playground/sdk@X.Y.Z-rc.N` (within 72 hours) or publish new rc |
+| npm @next | `npm unpublish @hanzo/playground@X.Y.Z-rc.N` (within 72 hours) or publish new rc |
 | Docker staging | Delete image tag from Docker Hub via web UI or CLI |
 | GitHub | Delete the prerelease from Releases page |
 

@@ -1,5 +1,5 @@
 {
-  "name": "@playground/sdk",
+  "name": "@hanzo/playground",
   "version": "0.1.41-rc.31",
   "description": "Playground TypeScript SDK",
   "type": "module",

@@ -142,5 +142,5 @@ When users ask about:
 - "Differences" or "comparison" or "vs" → Look for: infrastructure vs framework, control plane vs embedded library, multi-team vs single app, production features
 - "Scale" or "scalability" → Look for: stateless control plane, independent scaling, billions of requests, horizontal scaling
 - "Architecture" → Look for: distributed architecture, control plane, agent nodes, microservices, stateless design
-- "SDK" or "language" or "languages" or "supported" → Look for: Python SDK, Go SDK, TypeScript SDK, npm install @playground/sdk, pip install playground
+- "SDK" or "language" or "languages" or "supported" → Look for: Python SDK, Go SDK, TypeScript SDK, npm install @hanzo/playground, pip install hanzo-playground
 """

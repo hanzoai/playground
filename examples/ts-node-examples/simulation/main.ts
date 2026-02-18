@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Bot, type AIConfig } from '@playground/sdk';
+import { Bot, type AIConfig } from '@hanzo/playground';
 import {
   aggregationRouter,
   decisionRouter,

@@ -43,12 +43,6 @@ services:
     networks:
       - playground-test
     command: ["server", "--port", "8080", "--config", "/etc/playground/agents-test.yaml", "--vc-execution"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 30s
 
   test-runner:
     build:
@@ -71,8 +65,10 @@ services:
     volumes:
       - ../:/tests
     depends_on:
-      control-plane:
+      postgres:
         condition: service_healthy
+      control-plane:
+        condition: service_started
     networks:
       - playground-test
     working_dir: /tests

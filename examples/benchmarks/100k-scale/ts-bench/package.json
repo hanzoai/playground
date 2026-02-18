@@ -7,7 +7,7 @@
     "benchmark:json": "tsx benchmark.ts --json"
   },
   "dependencies": {
-    "@playground/sdk": "file:../../../../sdk/typescript"
+    "@hanzo/playground": "file:../../../../sdk/typescript"
   },
   "devDependencies": {
     "tsx": "^4.7.0",

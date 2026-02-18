@@ -1,4 +1,4 @@
-import { Bot } from '@playground/sdk';
+import { Bot } from '@hanzo/playground';
 import dotenv from 'dotenv';
 
 dotenv.config();

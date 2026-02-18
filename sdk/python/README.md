@@ -5,7 +5,7 @@ The Playground SDK provides a production-ready Python interface for registering 
 ## Installation
 
 ```bash
-pip install playground
+pip install hanzo-playground
 ```
 
 To work on the SDK locally:

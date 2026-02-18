@@ -5,8 +5,8 @@ async function loadSdk() {
   const base = process.env.TS_SDK_PATH;
   const candidates = [
     base && path.join(base, 'dist', 'index.js'),
-    '/usr/local/lib/node_modules/@playground/sdk/dist/index.js',
-    '/usr/lib/node_modules/@playground/sdk/dist/index.js'
+    '/usr/local/lib/node_modules/@hanzo/playground/dist/index.js',
+    '/usr/lib/node_modules/@hanzo/playground/dist/index.js'
   ].filter(Boolean);
 
   for (const candidate of candidates) {
@@ -17,7 +17,7 @@ async function loadSdk() {
     }
   }
 
-  return await import('@playground/sdk');
+  return await import('@hanzo/playground');
 }
 
 const { Agent } = await loadSdk();

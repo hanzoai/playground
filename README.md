@@ -115,7 +115,7 @@ bot.Run(context.Background())
 <summary><strong>TypeScript</strong></summary>
 
 ```typescript
-import { Bot } from '@playground/sdk';
+import { Bot } from '@hanzo/playground';
 
 const bot = new Bot({
   nodeId: 'researcher',

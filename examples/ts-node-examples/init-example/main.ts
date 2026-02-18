@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Bot } from '@playground/sdk';
+import { Bot } from '@hanzo/playground';
 import { botsRouter } from './bots.js';
 
 

@@ -13,7 +13,7 @@
  * - Optional cleanup with ctx.memory.deleteVectors()
  * - Discovering other agents via ctx.discover()
  */
-import { Bot, BotRouter } from '@playground/sdk';
+import { Bot, BotRouter } from '@hanzo/playground';
 
 type DemoInput = {
   text?: string;

@@ -4,7 +4,7 @@ The TypeScript SDK provides an idiomatic Node.js interface for building and runn
 
 ## Installing
 ```bash
-npm install @playground/sdk
+npm install @hanzo/playground
 ```
 
 ## Rate limiting
@@ -12,7 +12,7 @@ AI calls are wrapped with a stateless rate limiter that matches the Python SDK: 
 
 Configure per-agent via `aiConfig`:
 ```ts
-import { Agent } from '@playground/sdk';
+import { Agent } from '@hanzo/playground';
 
 const agent = new Agent({
   nodeId: 'demo',
@@ -33,7 +33,7 @@ To disable retries, set `enableRateLimitRetry: false`.
 
 You can also use the limiter directly:
 ```ts
-import { StatelessRateLimiter } from '@playground/sdk';
+import { StatelessRateLimiter } from '@hanzo/playground';
 
 const limiter = new StatelessRateLimiter({ maxRetries: 3, baseDelay: 0.5 });
 const result = await limiter.executeWithRetry(() => makeAiCall());

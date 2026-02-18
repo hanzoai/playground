@@ -62,7 +62,7 @@ jobs:
             // Fetch NPM stats (lifetime from 2020)
             const today = new Date().toISOString().split('T')[0];
             const npmRes = await fetch(
-              `https://api.npmjs.org/downloads/point/2020-01-01:${today}/@playground/sdk`
+              `https://api.npmjs.org/downloads/point/2020-01-01:${today}/@hanzo/playground`
             );
             if (!npmRes.ok) {
               console.error('NPM API error:', npmRes.status);
