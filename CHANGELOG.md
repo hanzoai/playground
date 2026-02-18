@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.31] - 2026-02-18
+
+
+### Fixed
+
+- Fix: update Python SDK tests for bot/playground rename
+
+- Fix monkeypatch paths: playground.agent_ai -> playground.bot_ai,
+  playground.agent_cli -> playground.bot_cli, playground.agent_utils ->
+  playground.bot_utils
+- Fix DIDIdentityPackage field: agents_server_id -> playground_server_id
+- Fix StubAgent attr: playground_connected -> agents_connected (matches bot.py)
+- Fix router error message regex: "an agent" -> "a bot"
+- All 497 Python SDK tests pass (d1ea632)
+
 ## [0.1.41-rc.30] - 2026-02-18
 
 
