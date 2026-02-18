@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.20] - 2026-02-18
+
+
+### Chores
+
+- Chore: migrate web client from npm to pnpm
+
+- Replace package-lock.json with pnpm-lock.yaml
+- Update Dockerfile to use pnpm via corepack
+- Update CI workflows (control-plane, release) to use pnpm/action-setup
+- Fixes CI failure from stale lockfile (@hanzo/iam 0.1.0 -> 0.3.0)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (fc6dd98)
+
 ## [0.1.41-rc.19] - 2026-02-18
 
 
