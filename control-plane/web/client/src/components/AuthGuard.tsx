@@ -5,7 +5,6 @@ import { setGlobalApiKey } from "../services/api";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const {
-    apiKey,
     setApiKey,
     isAuthenticated,
     authRequired,
