@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.32] - 2026-02-18
+
+
+### Fixed
+
+- Fix: rename packages to @hanzo/playground (npm) and hanzo-playground (PyPI)
+
+- npm: @playground/sdk -> @hanzo/playground (uses existing @hanzo npm scope)
+- PyPI: playground -> hanzo-playground (playground taken by Google DeepMind)
+- Remove curl healthcheck from distroless control-plane container
+- Use service_started + wait-for-services.sh for test dependencies
+- Fix pyproject.toml coverage paths for renamed modules
+- Update all imports, docs, examples, and install scripts (d2841b4)
+
+- Fix: improve functional test reliability with healthchecks and timing
+
+- Add Docker healthcheck to control-plane containers so test-runner
+  waits until the server is actually ready (service_healthy condition)
+- Increase wait-for-services.sh timeout: 30s -> 120s (60*2s) to handle
+  slower CI builds
+- Fix PLAYGROUND_SERVER env fallback in serverless tests: read
+  AGENTS_SERVER when CONTROL_PLANE_URL isn't set (2271601)
+
 ## [0.1.41-rc.31] - 2026-02-18
 
 
