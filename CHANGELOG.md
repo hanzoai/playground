@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.34] - 2026-02-18
+
+
+### Fixed
+
+- Fix: use correct Bot constructor param agents_server in functional tests
+
+The mass rename incorrectly changed the kwarg name from agents_server
+to playground_server in functional test bot factories, conftest, and
+templates. The Bot class constructor still uses agents_server, so bots
+were falling back to localhost:8080 instead of the Docker control plane
+URL, causing all registration to fail with 404 "node not found". (cf89186)
+
 ## [0.1.41-rc.33] - 2026-02-18
 
 
