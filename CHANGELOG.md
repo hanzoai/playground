@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.15] - 2026-02-18
+
+
+### Fixed
+
+- Fix: update Dockerfile.test-runner for go_agents -> go_bots rename
+
+Update COPY paths and binary names from go_agents/go-agent-* to
+go_bots/go-bot-* to match the directory rename. (aaf730c)
+
+
+
+### Other
+
+- Switch @hanzo/iam to npm ^0.1.0 (694f1df)
+
+- Switch @hanzo/iam to hanzo-js/iam canonical repo (2f7e67c)
+
+- Enable IAM auth in production build and fix @hanzo/iam resolution
+
+- Add VITE_IAM_SERVER_URL=https://hanzo.id and VITE_IAM_CLIENT_ID to .env.production
+- Switch @hanzo/iam from file: to github: ref for Docker build compatibility (d284c09)
+
+- Add IAM auth integration with @hanzo/iam SDK, org/project switching, and tenant context
+
+Replace the simple implicit OAuth flow with PKCE-based auth via @hanzo/iam/react.
+Adds dual auth mode (API key / IAM), org/project switcher in top nav,
+tenant-scoped gateway connections via Zustand store, and OAuth callback route. (facd7c8)
+
 ## [0.1.41-rc.14] - 2026-02-18
 
 
