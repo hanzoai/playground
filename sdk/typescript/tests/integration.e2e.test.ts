@@ -3,7 +3,7 @@ import http from 'node:http';
 import axios from 'axios';
 import { WebSocketServer } from 'ws';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import { Agent } from '../src/agent/Agent.js';
+import { Bot } from '../src/agent/Bot.js';
 import { PlaygroundClient } from '../src/client/PlaygroundClient.js';
 
 type MemoryEntry = { key: string; value: any; scope: string; scopeId?: string };
@@ -284,7 +284,7 @@ async function createControlPlaneStub() {
 
 describe('TypeScript SDK integration', () => {
   let control: Awaited<ReturnType<typeof createControlPlaneStub>>;
-  let agent: Agent;
+  let agent: Bot;
   let client: PlaygroundClient;
   let agentPort: number;
 

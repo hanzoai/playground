@@ -1,7 +1,7 @@
 import express from 'express';
 import type http from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Agent } from '../src/agent/Agent.js';
+import { Bot } from '../src/agent/Bot.js';
 import { SkillContext } from '../src/context/SkillContext.js';
 
 describe('MCP integration', () => {

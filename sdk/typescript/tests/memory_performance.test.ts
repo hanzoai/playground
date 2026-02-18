@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Agent } from '../src/agent/Agent.js';
+import { Bot } from '../src/agent/Bot.js';
 
 /**
  * Memory Performance Tests for Playground TypeScript SDK
@@ -58,7 +58,7 @@ describe('Memory Performance Tests', () => {
   describe('Agent Creation', () => {
     it('should create agents with minimal memory overhead', () => {
       const metrics = measureMemory('AgentCreation', 100, (n) => {
-        const agents: Agent[] = [];
+        const agents: Bot[] = [];
         for (let i = 0; i < n; i++) {
           const agent = new Bot({
             nodeId: `test-agent-${i}`,
@@ -235,7 +235,7 @@ describe('Memory Leak Prevention', () => {
 
     // Create and destroy many agents
     for (let cycle = 0; cycle < 10; cycle++) {
-      const agents: Agent[] = [];
+      const agents: Bot[] = [];
       for (let i = 0; i < 50; i++) {
         const agent = new Bot({
           nodeId: `leak-test-${cycle}-${i}`,

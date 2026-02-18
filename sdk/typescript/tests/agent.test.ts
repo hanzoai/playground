@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Agent } from '../src/agent/Agent.js';
+import { Bot } from '../src/agent/Bot.js';
 import { BotRouter } from '../src/router/BotRouter.js';
 import type { MemoryChangeEvent } from '../src/memory/MemoryInterface.js';
 
