@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.27] - 2026-02-18
+
+
+### Fixed
+
+- Fix: update TS SDK test imports from Agent to Bot
+
+Tests were importing Agent but using Bot constructor, causing
+ReferenceError at runtime. Updated all test imports to use Bot. (34709d7)
+
 ## [0.1.41-rc.26] - 2026-02-18
 
 
