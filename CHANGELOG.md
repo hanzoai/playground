@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.13] - 2026-02-18
+
+
+### Changed
+
+- Refactor: use api.hanzo.ai as default LLM provider, remove OpenRouter dependency
+
+Replace OpenRouter with Hanzo AI (api.hanzo.ai/v1) as the default LLM
+endpoint across all SDKs, tests, and CI workflows. OpenRouter demoted
+to legacy fallback only when no HANZO_API_KEY or OPENAI_API_KEY is set. (79c0db5)
+
 ## [0.1.41-rc.12] - 2026-02-17
 
 
