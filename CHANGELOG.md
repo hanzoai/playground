@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.23] - 2026-02-18
+
+
+### Fixed
+
+- Fix: skip PyPI publish gracefully when token not configured (143d64b)
+
+- Fix: add missing deps, pnpm config, and skip PyPI without token
+
+- Add react-hook-form and date-fns to package.json (lost during pnpm migration)
+- Add pnpm.onlyBuiltDependencies for esbuild postinstall
+- Update Dockerfile.test-runner to use pnpm instead of npm
+- Skip PyPI publish when PYPI_API_TOKEN secret is not set (56b0890)
+
 ## [0.1.41-rc.22] - 2026-02-18
 
 
