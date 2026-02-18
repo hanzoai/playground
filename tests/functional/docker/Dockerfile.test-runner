@@ -1,10 +1,11 @@
 FROM node:20-alpine AS ui-builder
+RUN npm install -g pnpm@10
 WORKDIR /app/web
 
-COPY control-plane/web/client/package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+COPY control-plane/web/client/package.json control-plane/web/client/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY control-plane/web/client/ .
-RUN npm run build
+RUN pnpm build
 
 FROM node:20-bookworm AS ts-sdk-builder
 WORKDIR /build/ts-sdk

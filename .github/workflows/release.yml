@@ -415,7 +415,7 @@ jobs:
           path: sdk/python/dist
 
       - name: Publish to PyPI
-        if: needs.prepare.outputs.publish_pypi == 'true'
+        if: needs.prepare.outputs.publish_pypi == 'true' && secrets.PYPI_API_TOKEN != ''
         working-directory: sdk/python
         env:
           TWINE_USERNAME: __token__
