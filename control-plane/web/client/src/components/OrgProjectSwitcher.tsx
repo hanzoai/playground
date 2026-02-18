@@ -1,14 +1,13 @@
 /**
  * Org/Project Switcher Component
  *
- * Wraps the shared @hanzo/auth OrgProjectSwitcher with playground-specific
- * tenant store syncing. Uses @hanzo/iam/react for org/project data.
+ * Uses @hanzo/iam/react for both the component and org/project data.
+ * Syncs tenant selection to playground's Zustand store.
  */
 
 import { useCallback } from "react";
-import { useOrganizations } from "@hanzo/iam/react";
+import { useOrganizations, OrgProjectSwitcher as OrgProjectSwitcherBase } from "@hanzo/iam/react";
 import { useTenantStore } from "../stores/tenantStore";
-import { OrgProjectSwitcher as OrgProjectSwitcherBase } from "@hanzo/auth";
 
 export function OrgProjectSwitcher() {
   const orgState = useOrganizations();
