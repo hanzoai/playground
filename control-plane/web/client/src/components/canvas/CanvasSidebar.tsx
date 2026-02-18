@@ -26,7 +26,8 @@ interface CanvasSidebarProps {
 }
 
 export function CanvasSidebar({ open, onClose }: CanvasSidebarProps) {
-  const agents = useBotStore((s) => s.getAgentList());
+  const agentsMap = useBotStore((s) => s.agents);
+  const agents = useMemo(() => Array.from(agentsMap.values()), [agentsMap]);
   const selectNode = useCanvasStore((s) => s.selectNode);
   const nodes = useCanvasStore((s) => s.nodes);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);

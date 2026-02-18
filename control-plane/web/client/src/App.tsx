@@ -104,7 +104,7 @@ function AppContent() {
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
               <Route path="/settings/observability-webhook" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ObservabilityWebhookSettingsPage /></div>} />
-              <Route path="/canvas" element={<div className="flex-1 min-h-0 relative"><CanvasPage /></div>} />
+              <Route path="/playground" element={<div className="flex-1 min-h-0 relative"><CanvasPage /></div>} />
               <Route path="/spaces" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpacesPage /></div>} />
               <Route path="/spaces/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpaceSettingsPage /></div>} />
               <Route path="/teams" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><TeamPage /></div>} />

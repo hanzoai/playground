@@ -163,7 +163,8 @@ function ApiKeyAuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Auth check failed:", err);
-        setAuthRequired(true);
+        // Backend unreachable — allow through so gateway-only mode works
+        setAuthRequired(false);
       } finally {
         setLoading(false);
       }
