@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.21] - 2026-02-18
+
+
+### Fixed
+
+- Fix: specify pnpm version 10 in CI workflows and Dockerfile
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (9f8d478)
+
 ## [0.1.41-rc.20] - 2026-02-18
 
 
