@@ -8,12 +8,11 @@ import (
 
 // Config holds AI/LLM configuration for making API calls.
 type Config struct {
-	// API Key for OpenAI or OpenRouter
+	// API Key for Hanzo AI or compatible provider
 	APIKey string
 
-	// BaseURL can be either OpenAI or OpenRouter endpoint
-	// Default: https://api.openai.com/v1
-	// OpenRouter: https://openrouter.ai/api/v1
+	// BaseURL for the AI API endpoint
+	// Default: https://api.hanzo.ai/v1
 	BaseURL string
 
 	// Default model to use (e.g., "gpt-4o", "openai/gpt-4o" for OpenRouter)
@@ -48,21 +47,23 @@ func envOr(keys ...string) string {
 // DefaultConfig returns a Config with sensible defaults.
 // It reads from environment variables (HANZO_ prefix preferred, with fallback):
 //   - HANZO_API_KEY / OPENAI_API_KEY / OPENROUTER_API_KEY
-//   - HANZO_AI_BASE_URL / AI_BASE_URL (defaults to OpenAI)
+//   - HANZO_AI_BASE_URL / AI_BASE_URL (defaults to api.hanzo.ai)
 //   - HANZO_AI_MODEL / AI_MODEL (defaults to gpt-4o)
 func DefaultConfig() *Config {
 	// HANZO_API_KEY takes highest priority.
 	apiKey := os.Getenv("HANZO_API_KEY")
-	baseURL := "https://api.openai.com/v1"
+	baseURL := "https://api.hanzo.ai/v1"
 
 	if apiKey == "" {
 		apiKey = os.Getenv("OPENAI_API_KEY")
 	}
 
-	// Check for OpenRouter configuration -- takes precedence over plain OPENAI_API_KEY.
-	if routerKey := os.Getenv("OPENROUTER_API_KEY"); routerKey != "" {
-		apiKey = routerKey
-		baseURL = "https://openrouter.ai/api/v1"
+	// Legacy fallback: OpenRouter
+	if apiKey == "" {
+		if routerKey := os.Getenv("OPENROUTER_API_KEY"); routerKey != "" {
+			apiKey = routerKey
+			baseURL = "https://openrouter.ai/api/v1"
+		}
 	}
 
 	// Allow override via HANZO_AI_BASE_URL or AI_BASE_URL.

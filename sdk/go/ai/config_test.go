@@ -47,13 +47,13 @@ func TestDefaultConfig(t *testing.T) {
 		checkConfig func(t *testing.T, cfg *Config)
 	}{
 		{
-			name: "default OpenAI config",
+			name: "default Hanzo config with OPENAI_API_KEY",
 			setupEnv: func() {
 				os.Setenv("OPENAI_API_KEY", "test-openai-key")
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {
 				assert.Equal(t, "test-openai-key", cfg.APIKey)
-				assert.Equal(t, "https://api.openai.com/v1", cfg.BaseURL)
+				assert.Equal(t, "https://api.hanzo.ai/v1", cfg.BaseURL)
 				assert.Equal(t, "gpt-4o", cfg.Model)
 				assert.Equal(t, 0.7, cfg.Temperature)
 				assert.Equal(t, 4096, cfg.MaxTokens)
@@ -68,13 +68,23 @@ func TestDefaultConfig(t *testing.T) {
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {
 				assert.Equal(t, "hanzo-key", cfg.APIKey)
-				assert.Equal(t, "https://api.openai.com/v1", cfg.BaseURL)
+				assert.Equal(t, "https://api.hanzo.ai/v1", cfg.BaseURL)
 			},
 		},
 		{
-			name: "OpenRouter config takes precedence over OPENAI_API_KEY",
+			name: "OPENAI_API_KEY takes precedence over OpenRouter legacy fallback",
 			setupEnv: func() {
 				os.Setenv("OPENAI_API_KEY", "openai-key")
+				os.Setenv("OPENROUTER_API_KEY", "openrouter-key")
+			},
+			checkConfig: func(t *testing.T, cfg *Config) {
+				assert.Equal(t, "openai-key", cfg.APIKey)
+				assert.Equal(t, "https://api.hanzo.ai/v1", cfg.BaseURL)
+			},
+		},
+		{
+			name: "OpenRouter legacy fallback when no other key set",
+			setupEnv: func() {
 				os.Setenv("OPENROUTER_API_KEY", "openrouter-key")
 			},
 			checkConfig: func(t *testing.T, cfg *Config) {

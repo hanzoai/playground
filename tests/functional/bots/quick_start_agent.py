@@ -92,17 +92,20 @@ def create_bot_from_env() -> Bot:
 
     Useful if you want to run this module as a standalone script.
     """
-    api_key = os.environ["OPENROUTER_API_KEY"]
-    model = os.environ.get("OPENROUTER_MODEL", "openrouter/google/gemini-2.5-flash-lite")
+    api_key = os.environ.get("HANZO_API_KEY", os.environ.get("OPENROUTER_API_KEY", ""))
+    if not api_key:
+        raise ValueError("HANZO_API_KEY environment variable is required")
+    model = os.environ.get("AI_MODEL", os.environ.get("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite"))
     node_id = os.environ.get("HANZO_NODE_ID", os.environ.get("AGENT_NODE_ID"))
 
     ai_config = AIConfig(
         model=model,
         api_key=api_key,
-        temperature=float(os.environ.get("OPENROUTER_TEMPERATURE", "0.7")),
-        max_tokens=int(os.environ.get("OPENROUTER_MAX_TOKENS", "500")),
-        timeout=float(os.environ.get("OPENROUTER_TIMEOUT", "60.0")),
-        retry_attempts=int(os.environ.get("OPENROUTER_RETRIES", "2")),
+        base_url=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
+        temperature=0.7,
+        max_tokens=500,
+        timeout=60.0,
+        retry_attempts=2,
     )
     return create_bot(ai_config, node_id=node_id)
 

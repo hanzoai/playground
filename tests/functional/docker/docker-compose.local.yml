@@ -25,8 +25,9 @@ services:
     container_name: playground-test-runner-local
     environment:
       AGENTS_SERVER: http://control-plane:8080
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/google/gemini-2.5-flash-lite}
+      HANZO_API_KEY: ${HANZO_API_KEY}
+      HANZO_AI_BASE_URL: ${HANZO_AI_BASE_URL:-https://api.hanzo.ai/v1}
+      AI_MODEL: ${AI_MODEL:-google/gemini-2.5-flash-lite}
       STORAGE_MODE: local
       PYTEST_MARK_EXPR: ${PYTEST_MARK_EXPR:-}
       PYTEST_ARGS: ${PYTEST_ARGS:--v}

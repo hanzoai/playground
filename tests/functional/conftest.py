@@ -89,24 +89,37 @@ def control_plane_url() -> str:
 
 
 @pytest.fixture(scope="session")
-def openrouter_api_key() -> str:
-    """Get the OpenRouter API key from environment."""
-    key = os.environ.get("OPENROUTER_API_KEY", "")
+def hanzo_api_key() -> str:
+    """Get the Hanzo API key from environment."""
+    key = os.environ.get("HANZO_API_KEY", "")
     if not key:
-        pytest.skip("OPENROUTER_API_KEY environment variable not set")
+        pytest.skip("HANZO_API_KEY environment variable not set")
     return key
 
 
 @pytest.fixture(scope="session")
-def openrouter_model() -> str:
+def ai_model() -> str:
     """
-    Get the OpenRouter model to use for tests from environment.
+    Get the AI model to use for tests from environment.
 
     IMPORTANT: All tests MUST use this fixture and NOT hardcode model names.
     This allows us to use cost-effective models for testing.
     """
-    model = os.environ.get("OPENROUTER_MODEL", "openrouter/google/gemini-2.5-flash-lite")
+    model = os.environ.get("AI_MODEL", "google/gemini-2.5-flash-lite")
     return model
+
+
+# Legacy aliases for backward compatibility
+@pytest.fixture(scope="session")
+def openrouter_api_key(hanzo_api_key: str) -> str:
+    """Legacy alias - use hanzo_api_key instead."""
+    return hanzo_api_key
+
+
+@pytest.fixture(scope="session")
+def openrouter_model(ai_model: str) -> str:
+    """Legacy alias - use ai_model instead."""
+    return ai_model
 
 
 @pytest.fixture(scope="session")
@@ -210,17 +223,18 @@ async def async_http_client(
 # ============================================================================
 
 @pytest.fixture
-def openrouter_config(openrouter_api_key: str, openrouter_model: str) -> AIConfig:
+def openrouter_config(hanzo_api_key: str, ai_model: str) -> AIConfig:
     """
-    Provide an AIConfig configured for OpenRouter.
+    Provide an AIConfig configured for Hanzo AI.
 
-    IMPORTANT: Uses the OPENROUTER_MODEL environment variable.
+    Uses HANZO_API_KEY and AI_MODEL environment variables.
     Default model is cost-effective for testing (gemini-2.5-flash-lite).
     DO NOT hardcode model names in tests - always use this fixture.
     """
     return AIConfig(
-        model=openrouter_model,
-        api_key=openrouter_api_key,
+        model=ai_model,
+        api_key=hanzo_api_key,
+        base_url=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
         temperature=0.7,
         max_tokens=500,
         timeout=60.0,
