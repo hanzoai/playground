@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.25] - 2026-02-18
+
+
+### Fixed
+
+- Fix: replace deprecated Agent/AgentRouter with thin re-exports of Bot
+
+Agent.ts, AgentRouter.ts, and types/agent.ts were 1000+ line copies
+that caused tsc --noEmit lint failures due to private property conflicts.
+Replaced with thin re-export wrappers for backward compatibility. (c58adc0)
+
 ## [0.1.41-rc.24] - 2026-02-18
 
 
