@@ -976,6 +976,9 @@ func (ls *LocalStorage) ensurePostgresLockSchema(ctx context.Context) error {
 
 func (ls *LocalStorage) ensurePostgresWorkflowFTS(ctx context.Context) error {
 	statements := []string{
+		// Drop and recreate FTS table to handle column renames (e.g. agent_node_id → node_id).
+		// This is safe because the table is entirely derived data repopulated by the backfill INSERT below.
+		`DROP TABLE IF EXISTS workflow_executions_fts CASCADE;`,
 		`CREATE TABLE IF NOT EXISTS workflow_executions_fts (
                         execution_id TEXT PRIMARY KEY,
                         workflow_id TEXT,
@@ -5774,8 +5777,8 @@ func (ls *LocalStorage) StorePlaygroundServerDID(ctx context.Context, agentsServ
                 `
 		if ls.mode == "postgres" {
 			query = `
-                                INSERT INTO did_registry (playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation, total_dids)
-                                VALUES (?, ?, ?, ?, ?, 0)
+                                INSERT INTO did_registry (playground_server_id, agents_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation, total_dids)
+                                VALUES (?, ?, ?, ?, ?, ?, 0)
                                 ON CONFLICT (playground_server_id) DO UPDATE SET
                                         root_did = EXCLUDED.root_did,
                                         master_seed_encrypted = EXCLUDED.master_seed_encrypted,
@@ -5784,7 +5787,12 @@ func (ls *LocalStorage) StorePlaygroundServerDID(ctx context.Context, agentsServ
                                         total_dids = did_registry.total_dids
                         `
 		}
-		_, execErr := tx.ExecContext(ctx, query, agentsServerID, rootDID, masterSeed, createdAt, lastKeyRotation)
+		args := []interface{}{agentsServerID, rootDID, masterSeed, createdAt, lastKeyRotation}
+		if ls.mode == "postgres" {
+			// postgres query has both playground_server_id and agents_server_id
+			args = []interface{}{agentsServerID, agentsServerID, rootDID, masterSeed, createdAt, lastKeyRotation}
+		}
+		_, execErr := tx.ExecContext(ctx, query, args...)
 		if execErr != nil {
 			return fmt.Errorf("failed to store af server DID: %w", execErr)
 		}
@@ -5921,10 +5929,11 @@ func (ls *LocalStorage) GetPlaygroundServerDID(ctx context.Context, agentsServer
 	}
 
 	query := `
-		SELECT playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation
-		FROM did_registry WHERE playground_server_id = ?
+		SELECT COALESCE(playground_server_id, agents_server_id, '') AS playground_server_id,
+		       root_did, master_seed_encrypted, created_at, last_key_rotation
+		FROM did_registry WHERE playground_server_id = ? OR agents_server_id = ?
 	`
-	row := ls.db.QueryRowContext(ctx, query, agentsServerID)
+	row := ls.db.QueryRowContext(ctx, query, agentsServerID, agentsServerID)
 	info := &types.PlaygroundServerDIDInfo{}
 
 	err := row.Scan(&info.PlaygroundServerID, &info.RootDID, &info.MasterSeed, &info.CreatedAt, &info.LastKeyRotation)
@@ -5944,7 +5953,8 @@ func (ls *LocalStorage) ListPlaygroundServerDIDs(ctx context.Context) ([]*types.
 	}
 
 	query := `
-		SELECT playground_server_id, root_did, master_seed_encrypted, created_at, last_key_rotation
+		SELECT COALESCE(playground_server_id, agents_server_id, '') AS playground_server_id,
+		       root_did, master_seed_encrypted, created_at, last_key_rotation
 		FROM did_registry ORDER BY created_at DESC
 	`
 	rows, err := ls.db.QueryContext(ctx, query)

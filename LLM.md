@@ -310,6 +310,58 @@ See `control-plane/.env.example` for comprehensive list. Key vars:
 - `GIN_MODE` - `debug` or `release`
 - `LOG_LEVEL` - `debug`, `info`, `warn`, `error`
 
+## Cloud Agent Provisioning
+
+### Architecture
+- **Linux agents**: K8s pod (agent container + operative sidecar for desktop)
+- **Mac/Windows agents**: Provisioned via Visor (CasVisor) for real VM management
+- Multi-container pods: `ghcr.io/hanzoai/bot:latest` (agent) + `ghcr.io/hanzoai/operative:latest` (desktop sidecar)
+
+### Cloud Provisioning API
+```
+POST   /api/v1/cloud/nodes/provision   → Provision new agent
+DELETE /api/v1/cloud/nodes/:node_id    → Deprovision agent
+GET    /api/v1/cloud/nodes             → List cloud agents
+GET    /api/v1/cloud/nodes/:node_id    → Get agent info
+GET    /api/v1/cloud/nodes/:node_id/logs → Get agent logs
+POST   /api/v1/cloud/nodes/sync        → Refresh from K8s
+POST   /api/v1/cloud/teams/provision    → Batch provision
+```
+
+### Key Files
+- `internal/cloud/provisioner.go` — Multi-OS routing (Linux→K8s, Mac/Windows→Visor)
+- `internal/cloud/k8s_client.go` — Raw K8s HTTP API (no client-go), sidecar support
+- `internal/cloud/visor_client.go` — Visor API client for multi-cloud VM management
+- `internal/config/cloud.go` — CloudConfig, VisorConfig, IAMConfig, env overrides
+- `internal/handlers/cloud.go` — HTTP handlers for cloud provisioning
+
+### Environment Variables (injected into bot pods)
+- `OPENAI_API_BASE` → `http://cloud-api.hanzo.svc:8000/api` (Hanzo Cloud AI)
+- `OPENAI_API_KEY` → hk-* IAM key (from config)
+- `OPERATIVE_URL` → `http://localhost:8501` (sidecar desktop)
+- `OPERATIVE_VNC_URL` → `http://localhost:6080` (sidecar VNC)
+- `AGENT_MODEL` → LLM model name
+
+### Secrets Management (KMS)
+All secrets managed via KMS (kms.hanzo.ai) using KMSSecret CRD:
+- KMS project: `playground` (slug: `playground-r0bw`)
+- K8s secret: `playground-secrets` (synced every 120s)
+- Secrets: POSTGRES_DSN, CLOUD_API_KEY, IAM_CLIENT_SECRET, VISOR_CLIENT_ID, VISOR_CLIENT_SECRET
+- Manifest: `universe/infra/k8s/bot/playground-kms-secrets.yaml`
+
+### Visor (Multi-Cloud VM)
+- Endpoint: `http://visor.hanzo.svc:19000`
+- Supports: AWS EC2, DigitalOcean, GCP, Azure, Proxmox, VMware, KVM
+- Remote access: RDP (Windows), VNC (Mac), SSH (Linux) via Guacamole
+- IAM auth: clientId/clientSecret from app-hanzo-vm
+
+### Production Deployment
+- Domain: `playground.hanzo.bot` (alias: `app.hanzo.bot`)
+- Image: `ghcr.io/hanzoai/playground:latest`
+- K8s: 2 replicas, hanzo namespace
+- Dockerfile: `deployments/docker/Dockerfile.control-plane`
+- Manifest: `universe/infra/k8s/bot/agents-control-plane.yaml`
+
 ## Code Style
 
 **Go:**

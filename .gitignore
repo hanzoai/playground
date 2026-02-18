@@ -50,3 +50,6 @@ reports/
 
 # Typescript
 .env
+playground/
+
+CLAUDE.md

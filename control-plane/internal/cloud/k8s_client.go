@@ -242,8 +242,42 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		container["args"] = spec.Args
 	}
 
+	containers := []interface{}{container}
+
+	// Add sidecar containers (e.g. operative desktop)
+	for _, sc := range spec.Sidecars {
+		scEnv := make([]map[string]string, 0, len(sc.Env))
+		for k, v := range sc.Env {
+			scEnv = append(scEnv, map[string]string{"name": k, "value": v})
+		}
+		scPorts := make([]map[string]interface{}, 0, len(sc.Ports))
+		for _, p := range sc.Ports {
+			scPorts = append(scPorts, map[string]interface{}{
+				"containerPort": p,
+				"protocol":      "TCP",
+			})
+		}
+		scContainer := map[string]interface{}{
+			"name":  sc.Name,
+			"image": sc.Image,
+			"env":   scEnv,
+			"ports": scPorts,
+			"resources": map[string]interface{}{
+				"requests": map[string]string{
+					"cpu":    sc.CPU,
+					"memory": sc.Memory,
+				},
+				"limits": map[string]string{
+					"cpu":    sc.LimitCPU,
+					"memory": sc.LimitMem,
+				},
+			},
+		}
+		containers = append(containers, scContainer)
+	}
+
 	podSpec := map[string]interface{}{
-		"containers":    []interface{}{container},
+		"containers":    containers,
 		"restartPolicy": "Always",
 	}
 

@@ -1,6 +1,7 @@
-// Package cloud provides cloud agent provisioning on Kubernetes.
-// It creates and manages agent pods in the org's DOKS cluster,
-// providing full parity between local bots and cloud nodes.
+// Package cloud provides cloud agent provisioning on Kubernetes and multi-cloud VMs.
+// It creates and manages agent pods in the org's DOKS cluster for Linux,
+// and delegates to Visor for Mac/Windows VM provisioning across AWS EC2,
+// DigitalOcean, GCP, Azure, Proxmox, and other cloud providers.
 package cloud
 
 import (
@@ -41,6 +42,10 @@ type ProvisionRequest struct {
 	Memory      string            `json:"memory,omitempty"`
 	Owner       string            `json:"owner,omitempty"` // IAM user sub
 	Org         string            `json:"org,omitempty"`   // Organization
+	// Multi-OS desktop support
+	OS           string `json:"os,omitempty"`            // "linux" (default), "macos", "windows"
+	Provider     string `json:"provider,omitempty"`      // Visor provider name for Mac/Windows VMs
+	InstanceType string `json:"instance_type,omitempty"` // Cloud instance type (e.g. "mac2.metal", "t3.medium")
 }
 
 // ProvisionResult describes the outcome of provisioning.
@@ -56,26 +61,32 @@ type ProvisionResult struct {
 
 // CloudNode represents a provisioned cloud agent.
 type CloudNode struct {
-	NodeID      string            `json:"node_id"`
-	PodName     string            `json:"pod_name"`
-	Namespace   string            `json:"namespace"`
-	NodeType    NodeType          `json:"node_type"`
-	Status      string            `json:"status"`
-	Image       string            `json:"image"`
-	Endpoint    string            `json:"endpoint"`
-	Owner       string            `json:"owner"`
-	Org         string            `json:"org"`
-	Labels      map[string]string `json:"labels"`
-	CreatedAt   time.Time         `json:"created_at"`
-	LastSeen    time.Time         `json:"last_seen"`
+	NodeID         string            `json:"node_id"`
+	PodName        string            `json:"pod_name"`
+	Namespace      string            `json:"namespace"`
+	NodeType       NodeType          `json:"node_type"`
+	Status         string            `json:"status"`
+	Image          string            `json:"image"`
+	Endpoint       string            `json:"endpoint"`
+	Owner          string            `json:"owner"`
+	Org            string            `json:"org"`
+	OS             string            `json:"os"`              // "linux", "macos", "windows"
+	RemoteProtocol string            `json:"remote_protocol"` // "vnc", "rdp", "ssh"
+	RemoteURL      string            `json:"remote_url"`      // Visor tunnel URL for Mac/Windows
+	Labels         map[string]string `json:"labels"`
+	CreatedAt      time.Time         `json:"created_at"`
+	LastSeen       time.Time         `json:"last_seen"`
 }
 
-// Provisioner manages cloud agent lifecycle on Kubernetes.
+// Provisioner manages cloud agent lifecycle on Kubernetes and multi-cloud VMs.
+// Linux bots: K8s pods with operative sidecar (cheap, containerized).
+// Mac/Windows bots: Real VMs via Visor (AWS EC2, DO, GCP, etc.) with RDP/VNC access.
 type Provisioner struct {
-	config  config.CloudConfig
-	k8s     KubernetesClient
-	mu      sync.RWMutex
-	nodes   map[string]*CloudNode // nodeID -> node
+	config config.CloudConfig
+	k8s    KubernetesClient
+	visor  *VisorClient // nil if Visor not configured
+	mu     sync.RWMutex
+	nodes  map[string]*CloudNode // nodeID -> node
 }
 
 // KubernetesClient is the interface for K8s operations.
@@ -91,6 +102,18 @@ type KubernetesClient interface {
 	ListAgentPods(ctx context.Context, namespace, labelSelector string) ([]*PodStatus, error)
 	// GetPodLogs returns recent logs for a pod.
 	GetPodLogs(ctx context.Context, namespace, podName string, tailLines int64) (string, error)
+}
+
+// SidecarSpec describes an additional container to run alongside the main agent.
+type SidecarSpec struct {
+	Name     string
+	Image    string
+	Env      map[string]string
+	Ports    []int32
+	CPU      string
+	Memory   string
+	LimitCPU string
+	LimitMem string
 }
 
 // PodSpec describes the desired state for an agent pod.
@@ -109,6 +132,7 @@ type PodSpec struct {
 	LimitMemory     string
 	Args            []string
 	ControlPlaneURL string // URL for agent to connect back
+	Sidecars        []SidecarSpec
 }
 
 // PodStatus represents the current state of a pod.
@@ -124,18 +148,43 @@ type PodStatus struct {
 
 // NewProvisioner creates a new cloud agent provisioner.
 func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient) *Provisioner {
-	return &Provisioner{
+	p := &Provisioner{
 		config: cfg,
 		k8s:    k8sClient,
 		nodes:  make(map[string]*CloudNode),
 	}
+	// Initialize Visor client for Mac/Windows VM provisioning
+	if cfg.Visor.Enabled && cfg.Visor.Endpoint != "" {
+		p.visor = NewVisorClient(cfg.Visor)
+		logger.Logger.Info().
+			Str("endpoint", cfg.Visor.Endpoint).
+			Msg("visor multi-cloud VM provisioner enabled")
+	}
+	return p
 }
 
-// Provision creates a new cloud agent node in the DOKS cluster.
+// Provision creates a new cloud agent. Routes based on OS:
+//   - linux (default): K8s pod with operative sidecar
+//   - macos/windows: Visor VM (AWS EC2, DO, GCP, etc.) — charged per day
+//
+// Local mode: user runs bot on their own machine and connects to the Space.
+// Cloud mode: we provision compute for them.
 func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
 	if !p.config.Enabled || !p.config.Kubernetes.Enabled {
 		return nil, fmt.Errorf("cloud provisioning is not enabled")
 	}
+
+	// Route Mac/Windows to Visor VM provisioning
+	os := DesktopOS(req.OS)
+	if os == OSMacOS || os == OSWindows {
+		return p.provisionVM(ctx, req)
+	}
+	// Default: Linux K8s pod with operative sidecar
+	return p.provisionK8sPod(ctx, req)
+}
+
+// provisionK8sPod creates a Linux bot as a K8s pod with operative sidecar.
+func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
 
 	// Generate node ID if not provided
 	nodeID := req.NodeID
@@ -205,8 +254,41 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 	if req.DisplayName != "" {
 		env["AGENT_DISPLAY_NAME"] = req.DisplayName
 	}
+	// Inject Hanzo Cloud AI backend env vars for bot LLM calls
+	if p.config.Kubernetes.CloudAPIEndpoint != "" {
+		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
+	}
+	if p.config.Kubernetes.CloudAPIKey != "" {
+		env["OPENAI_API_KEY"] = p.config.Kubernetes.CloudAPIKey
+	}
+
+	// Wire operative desktop URL if sidecar is enabled
+	if p.config.Kubernetes.OperativeEnabled {
+		env["OPERATIVE_URL"] = "http://localhost:8501"
+		env["OPERATIVE_VNC_URL"] = "http://localhost:6080"
+	}
+
+	// User-provided env vars override everything
 	for k, v := range req.Env {
 		env[k] = v
+	}
+
+	// Build sidecar containers
+	var sidecars []SidecarSpec
+	if p.config.Kubernetes.OperativeEnabled {
+		sidecars = append(sidecars, SidecarSpec{
+			Name:  "operative",
+			Image: p.config.Kubernetes.OperativeImage,
+			Env: map[string]string{
+				"DISPLAY":    ":1",
+				"RESOLUTION": "1920x1080x24",
+			},
+			Ports:    []int32{8080, 6080, 5900, 8501},
+			CPU:      "200m",
+			Memory:   "512Mi",
+			LimitCPU: "1000m",
+			LimitMem: "2Gi",
+		})
 	}
 
 	spec := &PodSpec{
@@ -224,8 +306,9 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 		Memory:      memory,
 		LimitCPU:    p.config.Kubernetes.LimitCPU,
 		LimitMemory: p.config.Kubernetes.LimitMemory,
-		Args:        []string{}, // Agent image entrypoint handles startup
+		Args:            []string{}, // Agent image entrypoint handles startup
 		ControlPlaneURL: fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
+		Sidecars:        sidecars,
 	}
 
 	logger.Logger.Info().
@@ -242,18 +325,20 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 	}
 
 	node := &CloudNode{
-		NodeID:    nodeID,
-		PodName:   podName,
-		Namespace: namespace,
-		NodeType:  NodeTypeCloud,
-		Status:    podStatus.Phase,
-		Image:     image,
-		Endpoint:  fmt.Sprintf("http://%s.%s.svc:8001", podName, namespace),
-		Owner:     req.Owner,
-		Org:       req.Org,
-		Labels:    labels,
-		CreatedAt: time.Now(),
-		LastSeen:  time.Now(),
+		NodeID:         nodeID,
+		PodName:        podName,
+		Namespace:      namespace,
+		NodeType:       NodeTypeCloud,
+		Status:         podStatus.Phase,
+		Image:          image,
+		OS:             "linux",
+		RemoteProtocol: "vnc",
+		Endpoint:       fmt.Sprintf("http://%s.%s.svc:8001", podName, namespace),
+		Owner:          req.Owner,
+		Org:            req.Org,
+		Labels:         labels,
+		CreatedAt:      time.Now(),
+		LastSeen:       time.Now(),
 	}
 
 	p.mu.Lock()
@@ -267,6 +352,117 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 		NodeType:  NodeTypeCloud,
 		Status:    podStatus.Phase,
 		Endpoint:  node.Endpoint,
+		CreatedAt: node.CreatedAt,
+	}, nil
+}
+
+// provisionVM creates a Mac or Windows VM via Visor and registers the bot.
+// Mac: minimum 1-day billing (Apple licensing on dedicated hardware).
+// Windows: RDP-based, charged per day.
+// Users can also connect their own Mac/Windows machines as local nodes.
+func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
+	if p.visor == nil {
+		return nil, fmt.Errorf("visor not configured — Mac/Windows VMs require Visor integration (set HANZO_AGENTS_VISOR_ENABLED=true)")
+	}
+
+	nodeID := req.NodeID
+	if nodeID == "" {
+		nodeID = fmt.Sprintf("vm-%s", uuid.New().String()[:8])
+	}
+
+	os := DesktopOS(req.OS)
+	protocol := ProtocolForOS(os)
+	org := req.Org
+	if org == "" {
+		org = "hanzo"
+	}
+
+	// Check org limits
+	if req.Org != "" {
+		count := p.countByOrg(req.Org)
+		if count >= p.config.Kubernetes.MaxAgentsPerOrg {
+			return nil, fmt.Errorf("organization %q has reached the maximum of %d cloud agents", req.Org, p.config.Kubernetes.MaxAgentsPerOrg)
+		}
+	}
+
+	logger.Logger.Info().
+		Str("node_id", nodeID).
+		Str("os", string(os)).
+		Str("provider", req.Provider).
+		Str("protocol", protocol).
+		Str("org", req.Org).
+		Msg("provisioning VM via visor")
+
+	// List available machines from Visor, or return info for provisioning
+	machines, err := p.visor.ListMachines(ctx, org)
+	if err != nil {
+		logger.Logger.Warn().Err(err).Msg("visor list machines failed, continuing with registration")
+	}
+
+	// Look for an available machine matching the OS
+	var matchedMachine *VisorMachine
+	for i := range machines {
+		m := &machines[i]
+		if strings.EqualFold(m.OS, string(os)) && m.State == "Running" {
+			matchedMachine = m
+			break
+		}
+	}
+
+	remoteURL := ""
+	machineName := sanitizePodName(fmt.Sprintf("vm-%s", nodeID))
+
+	if matchedMachine != nil {
+		machineName = matchedMachine.Name
+		remoteURL = fmt.Sprintf("%s/api/get-asset-tunnel?assetId=%s/%s",
+			p.config.Visor.Endpoint, org, machineName)
+		logger.Logger.Info().
+			Str("machine", machineName).
+			Str("ip", matchedMachine.PublicIP).
+			Msg("matched existing visor machine")
+	} else {
+		logger.Logger.Info().
+			Str("os", string(os)).
+			Msg("no running VM found — machine needs to be provisioned via Visor UI or cloud provider")
+	}
+
+	node := &CloudNode{
+		NodeID:         nodeID,
+		PodName:        machineName,
+		Namespace:      org,
+		NodeType:       NodeTypeCloud,
+		Status:         "Provisioning",
+		Image:          fmt.Sprintf("vm:%s", os),
+		OS:             string(os),
+		RemoteProtocol: protocol,
+		RemoteURL:      remoteURL,
+		Endpoint:       remoteURL,
+		Owner:          req.Owner,
+		Org:            req.Org,
+		Labels: map[string]string{
+			"playground.hanzo.ai/node-id": nodeID,
+			"playground.hanzo.ai/type":    "vm",
+			"playground.hanzo.ai/os":      string(os),
+		},
+		CreatedAt: time.Now(),
+		LastSeen:  time.Now(),
+	}
+
+	if matchedMachine != nil {
+		node.Status = matchedMachine.State
+	}
+
+	p.mu.Lock()
+	p.nodes[nodeID] = node
+	p.mu.Unlock()
+
+	return &ProvisionResult{
+		NodeID:    nodeID,
+		PodName:   machineName,
+		Namespace: org,
+		NodeType:  NodeTypeCloud,
+		Status:    node.Status,
+		Endpoint:  remoteURL,
 		CreatedAt: node.CreatedAt,
 	}, nil
 }
