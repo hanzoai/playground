@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.14] - 2026-02-18
+
+
+### Chores
+
+- Chore: rename CLAUDE.md to LLM.md, standardize convention
+
+CLAUDE.md is now a local symlink to LLM.md (gitignored). (04fc117)
+
+
+
+### Fixed
+
+- Fix: add visor client types for cloud VM provisioning
+
+Defines VisorClient, DesktopOS, VisorMachine types referenced by
+provisioner.go but missing from the codebase. Fixes GHCR Docker build. (2486182)
+
 ## [0.1.41-rc.13] - 2026-02-18
 
 
