@@ -1,20 +1,5 @@
-import type { BotContext } from '../context/BotContext.js';
-
-export interface BotDefinition<TInput = any, TOutput = any> {
-  name: string;
-  handler: BotHandler<TInput, TOutput>;
-  options?: BotOptions;
-}
-
-export type BotHandler<TInput = any, TOutput = any> = (
-  ctx: BotContext<TInput>
-) => Promise<TOutput> | TOutput;
-
-export interface BotOptions {
-  tags?: string[];
-  description?: string;
-  inputSchema?: any;
-  outputSchema?: any;
-  trackWorkflow?: boolean;
-  memoryConfig?: any;
-}
+/**
+ * @deprecated Use types from './bot.js' instead.
+ * This module is kept for backward compatibility only.
+ */
+export type { BotDefinition, BotHandler, BotOptions } from './bot.js';
