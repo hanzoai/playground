@@ -11,6 +11,7 @@ import { useBotStore } from './botStore';
 import { useActionPillStore } from './actionPillStore';
 import { usePermissionModeStore } from './permissionModeStore';
 import { useTeamStore } from './teamStore';
+import { useTenantStore } from './tenantStore';
 
 export function resetAllStores(): void {
   gateway.disconnect();
@@ -19,4 +20,5 @@ export function resetAllStores(): void {
   useActionPillStore.getState().reset();
   usePermissionModeStore.getState().reset();
   useTeamStore.getState().reset();
+  useTenantStore.getState().reset();
 }

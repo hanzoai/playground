@@ -13,6 +13,7 @@ import { useBotStore } from '@/stores/botStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useActionPillStore } from '@/stores/actionPillStore';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenantStore } from '@/stores/tenantStore';
 import type {
   ConnectParams,
   GatewayConnectionState,
@@ -63,10 +64,21 @@ export interface TenantContext {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useGateway(tenant?: TenantContext) {
+export function useGateway(explicitTenant?: TenantContext) {
   const [connectionState, setConnectionState] = useState<GatewayConnectionState>('disconnected');
   const syncedRef = useRef(false);
   const { apiKey } = useAuth();
+
+  // Read tenant from Zustand store (set by OrgProjectSwitcher in IAM mode)
+  const storeOrgId = useTenantStore((s) => s.orgId);
+  const storeProjectId = useTenantStore((s) => s.projectId);
+
+  // Use explicit tenant if provided, otherwise derive from store
+  const tenant = useMemo(() => {
+    if (explicitTenant) return explicitTenant;
+    if (storeOrgId) return { orgId: storeOrgId, projectId: storeProjectId ?? undefined };
+    return undefined;
+  }, [explicitTenant, storeOrgId, storeProjectId]);
 
   // Unique client ID per session (not per page load)
   const clientId = useMemo(
