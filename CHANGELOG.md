@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.35] - 2026-02-18
+
+
+### Fixed
+
+- Fix: resolve blank canvas page and rename route to /playground
+
+- Fix infinite re-render in CanvasSidebar caused by Zustand selector
+  returning new array on every call (getAgentList → stable agents Map)
+- Allow gateway-only mode by setting authRequired=false when backend
+  is unreachable instead of blocking the UI
+- Rename /canvas route to /playground in router and navigation config
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (ede96f8)
+
+- Fix: align TS bot methods, Go binary names, test assertions, and example kwargs
+
+- TS functional tests: .reasoner() → .bot() (echo-agent.mjs, serverless-agent.mjs)
+- Go binary name: go-agent-* → go-bot-* in runners and Go source
+- test_app_call: fix assertion to match "PLAYGROUND ROCKS" (was "AGENTS ROCKS")
+- examples: playground_server= → agents_server= in all Bot() constructors
+- README: update Go bot documentation to match new naming (d689d2c)
+
 ## [0.1.41-rc.34] - 2026-02-18
 
 
