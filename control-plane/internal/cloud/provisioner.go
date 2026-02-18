@@ -179,7 +179,7 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 	if os == OSMacOS || os == OSWindows {
 		return p.provisionVM(ctx, req)
 	}
-	// Default: Linux K8s pod with operative sidecar
+	// Default: Linux K8s pod (with or without operative desktop sidecar)
 	return p.provisionK8sPod(ctx, req)
 }
 
@@ -262,8 +262,15 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		env["OPENAI_API_KEY"] = p.config.Kubernetes.CloudAPIKey
 	}
 
-	// Wire operative desktop URL if sidecar is enabled
-	if p.config.Kubernetes.OperativeEnabled {
+	// Terminal-only mode: skip operative desktop, use lightweight ttyd shell access.
+	// This is for "xterm + Claude Code" — no desktop environment needed.
+	terminalOnly := req.OS == "terminal"
+
+	if terminalOnly {
+		env["AGENT_MODE"] = "terminal"
+		env["TTYD_URL"] = "http://localhost:7681"
+	} else if p.config.Kubernetes.OperativeEnabled {
+		// Wire operative desktop URL if sidecar is enabled
 		env["OPERATIVE_URL"] = "http://localhost:8501"
 		env["OPERATIVE_VNC_URL"] = "http://localhost:6080"
 	}
@@ -275,7 +282,21 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 
 	// Build sidecar containers
 	var sidecars []SidecarSpec
-	if p.config.Kubernetes.OperativeEnabled {
+	if terminalOnly {
+		// Terminal-only: lightweight ttyd for web-based terminal access
+		sidecars = append(sidecars, SidecarSpec{
+			Name:  "ttyd",
+			Image: "tsl0922/ttyd:alpine",
+			Env: map[string]string{
+				"TERM": "xterm-256color",
+			},
+			Ports:    []int32{7681},
+			CPU:      "100m",
+			Memory:   "128Mi",
+			LimitCPU: "500m",
+			LimitMem: "512Mi",
+		})
+	} else if p.config.Kubernetes.OperativeEnabled {
 		sidecars = append(sidecars, SidecarSpec{
 			Name:  "operative",
 			Image: p.config.Kubernetes.OperativeImage,
@@ -324,6 +345,13 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		return nil, fmt.Errorf("failed to create agent pod: %w", err)
 	}
 
+	nodeOS := "linux"
+	nodeProtocol := "vnc"
+	if terminalOnly {
+		nodeOS = "terminal"
+		nodeProtocol = "ssh"
+	}
+
 	node := &CloudNode{
 		NodeID:         nodeID,
 		PodName:        podName,
@@ -331,8 +359,8 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		NodeType:       NodeTypeCloud,
 		Status:         podStatus.Phase,
 		Image:          image,
-		OS:             "linux",
-		RemoteProtocol: "vnc",
+		OS:             nodeOS,
+		RemoteProtocol: nodeProtocol,
 		Endpoint:       fmt.Sprintf("http://%s.%s.svc:8001", podName, namespace),
 		Owner:          req.Owner,
 		Org:            req.Org,
@@ -421,9 +449,49 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 			Str("ip", matchedMachine.PublicIP).
 			Msg("matched existing visor machine")
 	} else {
+		// No running VM found — launch one via Visor's cloud provider
 		logger.Logger.Info().
 			Str("os", string(os)).
-			Msg("no running VM found — machine needs to be provisioned via Visor UI or cloud provider")
+			Str("provider", req.Provider).
+			Msg("no running VM found — launching via visor")
+
+		instanceType := req.InstanceType
+		if instanceType == "" {
+			providerType := "AWS" // default
+			if req.Provider != "" {
+				providerType = req.Provider
+			}
+			instanceType = DefaultInstanceType(os, providerType)
+		}
+
+		vmReq := &VMProvisionRequest{
+			NodeID:       nodeID,
+			DisplayName:  req.DisplayName,
+			OS:           os,
+			Provider:     req.Provider,
+			Region:       "",
+			InstanceType: instanceType,
+			Owner:        req.Owner,
+			Org:          org,
+		}
+		if vmReq.DisplayName == "" {
+			vmReq.DisplayName = fmt.Sprintf("agent-%s-%s", os, nodeID)
+		}
+
+		created, err := p.visor.CreateMachine(ctx, vmReq)
+		if err != nil {
+			logger.Logger.Error().Err(err).
+				Str("os", string(os)).
+				Msg("failed to launch VM via visor — returning pending status")
+		} else {
+			machineName = created.Name
+			remoteURL = fmt.Sprintf("%s/api/get-asset-tunnel?assetId=%s/%s",
+				p.config.Visor.Endpoint, org, machineName)
+			logger.Logger.Info().
+				Str("machine", machineName).
+				Str("state", created.State).
+				Msg("launched VM via visor")
+		}
 	}
 
 	node := &CloudNode{
