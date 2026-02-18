@@ -37,18 +37,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: control-plane/web/client/package-lock.json
 
       - name: Build control plane UI
         working-directory: control-plane/web/client
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Build control plane
         working-directory: control-plane
@@ -97,18 +97,18 @@ jobs:
             ${{ runner.os }}-go-${{ matrix.goos }}-${{ matrix.goarch }}-
             ${{ runner.os }}-go-
 
+      - uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: control-plane/web/client/package-lock.json
 
       - name: Build control plane UI
         working-directory: control-plane/web/client
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Compile control plane binary
         working-directory: control-plane

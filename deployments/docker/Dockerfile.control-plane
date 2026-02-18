@@ -1,10 +1,11 @@
 FROM --platform=$BUILDPLATFORM node:20-alpine AS ui-builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app/web
 
-COPY control-plane/web/client/package*.json ./
-RUN npm ci
+COPY control-plane/web/client/package.json control-plane/web/client/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY control-plane/web/client/ .
-RUN npm run build
+RUN pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.24-bookworm AS go-builder
 WORKDIR /app

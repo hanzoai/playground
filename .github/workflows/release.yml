@@ -225,18 +225,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
+      - uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: control-plane/web/client/package-lock.json
 
       - name: Build Web UI
         working-directory: control-plane/web/client
         run: |
-          npm install
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Run GoReleaser build
         uses: goreleaser/goreleaser-action@v6
@@ -302,18 +302,18 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: control-plane/web/client/package-lock.json
 
       - name: Build Web UI
         working-directory: control-plane/web/client
         run: |
-          npm install
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Set up Python
         uses: actions/setup-python@v5
