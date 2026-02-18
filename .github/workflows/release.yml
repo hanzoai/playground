@@ -226,6 +226,8 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -303,6 +305,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
