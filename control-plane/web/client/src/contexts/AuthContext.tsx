@@ -1,7 +1,34 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { setGlobalApiKey } from "../services/api";
 import { resetAllStores } from "../stores/resetAll";
+import { IamProvider as IamProviderBase, useIam as useIamHook } from "@hanzo/iam/react";
+import type { TokenResponse, IamUser } from "@hanzo/iam";
+
+// ---------------------------------------------------------------------------
+// IAM Configuration (from environment variables)
+// ---------------------------------------------------------------------------
+
+const IAM_SERVER_URL = import.meta.env.VITE_IAM_SERVER_URL as string | undefined;
+const IAM_CLIENT_ID = import.meta.env.VITE_IAM_CLIENT_ID as string | undefined;
+const IAM_REDIRECT_URI = import.meta.env.VITE_IAM_REDIRECT_URI as string | undefined;
+
+/** Whether IAM auth mode is active (determined by env vars). */
+export const isIamMode = !!(IAM_SERVER_URL && IAM_CLIENT_ID);
+
+const iamConfig = isIamMode
+  ? {
+      serverUrl: IAM_SERVER_URL!,
+      clientId: IAM_CLIENT_ID!,
+      redirectUri:
+        IAM_REDIRECT_URI ||
+        `${window.location.origin}${import.meta.env.VITE_BASE_PATH || "/ui"}/auth/callback`,
+    }
+  : null;
+
+// ---------------------------------------------------------------------------
+// Auth Context
+// ---------------------------------------------------------------------------
 
 interface AuthContextType {
   apiKey: string | null;
@@ -9,6 +36,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   authRequired: boolean;
   clearAuth: () => void;
+  /** Current auth mode. */
+  authMode: "api-key" | "iam";
+  /** Start IAM login (redirect). Only in IAM mode. */
+  iamLogin?: () => Promise<void>;
+  /** Start IAM login (popup). Only in IAM mode. */
+  iamLoginPopup?: () => Promise<void>;
+  /** Handle IAM OAuth callback. Only in IAM mode. */
+  handleCallback?: (url?: string) => Promise<TokenResponse>;
+  /** IAM user info. Only in IAM mode. */
+  iamUser?: IamUser | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,8 +62,9 @@ const decryptKey = (value: string): string => {
 };
 
 // Initialize global API key from localStorage BEFORE any React rendering
-// This ensures API calls made during initial render have the key
+// Skip in IAM mode — tokens are managed by BrowserIamSdk
 const initStoredKey = (() => {
+  if (isIamMode) return null;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -42,8 +80,55 @@ const initStoredKey = (() => {
   return null;
 })();
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  // Initialize with pre-loaded key so it's available immediately
+// ---------------------------------------------------------------------------
+// IAM Auth Bridge — maps useIam() into AuthContextType
+// ---------------------------------------------------------------------------
+
+function IamAuthBridge({ children }: { children: ReactNode }) {
+  const iam = useIamHook();
+
+  // Sync IAM access token to global API key so REST calls work
+  useEffect(() => {
+    setGlobalApiKey(iam.accessToken);
+  }, [iam.accessToken]);
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      apiKey: iam.accessToken,
+      setApiKey: () => {}, // No-op in IAM mode
+      isAuthenticated: iam.isAuthenticated,
+      authRequired: true,
+      clearAuth: () => {
+        iam.logout();
+        resetAllStores();
+      },
+      authMode: "iam",
+      iamLogin: iam.login,
+      iamLoginPopup: iam.loginPopup,
+      handleCallback: iam.handleCallback,
+      iamUser: iam.user,
+    }),
+    [iam],
+  );
+
+  if (iam.isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// API Key Auth Provider (existing behavior)
+// ---------------------------------------------------------------------------
+
+function ApiKeyAuthProvider({ children }: { children: ReactNode }) {
   const [apiKey, setApiKeyState] = useState<string | null>(initStoredKey);
   const [authRequired, setAuthRequired] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,55 +136,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check for stored key first
         const stored = localStorage.getItem(STORAGE_KEY);
         const storedKey = stored ? decryptKey(stored) : null;
-
-        // Clean up invalid stored key
         if (stored && !storedKey) {
           localStorage.removeItem(STORAGE_KEY);
         }
-
-        // Make a single request, with stored key if available
         const headers: HeadersInit = {};
         if (storedKey) {
           headers["X-API-Key"] = storedKey;
         }
-
-        const response = await fetch("/api/ui/v1/dashboard/summary", { headers });
-
+        const response = await fetch("/api/ui/v1/dashboard/summary", {
+          headers,
+        });
         if (response.ok) {
-          // Success - either no auth required, or stored key is valid
           if (storedKey) {
             setApiKeyState(storedKey);
-            setGlobalApiKey(storedKey); // Set immediately so API calls work
-            setAuthRequired(true); // Auth is configured, we just have a valid key
+            setGlobalApiKey(storedKey);
+            setAuthRequired(true);
           } else {
-            setAuthRequired(false); // No auth required on server
+            setAuthRequired(false);
           }
         } else if (response.status === 401) {
-          // Auth required and key (if any) is invalid
           setAuthRequired(true);
-          setGlobalApiKey(null); // Clear any stale key
+          setGlobalApiKey(null);
           if (stored) {
             localStorage.removeItem(STORAGE_KEY);
           }
         }
       } catch (err) {
-        // Network error - assume auth might be required, prompt user
         console.error("Auth check failed:", err);
         setAuthRequired(true);
       } finally {
         setLoading(false);
       }
     };
-
     void checkAuth();
   }, []);
 
   const setApiKey = (key: string | null) => {
     setApiKeyState(key);
-    setGlobalApiKey(key); // Set immediately so API calls work
+    setGlobalApiKey(key);
     if (key) {
       localStorage.setItem(STORAGE_KEY, encryptKey(key));
     } else {
@@ -115,7 +191,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -126,12 +206,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !authRequired || !!apiKey,
         authRequired,
         clearAuth,
+        authMode: "api-key",
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
+
+// ---------------------------------------------------------------------------
+// AuthProvider — delegates to IAM or API key mode
+// ---------------------------------------------------------------------------
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  if (isIamMode && iamConfig) {
+    return (
+      <IamProviderBase config={iamConfig}>
+        <IamAuthBridge>{children}</IamAuthBridge>
+      </IamProviderBase>
+    );
+  }
+  return <ApiKeyAuthProvider>{children}</ApiKeyAuthProvider>;
+}
+
+// ---------------------------------------------------------------------------
+// useAuth hook
+// ---------------------------------------------------------------------------
 
 export function useAuth() {
   const ctx = useContext(AuthContext);

@@ -12,6 +12,8 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ui/mode-toggle";
+import { OrgProjectSwitcher } from "@/components/OrgProjectSwitcher";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function TopNavigation() {
   const location = useLocation();
@@ -131,6 +133,7 @@ export function TopNavigation() {
   };
 
   const breadcrumbs = generateBreadcrumbs();
+  const { authMode } = useAuth();
 
   return (
     <header
@@ -185,8 +188,9 @@ export function TopNavigation() {
         </Breadcrumb>
       </div>
 
-      {/* Right Section - Theme Toggle & Future Extensions */}
+      {/* Right Section - Org Switcher, Theme Toggle & Future Extensions */}
       <div className="flex items-center gap-3">
+        {authMode === "iam" && <OrgProjectSwitcher />}
         <ModeToggle />
       </div>
     </header>

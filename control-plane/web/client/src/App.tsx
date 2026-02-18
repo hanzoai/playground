@@ -25,6 +25,7 @@ import { CanvasPage } from "./pages/CanvasPage";
 import { TeamPage } from "./pages/TeamPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
+import { AuthCallbackPage } from "./components/AuthCallbackPage";
 
 // Placeholder pages for new routes
 
@@ -112,6 +113,23 @@ function AppContent() {
   );
 }
 
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* OAuth callback must be outside AuthGuard */}
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route
+        path="/*"
+        element={
+          <AuthGuard>
+            <AppContent />
+          </AuthGuard>
+        }
+      />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider
@@ -122,11 +140,9 @@ function App() {
     >
       <ModeProvider>
         <AuthProvider>
-          <AuthGuard>
-            <Router basename={import.meta.env.VITE_BASE_PATH || "/ui"}>
-              <AppContent />
-            </Router>
-          </AuthGuard>
+          <Router basename={import.meta.env.VITE_BASE_PATH || "/ui"}>
+            <AppRoutes />
+          </Router>
         </AuthProvider>
       </ModeProvider>
     </ThemeProvider>

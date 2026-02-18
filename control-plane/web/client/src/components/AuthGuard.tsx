@@ -4,7 +4,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { setGlobalApiKey } from "../services/api";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { apiKey, setApiKey, isAuthenticated, authRequired } = useAuth();
+  const {
+    apiKey,
+    setApiKey,
+    isAuthenticated,
+    authRequired,
+    authMode,
+    iamLogin,
+  } = useAuth();
   const [inputKey, setInputKey] = useState("");
   const [error, setError] = useState("");
   const [validating, setValidating] = useState(false);
@@ -40,11 +47,51 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // IAM mode — show "Sign in with Hanzo" button
+  if (authMode === "iam" && iamLogin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full text-center">
+          <h2 className="text-2xl font-semibold mb-2">
+            Playground Control Plane
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Sign in to continue
+          </p>
+
+          {error && <p className="text-destructive mb-4">{error}</p>}
+
+          <button
+            onClick={() => {
+              setError("");
+              iamLogin().catch((err) =>
+                setError(
+                  err instanceof Error ? err.message : "Login failed",
+                ),
+              );
+            }}
+            className="w-full bg-primary text-primary-foreground p-3 rounded-md font-medium hover:opacity-90 transition-opacity"
+          >
+            Sign in with Hanzo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // API key mode — show password field
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <form onSubmit={handleSubmit} className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-semibold mb-2">Playground Control Plane</h2>
-        <p className="text-muted-foreground mb-6">Enter your API key to continue</p>
+      <form
+        onSubmit={handleSubmit}
+        className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full"
+      >
+        <h2 className="text-2xl font-semibold mb-2">
+          Playground Control Plane
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          Enter your API key to continue
+        </p>
 
         <input
           type="password"
