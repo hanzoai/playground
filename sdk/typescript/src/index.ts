@@ -17,6 +17,5 @@ export * from './mcp/MCPClientRegistry.js';
 export * from './mcp/MCPToolRegistrar.js';
 export * from './ai/RateLimiter.js';
 export * from './types/bot.js';
-export * from './types/bot.js';
 export * from './types/skill.js';
 export * from './types/mcp.js';

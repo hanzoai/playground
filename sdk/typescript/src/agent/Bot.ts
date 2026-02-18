@@ -5,15 +5,16 @@ import axios, { AxiosInstance } from 'axios';
 import type {
   BotConfig,
   BotHandler,
+  BotOptions,
   DeploymentType,
   HealthStatus,
+  ServerHandler,
   ServerlessEvent,
   ServerlessResponse
 } from '../types/bot.js';
 import { BotRegistry } from './BotRegistry.js';
 import { SkillRegistry } from './SkillRegistry.js';
 import { BotRouter } from '../router/BotRouter.js';
-import type { BotHandler, BotOptions } from '../types/bot.js';
 import type { SkillHandler, SkillOptions } from '../types/skill.js';
 import { ExecutionContext, type ExecutionMetadata } from '../context/ExecutionContext.js';
 import { BotContext } from '../context/BotContext.js';
@@ -122,7 +123,7 @@ export class Bot {
     this.skills.includeRouter(router);
   }
 
-  handler(adapter?: (event: any, context?: any) => ServerlessEvent): BotHandler {
+  handler(adapter?: (event: any, context?: any) => ServerlessEvent): ServerHandler {
     return async (event: any, res?: any): Promise<ServerlessResponse | void> => {
       // If a response object is provided, treat this as a standard HTTP request (e.g., Vercel/Netlify)
       if (res && typeof res === 'object' && typeof (res as any).setHeader === 'function') {

@@ -1,8 +1,35 @@
 import type http from 'node:http';
-import type { BotDefinition } from './bot.js';
 import type { SkillDefinition } from './skill.js';
 import type { MemoryChangeEvent, MemoryWatchHandler } from '../memory/MemoryInterface.js';
 import type { ExecutionMetadata } from '../context/ExecutionContext.js';
+import type { BotContext } from '../context/BotContext.js';
+
+// ---------------------------------------------------------------------------
+// Bot definition types (used by BotRegistry and BotRouter)
+// ---------------------------------------------------------------------------
+
+export interface BotDefinition<TInput = any, TOutput = any> {
+  name: string;
+  handler: BotHandler<TInput, TOutput>;
+  options?: BotOptions;
+}
+
+export type BotHandler<TInput = any, TOutput = any> = (
+  ctx: BotContext<TInput>
+) => Promise<TOutput> | TOutput;
+
+export interface BotOptions {
+  tags?: string[];
+  description?: string;
+  inputSchema?: any;
+  outputSchema?: any;
+  trackWorkflow?: boolean;
+  memoryConfig?: any;
+}
+
+// ---------------------------------------------------------------------------
+// Bot / Node configuration
+// ---------------------------------------------------------------------------
 
 export type DeploymentType = 'long_running' | 'serverless';
 
@@ -74,7 +101,11 @@ export interface MCPConfig {
   tags?: string[];
 }
 
-export interface BotCapability {
+// ---------------------------------------------------------------------------
+// Discovery / capability types
+// ---------------------------------------------------------------------------
+
+export interface NodeCapability {
   agentId: string;
   baseUrl: string;
   version: string;
@@ -109,7 +140,7 @@ export interface DiscoveryResponse {
   totalBots: number;
   totalSkills: number;
   pagination: DiscoveryPagination;
-  capabilities: BotCapability[];
+  capabilities: NodeCapability[];
 }
 
 export interface DiscoveryPagination {
@@ -160,6 +191,10 @@ export interface DiscoveryOptions {
   headers?: Record<string, string>;
 }
 
+// ---------------------------------------------------------------------------
+// Bot state
+// ---------------------------------------------------------------------------
+
 export interface BotState {
   bots: Map<string, BotDefinition>;
   skills: Map<string, SkillDefinition>;
@@ -172,6 +207,10 @@ export interface HealthStatus {
   node_id: string;
   version?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Serverless types
+// ---------------------------------------------------------------------------
 
 export interface ServerlessEvent {
   path?: string;
@@ -199,7 +238,8 @@ export interface ServerlessResponse {
 
 export type ServerlessAdapter = (event: any, context?: any) => ServerlessEvent;
 
-export type BotHandler = (
+/** Top-level serverless/HTTP entry-point handler. */
+export type ServerHandler = (
   event: ServerlessEvent | http.IncomingMessage,
   res?: http.ServerResponse
 ) => Promise<ServerlessResponse | void> | ServerlessResponse | void;

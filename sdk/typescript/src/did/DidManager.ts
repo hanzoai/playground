@@ -112,7 +112,7 @@ export class DidManager {
     return {
       enabled: true,
       agentDid: this.identityPackage.agentDid.did,
-      playgroundServerId: this.identityPackage.agentsServerId,
+      playgroundServerId: this.identityPackage.playgroundServerId,
       botCount: Object.keys(this.identityPackage.botDids).length,
       skillCount: Object.keys(this.identityPackage.skillDids).length,
       botDids: Object.fromEntries(
