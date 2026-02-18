@@ -34,7 +34,7 @@ class DIDIdentityPackage:
     agent_did: DIDIdentity
     bot_dids: Dict[str, DIDIdentity]
     skill_dids: Dict[str, DIDIdentity]
-    agents_server_id: str
+    playground_server_id: str
 
 
 @dataclass
@@ -261,7 +261,7 @@ class DIDManager:
         return {
             "enabled": True,
             "agent_did": self.identity_package.agent_did.did,
-            "agents_server_id": self.identity_package.agents_server_id,
+            "playground_server_id": self.identity_package.playground_server_id,
             "bot_count": len(self.identity_package.bot_dids),
             "skill_count": len(self.identity_package.skill_dids),
             "bot_dids": {
@@ -317,7 +317,7 @@ class DIDManager:
             agent_did=agent_did,
             bot_dids=bot_dids,
             skill_dids=skill_dids,
-            agents_server_id=package_data["agents_server_id"],
+            playground_server_id=package_data["playground_server_id"],
         )
 
     def _get_function_did(self, function_name: str) -> Optional[str]:

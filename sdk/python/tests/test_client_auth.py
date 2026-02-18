@@ -490,5 +490,5 @@ class TestAgentAPIKey:
 
         router = BotRouter(prefix="/test")
 
-        with pytest.raises(RuntimeError, match="Router not attached to an agent"):
+        with pytest.raises(RuntimeError, match="Router not attached to a bot"):
             _ = router.api_key

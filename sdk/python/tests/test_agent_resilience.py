@@ -32,7 +32,7 @@ def mock_client(monkeypatch):
 
     # Also mock BotUtils.is_port_available to avoid binding issues
     monkeypatch.setattr(
-        "playground.agent_utils.BotUtils.is_port_available", lambda p: True
+        "playground.bot_utils.BotUtils.is_port_available", lambda p: True
     )
 
 

@@ -179,7 +179,7 @@ def test_call_function_not_found(mock_agent):
     cli = BotCLI(mock_agent)
 
     with patch.object(cli, "_get_function", return_value=None):
-        with patch("playground.agent_cli.log_error") as mock_log_error:
+        with patch("playground.bot_cli.log_error") as mock_log_error:
             with patch("sys.exit") as mock_exit:
                 try:
                     cli._call_function("nonexistent", [])

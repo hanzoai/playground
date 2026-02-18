@@ -83,7 +83,7 @@ def setup_litellm_stub(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "litellm", module)
     monkeypatch.setitem(sys.modules, "litellm.utils", utils_module)
-    monkeypatch.setattr("playground.agent_ai.litellm", module, raising=False)
+    monkeypatch.setattr("playground.bot_ai.litellm", module, raising=False)
     return module
 
 

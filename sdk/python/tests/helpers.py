@@ -106,7 +106,7 @@ class StubAgent:
     )
     bots: List[Dict[str, Any]] = field(default_factory=list)
     skills: List[Dict[str, Any]] = field(default_factory=list)
-    playground_connected: bool = True
+    agents_connected: bool = True
     _current_status: BotStatus = BotStatus.STARTING
     callback_candidates: List[str] = field(default_factory=list)
 

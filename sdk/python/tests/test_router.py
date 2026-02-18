@@ -135,13 +135,13 @@ def test_router_delegation_without_agent_raises_error():
     router = BotRouter()
 
     # Test that note() raises RuntimeError when no agent is attached
-    with pytest.raises(RuntimeError, match="Router not attached to an agent"):
+    with pytest.raises(RuntimeError, match="Router not attached to a bot"):
         router.note("Test message")
 
     # Test that discover() raises RuntimeError when no agent is attached
-    with pytest.raises(RuntimeError, match="Router not attached to an agent"):
+    with pytest.raises(RuntimeError, match="Router not attached to a bot"):
         router.discover()
 
     # Test that memory raises RuntimeError when no agent is attached
-    with pytest.raises(RuntimeError, match="Router not attached to an agent"):
+    with pytest.raises(RuntimeError, match="Router not attached to a bot"):
         _ = router.memory
