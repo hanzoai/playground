@@ -183,7 +183,7 @@ export class DidClient {
       agentDid: parseIdentity(pkg?.agent_did),
       botDids,
       skillDids,
-      playgroundServerId: pkg?.agents_server_id ?? ''
+      playgroundServerId: pkg?.playground_server_id ?? ''
     };
   }
 

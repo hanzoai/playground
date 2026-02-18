@@ -3,7 +3,7 @@
 export interface AgentDIDInfo {
   did: string;
   node_id: string;
-  agents_server_id: string;
+  playground_server_id: string;
   public_key_jwk: any;
   derivation_path: string;
   bots: Record<string, BotDIDInfo>;
@@ -76,7 +76,7 @@ export interface DIDIdentityPackage {
   agent_did: DIDIdentity;
   bot_dids: Record<string, DIDIdentity>;
   skill_dids: Record<string, DIDIdentity>;
-  agents_server_id: string;
+  playground_server_id: string;
 }
 
 export interface DIDIdentity {
@@ -265,7 +265,7 @@ export interface DIDResolutionEntry {
 }
 
 export interface DIDFilters {
-  agents_server_id?: string;
+  playground_server_id?: string;
   node_id?: string;
   component_type?: string;
   status?: AgentDIDStatus;

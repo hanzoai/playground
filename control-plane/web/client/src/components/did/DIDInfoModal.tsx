@@ -231,7 +231,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                         Playground Server:
                       </span>
                       <span className="text-foreground font-mono text-xs">
-                        {didInfo.agents_server_id}
+                        {didInfo.playground_server_id}
                       </span>
                     </div>
                     <div className="flex items-start justify-between">
@@ -401,7 +401,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                           Playground Server:
                         </dt>
                         <dd className="font-mono text-foreground text-right max-w-[60%] break-all">
-                          {didInfo.agents_server_id}
+                          {didInfo.playground_server_id}
                         </dd>
                       </div>
                       <div className="flex items-center justify-between">

@@ -223,7 +223,7 @@ export function DIDIdentityCard({
           </Button>
         </div>
         <span className="text-xs text-gray-500">
-          Playground Server: {didInfo.agents_server_id}
+          Playground Server: {didInfo.playground_server_id}
         </span>
       </div>
     </Card>

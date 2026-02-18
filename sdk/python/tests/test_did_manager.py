@@ -30,7 +30,7 @@ def make_package():
                 "component_type": "skill",
             }
         },
-        "agents_server_id": "playground-1",
+        "playground_server_id": "playground-1",
     }
 
 
