@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.19] - 2026-02-18
+
+
+### Fixed
+
+- Fix: remove unused apiKey variable to fix TS6133 build error
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6651d7a)
+
 ## [0.1.41-rc.18] - 2026-02-18
 
 
