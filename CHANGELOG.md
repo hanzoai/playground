@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.29] - 2026-02-18
+
+
+### Fixed
+
+- Fix: use mapstructure for YAML config decoding to support duration strings
+
+The raw yaml.v3 Unmarshal cannot parse human-readable duration strings
+like "24h", "90s" into time.Duration fields. Switch to mapstructure
+decoder with StringToTimeDurationHookFunc for proper duration parsing.
+
+Also remove duplicate 'agents:' key in test config that would silently
+overwrite the first block with zero values. (2063f2a)
+
 ## [0.1.41-rc.28] - 2026-02-18
 
 
