@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.38] - 2026-02-21
+
+
+### Fixed
+
+- Fix(ui): replace diamond icon with Hanzo H logo on login page (9ab9912)
+
 ## [0.1.41-rc.37] - 2026-02-21
 
 
