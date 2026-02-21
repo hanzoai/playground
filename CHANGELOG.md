@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.37] - 2026-02-21
+
+
+### Added
+
+- Feat(ui): embed Bot Control UI in bot detail page
+
+Add Execute/Live Chat view switcher to BotDetailPage. The Chat view
+loads the Bot Control UI from gw.hanzo.bot in an iframe and passes the
+IAM token via URL param and postMessage for seamless auth. (0be741e)
+
 ## [0.1.41-rc.36] - 2026-02-21
 
 
