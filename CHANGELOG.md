@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.36] - 2026-02-21
+
+
+### Added
+
+- Feat: add spaces management, IAM org selector, e2e test framework
+
+- Add Spaces pages with settings and member management
+- Integrate IAM org/project selector in top navigation
+- Refactor gateway client for multi-tenant support
+- Add Playwright e2e test suite with auth, billing, spaces tests
+- Update tenant and space stores with new IAM-backed state
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (1a81e42)
+
+
+
+### Chores
+
+- Chore: add e2e environment example config
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6c66c6c)
+
 ## [0.1.41-rc.35] - 2026-02-18
 
 
