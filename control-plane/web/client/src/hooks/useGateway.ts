@@ -14,12 +14,14 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { useActionPillStore } from '@/stores/actionPillStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenantStore } from '@/stores/tenantStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import type {
   ConnectParams,
   GatewayConnectionState,
   ChatEvent,
   AgentEvent,
   AgentSummary,
+  AgentsListResponse,
   ExecApprovalRequestEvent,
 } from '@/types/gateway';
 
@@ -27,26 +29,41 @@ import type {
 // Config
 // ---------------------------------------------------------------------------
 
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL as string || 'wss://bot.hanzo.ai';
+const DEFAULT_GATEWAY_URL = 'wss://bot.hanzo.ai';
+const ENV_GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL as string | undefined;
+const ENV_GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN as string | undefined;
 const CLIENT_VERSION = '2.0.0';
 
-/** Validate gateway URL against allowed protocols */
-function validateGatewayUrl(url: string): string {
+/**
+ * Validate gateway URL against allowed protocols.
+ * When `isUserOverride` is true, allow ws:// even in production
+ * (the user explicitly chose to connect to a custom endpoint).
+ */
+function validateGatewayUrl(url: string, isUserOverride = false): string {
   try {
     const parsed = new URL(url);
     if (!['ws:', 'wss:'].includes(parsed.protocol)) {
-      return 'wss://bot.hanzo.ai';
+      return DEFAULT_GATEWAY_URL;
     }
-    if (import.meta.env.PROD && parsed.protocol !== 'wss:') {
-      return 'wss://bot.hanzo.ai';
+    if (import.meta.env.PROD && parsed.protocol !== 'wss:' && !isUserOverride) {
+      return DEFAULT_GATEWAY_URL;
     }
     return url;
   } catch {
-    return 'wss://bot.hanzo.ai';
+    return DEFAULT_GATEWAY_URL;
   }
 }
 
-const VALIDATED_URL = validateGatewayUrl(GATEWAY_URL);
+/** Resolve the effective gateway URL. Priority: settingsStore > env > default */
+function resolveGatewayUrl(storeUrl: string | null): { url: string; isUserOverride: boolean } {
+  if (storeUrl) {
+    return { url: validateGatewayUrl(storeUrl, true), isUserOverride: true };
+  }
+  if (ENV_GATEWAY_URL) {
+    return { url: validateGatewayUrl(ENV_GATEWAY_URL), isUserOverride: false };
+  }
+  return { url: DEFAULT_GATEWAY_URL, isUserOverride: false };
+}
 
 // ---------------------------------------------------------------------------
 // Tenant context from auth or URL
@@ -69,6 +86,16 @@ export function useGateway(explicitTenant?: TenantContext) {
   const syncedRef = useRef(false);
   const { apiKey } = useAuth();
 
+  // Read custom gateway URL/token from settings store
+  const settingsGatewayUrl = useSettingsStore((s) => s.gatewayUrl);
+  const settingsGatewayToken = useSettingsStore((s) => s.gatewayToken);
+
+  // Resolve effective gateway URL (settingsStore > env > default)
+  const { url: effectiveUrl } = useMemo(
+    () => resolveGatewayUrl(settingsGatewayUrl),
+    [settingsGatewayUrl],
+  );
+
   // Read tenant from Zustand store (set by OrgProjectSwitcher in IAM mode)
   const storeOrgId = useTenantStore((s) => s.orgId);
   const storeProjectId = useTenantStore((s) => s.projectId);
@@ -80,12 +107,6 @@ export function useGateway(explicitTenant?: TenantContext) {
     return undefined;
   }, [explicitTenant, storeOrgId, storeProjectId]);
 
-  // Unique client ID per session (not per page load)
-  const clientId = useMemo(
-    () => `playground-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    []
-  );
-
   const setAgents = useBotStore((s) => s.setAgents);
   const handleChatEvent = useBotStore((s) => s.handleChatEvent);
   const handleBotEvent = useBotStore((s) => s.handleBotEvent);
@@ -94,18 +115,18 @@ export function useGateway(explicitTenant?: TenantContext) {
 
   /** Build ConnectParams with auth + tenant context */
   const buildConnectParams = useCallback((): ConnectParams => ({
-    minProtocol: 1,
-    maxProtocol: 1,
+    minProtocol: 3,
+    maxProtocol: 3,
     client: {
-      id: clientId,
+      id: 'bot-control-ui',
       version: CLIENT_VERSION,
       platform: 'web',
-      mode: 'operator',
+      mode: 'ui',
       displayName: 'Hanzo Playground',
     },
     role: 'operator',
     scopes: ['operator.admin'],
-    ...(apiKey ? { auth: { token: apiKey } } : {}),
+    ...((apiKey || settingsGatewayToken || ENV_GATEWAY_TOKEN) ? { auth: { token: apiKey || settingsGatewayToken || ENV_GATEWAY_TOKEN } } : {}),
     ...(tenant ? {
       tenant: {
         orgId: tenant.orgId,
@@ -115,12 +136,26 @@ export function useGateway(explicitTenant?: TenantContext) {
         env: tenant.env ?? (import.meta.env.PROD ? 'production' : 'development'),
       },
     } : {}),
-  }), [clientId, apiKey, tenant]);
+  }), [apiKey, settingsGatewayToken, tenant]);
+
+  /** Convert agents.list response rows into AgentSummary with derived sessionKey */
+  const toAgentSummaries = useCallback((resp: AgentsListResponse): AgentSummary[] => {
+    const mainKey = resp.mainKey || 'main';
+    return resp.agents.map((row) => ({
+      id: row.id,
+      name: row.identity?.name ?? row.name ?? row.id,
+      emoji: row.identity?.emoji,
+      avatar: row.identity?.avatarUrl ?? row.identity?.avatar,
+      status: 'idle' as const,
+      sessionKey: `agent:${row.id}:${mainKey}`,
+    }));
+  }, []);
 
   // Sync agents from gateway to both stores
   const syncAgents = useCallback(async () => {
     try {
-      const agents = await agentsList();
+      const resp = await agentsList();
+      const agents = toAgentSummaries(resp);
       setAgents(agents);
 
       for (const agent of agents) {
@@ -130,15 +165,13 @@ export function useGateway(explicitTenant?: TenantContext) {
           avatar: agent.avatar,
           status: agent.status,
           sessionKey: agent.sessionKey,
-          model: agent.model,
-          workspace: agent.workspace,
           source: 'cloud',
         });
       }
     } catch {
       // Gateway not ready or auth failed — will retry on reconnect
     }
-  }, [setAgents, upsertBot]);
+  }, [setAgents, upsertBot, toAgentSummaries]);
 
   // Handle agents appearing from snapshot
   const syncFromSnapshot = useCallback((agents: AgentSummary[]) => {
@@ -192,8 +225,10 @@ export function useGateway(explicitTenant?: TenantContext) {
       addApproval(payload as ExecApprovalRequestEvent);
     });
 
-    // Connect to gateway with auth + tenant
-    gateway.connect(VALIDATED_URL, buildConnectParams());
+    // Disconnect any existing connection before connecting to (possibly new) URL
+    syncedRef.current = false;
+    gateway.disconnect();
+    gateway.connect(effectiveUrl, buildConnectParams());
 
     return () => {
       unsubState();
@@ -202,17 +237,18 @@ export function useGateway(explicitTenant?: TenantContext) {
       unsubApproval();
       // Don't disconnect on unmount — singleton persists across routes
     };
-  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval, buildConnectParams]);
+  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval, buildConnectParams, effectiveUrl]);
 
   const reconnect = useCallback(() => {
     syncedRef.current = false;
     gateway.disconnect();
-    gateway.connect(VALIDATED_URL, buildConnectParams());
-  }, [buildConnectParams]);
+    gateway.connect(effectiveUrl, buildConnectParams());
+  }, [buildConnectParams, effectiveUrl]);
 
   return {
     connectionState,
     isConnected: connectionState === 'connected',
+    gatewayUrl: effectiveUrl,
     reconnect,
     syncAgents,
   };

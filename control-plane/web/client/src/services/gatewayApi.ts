@@ -9,7 +9,7 @@ import { gateway } from './gatewayClient';
 import type {
   AgentsCreateParams,
   AgentsCreateResult,
-  AgentsListResult,
+  AgentsListResponse,
   ChatAbortParams,
   ChatHistoryParams,
   ChatSendParams,
@@ -23,8 +23,8 @@ import type {
 // Agents
 // ---------------------------------------------------------------------------
 
-export function agentsList(): Promise<AgentsListResult> {
-  return gateway.rpc<AgentsListResult>('agents.list');
+export function agentsList(): Promise<AgentsListResponse> {
+  return gateway.rpc<AgentsListResponse>('agents.list');
 }
 
 export function agentsCreate(params: AgentsCreateParams): Promise<AgentsCreateResult> {

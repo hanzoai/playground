@@ -1,13 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useSpaceStore } from '@/stores/spaceStore';
+import { spaceApi } from '@/services/spaceApi';
 
 export function SpacesPage() {
   const { spaces, activeSpaceId, loading, fetchSpaces, setActiveSpace, createSpace, deleteSpace } = useSpaceStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
 
   useEffect(() => { fetchSpaces(); }, [fetchSpaces]);
+
+  // Fetch member counts for all spaces to show "Shared" badges
+  useEffect(() => {
+    if (spaces.length === 0) return;
+    Promise.allSettled(
+      spaces.map(s => spaceApi.listMembers(s.id).then(r => ({ id: s.id, count: r.members.length })))
+    ).then(results => {
+      const counts: Record<string, number> = {};
+      for (const r of results) {
+        if (r.status === 'fulfilled') counts[r.value.id] = r.value.count;
+      }
+      setMemberCounts(counts);
+    });
+  }, [spaces]);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -94,6 +110,11 @@ export function SpacesPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {(memberCounts[space.id] ?? 0) > 1 && (
+                  <span className="text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                    Shared ({memberCounts[space.id]})
+                  </span>
+                )}
                 {space.id === activeSpaceId && (
                   <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
                     Active

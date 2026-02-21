@@ -1,18 +1,26 @@
 import { useEffect } from 'react';
 import { useSpaceStore } from '@/stores/spaceStore';
+import { MembersSection } from '@/components/space/MembersSection';
+import { TeamPlatformSection } from '@/components/space/TeamPlatformSection';
 
 export function SpaceSettingsPage() {
-  const { activeSpace, nodes, bots, fetchNodes, fetchBots } = useSpaceStore();
+  const { activeSpace, nodes, bots, fetchSpaces, fetchNodes, fetchBots, fetchMembers } = useSpaceStore();
+
+  // Bootstrap active space on direct navigation (e.g. refresh on /spaces/settings)
+  useEffect(() => {
+    if (!activeSpace) fetchSpaces();
+  }, [activeSpace, fetchSpaces]);
 
   useEffect(() => {
     fetchNodes();
     fetchBots();
-  }, [fetchNodes, fetchBots]);
+    fetchMembers();
+  }, [fetchNodes, fetchBots, fetchMembers]);
 
   if (!activeSpace) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No space selected. Go to Spaces to select one.</p>
+        <p className="text-muted-foreground">Loading space...</p>
       </div>
     );
   }
@@ -76,6 +84,12 @@ export function SpaceSettingsPage() {
           </div>
         )}
       </section>
+
+      {/* Members */}
+      <MembersSection />
+
+      {/* Connected Platform */}
+      <TeamPlatformSection />
 
       {/* Space Info */}
       <section className="mb-8">

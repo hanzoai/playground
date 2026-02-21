@@ -179,7 +179,29 @@ export interface AgentsListParams {
   // empty
 }
 
-export type AgentsListResult = AgentSummary[];
+/** Raw gateway response for agents.list — the payload envelope */
+export interface AgentsListResponse {
+  defaultId: string;
+  mainKey: string;
+  scope: string;
+  agents: AgentsListRow[];
+}
+
+/** Individual agent row from agents.list (no sessionKey — must be derived) */
+export interface AgentsListRow {
+  id: string;
+  name?: string;
+  identity?: {
+    name?: string;
+    theme?: string;
+    emoji?: string;
+    avatar?: string;
+    avatarUrl?: string;
+  };
+}
+
+/** @deprecated Use AgentsListResponse instead */
+export type AgentsListResult = AgentsListResponse;
 
 export interface AgentsCreateParams {
   name: string;

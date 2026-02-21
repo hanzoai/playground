@@ -19,6 +19,22 @@ interface Message {
   streaming?: boolean;
 }
 
+/** Extract text from a gateway chat message payload */
+function extractMessageText(message: unknown): string {
+  if (typeof message === 'string') return message;
+  if (!message || typeof message !== 'object') return '';
+  const msg = message as Record<string, unknown>;
+  if (Array.isArray(msg.content)) {
+    return (msg.content as Array<Record<string, unknown>>)
+      .filter((b) => b.type === 'text' && typeof b.text === 'string')
+      .map((b) => b.text as string)
+      .join('');
+  }
+  if (typeof msg.content === 'string') return msg.content;
+  if (typeof msg.text === 'string') return msg.text;
+  return '';
+}
+
 interface ChatPanelProps {
   agentId: string;
   sessionKey?: string;
@@ -46,12 +62,14 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
 
       if (event.state === 'delta') {
         setStreaming(true);
+        const text = extractMessageText(event.message);
         setMessages((prev) => {
           const last = prev[prev.length - 1];
-          if (last?.streaming) {
+          if (last?.streaming && last.id === event.runId) {
+            // CLI backends send full text each delta (not incremental), so replace
             return [
               ...prev.slice(0, -1),
-              { ...last, content: last.content + (event.message as string ?? '') },
+              { ...last, content: text },
             ];
           }
           return [
@@ -59,7 +77,7 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
             {
               id: event.runId,
               role: 'assistant',
-              content: event.message as string ?? '',
+              content: text,
               timestamp: Date.now(),
               streaming: true,
             },
@@ -69,9 +87,31 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
 
       if (event.state === 'final') {
         setStreaming(false);
-        setMessages((prev) =>
-          prev.map((m) => m.id === event.runId ? { ...m, streaming: false } : m)
-        );
+        const finalText = extractMessageText(event.message);
+        setMessages((prev) => {
+          const existing = prev.find((m) => m.id === event.runId);
+          if (existing) {
+            // Update existing streaming message with final text and stop streaming
+            return prev.map((m) =>
+              m.id === event.runId
+                ? { ...m, content: finalText || m.content, streaming: false }
+                : m
+            );
+          }
+          // No delta was received — add the final message directly
+          if (finalText) {
+            return [
+              ...prev,
+              {
+                id: event.runId,
+                role: 'assistant' as const,
+                content: finalText,
+                timestamp: Date.now(),
+              },
+            ];
+          }
+          return prev;
+        });
       }
 
       if (event.state === 'error') {

@@ -238,8 +238,15 @@ class GatewayClient {
       return;
     }
 
+    // Handle connect handshake failure (not in pending map since sendHello doesn't use rpc())
     const pending = this.pending.get(frame.id);
-    if (!pending) return;
+    if (!pending) {
+      if (!frame.ok && this.state === 'authenticating') {
+        console.error('[gateway] Handshake failed:', frame.error?.message ?? 'unknown');
+        this.setState('error');
+      }
+      return;
+    }
 
     this.pending.delete(frame.id);
     clearTimeout(pending.timer);
@@ -254,12 +261,17 @@ class GatewayClient {
   private sendHello(): void {
     if (!this.ws || !this.connectParams) return;
 
-    const hello = {
-      type: 'hello',
-      ...this.connectParams,
+    // Bot gateway expects a standard request frame for the handshake:
+    // { type: "req", id: "<id>", method: "connect", params: ConnectParams }
+    const id = String(++this.requestId);
+    const frame: RequestFrame = {
+      type: 'req',
+      id,
+      method: 'connect',
+      params: this.connectParams,
     };
 
-    this.ws.send(JSON.stringify(hello));
+    this.ws.send(JSON.stringify(frame));
   }
 
   private handleHelloOk(helloOk: HelloOk): void {

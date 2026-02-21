@@ -5,9 +5,11 @@
  * Shows the preset details and an optional workspace override.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { TeamPreset } from '@/types/team';
 import { cn } from '@/lib/utils';
+import { useSpaceStore } from '@/stores/spaceStore';
+import { teamPlatformStorage } from '@/services/teamPlatformApi';
 
 interface ProvisionDialogProps {
   preset: TeamPreset | null;
@@ -17,7 +19,21 @@ interface ProvisionDialogProps {
 }
 
 export function ProvisionDialog({ preset, onConfirm, onClose, loading }: ProvisionDialogProps) {
+  const activeSpaceId = useSpaceStore((s) => s.activeSpaceId);
   const [workspace, setWorkspace] = useState('');
+  const [linkedWorkspaceId, setLinkedWorkspaceId] = useState<string | undefined>();
+
+  // Pre-fill workspace from connected Team Platform
+  useEffect(() => {
+    if (!activeSpaceId) return;
+    const config = teamPlatformStorage.get(activeSpaceId);
+    if (config?.workspaceId) {
+      setLinkedWorkspaceId(config.workspaceId);
+      setWorkspace(config.workspaceId);
+    } else {
+      setLinkedWorkspaceId(undefined);
+    }
+  }, [activeSpaceId, preset]);
 
   const handleConfirm = useCallback(() => {
     if (!preset) return;
@@ -59,14 +75,14 @@ export function ProvisionDialog({ preset, onConfirm, onClose, loading }: Provisi
           {/* Workspace */}
           <div>
             <label htmlFor="workspace" className="block text-xs text-muted-foreground mb-1">
-              Workspace (optional)
+              Workspace {linkedWorkspaceId ? '(from connected platform)' : '(optional)'}
             </label>
             <input
               id="workspace"
               type="text"
               value={workspace}
               onChange={(e) => setWorkspace(e.target.value)}
-              placeholder="/workspace"
+              placeholder={linkedWorkspaceId ? `Connected: ${linkedWorkspaceId}` : '/workspace'}
               className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-xs placeholder:text-muted-foreground/60 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
             />
           </div>

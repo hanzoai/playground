@@ -28,6 +28,7 @@ import { SpaceSettingsPage } from "./pages/SpaceSettingsPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { AuthCallbackPage } from "./components/AuthCallbackPage";
+import { GatewaySettings } from "./components/settings/GatewaySettings";
 
 // Placeholder pages for new routes
 
@@ -47,18 +48,7 @@ function AgentsPage() {
 }
 
 function SettingsPage() {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-center">
-        <h2 className="text-heading-1 mb-2">
-          Settings
-        </h2>
-        <p className="text-body">
-          System configuration and preferences
-        </p>
-      </div>
-    </div>
-  );
+  return <GatewaySettings />;
 }
 
 function AppContent() {

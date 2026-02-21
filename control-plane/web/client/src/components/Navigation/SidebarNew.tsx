@@ -1,5 +1,4 @@
 import { NavLink } from "react-router-dom";
-import { useState } from "react";
 
 import type { NavigationSection } from "./types";
 import {
@@ -27,6 +26,7 @@ import { Icon } from "@/components/ui/icon";
 import { ChevronDown } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantStore } from "@/stores/tenantStore";
 
 // Hanzo "H" logo mark — geometric H from official brand assets.
 function HanzoLogo({ className }: { className?: string }) {
@@ -41,18 +41,6 @@ function HanzoLogo({ className }: { className?: string }) {
   );
 }
 
-const ORGS = [
-  { id: "hanzo", name: "Hanzo" },
-  { id: "lux", name: "Lux" },
-  { id: "zoo", name: "Zoo" },
-];
-
-const PROJECTS = [
-  { id: "default", name: "Default" },
-  { id: "staging", name: "Staging" },
-  { id: "production", name: "Production" },
-];
-
 interface SidebarNewProps {
   sections: NavigationSection[];
 }
@@ -61,15 +49,13 @@ export function SidebarNew({ sections }: SidebarNewProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const { isAuthenticated, authRequired, clearAuth } = useAuth();
-  const [activeOrg, setActiveOrg] = useState(ORGS[0]);
-  const [activeProject, setActiveProject] = useState(PROJECTS[0]);
+  const orgId = useTenantStore((s) => s.orgId);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
-      {/* Header — Hanzo logo + org/project selectors */}
+      {/* Header — Hanzo logo */}
       <SidebarHeader className="pb-2 border-b border-border/40">
         <SidebarMenu>
-          {/* Brand row */}
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="active:scale-[0.98] transition-transform">
               <NavLink to="/dashboard">
@@ -82,68 +68,6 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                 </div>
               </NavLink>
             </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          {/* Org selector */}
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  className="h-8 text-[13px] justify-between"
-                  tooltip={isCollapsed ? `Org: ${activeOrg.name}` : undefined}
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon name="users" size={14} className="text-muted-foreground" />
-                    <span className="truncate">{activeOrg.name}</span>
-                  </span>
-                  <ChevronDown size={12} className="text-muted-foreground shrink-0" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start" className="w-48">
-                <DropdownMenuLabel>Organization</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {ORGS.map((org) => (
-                  <DropdownMenuItem
-                    key={org.id}
-                    onClick={() => setActiveOrg(org)}
-                    className={cn(org.id === activeOrg.id && "bg-accent")}
-                  >
-                    {org.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-
-          {/* Project selector */}
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  className="h-8 text-[13px] justify-between"
-                  tooltip={isCollapsed ? `Project: ${activeProject.name}` : undefined}
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon name="package" size={14} className="text-muted-foreground" />
-                    <span className="truncate">{activeProject.name}</span>
-                  </span>
-                  <ChevronDown size={12} className="text-muted-foreground shrink-0" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start" className="w-48">
-                <DropdownMenuLabel>Project</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {PROJECTS.map((proj) => (
-                  <DropdownMenuItem
-                    key={proj.id}
-                    onClick={() => setActiveProject(proj)}
-                    className={cn(proj.id === activeProject.id && "bg-accent")}
-                  >
-                    {proj.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -202,10 +126,9 @@ export function SidebarNew({ sections }: SidebarNewProps) {
         ))}
       </SidebarContent>
 
-      {/* Footer — user menu + links */}
+      {/* Footer — user menu */}
       <SidebarFooter className="border-t border-border/40 pt-2">
         <SidebarMenu>
-          {/* User dropdown */}
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -221,7 +144,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                       {isAuthenticated ? "User" : "Not signed in"}
                     </span>
                     <span className="truncate text-[10px] text-muted-foreground">
-                      {activeOrg.name}
+                      {orgId || "Hanzo"}
                     </span>
                   </div>
                   <ChevronDown size={12} className="text-muted-foreground shrink-0" />

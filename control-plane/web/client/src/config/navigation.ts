@@ -100,6 +100,13 @@ export const navigationSections: NavigationSection[] = [
     title: 'Settings',
     items: [
       {
+        id: 'gateway',
+        label: 'Gateway',
+        href: '/settings',
+        icon: 'link',
+        description: 'Connect to a local or remote bot gateway'
+      },
+      {
         id: 'observability-webhook',
         label: 'Observability Webhook',
         href: '/settings/observability-webhook',

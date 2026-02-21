@@ -20,6 +20,8 @@ import {
   Question,
   Bot,
   Users,
+  Link,
+  RadioTower,
 } from "@/components/ui/icon-bridge";
 import type { IconComponent, IconWeight } from "@/components/ui/icon-bridge";
 
@@ -44,6 +46,8 @@ const icons = {
   support: Question,
   bot: Bot,
   users: Users,
+  link: Link,
+  broadcast: RadioTower,
 } as const;
 
 export interface IconProps {

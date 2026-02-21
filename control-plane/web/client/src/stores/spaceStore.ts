@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { spaceApi, type Space, type SpaceNode, type SpaceBot } from '@/services/spaceApi';
+import { spaceApi, type Space, type SpaceNode, type SpaceBot, type SpaceMember } from '@/services/spaceApi';
+import { teamPlatformStorage } from '@/services/teamPlatformApi';
 
 interface SpaceState {
   // Active space
@@ -10,6 +11,7 @@ interface SpaceState {
   spaces: Space[];
   nodes: SpaceNode[];
   bots: SpaceBot[];
+  members: SpaceMember[];
 
   // Loading
   loading: boolean;
@@ -30,6 +32,11 @@ interface SpaceState {
   createBot: (data: { node_id: string; name: string; model?: string; view?: string }) => Promise<SpaceBot>;
   removeBot: (botId: string) => Promise<void>;
 
+  // Members
+  fetchMembers: () => Promise<void>;
+  addMember: (userId: string, role: string) => Promise<void>;
+  removeMember: (userId: string) => Promise<void>;
+
   // Reset
   reset: () => void;
 }
@@ -42,16 +49,40 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
   spaces: [],
   nodes: [],
   bots: [],
+  members: [],
   loading: false,
 
   fetchSpaces: async () => {
     set({ loading: true });
     try {
-      const { spaces } = await spaceApi.list();
+      let { spaces } = await spaceApi.list();
+
+      // Auto-create a default space when none exist
+      if (spaces.length === 0) {
+        try {
+          const defaultSpace = await spaceApi.create({ name: 'Default', description: 'Auto-created workspace' });
+          spaces = [defaultSpace];
+        } catch {
+          // Auto-create failed — continue with empty list
+        }
+      }
+
       set({ spaces, loading: false });
 
-      // Auto-select first space if none active
       const { activeSpaceId } = get();
+
+      // If previously active space was deleted, fall back to first available
+      if (activeSpaceId && !spaces.find(s => s.id === activeSpaceId)) {
+        if (spaces.length > 0) {
+          await get().setActiveSpace(spaces[0].id);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+          set({ activeSpaceId: null, activeSpace: null, nodes: [], bots: [], members: [] });
+        }
+        return;
+      }
+
+      // Auto-select first space if none active
       if (!activeSpaceId && spaces.length > 0) {
         await get().setActiveSpace(spaces[0].id);
       } else if (activeSpaceId) {
@@ -71,8 +102,8 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     try {
       const space = await spaceApi.get(id);
       set({ activeSpaceId: id, activeSpace: space });
-      // Refresh nodes and bots for the new space
-      await Promise.all([get().fetchNodes(), get().fetchBots()]);
+      // Refresh nodes, bots, and members for the new space
+      await Promise.all([get().fetchNodes(), get().fetchBots(), get().fetchMembers()]);
     } catch {
       set({ activeSpaceId: id });
     }
@@ -86,9 +117,10 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
 
   deleteSpace: async (id: string) => {
     await spaceApi.delete(id);
+    teamPlatformStorage.remove(id);
     set(s => ({
       spaces: s.spaces.filter(sp => sp.id !== id),
-      ...(s.activeSpaceId === id ? { activeSpaceId: null, activeSpace: null, nodes: [], bots: [] } : {}),
+      ...(s.activeSpaceId === id ? { activeSpaceId: null, activeSpace: null, nodes: [], bots: [], members: [] } : {}),
     }));
   },
 
@@ -140,6 +172,29 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     set(s => ({ bots: s.bots.filter(b => b.bot_id !== botId) }));
   },
 
+  fetchMembers: async () => {
+    const { activeSpaceId } = get();
+    if (!activeSpaceId) return;
+    try {
+      const { members } = await spaceApi.listMembers(activeSpaceId);
+      set({ members });
+    } catch { /* ignore */ }
+  },
+
+  addMember: async (userId: string, role: string) => {
+    const { activeSpaceId } = get();
+    if (!activeSpaceId) throw new Error('No active space');
+    const member = await spaceApi.addMember(activeSpaceId, { user_id: userId, role });
+    set(s => ({ members: [member, ...s.members] }));
+  },
+
+  removeMember: async (userId: string) => {
+    const { activeSpaceId } = get();
+    if (!activeSpaceId) return;
+    await spaceApi.removeMember(activeSpaceId, userId);
+    set(s => ({ members: s.members.filter(m => m.user_id !== userId) }));
+  },
+
   reset: () => {
     localStorage.removeItem(STORAGE_KEY);
     set({
@@ -148,6 +203,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       spaces: [],
       nodes: [],
       bots: [],
+      members: [],
       loading: false,
     });
   },

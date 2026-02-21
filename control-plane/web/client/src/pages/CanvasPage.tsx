@@ -30,9 +30,15 @@ export function CanvasPage() {
   const activeSpace = useSpaceStore((s) => s.activeSpace);
   const spaceBots = useSpaceStore((s) => s.bots);
   const fetchBots = useSpaceStore((s) => s.fetchBots);
+  const fetchSpaces = useSpaceStore((s) => s.fetchSpaces);
 
   // Restore persisted canvas on mount
   useEffect(() => { restore(); }, [restore]);
+
+  // Bootstrap spaces on direct navigation (e.g. /playground)
+  useEffect(() => {
+    if (!activeSpace) fetchSpaces();
+  }, [activeSpace, fetchSpaces]);
 
   // Fetch space bots when space is active
   useEffect(() => {
