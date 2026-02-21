@@ -1,6 +1,7 @@
 import {
   Activity,
   Analytics,
+  Chat,
   CheckmarkFilled,
   Code,
   Copy,
@@ -9,7 +10,8 @@ import {
   Time,
   View,
 } from "../components/ui/icon-bridge";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import { useParams } from "react-router-dom";
 import { DIDIdentityBadge } from "../components/did/DIDDisplay";
 import { Badge } from "../components/ui/badge";
@@ -66,6 +68,9 @@ export function BotDetailPage() {
     "formatted"
   );
   const executionQueueRef = useRef<ExecutionQueueRef | null>(null);
+  const chatIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const { apiKey } = useAuth();
+  const [activeView, setActiveView] = useState<"execute" | "chat">("execute");
 
   // History and metrics
   const [history, setHistory] = useState<ExecutionHistory | null>(null);
@@ -75,6 +80,18 @@ export function BotDetailPage() {
   const [formData, setFormData] = useState<any>({});
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
+
+  const gatewayOrigin = (import.meta.env.VITE_BOT_GATEWAY_URL as string) || "https://gw.hanzo.bot";
+
+  // Send IAM token to embedded Bot Control UI via postMessage
+  const handleIframeLoad = useCallback(() => {
+    const iframe = chatIframeRef.current;
+    if (!iframe?.contentWindow || !apiKey) return;
+    iframe.contentWindow.postMessage(
+      { type: "hanzo:iam-token", token: apiKey },
+      gatewayOrigin,
+    );
+  }, [apiKey, gatewayOrigin]);
 
   useEffect(() => {
     loadBotDetails();
@@ -241,6 +258,26 @@ export function BotDetailPage() {
                   : "unknown"
               }
             />
+            <div className="flex items-center gap-2">
+              <Button
+                variant={activeView === "execute" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveView("execute")}
+                className="flex items-center gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Execute
+              </Button>
+              <Button
+                variant={activeView === "chat" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveView("chat")}
+                className="flex items-center gap-2"
+              >
+                <Chat className="h-4 w-4" />
+                Live Chat
+              </Button>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -273,6 +310,25 @@ export function BotDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Chat View — Bot Control UI iframe */}
+      {activeView === "chat" && (
+        <Card className="card-elevated">
+          <CardContent className="p-0">
+            <iframe
+              ref={chatIframeRef}
+              src={`${gatewayOrigin}/?token=${encodeURIComponent(apiKey || "")}`}
+              onLoad={handleIframeLoad}
+              style={{ width: "100%", height: "calc(100vh - 240px)", border: "none" }}
+              allow="clipboard-write"
+              title="Bot Control UI"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Execute View */}
+      {activeView === "execute" && <>
 
       {/* Quick Stats */}
       {metrics && (
@@ -543,6 +599,8 @@ export function BotDetailPage() {
           </Tabs>
         </div>
       </ResponsiveGrid>
+
+      </>}
     </div>
   );
 }
