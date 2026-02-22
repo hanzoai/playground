@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures';
 import { AllBotsPage } from '../../page-objects/all-bots.page';
 import { BotDetailPage } from '../../page-objects/bot-detail.page';
 import { CommerceHelper } from '../../helpers/commerce-api.helper';

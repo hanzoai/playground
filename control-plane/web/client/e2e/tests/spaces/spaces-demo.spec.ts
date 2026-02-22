@@ -150,6 +150,13 @@ async function setupMocks(page: Page) {
 }
 
 test.describe('Spaces Features Demo (mocked)', () => {
+  test.beforeEach(async () => {
+    // This test requires a local dev server on localhost:5173
+    const e2eBaseURL = process.env.E2E_BASE_URL || '';
+    if (e2eBaseURL && !e2eBaseURL.includes('localhost')) {
+      test.skip(true, 'Spaces demo requires local dev server at localhost:5173');
+    }
+  });
 
   test('Full walkthrough', async ({ page }) => {
     // Log console errors for debugging

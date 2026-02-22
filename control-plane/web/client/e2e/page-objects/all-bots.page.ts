@@ -41,9 +41,9 @@ export class AllBotsPage {
     this.refreshButton = page.getByRole('button', { name: /refresh/i });
 
     this.searchInput = page.locator('input[placeholder*="Search bots" i]');
-    this.onlineFilterButton = page.getByRole('button', { name: /^online$/i });
-    this.allFilterButton = page.getByRole('button', { name: /^all$/i });
-    this.offlineFilterButton = page.getByRole('button', { name: /^offline$/i });
+    this.onlineFilterButton = page.getByRole('button', { name: /^online\b/i });
+    this.allFilterButton = page.getByRole('button', { name: /^all\b/i });
+    this.offlineFilterButton = page.getByRole('button', { name: /^offline\b/i });
     this.clearFiltersLink = page.getByText(/clear filters/i);
 
     this.botCards = page.locator('[role="button"][aria-label*="View bot"]');
@@ -52,7 +52,8 @@ export class AllBotsPage {
   }
 
   async goto() {
-    await this.page.goto('/bots/all', { waitUntil: 'networkidle' });
+    // Use 'domcontentloaded' — the bots page has SSE connections that prevent 'networkidle'
+    await this.page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
   }
 
   async expectPageLoaded() {
@@ -109,7 +110,7 @@ export class AllBotsPage {
   }
 
   async refresh() {
-    await this.refreshButton.click();
+    await this.refreshButton.first().click();
     await this.page.waitForTimeout(1_000);
   }
 }

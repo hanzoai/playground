@@ -48,9 +48,9 @@ export class TopNavigationPage {
     this.sidebarLogo = page.getByText(/hanzo bot/i).first();
     this.sidebarVersion = page.getByText(/v\d+\.\d+\.\d+/);
 
-    // Sidebar nav links — using both text and href matching
-    this.dashboardLink = page.getByRole('link', { name: /dashboard/i });
-    this.botsLink = page.getByRole('link', { name: /^bots$/i });
+    // Sidebar nav links — use href + text to avoid matching logo/breadcrumb duplicates
+    this.dashboardLink = page.locator('a[href="/dashboard"]').filter({ hasText: 'Dashboard' });
+    this.botsLink = page.locator('a[href="/bots/all"]');
     this.nodesLink = page.getByRole('link', { name: /^node$/i });
     this.executionsLink = page.getByRole('link', { name: /individual executions/i });
     this.workflowsLink = page.getByRole('link', { name: /workflow executions/i });

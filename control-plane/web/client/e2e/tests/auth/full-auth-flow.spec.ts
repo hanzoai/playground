@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures';
 import { LoginPage } from '../../page-objects/login.page';
 import { extractTokenFromPage } from '../../helpers/iam-auth.helper';
 
@@ -48,9 +48,10 @@ test.describe('Full Authentication Flow', () => {
     const payload = JSON.parse(Buffer.from(token!.split('.')[1], 'base64').toString());
 
     // IAM JWT should contain standard claims
-    expect(payload).toHaveProperty('sub'); // user ID
+    // hanzo.id JWTs use 'name' (username) and 'iss' / 'exp'
     expect(payload).toHaveProperty('iss'); // issuer (hanzo.id)
     expect(payload).toHaveProperty('exp'); // expiration
+    expect(payload.name || payload.sub).toBeTruthy(); // user identifier
 
     // Should contain email if available in claims
     const email = process.env.E2E_IAM_USER_EMAIL;
@@ -80,14 +81,14 @@ test.describe('Full Authentication Flow', () => {
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
     await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.goto('/bots/all', { waitUntil: 'networkidle' });
+    await page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/bots\/all/);
 
     // Still no auth guard
     const authGuard = page.getByRole('button', { name: /sign in with hanzo/i });
     await expect(authGuard).not.toBeVisible({ timeout: 5_000 });
 
-    await page.goto('/executions', { waitUntil: 'networkidle' });
+    await page.goto('/executions', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/executions/);
   });
 });

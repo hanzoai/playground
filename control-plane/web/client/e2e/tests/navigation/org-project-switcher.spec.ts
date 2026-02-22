@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures';
 import { TopNavigationPage } from '../../page-objects/top-navigation.page';
 
 /**
@@ -56,10 +56,10 @@ test.describe('Org & Project Switcher', () => {
   });
 
   test('breadcrumb updates on navigation', async ({ page }) => {
-    await page.goto('/bots/all', { waitUntil: 'networkidle' });
+    await page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
     await nav.expectBreadcrumbContains('Bots');
 
-    await page.goto('/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     // Dashboard breadcrumb may show "Home" or "Dashboard"
   });
 

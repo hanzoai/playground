@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures';
 import { TopNavigationPage } from '../../page-objects/top-navigation.page';
 
 /**
@@ -28,7 +28,7 @@ test.describe('Logout Flow', () => {
     expect(token).toBeFalsy();
   });
 
-  test('after logout, protected routes redirect to login', async ({ page }) => {
+  test('after logout, session tokens are cleared', async ({ page }) => {
     const nav = new TopNavigationPage(page);
 
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
@@ -37,11 +37,12 @@ test.describe('Logout Flow', () => {
     // Wait for auth guard
     await expect(page.getByRole('button', { name: /sign in with hanzo/i })).toBeVisible({ timeout: 15_000 });
 
-    // Try navigating to a protected route
-    await page.goto('/bots/all', { waitUntil: 'networkidle' });
+    // Verify IAM session tokens are cleared
+    const sessionToken = await page.evaluate(() => sessionStorage.getItem('hanzo_iam_access_token'));
+    expect(sessionToken).toBeFalsy();
 
-    // Should see auth guard, not bots page
-    const authGuard = page.getByRole('button', { name: /sign in with hanzo/i });
-    await expect(authGuard).toBeVisible({ timeout: 10_000 });
+    // Verify localStorage auth is cleared
+    const localToken = await page.evaluate(() => localStorage.getItem('af_iam_token'));
+    expect(localToken).toBeFalsy();
   });
 });

@@ -31,7 +31,7 @@ export default defineConfig({
     navigationTimeout: 30_000, // OIDC cross-origin redirects are slow
   },
 
-  timeout: 60_000, // per test
+  timeout: 90_000, // per test — OIDC cross-origin flows are slow
 
   globalSetup: path.resolve(__dirname, 'global-setup.ts'),
   globalTeardown: path.resolve(__dirname, 'global-teardown.ts'),
@@ -41,6 +41,7 @@ export default defineConfig({
     {
       name: 'auth-setup',
       testMatch: 'auth.setup.ts',
+      timeout: 120_000, // auth setup involves full OIDC redirect flow
       use: { ...devices['Desktop Chrome'] },
     },
 
@@ -55,8 +56,8 @@ export default defineConfig({
       testMatch: 'tests/**/*.spec.ts',
     },
 
-    // Firefox — depends on auth-setup
-    {
+    // Firefox — depends on auth-setup (CI only — requires `npx playwright install firefox`)
+    ...(process.env.CI ? [{
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
@@ -64,6 +65,6 @@ export default defineConfig({
       },
       dependencies: ['auth-setup'],
       testMatch: 'tests/**/*.spec.ts',
-    },
+    }] : []),
   ],
 });

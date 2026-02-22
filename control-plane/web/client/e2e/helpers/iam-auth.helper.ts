@@ -136,33 +136,13 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   await submitButton.first().click();
   console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
-  // Wait for redirect back to app
+  // Wait for redirect back to app callback
   await page.waitForURL(`${baseURL}/**`, { timeout: 30_000 });
-  console.log(`[e2e] Back on app: ${page.url()}`);
+  console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
 
-  // Give the callback page time to process (exchange code for tokens, then navigate)
-  await page.waitForTimeout(3_000);
-  console.log(`[e2e] After 3s wait: ${page.url()}`);
-
-  // Check for auth errors
-  const errorText = await page.locator('.text-destructive, [class*="error"]').textContent().catch(() => null);
-  if (errorText) {
-    console.log(`[e2e] Error on page: ${errorText}`);
-  }
-
-  // Check sessionStorage for tokens
-  const hasAccessToken = await page.evaluate(() => {
-    return {
-      sessionToken: sessionStorage.getItem('hanzo_iam_access_token'),
-      localToken: localStorage.getItem('af_iam_token'),
-      url: window.location.href,
-    };
-  });
-  console.log(`[e2e] Token state: session=${!!hasAccessToken.sessionToken}, local=${!!hasAccessToken.localToken}, url=${hasAccessToken.url}`);
-
-  // Wait for dashboard or any authenticated route
-  await page.waitForURL(/\/(dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
-    timeout: 30_000,
+  // Wait for callback to process tokens and redirect to dashboard
+  await page.waitForURL(/\/(playground|dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
+    timeout: 60_000,
   });
 
   console.log(`[e2e] Login complete — landed on: ${page.url()}`);
