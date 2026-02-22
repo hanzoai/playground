@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.39] - 2026-02-22
+
+
+### Other
+
+- Use @hanzo/iam from git for implicit flow support
+
+Pin to hanzo-js/iam#main which includes handleCallback
+support for implicit flow (access_token in URL), needed
+for compatibility with the Cloudflare login page. (9cdc14d)
+
 ## [0.1.41-rc.38] - 2026-02-21
 
 
