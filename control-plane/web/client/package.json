@@ -68,7 +68,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "@hanzo/iam"
     ]
   },
   "devDependencies": {
