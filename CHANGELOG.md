@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.40] - 2026-02-22
+
+
+### Other
+
+- Update lockfile for @hanzo/iam git dependency
+
+Add @hanzo/iam to onlyBuiltDependencies so pnpm allows
+the git-hosted package to run its build scripts. (401bfc9)
+
 ## [0.1.41-rc.39] - 2026-02-22
 
 
