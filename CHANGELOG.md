@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.42] - 2026-02-22
+
+
+### Other
+
+- Fix e2e tests for IAM sessionStorage auth and production UI
+
+- Create custom test fixture that injects IAM tokens from sessionStorage
+  (Playwright storageState only captures cookies + localStorage)
+- Save IAM session tokens to separate file in auth.setup.ts
+- Fix networkidle timeout on /bots/all (SSE prevents idle state)
+- Fix page object selectors for filter buttons, sidebar links, refresh
+- Fix JWT claims test for hanzo.id token format (name vs sub)
+- Add graceful skip for Commerce API when unavailable
+- Skip spaces demo test when not running against local dev server
+- Conditionally include Firefox project (CI only) (3a46188)
+
 ## [0.1.41-rc.41] - 2026-02-22
 
 
