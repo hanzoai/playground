@@ -1,8 +1,10 @@
 import { test as setup } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
 import { ensureTestAccount, performBrowserLogin } from './helpers/iam-auth.helper';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authFile = path.resolve(__dirname, '.auth', 'user.json');
 
 /**

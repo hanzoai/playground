@@ -16,13 +16,15 @@ const IAM_REDIRECT_URI = import.meta.env.VITE_IAM_REDIRECT_URI as string | undef
 /** Whether IAM auth mode is active (determined by env vars). */
 export const isIamMode = !!(IAM_SERVER_URL && IAM_CLIENT_ID);
 
+const basePath = (import.meta.env.VITE_BASE_PATH || "").replace(/\/+$/, "");
+
 const iamConfig = isIamMode
   ? {
       serverUrl: IAM_SERVER_URL!,
       clientId: IAM_CLIENT_ID!,
       redirectUri:
         IAM_REDIRECT_URI ||
-        `${window.location.origin}${import.meta.env.VITE_BASE_PATH || "/"}/auth/callback`,
+        `${window.location.origin}${basePath}/auth/callback`,
     }
   : null;
 

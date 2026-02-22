@@ -1,8 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Load .env.e2e from client root
-const dotenv = require('dotenv');
 dotenv.config({ path: path.resolve(__dirname, '..', '.env.e2e') });
 
 const baseURL = process.env.E2E_BASE_URL || 'https://app.hanzo.bot';

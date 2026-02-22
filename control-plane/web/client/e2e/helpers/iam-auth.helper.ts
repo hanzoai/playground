@@ -89,19 +89,30 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   const cfg = getConfig();
   const baseURL = process.env.E2E_BASE_URL || 'https://app.hanzo.bot';
 
+  // Capture browser console for diagnostics
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' || msg.type() === 'warn') {
+      console.log(`[browser ${msg.type()}] ${msg.text()}`);
+    }
+  });
+  page.on('pageerror', (err) => console.log(`[browser exception] ${err.message}`));
+
   // Navigate to app — should see AuthGuard
+  console.log(`[e2e] Navigating to ${baseURL}`);
   await page.goto(baseURL, { waitUntil: 'networkidle' });
+  console.log(`[e2e] Loaded: ${page.url()}`);
 
   // Click "Sign in with Hanzo" — triggers OIDC redirect to hanzo.id
   const signInButton = page.getByRole('button', { name: /sign in with hanzo/i });
   await expect(signInButton).toBeVisible({ timeout: 15_000 });
   await signInButton.click();
+  console.log(`[e2e] Clicked sign-in, waiting for hanzo.id redirect...`);
 
-  // Wait for redirect to hanzo.id — Casdoor login page
+  // Wait for redirect to hanzo.id login page
   await page.waitForURL(`${cfg.serverUrl}/**`, { timeout: 30_000 });
+  console.log(`[e2e] On hanzo.id: ${page.url()}`);
 
-  // Fill the Casdoor login form
-  // Casdoor uses standard form fields — try multiple selectors for robustness
+  // Fill the login form
   const emailInput =
     page.locator('input[name="username"]').or(
     page.locator('input[name="email"]')).or(
@@ -115,25 +126,46 @@ export async function performBrowserLogin(page: Page): Promise<void> {
 
   await emailInput.first().fill(cfg.email, { timeout: 15_000 });
   await passwordInput.first().fill(cfg.password);
+  console.log(`[e2e] Filled credentials`);
 
-  // Submit — look for login/signin button
+  // Submit
   const submitButton =
     page.getByRole('button', { name: /sign in|log in|login|submit/i }).or(
     page.locator('button[type="submit"]'));
 
   await submitButton.first().click();
+  console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
-  // Wait for redirect back to app's /auth/callback, then to dashboard
-  // The callback page exchanges code for tokens and redirects to /
+  // Wait for redirect back to app
   await page.waitForURL(`${baseURL}/**`, { timeout: 30_000 });
+  console.log(`[e2e] Back on app: ${page.url()}`);
 
-  // Verify we're past the auth guard — dashboard or any authenticated page
-  // The app redirects / to /dashboard
+  // Give the callback page time to process (exchange code for tokens, then navigate)
+  await page.waitForTimeout(3_000);
+  console.log(`[e2e] After 3s wait: ${page.url()}`);
+
+  // Check for auth errors
+  const errorText = await page.locator('.text-destructive, [class*="error"]').textContent().catch(() => null);
+  if (errorText) {
+    console.log(`[e2e] Error on page: ${errorText}`);
+  }
+
+  // Check sessionStorage for tokens
+  const hasAccessToken = await page.evaluate(() => {
+    return {
+      sessionToken: sessionStorage.getItem('hanzo_iam_access_token'),
+      localToken: localStorage.getItem('af_iam_token'),
+      url: window.location.href,
+    };
+  });
+  console.log(`[e2e] Token state: session=${!!hasAccessToken.sessionToken}, local=${!!hasAccessToken.localToken}, url=${hasAccessToken.url}`);
+
+  // Wait for dashboard or any authenticated route
   await page.waitForURL(/\/(dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
     timeout: 30_000,
   });
 
-  console.log(`Login complete — landed on: ${page.url()}`);
+  console.log(`[e2e] Login complete — landed on: ${page.url()}`);
 }
 
 /**
@@ -181,11 +213,12 @@ export async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Extract access token from browser localStorage after login.
+ * Extract access token from browser storage after login.
+ * IAM SDK stores tokens in sessionStorage with 'hanzo_iam_' prefix.
  */
 export async function extractTokenFromPage(page: Page): Promise<string | null> {
   return page.evaluate(() => {
-    // The app stores IAM token as 'af_iam_token' in localStorage
-    return localStorage.getItem('af_iam_token');
+    return sessionStorage.getItem('hanzo_iam_access_token')
+      || localStorage.getItem('af_iam_token');
   });
 }
