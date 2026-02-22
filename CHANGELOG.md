@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.41] - 2026-02-22
+
+
+### Other
+
+- Fix double-slash in OAuth redirect URI and ESM compat in e2e tests
+
+The redirect URI was constructed as `${origin}//auth/callback` (double
+slash) because VITE_BASE_PATH defaults to "/" which gets concatenated
+before "/auth/callback". This caused React Router to not match the
+/auth/callback route, silently dropping the OAuth callback and showing
+the AuthGuard instead of completing login.
+
+Also fix e2e test infrastructure:
+- Replace require() with ESM imports in playwright config
+- Add __dirname shim via import.meta.url
+- Fix token extraction to check sessionStorage (where IAM SDK stores)
+- Add diagnostic logging to login helper (f12dedb)
+
 ## [0.1.41-rc.40] - 2026-02-22
 
 
