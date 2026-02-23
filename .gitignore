@@ -5,7 +5,12 @@
 *.swp
 *.swo
 test-reports/
+
+# Environment / Secrets
 .env
+.env.local
+.env.*.local
+.env.e2e
 
 # Go
 bin/
@@ -49,7 +54,6 @@ reports/
 .docker/
 
 # Typescript
-.env
 playground/
 
 CLAUDE.md

@@ -5,7 +5,7 @@
  * Streams terminal output in real-time.
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { gateway } from '@/services/gatewayClient';
 
 interface TerminalPanelProps {
@@ -18,7 +18,7 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<import('@xterm/xterm').Terminal | null>(null);
   const fitAddonRef = useRef<import('@xterm/addon-fit').FitAddon | null>(null);
-  const unsubRef = useRef<(() => void) | undefined>();
+  const unsubRef = useRef<(() => void) | undefined>(undefined);
   const sessionKeyRef = useRef(sessionKey);
 
   // Keep sessionKey ref current without re-initializing terminal

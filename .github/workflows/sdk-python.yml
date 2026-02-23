@@ -42,11 +42,10 @@ jobs:
         run: |
           ruff check .
 
-      - name: Format (auto-fix)
+      - name: Format check
         working-directory: sdk/python
         run: |
-          ruff format .
-        continue-on-error: true
+          ruff format --check .
 
       - name: Run tests
         working-directory: sdk/python

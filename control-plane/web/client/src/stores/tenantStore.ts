@@ -39,9 +39,9 @@ export const useTenantStore = create<TenantState>((set) => ({
   })(),
   environment: (() => {
     try {
-      const stored = localStorage.getItem(STORAGE_ENV_KEY) as Environment | null;
-      if (stored === 'default') return 'production' as Environment;
-      return stored || 'production';
+      const stored = localStorage.getItem(STORAGE_ENV_KEY);
+      if (!stored || stored === 'default') return 'production' as Environment;
+      return stored as Environment;
     } catch { return 'production' as Environment; }
   })(),
 
