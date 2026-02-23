@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.81] - 2026-02-23
+
+
+### Fixed
+
+- Fix(cloud): use BOT_NODE_GATEWAY_URL env var for gateway connection (#34)
+
+CLI args were not being parsed correctly by Commander in container.
+Pass gateway URL via env var instead. Simplify nodeArgs to only pass
+--name via CLI.
+
+Requires: hanzoai/bot#14 (47660a0)
+
 ## [0.1.41-rc.80] - 2026-02-23
 
 
