@@ -634,7 +634,7 @@ func mapRunSummarySortColumn(sortBy string) string {
 }
 
 // getRunAggregation computes aggregated statistics for a single run using efficient SQL queries
-func (ls *LocalStorage) getRunAggregation(ctx context.Context, runID string) (*RunSummaryAggregation, error) {
+func (ls *LocalStorage) getRunAggregation(ctx context.Context, runID string) (*RunSummaryAggregation, error) { //nolint:unused // wired in upcoming run-detail endpoint
 	db := ls.requireSQLDB()
 
 	summary := &RunSummaryAggregation{

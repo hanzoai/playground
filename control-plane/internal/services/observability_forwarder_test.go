@@ -829,7 +829,10 @@ func TestObservabilityForwarder_FiltersNodeHeartbeats(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body) //nolint:errcheck
 		var batch types.ObservabilityEventBatch
-		_ = json.Unmarshal(body, &batch)
+		if err := json.Unmarshal(body, &batch); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		mu.Lock()
 		receivedEvents = append(receivedEvents, batch.Events...)
@@ -886,7 +889,10 @@ func TestObservabilityForwarder_FiltersBotHeartbeats(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body) //nolint:errcheck
 		var batch types.ObservabilityEventBatch
-		_ = json.Unmarshal(body, &batch)
+		if err := json.Unmarshal(body, &batch); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		mu.Lock()
 		receivedEvents = append(receivedEvents, batch.Events...)
@@ -973,7 +979,10 @@ func TestObservabilityForwarder_BatchingBySize(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body) //nolint:errcheck
 		var batch types.ObservabilityEventBatch
-		_ = json.Unmarshal(body, &batch)
+		if err := json.Unmarshal(body, &batch); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		mu.Lock()
 		batchSizes = append(batchSizes, batch.EventCount)

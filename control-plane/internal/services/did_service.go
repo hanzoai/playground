@@ -885,10 +885,10 @@ func (s *DIDService) generateBotPath(nodeID, botID string) string {
 	// Generate af server hash for derivation path
 	agentsServerHash := s.hashPlaygroundServerID(registry.PlaygroundServerID)
 
-	// Find agent index (this is a simplified approach - in production you might want to store this)
+	// Find agent index by matching node ID in the registry map
 	agentIndex := 0
-	for nodeID := range registry.Nodes {
-		if nodeID == nodeID {
+	for nid := range registry.Nodes {
+		if nid == nodeID {
 			break
 		}
 		agentIndex++
@@ -920,10 +920,10 @@ func (s *DIDService) generateSkillPath(nodeID, skillID string) string {
 	// Generate af server hash for derivation path
 	agentsServerHash := s.hashPlaygroundServerID(registry.PlaygroundServerID)
 
-	// Find agent index (this is a simplified approach - in production you might want to store this)
+	// Find agent index by matching node ID in the registry map
 	agentIndex := 0
-	for nodeID := range registry.Nodes {
-		if nodeID == nodeID {
+	for nid := range registry.Nodes {
+		if nid == nodeID {
 			break
 		}
 		agentIndex++

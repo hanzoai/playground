@@ -967,7 +967,7 @@ func buildActivityPatterns(executions []*types.Execution) ActivityPatterns {
 	return ActivityPatterns{HourlyHeatmap: heatmap}
 }
 
-func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.Node, executions []*types.Execution) EnhancedOverview {
+func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.Node, executions []*types.Execution) EnhancedOverview { //nolint:unused // wired in upcoming enhanced dashboard
 	overview := EnhancedOverview{TotalAgents: len(agents)}
 
 	for _, agent := range agents {
@@ -1038,7 +1038,7 @@ func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.
 	return overview
 }
 
-func buildExecutionTrends(now time.Time, executions []*types.Execution) ExecutionTrends {
+func buildExecutionTrends(now time.Time, executions []*types.Execution) ExecutionTrends { //nolint:unused // wired in upcoming enhanced dashboard
 	trend := ExecutionTrends{}
 	last24h := now.Add(-24 * time.Hour)
 	var total24h, success24h, failed24h int

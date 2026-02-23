@@ -22,7 +22,6 @@ import (
 type InClusterK8sClient struct {
 	apiServer string
 	token     string
-	caCert    string
 	client    *http.Client
 }
 
