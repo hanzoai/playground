@@ -67,20 +67,16 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Install Hanzo CLI
-        run: |
-          pip install hanzo
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Authenticate with Hanzo
-        env:
-          HANZO_API_KEY: ${{ secrets.HANZO_API_KEY }}
+      - name: Configure kubectl
         run: |
-          hanzo auth set-key "$HANZO_API_KEY"
+          doctl kubernetes cluster kubeconfig save do-sfo3-hanzo-k8s
 
-      - name: Deploy to Hanzo PaaS
-        env:
-          IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+      - name: Rollout restart
         run: |
-          hanzo deploy service playground \
-            --image "ghcr.io/${{ github.repository_owner }}/playground:${IMAGE_TAG}" \
-            --wait
+          kubectl -n hanzo rollout restart deployment/hanzo-playground
+          kubectl -n hanzo rollout status deployment/hanzo-playground --timeout=180s
