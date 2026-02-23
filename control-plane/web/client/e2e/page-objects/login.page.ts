@@ -79,7 +79,7 @@ export class LoginPage {
   }
 
   async waitForDashboard() {
-    await this.page.waitForURL(/\/(dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
+    await this.page.waitForURL(/\/(playground|dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
       timeout: 30_000,
     });
   }

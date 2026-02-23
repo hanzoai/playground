@@ -133,6 +133,7 @@ type PodSpec struct {
 	Args            []string
 	ControlPlaneURL string // URL for agent to connect back
 	Sidecars        []SidecarSpec
+	NodeSelector    map[string]string
 }
 
 // PodStatus represents the current state of a pod.
@@ -287,7 +288,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		// Terminal-only: lightweight ttyd for web-based terminal access
 		sidecars = append(sidecars, SidecarSpec{
 			Name:  "ttyd",
-			Image: "tsl0922/ttyd:alpine",
+			Image: "tsl0922/ttyd:1.7.7-alpine",
 			Env: map[string]string{
 				"TERM": "xterm-256color",
 			},
@@ -302,8 +303,11 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Name:  "operative",
 			Image: p.config.Kubernetes.OperativeImage,
 			Env: map[string]string{
-				"DISPLAY":    ":1",
-				"RESOLUTION": "1920x1080x24",
+				"DISPLAY":     ":1",
+				"DISPLAY_NUM": "1",
+				"RESOLUTION":  "1920x1080x24",
+				"WIDTH":       "1920",
+				"HEIGHT":      "1080",
 			},
 			Ports:    []int32{8080, 6080, 5900, 8501},
 			CPU:      "200m",
@@ -324,13 +328,14 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Annotations: map[string]string{
 			"playground.hanzo.ai/provisioned-at": time.Now().UTC().Format(time.RFC3339),
 		},
-		CPU:         cpu,
-		Memory:      memory,
-		LimitCPU:    p.config.Kubernetes.LimitCPU,
-		LimitMemory: p.config.Kubernetes.LimitMemory,
+		CPU:             cpu,
+		Memory:          memory,
+		LimitCPU:        p.config.Kubernetes.LimitCPU,
+		LimitMemory:     p.config.Kubernetes.LimitMemory,
 		Args:            []string{}, // Agent image entrypoint handles startup
 		ControlPlaneURL: fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
 		Sidecars:        sidecars,
+		NodeSelector:    p.config.Kubernetes.NodeSelector,
 	}
 
 	logger.Logger.Info().
@@ -536,7 +541,7 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 	}, nil
 }
 
-// Deprovision removes a cloud agent from the cluster.
+// Deprovision removes a cloud agent from the cluster or terminates a VM.
 func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 	p.mu.RLock()
 	node, ok := p.nodes[nodeID]
@@ -549,10 +554,27 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 	logger.Logger.Info().
 		Str("node_id", nodeID).
 		Str("pod_name", node.PodName).
+		Str("os", node.OS).
 		Msg("deprovisioning cloud agent")
 
-	if err := p.k8s.DeleteAgentPod(ctx, node.Namespace, node.PodName, p.config.Kubernetes.GracefulShutdown); err != nil {
-		return fmt.Errorf("failed to delete agent pod: %w", err)
+	// Route VM nodes (macOS/Windows) to Visor for teardown
+	os := DesktopOS(node.OS)
+	if os == OSMacOS || os == OSWindows {
+		if p.visor == nil {
+			return fmt.Errorf("visor not configured — cannot deprovision VM node %q", nodeID)
+		}
+		owner := node.Org
+		if owner == "" {
+			owner = "hanzo"
+		}
+		if err := p.visor.DeleteMachine(ctx, owner, node.PodName); err != nil {
+			return fmt.Errorf("failed to delete VM via visor: %w", err)
+		}
+	} else {
+		// Linux/terminal pods: delete via K8s API
+		if err := p.k8s.DeleteAgentPod(ctx, node.Namespace, node.PodName, p.config.Kubernetes.GracefulShutdown); err != nil {
+			return fmt.Errorf("failed to delete agent pod: %w", err)
+		}
 	}
 
 	p.mu.Lock()

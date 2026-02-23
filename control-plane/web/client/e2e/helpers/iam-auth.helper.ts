@@ -15,7 +15,7 @@ interface IamConfig {
   email: string;
   password: string;
   organization?: string; // defaults to 'hanzo'
-  application?: string;  // defaults to 'app-hanzo'
+  application?: string;  // defaults to 'app-hanzobot'
 }
 
 function getConfig(): IamConfig {
@@ -25,7 +25,7 @@ function getConfig(): IamConfig {
     email: process.env.E2E_IAM_USER_EMAIL || '',
     password: process.env.E2E_IAM_USER_PASSWORD || '',
     organization: process.env.E2E_IAM_ORGANIZATION || 'hanzo',
-    application: process.env.E2E_IAM_APPLICATION || 'app-hanzo',
+    application: process.env.E2E_IAM_APPLICATION || 'app-hanzobot',
   };
 }
 

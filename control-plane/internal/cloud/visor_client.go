@@ -246,6 +246,21 @@ func (vc *VisorClient) CreateMachine(ctx context.Context, req *VMProvisionReques
 	return result.Data, nil
 }
 
+// DeleteMachine terminates and removes a VM from Visor.
+func (vc *VisorClient) DeleteMachine(ctx context.Context, owner, name string) error {
+	machine := map[string]interface{}{
+		"owner": owner,
+		"name":  name,
+	}
+
+	deleteURL := fmt.Sprintf("%s/api/delete-machine%s", vc.config.Endpoint, vc.authQuery())
+	_, err := vc.doPost(ctx, deleteURL, machine)
+	if err != nil {
+		return fmt.Errorf("visor delete machine: %w", err)
+	}
+	return nil
+}
+
 // ProtocolForOS returns the default remote protocol for an OS.
 func ProtocolForOS(os DesktopOS) string {
 	switch os {

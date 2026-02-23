@@ -226,7 +226,7 @@ If running the **control plane in Docker** and your **Node runs outside that con
 
 **Option A (bot on your host, control plane in Docker):**
 ```bash
-docker run -p 8080:8080 playground/control-plane:latest
+docker run -p 8080:8080 hanzoai/playground:latest
 
 # Python bots (recommended)
 export PLAYGROUND_URL="http://localhost:8080"

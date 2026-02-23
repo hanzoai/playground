@@ -14,7 +14,9 @@ spec:
     spec:
       containers:
         - name: control-plane
-          image: playground/control-plane:latest
+          # Pin to a specific SHA or semver tag for production deployments.
+          # Override via kustomize patch or use the Helm chart with values.yaml.
+          image: ghcr.io/hanzoai/playground:latest
           args: ["server", "--open=false"]
           ports:
             - name: http

@@ -315,7 +315,7 @@ See `control-plane/.env.example` for comprehensive list. Key vars:
 ### Architecture
 - **Linux agents**: K8s pod (agent container + operative sidecar for desktop)
 - **Mac/Windows agents**: Provisioned via Visor (CasVisor) for real VM management
-- Multi-container pods: `ghcr.io/hanzoai/bot:latest` (agent) + `ghcr.io/hanzoai/operative:latest` (desktop sidecar)
+- Multi-container pods: `ghcr.io/hanzoai/bot:2026.2.23` (agent) + `ghcr.io/hanzoai/operative:v0.1.0` (desktop sidecar)
 
 ### Cloud Provisioning API
 ```

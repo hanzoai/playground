@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,18 +11,20 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	"gopkg.in/yaml.v3"
 
+	"github.com/hanzoai/playground/control-plane/internal/secrets"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
 // Config holds the entire configuration for the Playground server.
 type Config struct {
-	Agents   PlaygroundConfig  `yaml:"agents" mapstructure:"agents"`
-	Features FeatureConfig `yaml:"features" mapstructure:"features"`
-	Storage  StorageConfig `yaml:"storage" mapstructure:"storage"`
-	UI       UIConfig      `yaml:"ui" mapstructure:"ui"`
-	API      APIConfig     `yaml:"api" mapstructure:"api"`
-	Cloud    CloudConfig   `yaml:"cloud" mapstructure:"cloud"`
-	IAM      IAMConfig     `yaml:"iam" mapstructure:"iam"`
+	Agents   PlaygroundConfig `yaml:"agents" mapstructure:"agents"`
+	Features FeatureConfig    `yaml:"features" mapstructure:"features"`
+	Storage  StorageConfig    `yaml:"storage" mapstructure:"storage"`
+	UI       UIConfig         `yaml:"ui" mapstructure:"ui"`
+	API      APIConfig        `yaml:"api" mapstructure:"api"`
+	Cloud    CloudConfig      `yaml:"cloud" mapstructure:"cloud"`
+	IAM      IAMConfig        `yaml:"iam" mapstructure:"iam"`
+	Secrets  secrets.Config   `yaml:"secrets" mapstructure:"secrets"`
 }
 
 // UIConfig holds configuration for the web UI.
@@ -204,9 +207,20 @@ func LoadConfig(configPath string) (*Config, error) {
 		cfg.IAM = DefaultIAMConfig()
 	}
 
+	// Apply defaults for the secrets subsystem.
+	if cfg.Secrets.Provider == "" {
+		cfg.Secrets = secrets.DefaultConfig()
+	}
+
 	// Apply environment variable overrides
 	applyEnvOverrides(&cfg)
 	applyCloudEnvOverrides(&cfg)
+
+	// Resolve any secret:// references in sensitive config fields via the
+	// configured secrets provider (env vars by default).
+	if err := resolveSecrets(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to resolve secrets: %w", err)
+	}
 
 	return &cfg, nil
 }
@@ -258,4 +272,44 @@ func applyEnvOverrides(cfg *Config) {
 			cfg.Agents.NodeHealth.HeartbeatStaleThreshold = d
 		}
 	}
+
+	// Secrets provider type override
+	if val := envWithFallback("SECRETS_PROVIDER"); val != "" {
+		cfg.Secrets.Provider = secrets.ProviderType(val)
+	}
+}
+
+// resolveSecrets walks the sensitive config fields and resolves any that carry
+// the "secret://" prefix through the configured secrets.Provider.  Plain-text
+// values (including those already set via env-var overrides) pass through
+// unchanged, preserving full backward compatibility.
+func resolveSecrets(cfg *Config) error {
+	provider, err := secrets.NewProvider(cfg.Secrets)
+	if err != nil {
+		return err
+	}
+
+	resolver := secrets.NewResolver(provider)
+	ctx := context.Background()
+
+	// Resolve each sensitive field.  When the field value does not start with
+	// "secret://" the resolver returns it verbatim, so this is always safe.
+	fields := []*string{
+		&cfg.API.Auth.APIKey,
+		&cfg.Cloud.Kubernetes.CloudAPIKey,
+		&cfg.Cloud.Visor.ClientID,
+		&cfg.Cloud.Visor.ClientSecret,
+		&cfg.IAM.ClientID,
+		&cfg.IAM.ClientSecret,
+	}
+
+	for _, f := range fields {
+		resolved, resolveErr := resolver.Resolve(ctx, *f)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		*f = resolved
+	}
+
+	return nil
 }
