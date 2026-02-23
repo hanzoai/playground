@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.75] - 2026-02-23
+
+
+### Fixed
+
+- Fix(cloud): simplify provisioner auth — remove iamConfig, fix duplicate NODE_OPTIONS (#27)
+
+Remove IAMConfig from Provisioner since cloud bots now use token auth
+mode (BOT_GATEWAY_AUTH_MODE=token) instead of IAM. The bot gateway fix
+in hanzoai/bot respects BOT_GATEWAY_AUTH_MODE as explicit override over
+HANZO_PLAYGROUND_CLOUD_NODE auto-detection.
+
+Also removes duplicate NODE_OPTIONS assignment. (d914818)
+
 ## [0.1.41-rc.74] - 2026-02-23
 
 
