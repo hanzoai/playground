@@ -200,23 +200,25 @@ export function CanvasFlow({ className }: { className?: string }) {
           className="!bg-background"
         />
         <MiniMap
-          className="!rounded-xl !shadow-lg !border !border-border/40 !overflow-hidden hidden md:block"
-          style={{ backgroundColor: 'var(--card)' }}
-          maskColor="color-mix(in oklch, var(--muted) 40%, transparent)"
+          className="canvas-minimap hidden md:block"
+          style={{ backgroundColor: '#161616', width: 180, height: 120 }}
+          maskColor="rgba(0, 0, 0, 0.55)"
+          maskStrokeColor="rgba(255, 255, 255, 0.15)"
+          maskStrokeWidth={1}
           nodeColor={(node) => {
             if (node.type === 'starter') return '#6b7280';
-            if (node.type === 'team') return '#6366f1';
+            if (node.type === 'team') return '#818cf8';
             const status = (node.data as Record<string, unknown>)?.status as string;
-            if (status === 'busy') return '#22c55e';
-            if (status === 'error') return '#ef4444';
-            if (status === 'waiting') return '#eab308';
-            if (status === 'provisioning') return '#a855f7';
+            if (status === 'busy') return '#34d399';
+            if (status === 'error') return '#f87171';
+            if (status === 'waiting') return '#fbbf24';
+            if (status === 'provisioning') return '#c084fc';
             if (status === 'offline') return '#6b7280';
-            return '#3b82f6';
+            return '#60a5fa';
           }}
-          nodeStrokeColor="transparent"
-          nodeStrokeWidth={0}
-          nodeBorderRadius={4}
+          nodeStrokeColor="rgba(255, 255, 255, 0.08)"
+          nodeStrokeWidth={1}
+          nodeBorderRadius={3}
           pannable
           zoomable
         />
