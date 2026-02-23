@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.62] - 2026-02-23
+
+
+### Fixed
+
+- Fix: remove tenant params from gateway connect and fix node lifecycle status
+
+1. Remove tenant params from gateway ConnectParams — the gateway does
+   not require org membership for operator connections, and including
+   them causes tenant_org_not_member rejections for IAM users.
+
+2. Fix mergeGatewayNodes to use lifecycle_status 'ready' instead of
+   'running'. The NodesVirtualList categorizes nodes as online only
+   when lifecycle_status is 'ready' or 'degraded', so gateway nodes
+   with 'running' were incorrectly grouped under "Offline". (697b07c)
+
 ## [0.1.41-rc.61] - 2026-02-23
 
 
