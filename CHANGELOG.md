@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.73] - 2026-02-23
+
+
+### Other
+
+- Add per-user billing, credit balance UI, and cloud agent OOM fix (#22)
+
+* Fix cloud agent OOM crash and default to api.hanzo.ai
+
+- Add NODE_OPTIONS=--max-old-space-size to provisioned pods, scaling V8
+  heap based on container memory limit (reserves 128MB for OS overhead)
+- Increase terminal-only memory from 384Mi to 512Mi (bot image minimum)
+- Default CloudAPIEndpoint to https://api.hanzo.ai/v1 instead of
+  internal cluster URL
+- Add HANZO_API_BASE as canonical env var alongside OPENAI_API_BASE
+
+* Add per-user billing, credit balance UI, and fix cloud agent OOM
+
+- Pass user's IAM token to provisioned cloud bot pods as HANZO_API_KEY
+  so LLM usage is tracked and billed per-user via api.hanzo.ai
+- Add UserBalanceBar component (bottom-right canvas overlay) showing
+  logged-in user info, credit balance, and top-up link
+- Add billingApi.ts service calling Hanzo Cloud ZAP billing.balance
+- Set NODE_OPTIONS=--max-old-space-size to prevent V8 OOM crashes
+- Increase terminal-only agent memory from 384Mi to 512Mi
+- Default CloudAPIEndpoint to https://api.hanzo.ai/v1
+- Add HANZO_API_BASE as canonical env var alongside OPENAI_API_BASE (ec6241c)
+
 ## [0.1.41-rc.72] - 2026-02-23
 
 
