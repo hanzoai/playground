@@ -18,18 +18,27 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<import('@xterm/xterm').Terminal | null>(null);
   const fitAddonRef = useRef<import('@xterm/addon-fit').FitAddon | null>(null);
+  const unsubRef = useRef<(() => void) | undefined>();
+  const sessionKeyRef = useRef(sessionKey);
 
-  // Initialize terminal
+  // Keep sessionKey ref current without re-initializing terminal
+  useEffect(() => {
+    sessionKeyRef.current = sessionKey;
+  }, [sessionKey]);
+
+  // Initialize terminal once per agentId — never re-init on sessionKey change
   useEffect(() => {
     if (!containerRef.current) return;
 
     let terminal: import('@xterm/xterm').Terminal;
-    let fitAddon: import('@xterm/addon-fit').FitAddon;
+    let disposed = false;
 
     const init = async () => {
       const { Terminal } = await import('@xterm/xterm');
       const { FitAddon } = await import('@xterm/addon-fit');
       await import('@xterm/xterm/css/xterm.css');
+
+      if (disposed) return;
 
       terminal = new Terminal({
         cursorBlink: true,
@@ -45,7 +54,7 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
         scrollback: 10000,
       });
 
-      fitAddon = new FitAddon();
+      const fitAddon = new FitAddon();
       terminal.loadAddon(fitAddon);
 
       // Try WebGL addon for performance
@@ -56,6 +65,8 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
         // WebGL not supported, falls back to canvas
       }
 
+      if (disposed) return;
+
       terminal.open(containerRef.current!);
       fitAddon.fit();
       termRef.current = terminal;
@@ -64,20 +75,28 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
       terminal.writeln(`\x1b[36m● Connected to ${agentId}\x1b[0m`);
       terminal.writeln('');
 
-      // Subscribe to agent stream events
-      if (sessionKey) {
-        const unsub = gateway.on('agent', (payload) => {
-          const event = payload as { data?: { agentId?: string; output?: string } };
-          if (event.data?.agentId === agentId && event.data?.output) {
-            terminal.write(event.data.output);
-          }
-        });
-        return unsub;
-      }
+      // Subscribe to agent stream events — filter by agentId, not sessionKey
+      unsubRef.current = gateway.on('agent', (payload) => {
+        const event = payload as { data?: { agentId?: string; output?: string } };
+        if (event.data?.agentId === agentId && event.data?.output) {
+          terminal.write(event.data.output);
+        }
+      });
+
+      // Handle user input → send to bot
+      terminal.onData((data: string) => {
+        const key = sessionKeyRef.current;
+        if (key) {
+          gateway.rpc('chat.send', {
+            sessionKey: key,
+            message: data,
+            idempotencyKey: `input-${Date.now()}`,
+          }).catch(console.error);
+        }
+      });
     };
 
-    let unsubscribe: (() => void) | undefined;
-    init().then((unsub) => { unsubscribe = unsub; });
+    init();
 
     // Handle resize
     const resizeObserver = new ResizeObserver(() => {
@@ -86,32 +105,14 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
     resizeObserver.observe(containerRef.current);
 
     return () => {
+      disposed = true;
       resizeObserver.disconnect();
-      unsubscribe?.();
-      terminal?.dispose();
+      unsubRef.current?.();
+      termRef.current?.dispose();
+      termRef.current = null;
+      fitAddonRef.current = null;
     };
-  }, [agentId, sessionKey]);
-
-  // Handle user input → send to bot
-  const handleInput = useCallback(
-    (data: string) => {
-      if (sessionKey) {
-        gateway.rpc('chat.send', {
-          sessionKey,
-          message: data,
-          idempotencyKey: `input-${Date.now()}`,
-        }).catch(console.error);
-      }
-    },
-    [sessionKey]
-  );
-
-  useEffect(() => {
-    const term = termRef.current;
-    if (!term) return;
-    const disposable = term.onData(handleInput);
-    return () => disposable.dispose();
-  }, [handleInput]);
+  }, [agentId]);
 
   return (
     <div
