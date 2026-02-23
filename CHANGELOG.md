@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.51] - 2026-02-23
+
+
+### Added
+
+- Feat(ui): global Cmd+K command palette on all pages
+
+Add GlobalCommandPalette to AppContent so Cmd+K works everywhere
+(not just the playground canvas). Includes navigation commands,
+agent search, and infrastructure actions (register local agent,
+deploy cloud agent, provision team). Grouped by section with
+keyboard navigation.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (e8c0920)
+
 ## [0.1.41-rc.50] - 2026-02-23
 
 
