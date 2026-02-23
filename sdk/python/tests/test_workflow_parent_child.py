@@ -90,16 +90,8 @@ class TestParentChildWorkflowTracking:
         assert len(captured_events) == 4
 
         # Extract execution IDs
-        parent_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "parent_bot" and e["status"] == "running"
-        )
-        child_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "child_bot" and e["status"] == "running"
-        )
+        parent_start = next(e for e in captured_events if e["bot_id"] == "parent_bot" and e["status"] == "running")
+        child_start = next(e for e in captured_events if e["bot_id"] == "child_bot" and e["status"] == "running")
 
         # Parent should have no parent
         assert parent_start["parent_execution_id"] is None
@@ -149,21 +141,9 @@ class TestParentChildWorkflowTracking:
         # child_b_complete, child_c_complete, parent_complete
         assert len(captured_events) == 6
 
-        parent_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "parent_bot" and e["status"] == "running"
-        )
-        child_b_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "child_b" and e["status"] == "running"
-        )
-        child_c_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "child_c" and e["status"] == "running"
-        )
+        parent_start = next(e for e in captured_events if e["bot_id"] == "parent_bot" and e["status"] == "running")
+        child_b_start = next(e for e in captured_events if e["bot_id"] == "child_b" and e["status"] == "running")
+        child_c_start = next(e for e in captured_events if e["bot_id"] == "child_c" and e["status"] == "running")
 
         # Both children should reference the same parent
         assert child_b_start["parent_execution_id"] == parent_start["execution_id"]
@@ -208,21 +188,9 @@ class TestParentChildWorkflowTracking:
         assert len(captured_events) == 6
 
         # Get start events for each level
-        parent_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "parent" and e["status"] == "running"
-        )
-        child_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "child" and e["status"] == "running"
-        )
-        grandchild_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "grandchild" and e["status"] == "running"
-        )
+        parent_start = next(e for e in captured_events if e["bot_id"] == "parent" and e["status"] == "running")
+        child_start = next(e for e in captured_events if e["bot_id"] == "child" and e["status"] == "running")
+        grandchild_start = next(e for e in captured_events if e["bot_id"] == "grandchild" and e["status"] == "running")
 
         # Verify hierarchy
         assert parent_start["parent_execution_id"] is None
@@ -340,9 +308,7 @@ class TestDecoratorParentChildTracking:
             )
 
         monkeypatch.setattr("playground.decorators._send_workflow_start", capture_start)
-        monkeypatch.setattr(
-            "playground.decorators._send_workflow_completion", capture_complete
-        )
+        monkeypatch.setattr("playground.decorators._send_workflow_completion", capture_complete)
 
         agent = StubAgent()
         set_current_bot(agent)
@@ -421,16 +387,8 @@ class TestErrorHandlingWithParentChild:
                 clear_current_bot()
 
         # Find parent start and child error events
-        parent_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "parent_bot" and e["status"] == "running"
-        )
-        child_error = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "failing_child" and e["status"] == "failed"
-        )
+        parent_start = next(e for e in captured_events if e["bot_id"] == "parent_bot" and e["status"] == "running")
+        child_error = next(e for e in captured_events if e["bot_id"] == "failing_child" and e["status"] == "failed")
 
         # Child error should reference parent
         assert child_error["parent_execution_id"] == parent_start["execution_id"]
@@ -474,23 +432,11 @@ class TestErrorHandlingWithParentChild:
             clear_current_bot()
 
         # Get parent start
-        parent_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "parent_bot" and e["status"] == "running"
-        )
+        parent_start = next(e for e in captured_events if e["bot_id"] == "parent_bot" and e["status"] == "running")
 
         # Both children should reference the same parent
-        success_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "success_child" and e["status"] == "running"
-        )
-        failing_start = next(
-            e
-            for e in captured_events
-            if e["bot_id"] == "failing_child" and e["status"] == "running"
-        )
+        success_start = next(e for e in captured_events if e["bot_id"] == "success_child" and e["status"] == "running")
+        failing_start = next(e for e in captured_events if e["bot_id"] == "failing_child" and e["status"] == "running")
 
         assert success_start["parent_execution_id"] == parent_start["execution_id"]
         assert failing_start["parent_execution_id"] == parent_start["execution_id"]

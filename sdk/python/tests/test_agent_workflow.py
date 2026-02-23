@@ -13,9 +13,7 @@ async def test_execute_with_tracking_root_context(monkeypatch):
 
     captured = {}
 
-    async def fake_start(
-        execution_id, context, bot_name, input_data, parent_execution_id=None
-    ):
+    async def fake_start(execution_id, context, bot_name, input_data, parent_execution_id=None):
         captured["start"] = {
             "execution_id": execution_id,
             "workflow_id": context.workflow_id,
@@ -24,9 +22,7 @@ async def test_execute_with_tracking_root_context(monkeypatch):
             "input": input_data,
         }
 
-    async def fake_complete(
-        execution_id, workflow_id, result, duration_ms, context, **kwargs
-    ):
+    async def fake_complete(execution_id, workflow_id, result, duration_ms, context, **kwargs):
         captured["complete"] = {
             "execution_id": execution_id,
             "workflow_id": workflow_id,
@@ -63,12 +59,8 @@ async def test_execute_with_tracking_child_context(monkeypatch):
 
     events = {}
 
-    async def fake_start(
-        execution_id, context, bot_name, input_data, parent_execution_id=None
-    ):
-        events.setdefault("start", []).append(
-            (execution_id, context, parent_execution_id)
-        )
+    async def fake_start(execution_id, context, bot_name, input_data, parent_execution_id=None):
+        events.setdefault("start", []).append((execution_id, context, parent_execution_id))
 
     async def fake_error(*args, **kwargs):
         events["error"] = True
@@ -146,9 +138,7 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
 
         events = {}
 
-        async def capture_start(
-            execution_id, context, bot_name, input_data, parent_execution_id=None
-        ):
+        async def capture_start(execution_id, context, bot_name, input_data, parent_execution_id=None):
             events.setdefault("start", []).append(
                 {
                     "execution_id": execution_id,
@@ -201,18 +191,14 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
     assert start_event["context"].parent_execution_id == parent_context.execution_id
     assert start_event["bot_name"] == "child_bot"
     assert start_event["input_data"]["value"] == 7
-    assert isinstance(
-        start_event["input_data"].get("execution_context"), ExecutionContext
-    )
+    assert isinstance(start_event["input_data"].get("execution_context"), ExecutionContext)
 
     assert complete_event["parent_execution_id"] == parent_context.execution_id
     assert complete_event["context"].parent_workflow_id == parent_context.workflow_id
     assert complete_event["context"].parent_execution_id == parent_context.execution_id
     assert complete_event["result"] == {"doubled": 14}
     assert complete_event["input_data"]["value"] == 7
-    assert isinstance(
-        complete_event["input_data"].get("execution_context"), ExecutionContext
-    )
+    assert isinstance(complete_event["input_data"].get("execution_context"), ExecutionContext)
 
 
 @pytest.mark.asyncio
@@ -227,9 +213,7 @@ async def test_execute_with_tracking_error_emits_failure(monkeypatch):
 
         events = {}
 
-        async def capture_start(
-            execution_id, context, bot_name, input_data, parent_execution_id=None
-        ):
+        async def capture_start(execution_id, context, bot_name, input_data, parent_execution_id=None):
             events.setdefault("start", []).append(
                 {
                     "execution_id": execution_id,
@@ -279,16 +263,12 @@ async def test_execute_with_tracking_error_emits_failure(monkeypatch):
     assert start_event["parent_execution_id"] == parent_context.execution_id
     assert start_event["context"].parent_workflow_id == parent_context.workflow_id
     assert start_event["input_data"]["value"] == 5
-    assert isinstance(
-        start_event["input_data"].get("execution_context"), ExecutionContext
-    )
+    assert isinstance(start_event["input_data"].get("execution_context"), ExecutionContext)
 
     assert error_event["parent_execution_id"] == parent_context.execution_id
     assert error_event["context"].parent_workflow_id == parent_context.workflow_id
     assert error_event["input_data"]["value"] == 5
-    assert isinstance(
-        error_event["input_data"].get("execution_context"), ExecutionContext
-    )
+    assert isinstance(error_event["input_data"].get("execution_context"), ExecutionContext)
     assert "expected failure" in error_event["error"]
 
 
@@ -332,18 +312,10 @@ async def test_nested_bots_emit_child_completion_before_parent(monkeypatch):
     assert timeline[0] == ("parent_bot", "running")
     assert timeline[1] == ("child_bot", "running")
 
-    child_complete_index = next(
-        index
-        for index, entry in enumerate(timeline)
-        if entry == ("child_bot", "succeeded")
-    )
+    child_complete_index = next(index for index, entry in enumerate(timeline) if entry == ("child_bot", "succeeded"))
 
     parent_complete_index = next(
-        index
-        for index, entry in enumerate(timeline)
-        if entry[1] == "succeeded" and entry[0].endswith("parent_bot")
+        index for index, entry in enumerate(timeline) if entry[1] == "succeeded" and entry[0].endswith("parent_bot")
     )
 
-    assert child_complete_index < parent_complete_index, (
-        "Parent bot completion emitted before child finished"
-    )
+    assert child_complete_index < parent_complete_index, "Parent bot completion emitted before child finished"

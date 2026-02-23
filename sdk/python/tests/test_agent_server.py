@@ -39,9 +39,7 @@ async def test_setup_playground_routes_health_endpoint():
     server = BotServer(app)
     server.setup_playground_routes()
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/health")
 
     assert resp.status_code == 200
@@ -49,9 +47,7 @@ async def test_setup_playground_routes_health_endpoint():
     assert data["node_id"] == "agent-1"
     assert data["mcp_servers"]["running"] == 1
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         resp_bots = await client.get("/bots")
         resp_skills = await client.get("/skills")
 
@@ -66,9 +62,7 @@ async def test_shutdown_endpoint_triggers_flags():
     server = BotServer(app)
     server.setup_playground_routes()
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/shutdown",
             json={"graceful": True, "timeout_seconds": 5},
@@ -101,9 +95,7 @@ async def test_status_endpoint_reports_psutil(monkeypatch):
 
     server.setup_playground_routes()
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/status")
 
     data = resp.json()
@@ -125,9 +117,7 @@ async def test_shutdown_immediate_path(monkeypatch):
 
     monkeypatch.setattr(BotServer, "_immediate_shutdown", fake_immediate)
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post("/shutdown", json={"graceful": False})
 
     assert resp.status_code == 200
@@ -164,9 +154,7 @@ async def test_mcp_start_stop_routes(monkeypatch):
     server = BotServer(app)
     server.setup_playground_routes()
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         start = await client.post("/mcp/foo/start")
         stop = await client.post("/mcp/foo/stop")
         restart = await client.post("/mcp/foo/restart")

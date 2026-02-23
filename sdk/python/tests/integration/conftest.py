@@ -72,9 +72,7 @@ def playground_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
     if not playground_go_root.exists():
         pytest.skip("Playground server sources not available in this checkout")
     build_dir = tmp_path_factory.mktemp("playground-server-bin")
-    binary_name = (
-        "playground-test-server.exe" if os.name == "nt" else "playground-test-server"
-    )
+    binary_name = "playground-test-server.exe" if os.name == "nt" else "playground-test-server"
     binary_path = build_dir / binary_name
 
     releases_dir = playground_go_root / "dist" / "releases"
@@ -184,9 +182,7 @@ def agents_server(
         else:
             raise RuntimeError("Playground server did not become healthy in time")
 
-        yield PlaygroundServerInfo(
-            base_url=base_url, port=port, playground_home=playground_home
-        )
+        yield PlaygroundServerInfo(base_url=base_url, port=port, playground_home=playground_home)
 
     finally:
         if process.poll() is None:
@@ -210,9 +206,7 @@ class AgentRuntime:
 
 
 @pytest.fixture
-def run_agent() -> Generator[
-    Callable[[Agent, Optional[int]], AgentRuntime], None, None
-]:
+def run_agent() -> Generator[Callable[[Agent, Optional[int]], AgentRuntime], None, None]:
     runtimes: list[AgentRuntime] = []
 
     def _start(agent: Agent, port: Optional[int] = None) -> AgentRuntime:
@@ -236,9 +230,7 @@ def run_agent() -> Generator[
             loop.run_until_complete(server.serve())
             loop.close()
 
-        thread = threading.Thread(
-            target=_run, name=f"uvicorn-{assigned_port}", daemon=True
-        )
+        thread = threading.Thread(target=_run, name=f"uvicorn-{assigned_port}", daemon=True)
         thread.start()
 
         health_url = f"{base_url}/health"

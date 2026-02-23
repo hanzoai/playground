@@ -186,11 +186,7 @@ class TestFalProvider:
     @pytest.mark.asyncio
     async def test_fal_provider_generate_image(self, fal_provider, monkeypatch):
         """FalProvider.generate_image should call fal_client correctly."""
-        mock_result = {
-            "images": [
-                {"url": "https://fal.media/test.png", "width": 1024, "height": 1024}
-            ]
-        }
+        mock_result = {"images": [{"url": "https://fal.media/test.png", "width": 1024, "height": 1024}]}
 
         mock_client = MagicMock()
         mock_client.subscribe_async = AsyncMock(return_value=mock_result)
@@ -329,9 +325,7 @@ class TestBotAIProviderRouting:
             assert provider1 is provider2
 
     @pytest.mark.asyncio
-    async def test_ai_with_vision_routes_fal_ai_prefix(
-        self, agent_with_ai, monkeypatch
-    ):
+    async def test_ai_with_vision_routes_fal_ai_prefix(self, agent_with_ai, monkeypatch):
         """ai_with_vision should route fal-ai/ models to FalProvider."""
         ai = BotAI(agent_with_ai)
 
@@ -388,9 +382,7 @@ class TestBotAIProviderRouting:
 
         mock_response = MultimodalResponse(
             text="Hello",
-            audio=AudioOutput(
-                url="https://fal.media/audio.wav", data=None, format="wav"
-            ),
+            audio=AudioOutput(url="https://fal.media/audio.wav", data=None, format="wav"),
             images=[],
             files=[],
         )
@@ -427,11 +419,7 @@ class TestAIGenerateVideo:
             text="",
             audio=None,
             images=[],
-            files=[
-                FileOutput(
-                    url="https://fal.media/video.mp4", data=None, mime_type="video/mp4"
-                )
-            ],
+            files=[FileOutput(url="https://fal.media/video.mp4", data=None, mime_type="video/mp4")],
         )
         mock_generate = AsyncMock(return_value=mock_response)
 
@@ -456,11 +444,7 @@ class TestAIGenerateVideo:
             text="",
             audio=None,
             images=[],
-            files=[
-                FileOutput(
-                    url="https://fal.media/video.mp4", data=None, mime_type="video/mp4"
-                )
-            ],
+            files=[FileOutput(url="https://fal.media/video.mp4", data=None, mime_type="video/mp4")],
         )
         mock_generate = AsyncMock(return_value=mock_response)
 
@@ -522,9 +506,7 @@ class TestAITranscribeAudio:
         """ai_transcribe_audio should pass language hint."""
         ai = BotAI(agent_with_ai)
 
-        mock_response = MultimodalResponse(
-            text="Hola mundo", audio=None, images=[], files=[]
-        )
+        mock_response = MultimodalResponse(text="Hola mundo", audio=None, images=[], files=[])
         mock_transcribe = AsyncMock(return_value=mock_response)
 
         # Patch the instance attribute directly

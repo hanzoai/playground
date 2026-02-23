@@ -194,9 +194,7 @@ async def test_get_execution_status(manager):
 
         manager.connection_manager = DummyConnectionManager(mock_session)
 
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         status = await manager.get_execution_status(execution_id)
         assert status is not None
@@ -247,9 +245,7 @@ async def test_poll_execution_status_success(manager):
 
         manager.connection_manager = DummyConnectionManager(mock_session)
 
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         # Polling happens in background via private methods
         # We can verify the execution exists and can get its status
@@ -295,9 +291,7 @@ async def test_poll_execution_status_timeout(manager):
 
         manager.connection_manager = DummyConnectionManager(mock_session)
 
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         # Polling happens in background, just verify execution exists
         status = await manager.get_execution_status(execution_id)
@@ -342,9 +336,7 @@ async def test_poll_execution_status_error(manager):
 
         manager.connection_manager = DummyConnectionManager(mock_session)
 
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         # Polling happens in background, just verify execution exists
         status = await manager.get_execution_status(execution_id)
@@ -376,9 +368,7 @@ async def test_batch_poll_executions(manager):
             return mock_response
 
         mock_session = MagicMock()
-        mock_session.post = AsyncMock(
-            side_effect=lambda *args, **kwargs: get_submit_response()
-        )
+        mock_session.post = AsyncMock(side_effect=lambda *args, **kwargs: get_submit_response())
 
         class DummyConnectionManager:
             def __init__(self, session):
@@ -399,9 +389,7 @@ async def test_batch_poll_executions(manager):
         # Submit multiple executions
         execution_ids = []
         for i in range(3):
-            exec_id = await manager.submit_execution(
-                target="agent.bot", input_data={"index": i}
-            )
+            exec_id = await manager.submit_execution(target="agent.bot", input_data={"index": i})
             execution_ids.append(exec_id)
 
         # Mock batch poll response
@@ -410,8 +398,7 @@ async def test_batch_poll_executions(manager):
         mock_batch_response.json = AsyncMock(
             return_value={
                 "executions": {
-                    exec_id: {"status": "succeeded", "result": {"index": i}}
-                    for i, exec_id in enumerate(execution_ids)
+                    exec_id: {"status": "succeeded", "result": {"index": i}} for i, exec_id in enumerate(execution_ids)
                 }
             }
         )
@@ -436,9 +423,7 @@ async def test_get_execution_result_cached(manager):
         cached_result = {"output": "cached"}
 
         # Set cache
-        manager.result_cache.get_execution_result = MagicMock(
-            return_value=cached_result
-        )
+        manager.result_cache.get_execution_result = MagicMock(return_value=cached_result)
 
         # wait_for_result requires an actual execution, so test cache directly
         result = manager.result_cache.get_execution_result(execution_id)
@@ -501,9 +486,7 @@ async def test_cleanup_completed_executions(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         # Submit and mark as completed
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         execution = manager._executions.get(execution_id)
         execution.status = ExecutionStatus.SUCCEEDED
@@ -561,9 +544,7 @@ async def test_context_propagation(manager):
         execution_id = await manager.submit_execution(
             target="agent.bot",
             input_data={"key": "value"},
-            headers={
-                "X-Context": '{"parent_id": "parent-123", "session_id": "session-456"}'
-            },
+            headers={"X-Context": '{"parent_id": "parent-123", "session_id": "session-456"}'},
         )
 
         execution = manager._executions.get(execution_id)
@@ -607,9 +588,7 @@ async def test_event_stream_subscription(manager):
 
         manager.connection_manager = DummyConnectionManager(mock_session)
 
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         # Mock event stream
         events_received = []
@@ -663,9 +642,7 @@ async def test_event_stream_reconnection(manager):
 
         # This would test the reconnection logic when stream disconnects
         # Simplified test for now
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         assert execution_id in manager._executions
     finally:
@@ -696,9 +673,7 @@ async def test_priority_handling(manager):
             return mock_response
 
         mock_session = MagicMock()
-        mock_session.post = AsyncMock(
-            side_effect=lambda *args, **kwargs: get_response()
-        )
+        mock_session.post = AsyncMock(side_effect=lambda *args, **kwargs: get_response())
 
         class DummyConnectionManager:
             def __init__(self, session):
@@ -779,9 +754,7 @@ async def test_metrics_tracking(manager):
         initial_metrics = manager.get_metrics()
 
         # Submit and complete an execution
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         execution = manager._executions.get(execution_id)
         execution.status = ExecutionStatus.SUCCEEDED
@@ -815,9 +788,7 @@ async def test_error_handling_during_polling(manager):
 
         # Submit will fail, but we can test error handling
         try:
-            execution_id = await manager.submit_execution(
-                target="agent.bot", input_data={"key": "value"}
-            )
+            execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
             # If it succeeds, verify execution exists
             status = await manager.get_execution_status(execution_id)
             assert status is not None
@@ -851,9 +822,7 @@ async def test_concurrent_execution_submission(manager):
             return mock_response
 
         mock_session = MagicMock()
-        mock_session.post = AsyncMock(
-            side_effect=lambda *args, **kwargs: get_response()
-        )
+        mock_session.post = AsyncMock(side_effect=lambda *args, **kwargs: get_response())
 
         class DummyConnectionManager:
             def __init__(self, session):
@@ -872,9 +841,7 @@ async def test_concurrent_execution_submission(manager):
         manager.connection_manager = DummyConnectionManager(mock_session)
 
         async def submit():
-            return await manager.submit_execution(
-                target="agent.bot", input_data={"key": "value"}
-            )
+            return await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         # Submit multiple executions concurrently
         execution_ids = await asyncio.gather(*[submit() for _ in range(10)])
@@ -920,9 +887,7 @@ async def test_result_cache_integration(manager):
 
         manager.connection_manager = DummyConnectionManager(mock_session)
 
-        execution_id = await manager.submit_execution(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        execution_id = await manager.submit_execution(target="agent.bot", input_data={"key": "value"})
 
         # Mock successful execution
         execution = manager._executions.get(execution_id)

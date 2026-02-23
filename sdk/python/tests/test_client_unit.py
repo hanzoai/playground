@@ -118,9 +118,7 @@ def test_discover_capabilities_json(responses):
                 "health_status": "active",
                 "deployment_type": "long_running",
                 "last_heartbeat": "2025-01-01T00:00:00Z",
-                "bots": [
-                    {"id": "r1", "invocation_target": "agent-1:r1", "tags": ["ml"]}
-                ],
+                "bots": [{"id": "r1", "invocation_target": "agent-1:r1", "tags": ["ml"]}],
                 "skills": [],
             }
         ],

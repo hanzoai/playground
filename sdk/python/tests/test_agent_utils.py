@@ -15,13 +15,8 @@ def test_detect_input_type_and_helpers(tmp_path):
     assert BotUtils.detect_input_type(str(img)) == "image_file"
 
     # Dict/list detection
-    assert (
-        BotUtils.detect_input_type({"role": "user", "content": "hi"}) == "message_dict"
-    )
-    assert (
-        BotUtils.detect_input_type([{"role": "user", "content": "hi"}])
-        == "conversation_list"
-    )
+    assert BotUtils.detect_input_type({"role": "user", "content": "hi"}) == "message_dict"
+    assert BotUtils.detect_input_type([{"role": "user", "content": "hi"}]) == "conversation_list"
 
     # Helpers
     assert BotUtils.is_image_url("x.PNG") is True

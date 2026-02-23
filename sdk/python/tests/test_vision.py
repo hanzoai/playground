@@ -27,9 +27,7 @@ async def test_generate_image_litellm_success():
     mock_litellm.aimage_generation = AsyncMock(return_value={"data": []})
 
     with patch.dict(sys.modules, {"litellm": mock_litellm}):
-        with patch(
-            "playground.multimodal_response.detect_multimodal_response"
-        ) as mock_detect:
+        with patch("playground.multimodal_response.detect_multimodal_response") as mock_detect:
             mock_detect.return_value = mock_response
 
             result = await generate_image_litellm(
@@ -58,9 +56,7 @@ async def test_generate_image_litellm_without_style():
     mock_litellm.aimage_generation = AsyncMock(return_value={"data": []})
 
     with patch.dict(sys.modules, {"litellm": mock_litellm}):
-        with patch(
-            "playground.multimodal_response.detect_multimodal_response"
-        ) as mock_detect:
+        with patch("playground.multimodal_response.detect_multimodal_response") as mock_detect:
             mock_detect.return_value = MultimodalResponse(text="", images=[])
 
             await generate_image_litellm(
@@ -149,9 +145,7 @@ async def test_generate_image_openrouter_success():
         assert isinstance(result, MultimodalResponse)
         mock_litellm.acompletion.assert_called_once()
         call_kwargs = mock_litellm.acompletion.call_args[1]
-        assert (
-            call_kwargs["model"] == "openrouter/google/gemini-2.5-flash-image-preview"
-        )
+        assert call_kwargs["model"] == "openrouter/google/gemini-2.5-flash-image-preview"
         assert "modalities" in call_kwargs
         assert "image" in call_kwargs["modalities"]
 
@@ -161,9 +155,7 @@ async def test_generate_image_openrouter_with_dict_images():
     """Test OpenRouter image generation with dict-based image data."""
     mock_choice = MagicMock()
     mock_choice.message.content = "Generated"
-    mock_choice.message.images = [
-        {"image_url": {"url": "data:image/png;base64,xyz789"}}
-    ]
+    mock_choice.message.images = [{"image_url": {"url": "data:image/png;base64,xyz789"}}]
 
     mock_response = MagicMock()
     mock_response.choices = [mock_choice]

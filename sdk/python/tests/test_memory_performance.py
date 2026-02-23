@@ -39,11 +39,7 @@ class MemoryMetrics:
     @property
     def reduction_pct(self) -> float:
         """Memory reduction from peak to current."""
-        return (
-            ((self.peak_mb - self.current_mb) / self.peak_mb * 100)
-            if self.peak_mb > 0
-            else 0
-        )
+        return ((self.peak_mb - self.current_mb) / self.peak_mb * 100) if self.peak_mb > 0 else 0
 
 
 def measure_memory(func, iterations: int = 1000) -> MemoryMetrics:
@@ -88,16 +84,12 @@ class TestAsyncConfigDefaults:
     def test_completed_execution_retention_is_short(self):
         """Completed execution retention should be short."""
         config = AsyncConfig()
-        assert config.completed_execution_retention_seconds <= 120.0, (
-            "Retention should be <= 120s"
-        )
+        assert config.completed_execution_retention_seconds <= 120.0, "Retention should be <= 120s"
 
     def test_max_completed_executions_is_bounded(self):
         """Max completed executions should be bounded."""
         config = AsyncConfig()
-        assert config.max_completed_executions <= 2000, (
-            "Max completed executions should be <= 2000"
-        )
+        assert config.max_completed_executions <= 2000, "Max completed executions should be <= 2000"
 
 
 class TestExecutionStateMemory:
@@ -185,9 +177,7 @@ class TestExecutionStateMemory:
         metrics = measure_memory(benchmark, iterations=1000)
 
         # Memory should be reduced by at least 50% after clearing input_data
-        assert metrics.reduction_pct >= 50.0, (
-            f"Expected >= 50% memory reduction, got {metrics.reduction_pct:.1f}%"
-        )
+        assert metrics.reduction_pct >= 50.0, f"Expected >= 50% memory reduction, got {metrics.reduction_pct:.1f}%"
 
 
 class TestResultCacheMemory:
@@ -202,9 +192,7 @@ class TestResultCacheMemory:
         for i in range(config.result_cache_max_size + 1000):
             cache.set(f"key_{i}", {"data": "x" * 100})
 
-        assert len(cache) <= config.result_cache_max_size, (
-            "Cache should not exceed max size"
-        )
+        assert len(cache) <= config.result_cache_max_size, "Cache should not exceed max size"
 
     def test_cache_memory_is_bounded(self):
         """Cache memory should be bounded by max size."""
@@ -219,9 +207,7 @@ class TestResultCacheMemory:
         metrics = measure_memory(benchmark, iterations=10000)
 
         # With 5000 max entries at ~1KB each, should be under 10MB
-        assert metrics.current_mb < 10.0, (
-            f"Cache memory should be bounded, got {metrics.current_mb:.2f} MB"
-        )
+        assert metrics.current_mb < 10.0, f"Cache memory should be bounded, got {metrics.current_mb:.2f} MB"
 
 
 class TestClientSessionReuse:
@@ -234,9 +220,7 @@ class TestClientSessionReuse:
 
         PlaygroundClient(base_url="http://localhost:8080")  # Creates shared session
 
-        assert PlaygroundClient._shared_sync_session is not None, (
-            "Shared session should be created"
-        )
+        assert PlaygroundClient._shared_sync_session is not None, "Shared session should be created"
 
     def test_multiple_clients_share_session(self):
         """Multiple clients should share the same sync session."""
@@ -266,9 +250,7 @@ class TestClientSessionReuse:
         metrics = measure_memory(benchmark, iterations=100)
 
         # 100 clients should use less than 1MB total
-        assert metrics.current_mb < 1.0, (
-            f"Client creation should be memory efficient, got {metrics.current_mb:.2f} MB"
-        )
+        assert metrics.current_mb < 1.0, f"Client creation should be memory efficient, got {metrics.current_mb:.2f} MB"
 
 
 class TestMemoryBenchmarkBaseline:
@@ -368,9 +350,7 @@ class TestMemoryBenchmarkBaseline:
         print(f"{'=' * 60}")
 
         # Optimized SDK should use significantly less memory
-        assert metrics.current_mb < 10.0, (
-            f"Optimized SDK should use < 10MB, got {metrics.current_mb:.2f} MB"
-        )
+        assert metrics.current_mb < 10.0, f"Optimized SDK should use < 10MB, got {metrics.current_mb:.2f} MB"
         assert metrics.per_iteration_kb < 10.0, (
             f"Per-iteration memory should be < 10KB, got {metrics.per_iteration_kb:.2f} KB"
         )
@@ -389,9 +369,7 @@ def memory_report():
         print(f"{'Test Name':<40} {'Current':>10} {'Peak':>10} {'Per Iter':>12}")
         print("-" * 70)
         for m in metrics_list:
-            print(
-                f"{m.name:<40} {m.current_mb:>8.2f}MB {m.peak_mb:>8.2f}MB {m.per_iteration_kb:>10.2f}KB"
-            )
+            print(f"{m.name:<40} {m.current_mb:>8.2f}MB {m.peak_mb:>8.2f}MB {m.per_iteration_kb:>10.2f}KB")
         print("=" * 70)
 
 
@@ -406,9 +384,7 @@ class TestMemoryPerformanceReport:
         def exec_state_benchmark(n):
             states = []
             for i in range(n):
-                s = ExecutionState(
-                    execution_id=f"e_{i}", target="a.r", input_data={"p": "x" * 10000}
-                )
+                s = ExecutionState(execution_id=f"e_{i}", target="a.r", input_data={"p": "x" * 10000})
                 s.set_result({"o": i})
                 states.append(s)
             return states
@@ -434,9 +410,7 @@ class TestMemoryPerformanceReport:
         def client_benchmark(n):
             clients = []
             for i in range(n):
-                clients.append(
-                    PlaygroundClient(base_url=f"http://localhost:808{i % 10}")
-                )
+                clients.append(PlaygroundClient(base_url=f"http://localhost:808{i % 10}"))
             return clients
 
         m3 = measure_memory(client_benchmark, 100)

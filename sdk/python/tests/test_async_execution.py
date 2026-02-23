@@ -8,9 +8,7 @@ from playground.client import PlaygroundClient
 
 @pytest.mark.asyncio
 async def test_bot_async_mode_sends_status(monkeypatch):
-    agent = Agent(
-        node_id="test-agent", agents_server="http://control", auto_register=False
-    )
+    agent = Agent(node_id="test-agent", agents_server="http://control", auto_register=False)
 
     @agent.bot()
     async def echo(value: int) -> dict:
@@ -32,9 +30,7 @@ async def test_bot_async_mode_sends_status(monkeypatch):
 
     monkeypatch.setattr(PlaygroundClient, "_async_request", fake_request)
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://agent"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://agent") as client:
         response = await client.post(
             "/bots/echo",
             json={"value": 7},
@@ -53,9 +49,7 @@ async def test_bot_async_mode_sends_status(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_post_execution_status_retries(monkeypatch):
-    agent = Agent(
-        node_id="test-agent", agents_server="http://control", auto_register=False
-    )
+    agent = Agent(node_id="test-agent", agents_server="http://control", auto_register=False)
 
     attempts = {"count": 0}
 

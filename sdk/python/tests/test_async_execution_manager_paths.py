@@ -26,21 +26,15 @@ class _DummyResponse:
 async def test_poll_single_execution_targets_canonical_endpoint():
     cfg = AsyncConfig(enable_async_execution=True, enable_batch_polling=False)
     manager = AsyncExecutionManager("http://example", cfg)
-    execution = ExecutionState(
-        execution_id="exec-single", target="node.skill", input_data={}
-    )
+    execution = ExecutionState(execution_id="exec-single", target="node.skill", input_data={})
 
     request_mock = AsyncMock(return_value=_DummyResponse({"status": "succeeded"}))
-    manager.connection_manager = SimpleNamespace(
-        request=request_mock, batch_request=AsyncMock()
-    )
+    manager.connection_manager = SimpleNamespace(request=request_mock, batch_request=AsyncMock())
 
     async def noop_process(self, exec_state, response, duration):
         return None
 
-    manager._process_poll_response = noop_process.__get__(
-        manager, AsyncExecutionManager
-    )
+    manager._process_poll_response = noop_process.__get__(manager, AsyncExecutionManager)
 
     await manager._poll_single_execution(execution)
 
@@ -57,24 +51,15 @@ async def test_batch_poll_uses_canonical_endpoint():
     cfg.batch_size = 5
     manager = AsyncExecutionManager("http://example", cfg)
 
-    executions = [
-        ExecutionState(execution_id=f"exec-{idx}", target="node.skill", input_data={})
-        for idx in range(3)
-    ]
+    executions = [ExecutionState(execution_id=f"exec-{idx}", target="node.skill", input_data={}) for idx in range(3)]
 
-    batch_mock = AsyncMock(
-        return_value=[_DummyResponse({"status": "succeeded"}) for _ in executions]
-    )
-    manager.connection_manager = SimpleNamespace(
-        request=AsyncMock(), batch_request=batch_mock
-    )
+    batch_mock = AsyncMock(return_value=[_DummyResponse({"status": "succeeded"}) for _ in executions])
+    manager.connection_manager = SimpleNamespace(request=AsyncMock(), batch_request=batch_mock)
 
     async def noop_process(self, exec_state, response, duration):
         return None
 
-    manager._process_poll_response = noop_process.__get__(
-        manager, AsyncExecutionManager
-    )
+    manager._process_poll_response = noop_process.__get__(manager, AsyncExecutionManager)
 
     await manager._batch_poll_executions(executions)
 

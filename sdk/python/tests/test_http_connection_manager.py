@@ -144,9 +144,7 @@ async def test_connection_manager_request_timeout():
     manager = ConnectionManager()
     await manager.start()
 
-    with patch.object(
-        manager._session, "request", new_callable=AsyncMock
-    ) as mock_request:
+    with patch.object(manager._session, "request", new_callable=AsyncMock) as mock_request:
         mock_request.side_effect = asyncio.TimeoutError()
 
         with pytest.raises(asyncio.TimeoutError):

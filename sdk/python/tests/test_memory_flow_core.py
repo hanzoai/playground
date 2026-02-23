@@ -57,16 +57,10 @@ async def test_memory_round_trip(monkeypatch, dummy_headers):
             data = store.get(scope, {}).get(json["key"])
             if data is None:
                 return DummyAsyncResponse(404, {})
-            payload = {
-                "data": json_module.dumps(data)
-                if not isinstance(data, (dict, list))
-                else data
-            }
+            payload = {"data": json_module.dumps(data) if not isinstance(data, (dict, list)) else data}
             return DummyAsyncResponse(200, payload)
 
-        async def request(
-            self, method, url, json=None, headers=None, params=None, timeout=None
-        ):  # type: ignore[override]
+        async def request(self, method, url, json=None, headers=None, params=None, timeout=None):  # type: ignore[override]
             method_upper = method.upper()
             if url.endswith("/memory/delete"):
                 scope = _scope(json or {})
@@ -77,9 +71,7 @@ async def test_memory_round_trip(monkeypatch, dummy_headers):
                 store.get(scope, {}).pop((json or {}).get("key"), None)
                 return DummyAsyncResponse(200, {"ok": True})
             if method_upper == "GET":
-                return await self.get(
-                    url, params=params, headers=headers, timeout=timeout
-                )
+                return await self.get(url, params=params, headers=headers, timeout=timeout)
             # Default to POST semantics
             return await self.post(url, json=json, headers=headers, timeout=timeout)
 

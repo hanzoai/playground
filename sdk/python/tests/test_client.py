@@ -68,9 +68,7 @@ def install_httpx_stub(monkeypatch, *, on_request):
 
     monkeypatch.setitem(sys.modules, "httpx", module)
     client_mod.httpx = module
-    monkeypatch.setattr(
-        client_mod, "_ensure_httpx", lambda force_reload=False: module, raising=False
-    )
+    monkeypatch.setattr(client_mod, "_ensure_httpx", lambda force_reload=False: module, raising=False)
     return module
 
 
@@ -231,9 +229,7 @@ async def test_execute_async_falls_back_to_requests(monkeypatch):
     import playground.client as client_mod
 
     client_mod.httpx = None
-    monkeypatch.setattr(
-        client_mod, "_ensure_httpx", lambda force_reload=False: None, raising=False
-    )
+    monkeypatch.setattr(client_mod, "_ensure_httpx", lambda force_reload=False: None, raising=False)
     monkeypatch.setattr(client_mod.requests, "post", fake_post)
     monkeypatch.setattr(client_mod.requests, "get", fake_get)
     monkeypatch.setattr(requests, "post", fake_post)
@@ -267,9 +263,7 @@ async def test_async_heartbeat(monkeypatch):
 
     import playground.client as client_mod
 
-    monkeypatch.setattr(
-        client_mod.requests, "post", lambda *args, **kwargs: DummyResponse({}, 200)
-    )
+    monkeypatch.setattr(client_mod.requests, "post", lambda *args, **kwargs: DummyResponse({}, 200))
 
     client = PlaygroundClient(base_url="http://example.com")
     heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
@@ -357,9 +351,7 @@ async def test_register_bot(monkeypatch):
 
     client = PlaygroundClient(base_url="http://example.com")
     metadata = {"agent_default": True, "bot_overrides": {"foo": False}}
-    ok, payload = await client.register_bot(
-        "node-1", [], [], base_url="http://agent", vc_metadata=metadata
-    )
+    ok, payload = await client.register_bot("node-1", [], [], base_url="http://agent", vc_metadata=metadata)
     assert ok is True
     assert payload == {}
     assert posted[0][0] == "POST"

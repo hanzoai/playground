@@ -46,9 +46,7 @@ def test_get_free_port_raises_when_exhausted(monkeypatch):
         def bind(self, addr):
             raise OSError("busy")
 
-    monkeypatch.setattr(
-        "playground.utils.socket.socket", lambda *args, **kwargs: DummySocket()
-    )
+    monkeypatch.setattr("playground.utils.socket.socket", lambda *args, **kwargs: DummySocket())
 
     with pytest.raises(RuntimeError):
         get_free_port(start_port=5, end_port=6)
