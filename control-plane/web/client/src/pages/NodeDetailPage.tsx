@@ -71,6 +71,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { EnhancedNodeDetailHeader } from "@/components/nodes";
 import { getNodeStatusPresentation } from "@/utils/node-status";
+import { OperativePanel } from "@/components/canvas/drill-down/OperativePanel";
+import { TerminalPanel } from "@/components/canvas/drill-down/TerminalPanel";
 
 /**
  * Comprehensive NodeDetailPage component with MCP management interface.
@@ -235,6 +237,8 @@ function NodeDetailPageContent() {
       hash &&
       [
         "overview",
+        "terminal",
+        "desktop",
         "mcp-servers",
         "tools",
         "performance",
@@ -816,6 +820,12 @@ function NodeDetailPageContent() {
               <AnimatedTabsTrigger value="overview" className="gap-2 px-4">
               Overview
             </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger value="terminal" className="gap-2 px-4">
+              Terminal
+            </AnimatedTabsTrigger>
+            <AnimatedTabsTrigger value="desktop" className="gap-2 px-4">
+              Desktop
+            </AnimatedTabsTrigger>
             <AnimatedTabsTrigger value="mcp-servers" className="gap-2 px-4">
               MCP Servers
             </AnimatedTabsTrigger>
@@ -936,6 +946,24 @@ function NodeDetailPageContent() {
                 nodeId={nodeId}
                 className="w-full"
               />
+            </div>
+          </AnimatedTabsContent>
+
+          <AnimatedTabsContent
+            value="terminal"
+            className="flex-1 overflow-hidden"
+          >
+            <div className="h-full px-6 pb-6">
+              <TerminalPanel agentId="main" sessionKey={`agent:main:main`} className="h-full rounded-lg border border-border" />
+            </div>
+          </AnimatedTabsContent>
+
+          <AnimatedTabsContent
+            value="desktop"
+            className="flex-1 overflow-hidden"
+          >
+            <div className="h-full px-6 pb-6">
+              <OperativePanel agentId="main" className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
 
