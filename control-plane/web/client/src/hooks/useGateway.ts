@@ -13,7 +13,6 @@ import { useBotStore } from '@/stores/botStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useActionPillStore } from '@/stores/actionPillStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTenantStore } from '@/stores/tenantStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { getGlobalIamToken } from '@/services/api';
 import type {
@@ -72,22 +71,10 @@ function resolveToken(apiKey: string | null, settingsToken: string | null): stri
 }
 
 // ---------------------------------------------------------------------------
-// Tenant context from auth or URL
-// ---------------------------------------------------------------------------
-
-export interface TenantContext {
-  orgId?: string;
-  projectId?: string;
-  tenantId?: string;
-  actorId?: string;
-  env?: string;
-}
-
-// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useGateway(explicitTenant?: TenantContext) {
+export function useGateway() {
   const [connectionState, setConnectionState] = useState<GatewayConnectionState>('disconnected');
   const syncedRef = useRef(false);
   const connectedUrlRef = useRef<string | null>(null);
@@ -107,24 +94,17 @@ export function useGateway(explicitTenant?: TenantContext) {
   // Resolve effective token
   const effectiveToken = resolveToken(apiKey, settingsGatewayToken);
 
-  // Read tenant from Zustand store (set by OrgProjectSwitcher in IAM mode)
-  const storeOrgId = useTenantStore((s) => s.orgId);
-  const storeProjectId = useTenantStore((s) => s.projectId);
-
-  // Use explicit tenant if provided, otherwise derive from store
-  const tenant = useMemo(() => {
-    if (explicitTenant) return explicitTenant;
-    if (storeOrgId) return { orgId: storeOrgId, projectId: storeProjectId ?? undefined };
-    return undefined;
-  }, [explicitTenant, storeOrgId, storeProjectId]);
-
   const setAgents = useBotStore((s) => s.setAgents);
   const handleChatEvent = useBotStore((s) => s.handleChatEvent);
   const handleBotEvent = useBotStore((s) => s.handleBotEvent);
   const upsertBot = useCanvasStore((s) => s.upsertBot);
   const addApproval = useActionPillStore((s) => s.add);
 
-  /** Build ConnectParams with current auth + tenant context */
+  /** Build ConnectParams with current auth context.
+   *  Tenant params are omitted: the gateway does not require org membership
+   *  for operator connections, and including them triggers
+   *  tenant_org_not_member rejections for IAM-authenticated users.
+   */
   const buildConnectParams = useCallback((): ConnectParams => ({
     minProtocol: 3,
     maxProtocol: 3,
@@ -138,16 +118,7 @@ export function useGateway(explicitTenant?: TenantContext) {
     role: 'operator',
     scopes: ['operator.admin'],
     ...(effectiveToken ? { auth: { token: effectiveToken } } : {}),
-    ...(tenant ? {
-      tenant: {
-        orgId: tenant.orgId,
-        projectId: tenant.projectId,
-        tenantId: tenant.tenantId ?? tenant.orgId,
-        actorId: tenant.actorId,
-        env: tenant.env ?? (import.meta.env.PROD ? 'production' : 'development'),
-      },
-    } : {}),
-  }), [effectiveToken, tenant]);
+  }), [effectiveToken]);
 
   /** Convert agents.list response rows into AgentSummary with derived sessionKey */
   const toAgentSummaries = useCallback((resp: AgentsListResponse): AgentSummary[] => {
