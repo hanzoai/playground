@@ -13,8 +13,10 @@ interface SpaceState {
   bots: SpaceBot[];
   members: SpaceMember[];
 
-  // Loading
+  // Loading — true while fetchSpaces is in flight
   loading: boolean;
+  // Bootstrapped — true after the first fetchSpaces completes
+  bootstrapped: boolean;
 
   // Actions
   fetchSpaces: () => Promise<void>;
@@ -44,10 +46,10 @@ interface SpaceState {
 const STORAGE_KEY = 'hanzo-space-active';
 
 /** Create a client-side default space when the API backend is unavailable. */
-function makeLocalDefaultSpace(): Space {
-  const id = localStorage.getItem(STORAGE_KEY) || `local-${Date.now()}`;
+function makeLocalDefaultSpace(id?: string): Space {
+  const resolvedId = id || localStorage.getItem(STORAGE_KEY) || `local-${Date.now()}`;
   return {
-    id,
+    id: resolvedId,
     org_id: 'local',
     name: 'Default',
     slug: 'default',
@@ -58,14 +60,26 @@ function makeLocalDefaultSpace(): Space {
   };
 }
 
+/**
+ * Hydrate activeSpace synchronously from localStorage so the first render
+ * never shows "No space selected". fetchSpaces() will replace this with
+ * the real space object from the API.
+ */
+function hydrateActiveSpace(): Space | null {
+  const id = localStorage.getItem(STORAGE_KEY);
+  if (!id) return null;
+  return makeLocalDefaultSpace(id);
+}
+
 export const useSpaceStore = create<SpaceState>((set, get) => ({
   activeSpaceId: localStorage.getItem(STORAGE_KEY),
-  activeSpace: null,
+  activeSpace: hydrateActiveSpace(),
   spaces: [],
   nodes: [],
   bots: [],
   members: [],
   loading: false,
+  bootstrapped: false,
 
   fetchSpaces: async () => {
     set({ loading: true });
@@ -95,7 +109,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       }
     }
 
-    set({ spaces, loading: false });
+    set({ spaces, loading: false, bootstrapped: true });
 
     const { activeSpaceId } = get();
 
@@ -232,6 +246,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       bots: [],
       members: [],
       loading: false,
+      bootstrapped: false,
     });
   },
 }));

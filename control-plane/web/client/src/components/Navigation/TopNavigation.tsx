@@ -79,16 +79,25 @@ function SpaceSelector() {
   const activeSpaceId = useSpaceStore((s) => s.activeSpaceId);
   const setActiveSpace = useSpaceStore((s) => s.setActiveSpace);
   const fetchSpaces = useSpaceStore((s) => s.fetchSpaces);
+  const bootstrapped = useSpaceStore((s) => s.bootstrapped);
   const navigate = useNavigate();
 
   // Bootstrap spaces if not loaded
   React.useEffect(() => {
-    if (spaces.length === 0) fetchSpaces();
-  }, [spaces.length, fetchSpaces]);
+    if (!bootstrapped && spaces.length === 0) fetchSpaces();
+  }, [bootstrapped, spaces.length, fetchSpaces]);
 
-  const currentLabel = activeSpace?.name || "No space";
+  const currentLabel = activeSpace?.name || "Default";
 
-  if (spaces.length === 0) {
+  if (spaces.length === 0 && !bootstrapped) {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-muted-foreground select-none">
+        <span>{activeSpace?.name || "Loading..."}</span>
+      </div>
+    );
+  }
+
+  if (spaces.length === 0 && bootstrapped) {
     return (
       <button
         onClick={() => navigate("/spaces")}

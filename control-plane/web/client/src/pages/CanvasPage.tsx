@@ -31,6 +31,8 @@ export function CanvasPage() {
   const spaceBots = useSpaceStore((s) => s.bots);
   const fetchBots = useSpaceStore((s) => s.fetchBots);
   const fetchSpaces = useSpaceStore((s) => s.fetchSpaces);
+  const spaceLoading = useSpaceStore((s) => s.loading);
+  const spaceBootstrapped = useSpaceStore((s) => s.bootstrapped);
 
   // Restore persisted canvas on mount
   useEffect(() => { restore(); }, [restore]);
@@ -96,8 +98,18 @@ export function CanvasPage() {
             </div>
           )}
 
-          {/* No space selected */}
-          {!activeSpace && (
+          {/* Loading spaces */}
+          {!activeSpace && (!spaceBootstrapped || spaceLoading) && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+              <div className="flex flex-col items-center gap-3 text-center px-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+                <p className="text-sm text-muted-foreground">Loading workspace...</p>
+              </div>
+            </div>
+          )}
+
+          {/* No space selected — only after bootstrap completes with no result */}
+          {!activeSpace && spaceBootstrapped && !spaceLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
               <div className="flex flex-col items-center gap-3 text-center pointer-events-auto px-4">
                 <h2 className="text-lg font-semibold">No space selected</h2>
