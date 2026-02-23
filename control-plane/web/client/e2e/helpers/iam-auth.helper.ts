@@ -128,16 +128,33 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   await passwordInput.first().fill(cfg.password);
   console.log(`[e2e] Filled credentials`);
 
-  // Submit
+  // Submit — use deterministic selector for hanzo.id login form
   const submitButton =
-    page.getByRole('button', { name: /sign in|log in|login|submit/i }).or(
-    page.locator('button[type="submit"]'));
+    page.locator('#submitBtn').or(
+    page.locator('form#loginForm button[type="submit"]')).or(
+    page.getByRole('button', { name: /sign in/i }));
 
   await submitButton.first().click();
   console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
-  // Wait for redirect back to app callback
-  await page.waitForURL(`${baseURL}/**`, { timeout: 30_000 });
+  // Race: redirect back to app OR error message on login form
+  const redirected = page.waitForURL(`${baseURL}/**`, { timeout: 30_000 });
+  const errorVisible = page.locator('#error-msg:not(:empty), .ant-alert-error, [class*="error"]').first()
+    .waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'error' as const);
+
+  const result = await Promise.race([
+    redirected.then(() => 'redirect' as const),
+    errorVisible,
+  ]);
+
+  if (result === 'error') {
+    const errorText = await page.locator('#error-msg').textContent().catch(() => null)
+      || await page.locator('.ant-alert-error').textContent().catch(() => null)
+      || 'unknown login error';
+    console.error(`[e2e] Login error on hanzo.id: ${errorText}`);
+    throw new Error(`IAM login failed: ${errorText}`);
+  }
+
   console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
 
   // Wait for callback to process tokens and redirect to dashboard
