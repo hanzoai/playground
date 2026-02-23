@@ -114,7 +114,7 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
       {/* Expanded content */}
       {expanded && (
-        <div className="border-t border-border/40">
+        <div className="border-t border-border/40 bg-card">
           {/* View tabs */}
           <div className="flex border-b border-border/30 overflow-x-auto scrollbar-none">
             {VIEW_TABS.map((tab) => (

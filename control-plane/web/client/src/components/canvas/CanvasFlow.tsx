@@ -170,14 +170,16 @@ export function CanvasFlow({ className }: { className?: string }) {
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
-          size={1}
+          size={1.2}
+          color="hsl(var(--muted-foreground) / 0.25)"
           className="!bg-background"
         />
         <MiniMap
-          className="!bg-card/90 !border-border/40 !rounded-lg !shadow-lg hidden md:block"
-          maskColor="hsl(var(--muted) / 0.4)"
-          nodeColor="hsl(var(--foreground) / 0.6)"
-          nodeStrokeColor="hsl(var(--foreground) / 0.3)"
+          className="!rounded-xl !shadow-lg !border !border-border/40 !overflow-hidden hidden md:block"
+          style={{ backgroundColor: 'hsl(var(--card))' }}
+          maskColor="hsl(var(--muted) / 0.6)"
+          nodeColor="hsl(var(--foreground) / 0.5)"
+          nodeStrokeColor="hsl(var(--foreground) / 0.2)"
           nodeStrokeWidth={2}
           pannable
           zoomable

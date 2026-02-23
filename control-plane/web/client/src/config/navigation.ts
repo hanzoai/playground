@@ -13,18 +13,18 @@ export const navigationSections: NavigationSection[] = [
         description: 'Real-time system overview and operational metrics'
       },
       {
-        id: 'spaces',
-        label: 'Spaces',
-        href: '/spaces',
-        icon: 'data-center',
-        description: 'Project workspaces for bots, nodes, and teams'
-      },
-      {
         id: 'playground',
         label: 'Playground',
         href: '/playground',
         icon: 'bot',
         description: 'Visual bot orchestration playground'
+      },
+      {
+        id: 'spaces',
+        label: 'Spaces',
+        href: '/spaces',
+        icon: 'data-center',
+        description: 'Project workspaces for bots, nodes, and teams'
       },
       {
         id: 'teams',
