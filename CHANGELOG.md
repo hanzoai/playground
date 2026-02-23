@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.52] - 2026-02-23
+
+
+### Fixed
+
+- Fix(ui): use oklch color-mix for minimap and background dark mode
+
+CSS variables use oklch() values but were wrapped in hsl() producing
+invalid color strings. Replace with direct var() and color-mix(in oklch)
+for proper dark mode rendering. (9d761d3)
+
+- Fix(deploy): correct DOKS cluster name to hanzo-k8s
+
+The cluster is named 'hanzo-k8s', not 'do-sfo3-hanzo-k8s'.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (74567a0)
+
 ## [0.1.41-rc.51] - 2026-02-23
 
 
