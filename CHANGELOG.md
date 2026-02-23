@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.61] - 2026-02-23
+
+
+### Fixed
+
+- Fix: handle gateway connect handshake response correctly
+
+The sendHello() method sends the connect request but doesn't register it
+in the pending map, so when the gateway responds with a standard
+{type:'res', ok:true} frame, handleResponse() couldn't match it and
+silently discarded it. The client got stuck in 'authenticating' state
+forever, never transitioning to 'connected'.
+
+Track the hello request ID explicitly and match it in handleResponse.
+Also handle the 'hello-ok' frame type directly in handleMessage for
+gateway versions that use a distinct frame type. (fcc90e5)
+
 ## [0.1.41-rc.60] - 2026-02-23
 
 
