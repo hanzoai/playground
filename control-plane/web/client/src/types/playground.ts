@@ -9,6 +9,8 @@ export interface Node {
   registered_at?: string;
   deployment_type?: string; // "long_running" or "serverless"
   invocation_url?: string; // For serverless bots
+  display_name?: string; // Gateway display name (e.g. "Cherrys-MacBook-Air")
+  platform?: string; // Gateway platform (e.g. "darwin", "linux")
   mcp_summary?: MCPSummaryForUI;
   mcp_servers?: MCPServerHealthForUI[];
   bots?: BotDefinition[];

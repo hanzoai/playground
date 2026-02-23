@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 
 interface EnhancedNodeDetailHeaderProps {
   nodeId: string;
+  displayName?: string;
   teamId?: string;
   version?: string;
   lifecycleStatus?: LifecycleStatus | null;
@@ -41,6 +42,7 @@ const formatHeartbeat = (heartbeat?: Date | string | null) => {
 
 export function EnhancedNodeDetailHeader({
   nodeId,
+  displayName,
   lifecycleStatus,
   healthStatus,
   lastHeartbeat,
@@ -91,8 +93,13 @@ export function EnhancedNodeDetailHeader({
               {statusPresentation.label}
             </span>
             <span className="text-sm font-semibold text-foreground truncate">
-              {nodeId}
+              {displayName ?? nodeId}
             </span>
+            {displayName && (
+              <span className="text-xs text-muted-foreground font-mono truncate hidden lg:inline">
+                {nodeId.slice(0, 12)}
+              </span>
+            )}
           </div>
           {(heartbeatDisplay || statusBadges) && (
             <div className="hidden items-center gap-3 text-body-small md:flex">
