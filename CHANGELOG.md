@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.77] - 2026-02-23
+
+
+### Fixed
+
+- Fix(cloud): fall back to auth mode none when no API key is available (#29)
+
+Token mode requires BOT_GATEWAY_TOKEN to be set — without it the bot
+gateway crashes with "no token was configured". When no user API key
+or shared service key is available, use auth mode none since cloud pods
+are only accessible within the K8s service mesh and the playground
+control plane handles real auth upstream. (445b385)
+
 ## [0.1.41-rc.76] - 2026-02-23
 
 
