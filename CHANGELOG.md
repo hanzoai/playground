@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.50] - 2026-02-23
+
+
+### Fixed
+
+- Fix(ci): remove unused imports, pass VNC auth token via query param
+
+- Remove unused AllBotsPage import (TS6133)
+- Remove unused BotFilters import (TS6196)
+- Add authToken getter to GatewayClient for iframe embedding
+- Pass gateway auth token as ?token= query param on /vnc-viewer
+  URLs in both OperativePanel and DesktopPanel so VNC works in iframes
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (76cecd1)
+
 ## [0.1.41-rc.49] - 2026-02-23
 
 
