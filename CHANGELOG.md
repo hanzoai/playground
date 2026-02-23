@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.53] - 2026-02-23
+
+
+### Fixed
+
+- Fix(ui): polish minimap with visible nodes and viewport indicator
+
+Use explicit dark colors for minimap background (#161616), stronger
+mask overlay for clear viewport contrast, bright status-based node
+colors, and viewport stroke outline. Add CSS for refined border,
+shadow, and rounded corners. (832f8b7)
+
 ## [0.1.41-rc.52] - 2026-02-23
 
 
