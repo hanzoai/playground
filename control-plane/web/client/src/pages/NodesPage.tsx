@@ -100,7 +100,7 @@ function mergeGatewayNodes(backendNodes: NodeSummary[], gatewayNodes: GatewayNod
         team_id: '',
         version: gw.version || '',
         health_status: 'active',
-        lifecycle_status: 'running',
+        lifecycle_status: 'ready' as LifecycleStatus,
         bot_count: 0,
         skill_count: 0,
         last_heartbeat: gw.connectedAtMs

@@ -55,7 +55,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
         : Infinity;
 
       // Primary categorization based on lifecycle status (what users care about)
-      const isRunning = node.lifecycle_status === 'ready' || node.lifecycle_status === 'degraded';
+      const isRunning = node.lifecycle_status === 'ready' || node.lifecycle_status === 'running' || node.lifecycle_status === 'degraded';
 
       if (isRunning) {
         // Node is running - categorize by health details
