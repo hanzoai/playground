@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.55] - 2026-02-23
+
+
+### Fixed
+
+- Fix(ui): polish navigation, user profile, bot nodes, and environment defaults
+
+- Remove duplicate breadcrumb (Home > Page) from top navigation
+- Remove space selector from breadcrumb (implicit in environment)
+- Show page title centered in top nav instead
+- Rename Default environment to Production, make it default
+- Show actual IAM user name/email/avatar in sidebar footer
+- Inject app version from package.json instead of hardcoded v1.0.0
+- Hide bot node handles by default, show on hover
+- Add skills/channels display to bot overview
+- Add skills/channels fields to Bot type
+- Clean up bot card styling with subtle ring borders (5673267)
+
 ## [0.1.41-rc.54] - 2026-02-23
 
 
