@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.80] - 2026-02-23
+
+
+### Added
+
+- Feat(cloud): unified gateway — cloud pods connect as nodes (#32)
+
+* feat(cloud): unified gateway — cloud pods connect as nodes to central bot-gateway
+
+Cloud pods now run in node mode (bot node run) connecting to the central
+bot-gateway at gw.hanzo.bot instead of running standalone gateways. This
+means all nodes — local Macs, cloud terminals, desktop agents — appear
+in one unified gateway, accessible from app.hanzo.bot.
+
+Changes:
+- Add GatewayURL and GatewayToken to KubernetesConfig
+- Change pod args from gateway to node mode with central gateway host
+- Replace HTTP health probes with exec probes (node mode has no HTTP server)
+- Remove HANZO_PLAYGROUND_CLOUD_NODE env var (not needed in node mode)
+- Use gateway token from bot-secrets for authentication
+
+* fix: resolve ineffassign lint error in nodeArgs (a91cd8b)
+
 ## [0.1.41-rc.79] - 2026-02-23
 
 
