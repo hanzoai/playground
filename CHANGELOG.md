@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.59] - 2026-02-23
+
+
+### Added
+
+- Feat: bridge gateway-connected nodes into Nodes page
+
+The Nodes page now queries the bot gateway via WebSocket RPC
+(node.list) and merges connected nodes with backend-tracked nodes.
+Gateway-connected nodes show as online with their display name.
+
+Also fixes gateway auth to use localStorage IAM token as fallback
+when the IAM SDK hasn't fully initialized yet. (f175110)
+
 ## [0.1.41-rc.58] - 2026-02-23
 
 
