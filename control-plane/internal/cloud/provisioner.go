@@ -293,11 +293,13 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 
 	// The bot gateway auto-detects IAM mode when HANZO_PLAYGROUND_CLOUD_NODE=true,
 	// but it reads IAM config from its config file (gateway.auth.iam), not env vars.
-	// Since we can't inject a config file, override to token auth mode and provide
-	// the API key as the shared token. The playground handles real auth upstream.
-	env["BOT_GATEWAY_AUTH_MODE"] = "token"
+	// Override to token auth (with key) or none (without key). Cloud pods are only
+	// accessible within the K8s cluster — the playground handles real auth upstream.
 	if apiKey != "" {
+		env["BOT_GATEWAY_AUTH_MODE"] = "token"
 		env["BOT_GATEWAY_TOKEN"] = apiKey
+	} else {
+		env["BOT_GATEWAY_AUTH_MODE"] = "none"
 	}
 
 	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
