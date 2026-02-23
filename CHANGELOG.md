@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.67] - 2026-02-23
+
+
+### Added
+
+- Feat: add cloud provisioning FAB and enhanced launch menu
+
+- Add prominent FAB (bottom-left) with cloud provisioning options:
+  Launch Desktop (Linux VM with VNC), Launch Terminal (headless shell),
+  Launch Cloud Bot (full agent runtime)
+- Separate zoom controls (bottom-center) from launch actions (bottom-left)
+- Add provisionCloudNode/deprovisionCloudNode/listCloudNodes to spaceApi
+- Wire FAB actions to cloud provisioning API in CanvasFlow (997c872)
+
 ## [0.1.41-rc.66] - 2026-02-23
 
 
