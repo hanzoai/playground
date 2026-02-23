@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.70] - 2026-02-23
+
+
+### Other
+
+- Update cloud provisioner to use latest images and enable operative
+
+- Bot image: use latest tag instead of hardcoded date tag
+- Operative image: update from v0.1.0 to latest
+- Enable operative sidecar by default for desktop/VNC support (6c530d5)
+
 ## [0.1.41-rc.69] - 2026-02-23
 
 
