@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.54] - 2026-02-23
+
+
+### Fixed
+
+- Fix(ui): fix selection border, add + button, fix CLI instructions
+
+- Override ReactFlow default selection border (broken dashed outline)
+  with clean CSS that defers to the node's own selected styling
+- Add + FAB button to canvas controls bar with Add Bot / Add Starter
+- Fix DeployLocalStep: use real hanzo-bot CLI commands (not hanzo bot)
+- Fix DeployCLIStep: correct install/run/service instructions
+- Remove broken Bot.app download link (9f143c5)
+
+- Fix(tests): use openai/ prefix for litellm model routing via api.hanzo.ai
+
+litellm requires a provider prefix to route requests. The model
+google/gemini-2.5-flash-lite is not recognized — adding openai/ prefix
+tells litellm to use OpenAI-compatible format against the Hanzo AI
+inference router (api.hanzo.ai/v1).
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (1d4a0ad)
+
 ## [0.1.41-rc.53] - 2026-02-23
 
 
