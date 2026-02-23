@@ -123,4 +123,17 @@ export const spaceApi = {
   // Node V2 proxy
   proxyV2: (spaceId: string, nodeId: string, path: string, init?: RequestInit) =>
     request<unknown>(`/spaces/${spaceId}/nodes/${nodeId}/v2/${path}`, init),
+
+  // Cloud provisioning
+  provisionCloudNode: (data: { name: string; os: string; model?: string; display_name?: string }) =>
+    request<{ node_id: string; pod_name: string; status: string; endpoint: string }>(
+      '/cloud/nodes/provision',
+      { method: 'POST', body: JSON.stringify(data) },
+    ),
+
+  deprovisionCloudNode: (nodeId: string) =>
+    request<{ deleted: boolean }>(`/cloud/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE' }),
+
+  listCloudNodes: () =>
+    request<{ nodes: SpaceNode[] }>('/cloud/nodes'),
 };
