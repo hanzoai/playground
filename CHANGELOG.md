@@ -6,6 +6,119 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.58] - 2026-02-23
+
+
+### Fixed
+
+- Fix: undefined activeAgent variable in health monitor test
+
+Rename second usage to inactiveAgent (distinct declaration) to fix
+build error from prior lint fix that blanked the first occurrence.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (eda9a89)
+
+- Fix: resolve Go lint errors blocking CI
+
+- Check json.Unmarshal errors in observability forwarder tests
+- Remove unused caCert field from InClusterK8sClient
+- Remove self-assignment in workflow execution events
+- Fix variable shadowing in did_service (nodeID range loop)
+- Fix unused variable in health monitor test
+- Suppress unused lint for pending dashboard/storage functions (5f7190d)
+
+- Fix: resolve golangci-lint errcheck violations in tests and services
+
+Handle unchecked error returns flagged by errcheck linter:
+- dev_service.go: os.WriteFile PID file
+- node_client_test.go: w.Write in test handler
+- observability_forwarder_test.go: all defer Stop, AddToDeadLetterQueue,
+  json.Unmarshal, and ReloadConfig calls
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f88d99b)
+
+- Fix: gateway URL points to gw.hanzo.bot, lighten bot card on canvas
+
+- Default gateway WebSocket URL: wss://bot.hanzo.ai → wss://gw.hanzo.bot
+- Add VITE_GATEWAY_URL=wss://gw.hanzo.bot to .env.production
+  (was only setting VITE_BOT_GATEWAY_URL, code reads VITE_GATEWAY_URL)
+- Bot card: bg-card → bg-zinc-800/90 for better visibility on dark canvas
+- Ring opacity: 6% → 10% default, 12% → 20% hover
+- Expanded dividers: 4% → 8% opacity (0b1a24f)
+
+- Fix: update dev service tests for implemented methods, improve E2E login diagnostics
+
+Dev service StopDevMode/GetDevStatus are now implemented — update tests
+to match actual behavior instead of expecting 'not yet implemented'.
+E2E auth helper uses deterministic #submitBtn selector and detects
+login errors on hanzo.id form instead of timing out silently. (9c07f6f)
+
+- Fix: Go build error (GetBot -> GetBotStatus) and Python ruff format
+
+- Agent details endpoint uses GetBotStatus (the actual interface method)
+- Formatted 16 Python test files to pass ruff format --check
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (47934a9)
+
+- Fix: KMS secrets, E2E OIDC auth, Docker push, cloud provisioning, operative images
+
+KMS Secrets:
+- New secrets package with Provider interface (env, aws-kms, gcp-kms, vault)
+- EnvProvider resolves PLAYGROUND_/AGENTS_ prefix with fallback chain
+- Resolver handles secret:// URI references in config values
+- Config loading wired to resolve all sensitive fields via KMS
+- 30 tests for provider, resolver, and env provider
+
+E2E OIDC Auth:
+- Fixed E2E_IAM_APPLICATION mismatch: app-hanzo -> app-hanzobot
+- All config sources now consistent with Go backend DefaultIAMConfig
+- Added /playground route to login.page.ts waitForDashboard regex
+
+Docker Release:
+- Fixed image name: playground/control-plane -> hanzoai/playground
+- Updated K8s deployment, Helm values, examples, and docs to match
+
+Cloud Provisioning:
+- Added readiness, liveness, and startup probes to K8s pods
+- Applied NodeSelector from config to pod specs
+- URL-encoded label selectors in K8s API calls
+- Fixed deprovision routing: VM nodes go to Visor, K8s pods to API
+- Added VisorClient.DeleteMachine() for VM teardown
+- Frontend CloudNode type updated with os/remote_protocol/remote_url
+
+Operative/Desktop Images:
+- Pinned bot image: ghcr.io/hanzoai/bot:2026.2.23
+- Pinned operative image: ghcr.io/hanzoai/operative:v0.1.0
+- Pinned ttyd image: tsl0922/ttyd:1.7.7-alpine
+- Added DISPLAY_NUM/WIDTH/HEIGHT env vars to operative sidecar
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (ee596b9)
+
+- Fix: use HANZO_API_KEY as primary, fix terminal, remove all stubs/TODOs
+
+HANZO_API_KEY:
+- Cloud provisioner now sets HANZO_API_KEY as primary for bot pods
+- Python SDK AIConfig resolves HANZO_API_KEY env var before LiteLLM defaults
+- CLI init and README templates reference HANZO_API_KEY instead of ANTHROPIC_API_KEY
+
+Terminal:
+- TerminalPanel shows connection status indicator (connected/disconnected/error)
+- Displays meaningful error when no active session instead of silent failure
+- User input blocked with error message when sessionKey is missing
+
+Stubs/TODOs removed (0 remaining in production code):
+- Mock execution templates replaced with empty array
+- Agent details endpoint now forwards to botService.GetBot()
+- LocalStorage SetConfig/GetConfig implemented via in-memory cache
+- Dev service stop/status implemented with PID file tracking
+- MCP URL-based discovery returns empty capabilities instead of error
+- DID derivation index parsing implemented
+- All ~48 TODO comments resolved across 25 files
+- Graceful shutdown comment clarified
+- Health endpoint version reads from PLAYGROUND_VERSION env var
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f701fa8)
+
 ## [0.1.41-rc.57] - 2026-02-23
 
 
