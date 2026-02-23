@@ -330,8 +330,13 @@ const NodeCard = memo(
                   isOffline && "text-muted-foreground"
                 )}
               >
-                {highlightText(nodeSummary.id)}
+                {highlightText(nodeSummary.display_name || nodeSummary.id)}
               </h3>
+              {nodeSummary.display_name && nodeSummary.display_name !== nodeSummary.id && (
+                <span className="truncate text-xs text-muted-foreground">
+                  {nodeSummary.id}
+                </span>
+              )}
               <Badge variant="outline" className="h-6 rounded-full px-2 text-body-small">
                 v{nodeSummary.version}
               </Badge>

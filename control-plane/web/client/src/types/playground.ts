@@ -28,6 +28,8 @@ export interface NodeSummary {
   mcp_summary?: MCPSummaryForUI;
   bot_count: number;
   skill_count: number;
+  display_name?: string;  // Gateway display name (e.g. "Cherrys-MacBook-Air")
+  platform?: string;      // Gateway platform (e.g. "darwin", "linux")
 }
 
 export interface NodeDetailsForUI extends Node {}

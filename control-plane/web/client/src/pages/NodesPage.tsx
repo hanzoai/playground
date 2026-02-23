@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import type {
   NodeSummary,
@@ -8,6 +8,8 @@ import type {
 } from "../types/playground";
 import { getNodesSummary } from "../services/api";
 import { useNodeEventsSSE, useUnifiedStatusSSE } from "../hooks/useSSE";
+import { useGateway } from "../hooks/useGateway";
+import { gateway } from "../services/gatewayClient";
 import { StatusRefreshButton } from "../components/status";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { NodesStatusSummary } from "../components/NodesStatusSummary";
@@ -54,6 +56,65 @@ const formatRelativeTime = (date: Date) => {
   return `${diffDays}d ago`;
 };
 
+/** Gateway node shape from node.list RPC */
+interface GatewayNode {
+  nodeId: string;
+  displayName?: string;
+  platform?: string;
+  version?: string;
+  connected: boolean;
+  connectedAtMs?: number;
+  caps?: string[];
+  commands?: string[];
+}
+
+/** Merge backend nodes with gateway-connected nodes. Gateway "connected" flag wins for online status. */
+function mergeGatewayNodes(backendNodes: NodeSummary[], gatewayNodes: GatewayNode[]): NodeSummary[] {
+  const gwMap = new Map(gatewayNodes.map(n => [n.nodeId, n]));
+  const seen = new Set<string>();
+
+  // Update backend nodes with gateway online status
+  const merged = backendNodes.map(node => {
+    const gw = gwMap.get(node.id);
+    seen.add(node.id);
+    if (gw?.connected) {
+      return {
+        ...node,
+        health_status: 'active' as HealthStatus,
+        lifecycle_status: 'running' as LifecycleStatus,
+        version: gw.version || node.version,
+        last_heartbeat: gw.connectedAtMs
+          ? new Date(gw.connectedAtMs).toISOString()
+          : node.last_heartbeat,
+      };
+    }
+    return node;
+  });
+
+  // Add gateway-only nodes (not tracked by backend)
+  for (const gw of gatewayNodes) {
+    if (!seen.has(gw.nodeId) && gw.connected) {
+      merged.push({
+        id: gw.nodeId,
+        base_url: '',
+        team_id: '',
+        version: gw.version || '',
+        health_status: 'active',
+        lifecycle_status: 'running',
+        bot_count: 0,
+        skill_count: 0,
+        last_heartbeat: gw.connectedAtMs
+          ? new Date(gw.connectedAtMs).toISOString()
+          : new Date().toISOString(),
+        display_name: gw.displayName,
+        platform: gw.platform,
+      });
+    }
+  }
+
+  return merged;
+}
+
 export function NodesPage() {
   const [nodes, setNodes] = useState<NodeSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,12 +123,10 @@ export function NodesPage() {
   const [density, setDensity] = useState<DensityMode>("comfortable");
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [showServerlessModal, setShowServerlessModal] = useState(false);
+  const backendNodesRef = useRef<NodeSummary[]>([]);
 
-  // Console log to verify we're using the updated build
-  console.log(
-    "🚀 NodesPage: Component loaded with SSE fixes - Build timestamp:",
-    new Date().toISOString()
-  );
+  // Connect to bot gateway for live node discovery
+  const { isConnected: gwConnected } = useGateway();
 
   // Use the new SSE hook for real-time updates
   const sseHook = useNodeEventsSSE();
@@ -118,12 +177,30 @@ export function NodesPage() {
     []
   );
 
+  /** Fetch gateway-connected nodes and merge with backend nodes */
+  const fetchGatewayNodes = useCallback(async (backendNodes: NodeSummary[]) => {
+    if (!gateway.isConnected) return backendNodes;
+    try {
+      const resp = await gateway.rpc<{ nodes?: GatewayNode[] }>('node.list', {});
+      const gwNodes = resp.nodes ?? [];
+      if (gwNodes.length > 0) {
+        return mergeGatewayNodes(backendNodes, gwNodes);
+      }
+    } catch (err) {
+      console.warn('[NodesPage] Gateway node.list failed:', err);
+    }
+    return backendNodes;
+  }, []);
+
   const fetchNodes = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const data = await getNodesSummary();
-      setNodes(data.nodes);
+      backendNodesRef.current = data.nodes;
+      // Merge with gateway-connected nodes
+      const merged = await fetchGatewayNodes(data.nodes);
+      setNodes(merged);
       setLastRefresh(new Date());
     } catch (err) {
       console.error("Failed to load nodes summary:", err);
@@ -133,7 +210,7 @@ export function NodesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchGatewayNodes]);
 
   // Handle real-time events
   useEffect(() => {
@@ -456,6 +533,17 @@ export function NodesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
+  // When gateway connects, re-merge nodes to pick up online status
+  useEffect(() => {
+    if (!gwConnected) return;
+    const merge = async () => {
+      const merged = await fetchGatewayNodes(backendNodesRef.current);
+      setNodes(merged);
+      setLastRefresh(new Date());
+    };
+    merge();
+  }, [gwConnected, fetchGatewayNodes]);
+
   // Periodic light refresh to keep timestamps (last_heartbeat) fresh
   // SSE events don't carry heartbeat timestamps, so we poll every 30s
   useEffect(() => {
@@ -464,7 +552,9 @@ export function NodesPage() {
       try {
         const data = await getNodesSummary();
         if (active) {
-          setNodes(data.nodes);
+          backendNodesRef.current = data.nodes;
+          const merged = await fetchGatewayNodes(data.nodes);
+          setNodes(merged);
           setLastRefresh(new Date());
         }
       } catch {
@@ -475,7 +565,7 @@ export function NodesPage() {
       active = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchGatewayNodes]);
 
   // Handle bulk status refresh
   const handleBulkRefresh = (
@@ -524,7 +614,8 @@ export function NodesPage() {
         return (
           node.id.toLowerCase().includes(query) ||
           node.team_id.toLowerCase().includes(query) ||
-          node.version.toLowerCase().includes(query)
+          node.version.toLowerCase().includes(query) ||
+          (node.display_name?.toLowerCase().includes(query) ?? false)
         );
       })
     : nodes;
