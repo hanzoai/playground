@@ -7,6 +7,6 @@ responses>=0.25,<0.26
 respx>=0.21,<0.22
 freezegun>=1.5,<1.6
 syrupy>=4.8,<4.9
-hypothesis>=6.148,<6.149
+hypothesis>=6.131,<6.142
 pytest-socket>=0.7,<0.8
 ruff>=0.15,<0.16
