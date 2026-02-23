@@ -77,6 +77,11 @@ class GatewayClient {
     return this.state === 'connected';
   }
 
+  /** The WebSocket URL the client is connected (or connecting) to. */
+  get wsUrl(): string {
+    return this.url;
+  }
+
   /**
    * Connect to the gateway WebSocket.
    */

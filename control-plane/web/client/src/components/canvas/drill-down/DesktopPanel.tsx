@@ -2,13 +2,15 @@
  * DesktopPanel
  *
  * Remote desktop view for bots running on nodes with VNC or RDP.
- * - Linux: noVNC iframe → node's VNC server (port 6080)
- * - Windows: RDP web client
- * - Mac: Screen sharing (future)
+ * - All OSes: gateway /vnc-viewer proxy (preferred)
+ * - Linux fallback: noVNC iframe → node's VNC server (port 6080)
+ * - Windows fallback: RDP web client
+ * - Mac fallback: gateway VNC proxy to macOS Screen Sharing (port 5900)
  */
 
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { gateway } from '@/services/gatewayClient';
 
 interface DesktopPanelProps {
   /** Bot's node endpoint URL (e.g. https://node.example.com:9550) */
@@ -20,41 +22,55 @@ interface DesktopPanelProps {
   className?: string;
 }
 
+/**
+ * Derive the gateway HTTP base from its WebSocket URL.
+ * e.g. wss://bot.hanzo.ai → https://bot.hanzo.ai
+ */
+function gatewayHttpBase(): string | null {
+  const wsUrl = gateway.wsUrl;
+  if (!wsUrl) return null;
+  try {
+    const parsed = new URL(wsUrl);
+    const proto = parsed.protocol === 'wss:' ? 'https:' : 'http:';
+    return `${proto}//${parsed.host}`;
+  } catch {
+    return null;
+  }
+}
+
 export function DesktopPanel({ nodeEndpoint, os, vncPort = 6080, className }: DesktopPanelProps) {
   const desktopUrl = useMemo(() => {
+    // Prefer the gateway VNC proxy — works for all OSes (macOS Screen Sharing,
+    // Linux x11vnc, Operative, etc.)
+    const gwBase = gatewayHttpBase();
+    if (gwBase) {
+      return `${gwBase}/vnc-viewer`;
+    }
+
+    // Fallback: direct node endpoint
     try {
       const url = new URL(nodeEndpoint);
       if (os === 'linux') {
-        // noVNC web client — served by websockify on the node
         return `${url.protocol}//${url.hostname}:${vncPort}/vnc.html?autoconnect=true&resize=scale`;
       }
       if (os === 'windows') {
-        // Apache Guacamole or RDP web client on the node
         return `${url.protocol}//${url.hostname}:${vncPort}/rdp/`;
       }
-      // macOS — placeholder for screen sharing
-      return '';
+      // macOS without gateway — point at node VNC directly
+      return `${url.protocol}//${url.hostname}:5900`;
     } catch {
       return '';
     }
   }, [nodeEndpoint, os, vncPort]);
 
-  if (os === 'macos') {
-    return (
-      <div className={cn('flex items-center justify-center h-full text-sm text-muted-foreground', className)}>
-        <div className="text-center">
-          <p className="font-medium mb-1">macOS Screen Sharing</p>
-          <p className="text-xs">Connect via screen sharing at the node's address.</p>
-          <code className="text-xs mt-2 block font-mono bg-muted px-2 py-1 rounded">{nodeEndpoint}</code>
-        </div>
-      </div>
-    );
-  }
-
   if (!desktopUrl) {
     return (
       <div className={cn('flex items-center justify-center h-full text-sm text-muted-foreground', className)}>
-        Unable to determine desktop URL from node endpoint.
+        <div className="text-center space-y-2">
+          <div className="text-2xl">🖥️</div>
+          <div>Desktop not available</div>
+          <div className="text-[10px]">Connect a bot with Screen Sharing or VNC enabled.</div>
+        </div>
       </div>
     );
   }
@@ -63,10 +79,9 @@ export function DesktopPanel({ nodeEndpoint, os, vncPort = 6080, className }: De
     <div className={cn('h-full w-full', className)}>
       <iframe
         src={desktopUrl}
-        title={`${os === 'linux' ? 'VNC' : 'RDP'} Desktop`}
+        title={`${os === 'linux' ? 'VNC' : os === 'windows' ? 'RDP' : 'Screen Sharing'} Desktop`}
         className="w-full h-full border-0 rounded-b-lg"
         allow="clipboard-read; clipboard-write"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       />
     </div>
   );

@@ -43,6 +43,21 @@ interface SpaceState {
 
 const STORAGE_KEY = 'hanzo-space-active';
 
+/** Create a client-side default space when the API backend is unavailable. */
+function makeLocalDefaultSpace(): Space {
+  const id = localStorage.getItem(STORAGE_KEY) || `local-${Date.now()}`;
+  return {
+    id,
+    org_id: 'local',
+    name: 'Default',
+    slug: 'default',
+    description: 'Auto-created workspace',
+    created_by: 'system',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export const useSpaceStore = create<SpaceState>((set, get) => ({
   activeSpaceId: localStorage.getItem(STORAGE_KEY),
   activeSpace: null,
@@ -54,46 +69,56 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
 
   fetchSpaces: async () => {
     set({ loading: true });
-    try {
-      let { spaces } = await spaceApi.list();
+    let spaces: Space[] = [];
+    let apiAvailable = true;
 
-      // Auto-create a default space when none exist
-      if (spaces.length === 0) {
+    try {
+      const result = await spaceApi.list();
+      spaces = result.spaces;
+    } catch {
+      apiAvailable = false;
+    }
+
+    // Auto-create a default space when none exist
+    if (spaces.length === 0) {
+      if (apiAvailable) {
         try {
           const defaultSpace = await spaceApi.create({ name: 'Default', description: 'Auto-created workspace' });
           spaces = [defaultSpace];
         } catch {
-          // Auto-create failed — continue with empty list
+          // API create failed — fall back to local space
+          spaces = [makeLocalDefaultSpace()];
         }
+      } else {
+        // API unreachable — create a local-only space so the UI never blocks
+        spaces = [makeLocalDefaultSpace()];
       }
+    }
 
-      set({ spaces, loading: false });
+    set({ spaces, loading: false });
 
-      const { activeSpaceId } = get();
+    const { activeSpaceId } = get();
 
-      // If previously active space was deleted, fall back to first available
-      if (activeSpaceId && !spaces.find(s => s.id === activeSpaceId)) {
-        if (spaces.length > 0) {
-          await get().setActiveSpace(spaces[0].id);
-        } else {
-          localStorage.removeItem(STORAGE_KEY);
-          set({ activeSpaceId: null, activeSpace: null, nodes: [], bots: [], members: [] });
-        }
-        return;
-      }
-
-      // Auto-select first space if none active
-      if (!activeSpaceId && spaces.length > 0) {
+    // If previously active space was deleted, fall back to first available
+    if (activeSpaceId && !spaces.find(s => s.id === activeSpaceId)) {
+      if (spaces.length > 0) {
         await get().setActiveSpace(spaces[0].id);
-      } else if (activeSpaceId) {
-        // Refresh active space details
-        const active = spaces.find(s => s.id === activeSpaceId);
-        if (active) {
-          set({ activeSpace: active });
-        }
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        set({ activeSpaceId: null, activeSpace: null, nodes: [], bots: [], members: [] });
       }
-    } catch {
-      set({ loading: false });
+      return;
+    }
+
+    // Auto-select first space if none active
+    if (!activeSpaceId && spaces.length > 0) {
+      await get().setActiveSpace(spaces[0].id);
+    } else if (activeSpaceId) {
+      // Refresh active space details
+      const active = spaces.find(s => s.id === activeSpaceId);
+      if (active) {
+        set({ activeSpace: active });
+      }
     }
   },
 
@@ -105,7 +130,9 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       // Refresh nodes, bots, and members for the new space
       await Promise.all([get().fetchNodes(), get().fetchBots(), get().fetchMembers()]);
     } catch {
-      set({ activeSpaceId: id });
+      // API unavailable — use locally-known space or create a fallback
+      const known = get().spaces.find(s => s.id === id);
+      set({ activeSpaceId: id, activeSpace: known ?? makeLocalDefaultSpace() });
     }
   },
 
