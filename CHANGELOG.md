@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.63] - 2026-02-23
+
+
+### Fixed
+
+- Fix: categorize gateway-only nodes as ready and handle running lifecycle in virtual list (#11)
+
+Gateway-only nodes (not tracked by backend) were assigned lifecycle_status
+'running' instead of 'ready', causing them to appear as offline in the
+NodesVirtualList. Also added 'running' to the isRunning check in
+NodesVirtualList for consistency with node-status.ts. (69e5d4c)
+
 ## [0.1.41-rc.62] - 2026-02-23
 
 
