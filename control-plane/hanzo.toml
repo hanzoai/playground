@@ -1,0 +1,65 @@
+# Hanzo Playground Control Plane — deployment manifest for Hanzo PaaS
+# Deploy: hanzo deploy service playground --config hanzo.toml
+# Docs:   https://docs.hanzo.ai/playground/deploy
+
+[app]
+name = "playground"
+type = "deployment"
+dockerfile = "../deployments/docker/Dockerfile.control-plane"
+
+[env]
+GIN_MODE = "release"
+DATA_DIR = "/data"
+STORAGE_TYPE = "sqlite"
+ENABLE_DID = "true"
+ENABLE_VC = "true"
+
+# Secrets injected from Hanzo KMS at deploy time.
+# Set them with:
+#   hanzo kms set <project> production DATABASE_URL postgres://...
+#   hanzo kms set <project> production HANZO_API_KEY hz-...
+#   hanzo kms set <project> production IAM_CLIENT_SECRET ...
+#
+# Required:
+#   HANZO_API_KEY          — Hanzo Cloud API key
+#
+# Optional (for IAM mode):
+#   IAM_SERVER_URL         — Hanzo IAM server (default: https://hanzo.id)
+#   IAM_CLIENT_ID          — OAuth client ID
+#   IAM_CLIENT_SECRET      — OAuth client secret
+#
+# Optional (for PostgreSQL):
+#   DATABASE_URL           — PostgreSQL connection string
+#   STORAGE_TYPE           — Set to "postgresql" to use Postgres
+
+[networking]
+port = 8080
+ingress = true
+force_https = true
+domain = "app.hanzo.bot"
+
+[resources]
+cpu = "2000m"
+memory = "2048Mi"
+
+[storage]
+enabled = true
+mount = "/data"
+size = "5Gi"
+
+[deploy]
+replicas = 1
+strategy = "RollingUpdate"
+command = "/usr/local/bin/playground-server"
+
+[probes.readiness]
+path = "/api/v1/health"
+port = 8080
+period = 30
+timeout = 10
+
+[probes.liveness]
+path = "/api/v1/health"
+port = 8080
+period = 30
+timeout = 10

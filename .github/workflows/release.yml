@@ -514,3 +514,17 @@ jobs:
           files: |
             sdk/python/dist/*.whl
             sdk/python/dist/*.tar.gz
+
+      - name: Deploy to Hanzo PaaS
+        if: |
+          needs.prepare.outputs.publish_docker == 'true' &&
+          needs.prepare.outputs.environment == 'production'
+        env:
+          HANZO_API_KEY: ${{ secrets.HANZO_API_KEY }}
+          DOCKER_TAGS: ${{ steps.docker_meta.outputs.tags }}
+        run: |
+          pip install hanzo
+          hanzo auth set-key "$HANZO_API_KEY"
+          # Extract the versioned image tag (first tag)
+          IMAGE=$(echo "$DOCKER_TAGS" | head -1)
+          hanzo deploy service playground --image "$IMAGE" --wait
