@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.44] - 2026-02-23
+
+
+### Fixed
+
+- Fix(playground): auto-create spaces and connect desktop panels to gateway VNC proxy
+
+- spaceStore: auto-create local fallback space when control-plane API is unavailable so users never see "No space selected"
+- gatewayClient: expose wsUrl getter for deriving HTTP base from WebSocket URL
+- OperativePanel: resolve VNC viewer URL from gateway WS URL instead of showing placeholder
+- DesktopPanel: prefer gateway /vnc-viewer proxy for all OSes (macOS Screen Sharing, Linux, Windows) (cb38054)
+
 ## [0.1.41-rc.43] - 2026-02-23
 
 
