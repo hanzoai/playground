@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.46] - 2026-02-23
+
+
+### Fixed
+
+- Fix(minimap): use theme-aware colors for dark mode support
+
+Use CSS custom properties for minimap mask, node, and stroke colors
+instead of hardcoded rgba values so the minimap inverts properly in
+dark mode. (708156a)
+
 ## [0.1.41-rc.45] - 2026-02-23
 
 
