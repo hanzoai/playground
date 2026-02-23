@@ -15,6 +15,7 @@ import { useActionPillStore } from '@/stores/actionPillStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenantStore } from '@/stores/tenantStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { getGlobalIamToken } from '@/services/api';
 import type {
   ConnectParams,
   GatewayConnectionState,
@@ -114,7 +115,10 @@ export function useGateway(explicitTenant?: TenantContext) {
   const addApproval = useActionPillStore((s) => s.add);
 
   /** Build ConnectParams with auth + tenant context */
-  const buildConnectParams = useCallback((): ConnectParams => ({
+  const buildConnectParams = useCallback((): ConnectParams => {
+    // Token priority: IAM SDK > settings store > env var > localStorage fallback
+    const effectiveToken = apiKey || settingsGatewayToken || ENV_GATEWAY_TOKEN || getGlobalIamToken();
+    return {
     minProtocol: 3,
     maxProtocol: 3,
     client: {
@@ -126,7 +130,7 @@ export function useGateway(explicitTenant?: TenantContext) {
     },
     role: 'operator',
     scopes: ['operator.admin'],
-    ...((apiKey || settingsGatewayToken || ENV_GATEWAY_TOKEN) ? { auth: { token: apiKey || settingsGatewayToken || ENV_GATEWAY_TOKEN } } : {}),
+    ...(effectiveToken ? { auth: { token: effectiveToken } } : {}),
     ...(tenant ? {
       tenant: {
         orgId: tenant.orgId,
@@ -136,7 +140,8 @@ export function useGateway(explicitTenant?: TenantContext) {
         env: tenant.env ?? (import.meta.env.PROD ? 'production' : 'development'),
       },
     } : {}),
-  }), [apiKey, settingsGatewayToken, tenant]);
+  };
+  }, [apiKey, settingsGatewayToken, tenant]);
 
   /** Convert agents.list response rows into AgentSummary with derived sessionKey */
   const toAgentSummaries = useCallback((resp: AgentsListResponse): AgentSummary[] => {
