@@ -29,6 +29,7 @@ import { nodeTypes } from './nodes/registry';
 import { CanvasControls } from './CanvasControls';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { BotContextMenu, type BotContextMenuState } from './BotContextMenu';
+import { spaceApi } from '@/services/spaceApi';
 import type { Bot } from '@/types/canvas';
 
 // ---------------------------------------------------------------------------
@@ -162,6 +163,27 @@ export function CanvasFlow({ className }: { className?: string }) {
     [screenToFlowPosition, addStarter]
   );
 
+  const handleLaunchCloud = useCallback(
+    async (type: 'linux' | 'terminal' | 'desktop') => {
+      try {
+        const name = `bot-${Date.now().toString(36)}`;
+        const os = type === 'desktop' ? 'linux' : type;
+        await spaceApi.provisionCloudNode({ name, os, display_name: name });
+        // Add a provisioning placeholder on the canvas
+        const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const flowPos = screenToFlowPosition(center);
+        upsertBot(`cloud-${name}`, {
+          name,
+          status: 'provisioning',
+          source: 'cloud',
+        }, flowPos);
+      } catch (err) {
+        console.error('[canvas] Cloud provisioning failed:', err);
+      }
+    },
+    [screenToFlowPosition, upsertBot]
+  );
+
   return (
     <div className={`h-full w-full ${className ?? ''}`}>
       <ReactFlow
@@ -226,6 +248,7 @@ export function CanvasFlow({ className }: { className?: string }) {
           onFitView={() => fitView({ padding: 0.3 })}
           onAddBot={handleAddBot}
           onAddStarter={handleAddStarter}
+          onLaunchCloud={handleLaunchCloud}
         />
       </ReactFlow>
 
