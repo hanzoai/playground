@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.74] - 2026-02-23
+
+
+### Other
+
+- Inject IAM config into cloud bot pods to fix gateway auth crash (#24)
+
+Cloud bot pods crash with "gateway auth mode is iam, but no IAM config
+was provided" because HANZO_PLAYGROUND_CLOUD_NODE=true auto-enables IAM
+mode. Fix: provisioner now injects GATEWAY_IAM_SERVER_URL, CLIENT_ID,
+CLIENT_SECRET, ORG_NAME, APP_NAME from playground's IAM config. Falls
+back to token auth mode when IAM is not configured. (4a68d15)
+
 ## [0.1.41-rc.73] - 2026-02-23
 
 
