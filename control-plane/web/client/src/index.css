@@ -802,3 +802,21 @@ table td,
 .canvas-minimap svg {
   border-radius: 10px;
 }
+
+/* Override ReactFlow's ugly default selection border on custom nodes */
+.react-flow__node.selected > div,
+.react-flow__node:focus > div,
+.react-flow__node:focus-visible > div {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node.selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none !important;
+}

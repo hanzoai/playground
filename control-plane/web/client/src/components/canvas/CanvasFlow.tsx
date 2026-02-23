@@ -222,7 +222,11 @@ export function CanvasFlow({ className }: { className?: string }) {
           pannable
           zoomable
         />
-        <CanvasControls onFitView={() => fitView({ padding: 0.3 })} />
+        <CanvasControls
+          onFitView={() => fitView({ padding: 0.3 })}
+          onAddBot={handleAddBot}
+          onAddStarter={handleAddStarter}
+        />
       </ReactFlow>
 
       <CanvasContextMenu
