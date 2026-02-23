@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.65] - 2026-02-23
+
+
+### Added
+
+- Feat: pass nodeId to OperativePanel for VNC tunnel support (#13)
+
+The OperativePanel now accepts an optional nodeId prop. When provided,
+the VNC viewer URL includes nodeId so the gateway tunnels VNC data
+through the node's WebSocket connection instead of connecting to its
+own localhost:5900. (bf1bdb1)
+
 ## [0.1.41-rc.64] - 2026-02-23
 
 
