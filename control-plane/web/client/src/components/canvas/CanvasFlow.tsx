@@ -28,6 +28,8 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { nodeTypes } from './nodes/registry';
 import { CanvasControls } from './CanvasControls';
 import { CanvasContextMenu } from './CanvasContextMenu';
+import { BotContextMenu, type BotContextMenuState } from './BotContextMenu';
+import type { Bot } from '@/types/canvas';
 
 // ---------------------------------------------------------------------------
 // CanvasFlow
@@ -50,8 +52,9 @@ export function CanvasFlow({ className }: { className?: string }) {
   const { fitView, screenToFlowPosition } = useReactFlow();
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Context menu
+  // Context menus
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [botContextMenu, setBotContextMenu] = useState<BotContextMenuState | null>(null);
 
   // Sync store → local when store changes externally
   useEffect(() => { setNodes(storeNodes); }, [storeNodes, setNodes]);
@@ -100,6 +103,7 @@ export function CanvasFlow({ className }: { className?: string }) {
   const handlePaneClick = useCallback(() => {
     selectNode(null);
     setContextMenu(null);
+    setBotContextMenu(null);
   }, [selectNode]);
 
   const handleMoveEnd = useCallback(
@@ -113,7 +117,27 @@ export function CanvasFlow({ className }: { className?: string }) {
   const handleContextMenu = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
+      setBotContextMenu(null);
       setContextMenu({ x: event.clientX, y: event.clientY });
+    },
+    []
+  );
+
+  const handleNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: { id: string; type?: string; data: Record<string, unknown> }) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setContextMenu(null);
+      if (node.type === 'bot') {
+        const bot = node.data as unknown as Bot;
+        setBotContextMenu({
+          x: event.clientX,
+          y: event.clientY,
+          agentId: bot.agentId,
+          sessionKey: bot.sessionKey,
+          status: bot.status,
+        });
+      }
     },
     []
   );
@@ -151,6 +175,7 @@ export function CanvasFlow({ className }: { className?: string }) {
         onPaneClick={handlePaneClick}
         onMoveEnd={handleMoveEnd}
         onContextMenu={handleContextMenu}
+        onNodeContextMenu={handleNodeContextMenu}
         defaultViewport={storeViewport}
         fitView={nodes.length > 0}
         fitViewOptions={{ padding: 0.3, maxZoom: 1.2 }}
@@ -192,6 +217,11 @@ export function CanvasFlow({ className }: { className?: string }) {
         onClose={() => setContextMenu(null)}
         onAddBot={handleAddBot}
         onAddStarter={handleAddStarter}
+      />
+
+      <BotContextMenu
+        state={botContextMenu}
+        onClose={() => setBotContextMenu(null)}
       />
     </div>
   );

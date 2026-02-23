@@ -8,6 +8,7 @@ import { ThemeProvider } from "./components/theme-provider";
 import { useFocusManagement } from "./hooks/useFocusManagement";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
 import { AllBotsPage } from "./pages/AllBotsPage.tsx";
+import { ControlPlanePage } from "./pages/ControlPlanePage";
 import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
 import { ExecutionsPage } from "./pages/ExecutionsPage";
 import { EnhancedExecutionDetailPage } from "./pages/EnhancedExecutionDetailPage";
@@ -73,7 +74,7 @@ function AppContent() {
               <Route path="/dashboard" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/nodes" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
               <Route path="/nodes/:nodeId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodeDetailPage /></div>} />
-              <Route path="/bots/all" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><AllBotsPage /></div>} />
+              <Route path="/bots/all" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ControlPlanePage /></div>} />
               <Route
                 path="/bots/:fullBotId"
                 element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BotDetailPage /></div>}

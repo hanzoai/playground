@@ -2,73 +2,67 @@ import type { NavigationSection } from '@/components/Navigation/types';
 
 export const navigationSections: NavigationSection[] = [
   {
-    id: 'overview',
-    title: 'Overview',
+    id: 'core',
+    title: '',
     items: [
       {
         id: 'dashboard',
         label: 'Dashboard',
         href: '/dashboard',
         icon: 'dashboard',
-        description: 'Real-time system overview and operational metrics'
+        description: 'System overview and operational metrics'
+      },
+      {
+        id: 'control-plane',
+        label: 'Control Plane',
+        href: '/bots/all',
+        icon: 'data-center',
+        description: 'Orchestrate distributed agents and runtime execution'
       },
       {
         id: 'playground',
         label: 'Playground',
         href: '/playground',
         icon: 'bot',
-        description: 'Visual bot orchestration playground'
+        description: 'Visual agent orchestration canvas'
+      },
+      {
+        id: 'nodes',
+        label: 'Nodes',
+        href: '/nodes',
+        icon: 'function',
+        description: 'Agent node infrastructure and status'
       },
       {
         id: 'spaces',
         label: 'Spaces',
         href: '/spaces',
         icon: 'data-center',
-        description: 'Project workspaces for bots, nodes, and teams'
+        description: 'Project workspaces for agents and teams'
       },
       {
         id: 'teams',
         label: 'Teams',
         href: '/teams',
         icon: 'users',
-        description: 'Provision and manage bot teams'
-      }
-    ]
-  },
-  {
-    id: 'bot-hub',
-    title: 'Bot Hub',
-    items: [
-      {
-        id: 'node-overview',
-        label: 'Node',
-        href: '/nodes',
-        icon: 'data-center',
-        description: 'Node infrastructure and status'
-      },
-      {
-        id: 'all-bots',
-        label: 'Bots',
-        href: '/bots/all',
-        icon: 'function',
-        description: 'Browse and manage all bots'
+        description: 'Provision and manage agent teams'
       }
     ]
   },
   {
     id: 'executions',
-    title: 'Executions',
+    title: '',
     items: [
       {
         id: 'individual-executions',
-        label: 'Individual Executions',
+        label: 'Executions',
         href: '/executions',
         icon: 'run',
-        description: 'Single bot executions and calls'
+        description: 'Agent executions and runtime calls'
       },
       {
         id: 'workflow-executions',
-        label: 'Workflow Executions',
+        label: 'Workflows',
         href: '/workflows',
         icon: 'flow-data',
         description: 'Multi-step workflow processes'
@@ -77,41 +71,41 @@ export const navigationSections: NavigationSection[] = [
   },
   {
     id: 'identity-trust',
-    title: 'Identity & Trust',
+    title: '',
     items: [
       {
         id: 'did-explorer',
         label: 'DID Explorer',
         href: '/identity/dids',
         icon: 'identification',
-        description: 'Explore decentralized identifiers for bots and bots'
+        description: 'Decentralized identifiers for agents'
       },
       {
         id: 'credentials',
         label: 'Credentials',
         href: '/identity/credentials',
         icon: 'shield-check',
-        description: 'View and verify execution credentials'
+        description: 'Execution credentials and verification'
       }
     ]
   },
   {
     id: 'settings',
-    title: 'Settings',
+    title: '',
     items: [
       {
         id: 'gateway',
         label: 'Gateway',
         href: '/settings',
         icon: 'link',
-        description: 'Connect to a local or remote bot gateway'
+        description: 'Agent gateway connection'
       },
       {
         id: 'observability-webhook',
-        label: 'Observability Webhook',
+        label: 'Observability',
         href: '/settings/observability-webhook',
         icon: 'settings',
-        description: 'Configure external event forwarding'
+        description: 'Event forwarding and observability'
       }
     ]
   }

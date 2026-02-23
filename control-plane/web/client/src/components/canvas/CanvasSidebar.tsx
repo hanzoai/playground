@@ -11,6 +11,7 @@ import { useBotStore } from '@/stores/botStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import type { BotStatus } from '@/types/gateway';
 import { cn } from '@/lib/utils';
+import { BotContextMenu, type BotContextMenuState } from './BotContextMenu';
 
 const STATUS_FILTERS: { key: BotStatus | 'all'; label: string }[] = [
   { key: 'all',    label: 'All' },
@@ -34,6 +35,7 @@ export function CanvasSidebar({ open, onClose }: CanvasSidebarProps) {
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<BotStatus | 'all'>('all');
+  const [botMenu, setBotMenu] = useState<BotContextMenuState | null>(null);
 
   const filtered = useMemo(() => {
     return agents.filter((agent) => {
@@ -127,6 +129,17 @@ export function CanvasSidebar({ open, onClose }: CanvasSidebarProps) {
                   key={agent.id}
                   type="button"
                   onClick={() => handleSelect(agent.id)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setBotMenu({
+                      x: e.clientX,
+                      y: e.clientY,
+                      agentId: agent.id,
+                      sessionKey: agent.sessionKey,
+                      status: agent.status,
+                    });
+                  }}
                   className={cn(
                     'flex items-center gap-2 w-full rounded-lg px-2.5 py-2 text-left transition-colors',
                     selectedAgentId === agent.id
@@ -150,6 +163,8 @@ export function CanvasSidebar({ open, onClose }: CanvasSidebarProps) {
           </div>
         </div>
       </div>
+
+      <BotContextMenu state={botMenu} onClose={() => setBotMenu(null)} />
     </>
   );
 }

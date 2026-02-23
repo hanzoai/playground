@@ -73,12 +73,16 @@ export function SidebarNew({ sections }: SidebarNewProps) {
       </SidebarHeader>
 
       {/* Content */}
-      <SidebarContent className="space-y-4 px-2">
-        {sections.map((section) => (
+      <SidebarContent className="space-y-1 px-2">
+        {sections.map((section, idx) => (
           <SidebarGroup key={section.id} className="space-y-0.5">
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 px-2 mb-1">
-              {section.title}
-            </SidebarGroupLabel>
+            {section.title ? (
+              <SidebarGroupLabel className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 px-2 mb-1">
+                {section.title}
+              </SidebarGroupLabel>
+            ) : idx > 0 ? (
+              <div className="border-t border-border/20 mx-2 mb-1" />
+            ) : null}
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => (

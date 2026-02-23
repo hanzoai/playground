@@ -81,12 +81,11 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
         onClick={handleToggleExpand}
       >
         {/* Status dot */}
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          {status.pulse && (
-            <span className={cn('absolute inline-flex h-full w-full animate-ping rounded-full opacity-75', status.color)} />
-          )}
-          <span className={cn('relative inline-flex h-2.5 w-2.5 rounded-full', status.color)} />
-        </span>
+        <span className={cn(
+          'h-2 w-2 rounded-full shrink-0',
+          status.color,
+          status.pulse && 'shadow-[0_0_6px_1px] shadow-current'
+        )} />
 
         {/* Avatar / Emoji / Logo */}
         {bot.avatar ? (
