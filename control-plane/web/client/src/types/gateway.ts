@@ -34,13 +34,18 @@ export interface EventFrame {
   stateVersion?: StateVersion;
 }
 
+export interface HelloOkFrame {
+  type: 'hello-ok';
+  payload?: unknown;
+}
+
 export interface ErrorShape {
   code: string;
   message: string;
   data?: unknown;
 }
 
-export type Frame = RequestFrame | ResponseFrame | EventFrame;
+export type Frame = RequestFrame | ResponseFrame | EventFrame | HelloOkFrame;
 
 export interface StateVersion {
   v: number;
