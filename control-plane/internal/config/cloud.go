@@ -34,6 +34,10 @@ type KubernetesConfig struct {
 	// Hanzo Cloud AI backend for bot LLM calls
 	CloudAPIEndpoint string `yaml:"cloud_api_endpoint" mapstructure:"cloud_api_endpoint"`
 	CloudAPIKey      string `yaml:"cloud_api_key" mapstructure:"cloud_api_key"`
+	// Central gateway: cloud pods connect as nodes to the shared bot-gateway
+	// so all nodes (local Mac + cloud pods) appear in one unified gateway.
+	GatewayURL   string `yaml:"gateway_url" mapstructure:"gateway_url"`     // ws://bot-gateway.hanzo.svc:18789
+	GatewayToken string `yaml:"gateway_token" mapstructure:"gateway_token"` // Shared auth token
 }
 
 // VisorConfig holds configuration for Visor multi-cloud VM provisioning.
@@ -77,6 +81,7 @@ func DefaultCloudConfig() CloudConfig {
 			OperativeEnabled: true,
 			OperativeImage:   "ghcr.io/hanzoai/operative:latest",
 			CloudAPIEndpoint: "https://api.hanzo.ai/v1",
+			GatewayURL:       "ws://bot-gateway.hanzo.svc:18789",
 		},
 		Visor: VisorConfig{
 			Enabled:  false,
@@ -159,6 +164,12 @@ func applyCloudEnvOverrides(cfg *Config) {
 	}
 	if v := hanzoEnvWithFallback("CLOUD_API_KEY"); v != "" {
 		cfg.Cloud.Kubernetes.CloudAPIKey = v
+	}
+	if v := hanzoEnvWithFallback("CLOUD_GATEWAY_URL"); v != "" {
+		cfg.Cloud.Kubernetes.GatewayURL = v
+	}
+	if v := hanzoEnvWithFallback("CLOUD_GATEWAY_TOKEN"); v != "" {
+		cfg.Cloud.Kubernetes.GatewayToken = v
 	}
 
 	// Visor (multi-cloud VM provisioning)

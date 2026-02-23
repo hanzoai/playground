@@ -233,41 +233,25 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 				"memory": spec.LimitMemory,
 			},
 		},
-		"ports": []map[string]interface{}{
-			{"containerPort": 18789, "name": "agent", "protocol": "TCP"},
-		},
-		// Readiness probe: agent is ready to accept traffic
-		"readinessProbe": map[string]interface{}{
-			"httpGet": map[string]interface{}{
-				"path": "/health",
-				"port": 18789,
+		// In node mode the agent connects to the central gateway via WebSocket
+		// and doesn't expose an HTTP server. Use exec probes to check process health.
+		"livenessProbe": map[string]interface{}{
+			"exec": map[string]interface{}{
+				"command": []string{"sh", "-c", "kill -0 1"},
 			},
-			"initialDelaySeconds": 5,
-			"periodSeconds":       10,
+			"initialDelaySeconds": 10,
+			"periodSeconds":       20,
 			"timeoutSeconds":      3,
 			"failureThreshold":    3,
 		},
-		// Liveness probe: agent process is alive
-		"livenessProbe": map[string]interface{}{
-			"httpGet": map[string]interface{}{
-				"path": "/health",
-				"port": 18789,
-			},
-			"initialDelaySeconds": 15,
-			"periodSeconds":       20,
-			"timeoutSeconds":      5,
-			"failureThreshold":    3,
-		},
-		// Startup probe: give agent time to initialize on first boot
 		"startupProbe": map[string]interface{}{
-			"httpGet": map[string]interface{}{
-				"path": "/health",
-				"port": 18789,
+			"exec": map[string]interface{}{
+				"command": []string{"sh", "-c", "kill -0 1"},
 			},
 			"initialDelaySeconds": 2,
 			"periodSeconds":       5,
 			"timeoutSeconds":      3,
-			"failureThreshold":    30, // up to 150s for cold start
+			"failureThreshold":    30,
 		},
 	}
 
