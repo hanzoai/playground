@@ -963,7 +963,7 @@ function NodeDetailPageContent() {
             className="flex-1 overflow-hidden"
           >
             <div className="h-full px-6 pb-6">
-              <OperativePanel agentId="main" className="h-full rounded-lg border border-border" />
+              <OperativePanel agentId="main" nodeId={nodeId} className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
 
