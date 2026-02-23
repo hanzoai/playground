@@ -95,21 +95,21 @@ export function CanvasControls({ onFitView, onAddBot, onAddStarter, onLaunchClou
             {onLaunchCloud && (
               <>
                 <MenuItem
-                  icon="🖥️"
-                  label="Launch Desktop"
-                  description="Linux VM with VNC desktop"
-                  onClick={() => { onLaunchCloud('desktop'); setMenuOpen(false); }}
-                />
-                <MenuItem
                   icon="⌨️"
                   label="Launch Terminal"
-                  description="Headless shell agent"
+                  description="Lightweight shell (384Mi)"
                   onClick={() => { onLaunchCloud('terminal'); setMenuOpen(false); }}
+                />
+                <MenuItem
+                  icon="🖥️"
+                  label="Launch Desktop"
+                  description="Linux + VNC desktop (512Mi+)"
+                  onClick={() => { onLaunchCloud('desktop'); setMenuOpen(false); }}
                 />
                 <MenuItem
                   icon="🤖"
                   label="Launch Cloud Bot"
-                  description="Full agent with runtime"
+                  description="Full agent runtime (512Mi+)"
                   onClick={() => { onLaunchCloud('linux'); setMenuOpen(false); }}
                 />
                 <div className="mx-2 my-1 h-px bg-border/40" />

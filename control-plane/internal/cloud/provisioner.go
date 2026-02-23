@@ -202,9 +202,18 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		image = req.Image
 	}
 
-	// Resource defaults
+	// Resource defaults — scale based on mode
 	cpu := p.config.Kubernetes.DefaultCPU
 	memory := p.config.Kubernetes.DefaultMemory
+	if req.OS == "terminal" {
+		// Terminal-only: lightweight, no X11/VNC overhead
+		if cpu == p.config.Kubernetes.DefaultCPU {
+			cpu = "200m"
+		}
+		if memory == p.config.Kubernetes.DefaultMemory {
+			memory = "384Mi"
+		}
+	}
 	if req.CPU != "" {
 		cpu = req.CPU
 	}

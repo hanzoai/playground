@@ -125,15 +125,34 @@ export const spaceApi = {
     request<unknown>(`/spaces/${spaceId}/nodes/${nodeId}/v2/${path}`, init),
 
   // Cloud provisioning
-  provisionCloudNode: (data: { name: string; os: string; model?: string; display_name?: string }) =>
-    request<{ node_id: string; pod_name: string; status: string; endpoint: string }>(
+  provisionCloudNode: (data: {
+    node_id?: string;
+    display_name?: string;
+    model?: string;
+    os?: string;         // "linux" (default), "terminal", "macos", "windows"
+    cpu?: string;        // e.g. "500m", "1000m"
+    memory?: string;     // e.g. "512Mi", "2Gi"
+    image?: string;      // override agent image
+    workspace?: string;
+    env?: Record<string, string>;
+  }) =>
+    request<{ node_id: string; pod_name: string; namespace: string; status: string; endpoint: string; created_at: string }>(
       '/cloud/nodes/provision',
       { method: 'POST', body: JSON.stringify(data) },
     ),
 
   deprovisionCloudNode: (nodeId: string) =>
-    request<{ deleted: boolean }>(`/cloud/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE' }),
+    request<{ status: string; node_id: string }>(`/cloud/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE' }),
+
+  getCloudNode: (nodeId: string) =>
+    request<{ node_id: string; pod_name: string; status: string; os: string }>(`/cloud/nodes/${encodeURIComponent(nodeId)}`),
+
+  getCloudLogs: (nodeId: string, tail?: number) =>
+    request<{ node_id: string; logs: string }>(`/cloud/nodes/${encodeURIComponent(nodeId)}/logs?tail=${tail ?? 100}`),
 
   listCloudNodes: () =>
-    request<{ nodes: SpaceNode[] }>('/cloud/nodes'),
+    request<{ nodes: SpaceNode[]; count: number }>('/cloud/nodes'),
+
+  syncCloudNodes: () =>
+    request<{ status: string }>('/cloud/nodes/sync', { method: 'POST' }),
 };

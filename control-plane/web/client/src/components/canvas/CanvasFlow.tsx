@@ -165,20 +165,26 @@ export function CanvasFlow({ className }: { className?: string }) {
 
   const handleLaunchCloud = useCallback(
     async (type: 'linux' | 'terminal' | 'desktop') => {
+      const displayName = `bot-${Date.now().toString(36)}`;
+      const os = type === 'desktop' ? 'linux' : type;
+      console.info(`[cloud] Provisioning ${type} agent (os=${os})...`);
       try {
-        const name = `bot-${Date.now().toString(36)}`;
-        const os = type === 'desktop' ? 'linux' : type;
-        await spaceApi.provisionCloudNode({ name, os, display_name: name });
-        // Add a provisioning placeholder on the canvas
+        const result = await spaceApi.provisionCloudNode({
+          display_name: displayName,
+          os,
+        });
+        console.info(`[cloud] Provisioned: node_id=${result.node_id} pod=${result.pod_name} status=${result.status}`);
+        // Add to canvas using the real node ID from the API
         const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         const flowPos = screenToFlowPosition(center);
-        upsertBot(`cloud-${name}`, {
-          name,
+        upsertBot(result.node_id, {
+          name: displayName,
           status: 'provisioning',
           source: 'cloud',
         }, flowPos);
       } catch (err) {
-        console.error('[canvas] Cloud provisioning failed:', err);
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[cloud] Provisioning failed (os=${os}): ${msg}`);
       }
     },
     [screenToFlowPosition, upsertBot]
