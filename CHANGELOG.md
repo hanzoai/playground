@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.72] - 2026-02-23
+
+
+### Other
+
+- Fix cloud agent OOM crash and default to api.hanzo.ai (#21)
+
+- Add NODE_OPTIONS=--max-old-space-size to provisioned pods, scaling V8
+  heap based on container memory limit (reserves 128MB for OS overhead)
+- Increase terminal-only memory from 384Mi to 512Mi (bot image minimum)
+- Default CloudAPIEndpoint to https://api.hanzo.ai/v1 instead of
+  internal cluster URL
+- Add HANZO_API_BASE as canonical env var alongside OPENAI_API_BASE (df958de)
+
 ## [0.1.41-rc.71] - 2026-02-23
 
 
