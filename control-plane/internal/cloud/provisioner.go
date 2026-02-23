@@ -410,7 +410,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Image:          image,
 		OS:             nodeOS,
 		RemoteProtocol: nodeProtocol,
-		Endpoint:       fmt.Sprintf("http://%s.%s.svc:8001", podName, namespace),
+		Endpoint:       fmt.Sprintf("http://%s.%s.svc:18789", podName, namespace),
 		Owner:          req.Owner,
 		Org:            req.Org,
 		Labels:         labels,

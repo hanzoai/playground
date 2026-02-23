@@ -234,13 +234,13 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			},
 		},
 		"ports": []map[string]interface{}{
-			{"containerPort": 8001, "name": "agent", "protocol": "TCP"},
+			{"containerPort": 18789, "name": "agent", "protocol": "TCP"},
 		},
 		// Readiness probe: agent is ready to accept traffic
 		"readinessProbe": map[string]interface{}{
 			"httpGet": map[string]interface{}{
 				"path": "/health",
-				"port": 8001,
+				"port": 18789,
 			},
 			"initialDelaySeconds": 5,
 			"periodSeconds":       10,
@@ -251,7 +251,7 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		"livenessProbe": map[string]interface{}{
 			"httpGet": map[string]interface{}{
 				"path": "/health",
-				"port": 8001,
+				"port": 18789,
 			},
 			"initialDelaySeconds": 15,
 			"periodSeconds":       20,
@@ -262,7 +262,7 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		"startupProbe": map[string]interface{}{
 			"httpGet": map[string]interface{}{
 				"path": "/health",
-				"port": 8001,
+				"port": 18789,
 			},
 			"initialDelaySeconds": 2,
 			"periodSeconds":       5,
