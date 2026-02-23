@@ -73,9 +73,7 @@ class TestParentChildWorkflowTracking:
 
         async def parent_bot(x: int, execution_context: ExecutionContext = None):
             # Direct call to child bot
-            child_result = await workflow.execute_with_tracking(
-                child_bot, (x,), {}
-            )
+            child_result = await workflow.execute_with_tracking(child_bot, (x,), {})
             return {"parent": x, "child_result": child_result}
 
         set_current_bot(agent)
@@ -93,11 +91,13 @@ class TestParentChildWorkflowTracking:
 
         # Extract execution IDs
         parent_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "parent_bot" and e["status"] == "running"
         )
         child_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "child_bot" and e["status"] == "running"
         )
 
@@ -150,15 +150,18 @@ class TestParentChildWorkflowTracking:
         assert len(captured_events) == 6
 
         parent_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "parent_bot" and e["status"] == "running"
         )
         child_b_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "child_b" and e["status"] == "running"
         )
         child_c_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "child_c" and e["status"] == "running"
         )
 
@@ -206,15 +209,18 @@ class TestParentChildWorkflowTracking:
 
         # Get start events for each level
         parent_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "parent" and e["status"] == "running"
         )
         child_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "child" and e["status"] == "running"
         )
         grandchild_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "grandchild" and e["status"] == "running"
         )
 
@@ -314,23 +320,29 @@ class TestDecoratorParentChildTracking:
         captured_payloads: List[Dict[str, Any]] = []
 
         async def capture_start(agent, ctx, payload):
-            captured_payloads.append({
-                "type": "start",
-                "execution_id": ctx.execution_id,
-                "parent_execution_id": ctx.parent_execution_id,
-                "bot_name": ctx.bot_name,
-            })
+            captured_payloads.append(
+                {
+                    "type": "start",
+                    "execution_id": ctx.execution_id,
+                    "parent_execution_id": ctx.parent_execution_id,
+                    "bot_name": ctx.bot_name,
+                }
+            )
 
         async def capture_complete(agent, ctx, result, duration_ms, payload):
-            captured_payloads.append({
-                "type": "complete",
-                "execution_id": ctx.execution_id,
-                "parent_execution_id": ctx.parent_execution_id,
-                "bot_name": ctx.bot_name,
-            })
+            captured_payloads.append(
+                {
+                    "type": "complete",
+                    "execution_id": ctx.execution_id,
+                    "parent_execution_id": ctx.parent_execution_id,
+                    "bot_name": ctx.bot_name,
+                }
+            )
 
         monkeypatch.setattr("playground.decorators._send_workflow_start", capture_start)
-        monkeypatch.setattr("playground.decorators._send_workflow_completion", capture_complete)
+        monkeypatch.setattr(
+            "playground.decorators._send_workflow_completion", capture_complete
+        )
 
         agent = StubAgent()
         set_current_bot(agent)
@@ -410,11 +422,13 @@ class TestErrorHandlingWithParentChild:
 
         # Find parent start and child error events
         parent_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "parent_bot" and e["status"] == "running"
         )
         child_error = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "failing_child" and e["status"] == "failed"
         )
 
@@ -461,17 +475,20 @@ class TestErrorHandlingWithParentChild:
 
         # Get parent start
         parent_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "parent_bot" and e["status"] == "running"
         )
 
         # Both children should reference the same parent
         success_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "success_child" and e["status"] == "running"
         )
         failing_start = next(
-            e for e in captured_events
+            e
+            for e in captured_events
             if e["bot_id"] == "failing_child" and e["status"] == "running"
         )
 

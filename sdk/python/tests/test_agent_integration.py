@@ -389,9 +389,9 @@ async def test_router_special_characters_comprehensive(monkeypatch):
         agent.include_router(router)
 
         expected_id = f"{expected_segment}_test_func"
-        assert any(
-            r["id"] == expected_id for r in agent.bots
-        ), f"Failed for prefix '{prefix}': expected '{expected_id}'"
+        assert any(r["id"] == expected_id for r in agent.bots), (
+            f"Failed for prefix '{prefix}': expected '{expected_id}'"
+        )
 
 
 @pytest.mark.asyncio

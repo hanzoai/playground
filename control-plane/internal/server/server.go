@@ -771,12 +771,12 @@ func (s *PlaygroundServer) setupRoutes() {
 						c.JSON(http.StatusBadRequest, gin.H{"error": "agentId is required"})
 						return
 					}
-					bot, err := s.botService.GetBot(agentID)
+					status, err := s.botService.GetBotStatus(agentID)
 					if err != nil {
 						c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
 						return
 					}
-					c.JSON(http.StatusOK, bot)
+					c.JSON(http.StatusOK, status)
 				})
 				agents.GET("/:agentId/status", lifecycleHandler.GetBotStatusHandler)
 				agents.POST("/:agentId/start", lifecycleHandler.StartAgentHandler)

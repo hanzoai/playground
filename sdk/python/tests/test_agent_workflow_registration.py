@@ -50,9 +50,7 @@ class DummyWorkflowHandler:
         self.ensure_calls = []
         self.updates = []
 
-    async def _ensure_execution_registered(
-        self, context, bot_name, parent_context
-    ):
+    async def _ensure_execution_registered(self, context, bot_name, parent_context):
         self.ensure_calls.append((context, bot_name, parent_context))
         context.execution_id = "exec-child"
         context.registered = True
