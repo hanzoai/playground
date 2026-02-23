@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.43] - 2026-02-23
+
+
+### Fixed
+
+- Fix(auth): send IAM Bearer token in space API calls
+
+AuthContext now calls setGlobalIamToken so all API clients (including
+spaceApi) send Authorization: Bearer with the IAM JWT. Previously
+spaceApi only sent X-API-Key from localStorage which was never set
+in IAM mode, causing spaces to be created under org_id "local" with
+anonymous user instead of the authenticated IAM identity. (a34bc80)
+
 ## [0.1.41-rc.42] - 2026-02-22
 
 
