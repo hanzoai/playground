@@ -196,16 +196,27 @@ export function CanvasFlow({ className }: { className?: string }) {
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.2}
-          color="hsl(var(--muted-foreground) / 0.25)"
+          color="color-mix(in oklch, var(--muted-foreground) 25%, transparent)"
           className="!bg-background"
         />
         <MiniMap
           className="!rounded-xl !shadow-lg !border !border-border/40 !overflow-hidden hidden md:block"
-          style={{ backgroundColor: 'hsl(var(--card))' }}
-          maskColor="hsl(var(--muted) / 0.6)"
-          nodeColor="hsl(var(--foreground) / 0.5)"
-          nodeStrokeColor="hsl(var(--foreground) / 0.2)"
-          nodeStrokeWidth={2}
+          style={{ backgroundColor: 'var(--card)' }}
+          maskColor="color-mix(in oklch, var(--muted) 40%, transparent)"
+          nodeColor={(node) => {
+            if (node.type === 'starter') return '#6b7280';
+            if (node.type === 'team') return '#6366f1';
+            const status = (node.data as Record<string, unknown>)?.status as string;
+            if (status === 'busy') return '#22c55e';
+            if (status === 'error') return '#ef4444';
+            if (status === 'waiting') return '#eab308';
+            if (status === 'provisioning') return '#a855f7';
+            if (status === 'offline') return '#6b7280';
+            return '#3b82f6';
+          }}
+          nodeStrokeColor="transparent"
+          nodeStrokeWidth={0}
+          nodeBorderRadius={4}
           pannable
           zoomable
         />
