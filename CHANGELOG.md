@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.45] - 2026-02-23
+
+
+### Fixed
+
+- Fix(spaces): hydrate activeSpace from localStorage to prevent flash of "No space selected"
+
+- Hydrate activeSpace synchronously from localStorage on store init so
+  the first render never shows "No space selected"
+- Add bootstrapped flag to distinguish "never fetched" from "fetched and empty"
+- CanvasPage: show loading spinner while spaces bootstrap instead of error
+- TopNavigation: show space name or "Loading..." instead of "No space" (27055f8)
+
 ## [0.1.41-rc.44] - 2026-02-23
 
 
