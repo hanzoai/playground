@@ -73,6 +73,7 @@ import { EnhancedNodeDetailHeader } from "@/components/nodes";
 import { getNodeStatusPresentation } from "@/utils/node-status";
 import { OperativePanel } from "@/components/canvas/drill-down/OperativePanel";
 import { TerminalPanel } from "@/components/canvas/drill-down/TerminalPanel";
+import { gateway } from "@/services/gatewayClient";
 
 /**
  * Comprehensive NodeDetailPage component with MCP management interface.
@@ -275,17 +276,55 @@ function NodeDetailPageContent() {
       setError(null);
 
       try {
-        // Phase 1: Load critical node data first with shorter timeout
-        const nodeData = await getNodeDetailsWithPackageInfo(nodeId, mode);
+        // Phase 1: Load node data — try backend, fall back to gateway for
+        // gateway-only nodes that aren't tracked in the control-plane DB.
+        let nodeData: NodeDetailsForUIWithPackage | null = null;
+        try {
+          nodeData = await getNodeDetailsWithPackageInfo(nodeId, mode);
+        } catch {
+          // Backend may not know about gateway-only nodes — fall through
+        }
+
+        if (!nodeData) {
+          const gwInfo = await gateway.rpc<{
+            nodeId: string;
+            displayName?: string;
+            platform?: string;
+            version?: string;
+            connected?: boolean;
+            connectedAtMs?: number;
+            caps?: string[];
+            commands?: string[];
+          }>("node.describe", { nodeId });
+
+          if (gwInfo) {
+            nodeData = {
+              id: gwInfo.nodeId,
+              base_url: "",
+              version: gwInfo.version ?? "",
+              health_status: gwInfo.connected ? "active" : "inactive",
+              lifecycle_status: gwInfo.connected ? "ready" : "stopped",
+              display_name: gwInfo.displayName,
+              platform: gwInfo.platform,
+              last_heartbeat: gwInfo.connectedAtMs
+                ? new Date(gwInfo.connectedAtMs).toISOString()
+                : undefined,
+            } as NodeDetailsForUIWithPackage;
+          }
+        }
+
+        if (!nodeData) {
+          throw new Error("Node not found");
+        }
+
         setNode(nodeData);
         setLastUpdate(new Date());
 
-        // If we're showing spinner, hide it now that we have basic data
         if (showSpinner) {
           setLoading(false);
         }
 
-        // Phase 2: Load MCP data and unified status in background (non-blocking) with shorter timeouts
+        // Phase 2: Load MCP data and unified status in background (non-blocking)
         Promise.allSettled([
           getMCPHealthModeAware(nodeId, mode),
           getMCPServerMetrics(nodeId),
@@ -299,7 +338,6 @@ function NodeDetailPageContent() {
             }
 
             if (metricsData.status === "fulfilled") {
-              // MCP metrics dashboard components have been removed
               console.log(
                 "MCP metrics data available but dashboard components removed"
               );
@@ -308,7 +346,6 @@ function NodeDetailPageContent() {
             }
 
             if (statusData.status === "fulfilled") {
-              // Store the live status data for accurate status display
               setLiveStatus(statusData.value);
             } else {
               console.warn(
@@ -790,6 +827,7 @@ function NodeDetailPageContent() {
     <div className={cn(pageWrapperClass, "h-screen")}>
       <EnhancedNodeDetailHeader
         nodeId={node.id}
+        displayName={node.display_name}
         lifecycleStatus={effectiveLifecycleStatus}
         healthStatus={effectiveHealthStatus}
         lastHeartbeat={liveStatus?.last_seen ?? node.last_heartbeat ?? null}
