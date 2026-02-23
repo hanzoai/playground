@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.79] - 2026-02-23
+
+
+### Fixed
+
+- Fix(cloud): correct gateway port for probes and endpoint (#31)
+
+* fix(cloud): use node ID as fallback gateway token
+
+The bot gateway refuses to start on LAN without auth (security check),
+so none mode doesn't work for K8s pods. When no API key is available,
+use the node ID as a service token to satisfy the gateway's auth
+requirement while keeping pods accessible within the cluster.
+
+* fix(cloud): use correct gateway port 18789 for probes and endpoint
+
+Bot gateway listens on port 18789, not 8001. Health probes were checking
+the wrong port, causing readiness checks to fail. Also fixes the
+service endpoint URL. (fc24a18)
+
 ## [0.1.41-rc.78] - 2026-02-23
 
 
