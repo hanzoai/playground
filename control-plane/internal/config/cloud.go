@@ -76,7 +76,7 @@ func DefaultCloudConfig() CloudConfig {
 			GracefulShutdown: 30 * time.Second,
 			OperativeEnabled: true,
 			OperativeImage:   "ghcr.io/hanzoai/operative:latest",
-			CloudAPIEndpoint: "http://cloud-api.hanzo.svc:8000/api",
+			CloudAPIEndpoint: "https://api.hanzo.ai/v1",
 		},
 		Visor: VisorConfig{
 			Enabled:  false,

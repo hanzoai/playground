@@ -97,7 +97,7 @@ export function CanvasControls({ onFitView, onAddBot, onAddStarter, onLaunchClou
                 <MenuItem
                   icon="⌨️"
                   label="Launch Terminal"
-                  description="Lightweight shell (384Mi)"
+                  description="Lightweight shell (512Mi)"
                   onClick={() => { onLaunchCloud('terminal'); setMenuOpen(false); }}
                 />
                 <MenuItem
