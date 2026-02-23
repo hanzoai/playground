@@ -15,6 +15,7 @@ import type {
   Frame,
   GatewayConnectionState,
   HelloOk,
+  HelloOkFrame,
   RequestFrame,
   ResponseFrame,
   StateSnapshot,
@@ -51,6 +52,7 @@ class GatewayClient {
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private requestId = 0;
+  private helloRequestId: string | null = null;
   private pending = new Map<string, PendingRequest>();
   private eventHandlers = new Map<string, Set<EventHandler>>();
   private stateHandlers = new Set<StateChangeHandler>();
@@ -103,6 +105,7 @@ class GatewayClient {
    */
   disconnect(): void {
     this.disposed = true;
+    this.helloRequestId = null;
     this.clearReconnect();
     this.closeSocket();
     this.rejectAllPending('Client disconnected');
@@ -213,10 +216,12 @@ class GatewayClient {
 
     if (frame.type === 'event') {
       this.handleEvent(frame as EventFrame);
+    } else if (frame.type === 'hello-ok') {
+      // Some gateway versions send hello-ok as a distinct frame type
+      this.handleHelloOk((frame as HelloOkFrame).payload as HelloOk ?? {} as HelloOk);
     } else if (frame.type === 'res') {
       this.handleResponse(frame as ResponseFrame);
     }
-    // We don't receive 'req' frames from server in this client
   }
 
   private handleEvent(frame: EventFrame): void {
@@ -240,20 +245,29 @@ class GatewayClient {
   }
 
   private handleResponse(frame: ResponseFrame): void {
-    // Handle hello-ok as a special response
-    if ((frame as unknown as { type: string }).type === 'hello-ok' ||
-        (frame.payload && typeof frame.payload === 'object' && 'type' in (frame.payload as Record<string, unknown>) &&
-         (frame.payload as Record<string, unknown>).type === 'hello-ok')) {
-      this.handleHelloOk(frame.payload as HelloOk ?? frame as unknown as HelloOk);
+    // Handle the connect handshake response (sendHello doesn't use rpc(),
+    // so the response won't be in the pending map — match by helloRequestId)
+    if (this.helloRequestId && frame.id === this.helloRequestId) {
+      this.helloRequestId = null;
+      if (frame.ok) {
+        this.handleHelloOk(frame.payload as HelloOk ?? {} as HelloOk);
+      } else {
+        console.error('[gateway] Handshake failed:', frame.error?.message ?? 'unknown');
+        this.setState('error');
+      }
       return;
     }
 
-    // Handle connect handshake failure (not in pending map since sendHello doesn't use rpc())
+    // Fallback: detect connect response by state when not tracked by ID
     const pending = this.pending.get(frame.id);
     if (!pending) {
-      if (!frame.ok && this.state === 'authenticating') {
-        console.error('[gateway] Handshake failed:', frame.error?.message ?? 'unknown');
-        this.setState('error');
+      if (this.state === 'authenticating') {
+        if (frame.ok) {
+          this.handleHelloOk(frame.payload as HelloOk ?? {} as HelloOk);
+        } else {
+          console.error('[gateway] Handshake failed:', frame.error?.message ?? 'unknown');
+          this.setState('error');
+        }
       }
       return;
     }
@@ -274,6 +288,7 @@ class GatewayClient {
     // Bot gateway expects a standard request frame for the handshake:
     // { type: "req", id: "<id>", method: "connect", params: ConnectParams }
     const id = String(++this.requestId);
+    this.helloRequestId = id;
     const frame: RequestFrame = {
       type: 'req',
       id,
