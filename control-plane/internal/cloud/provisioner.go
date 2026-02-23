@@ -793,7 +793,6 @@ func nodeArgs(gatewayURL, nodeID string) []string {
 	}
 	// Node mode: connect to central gateway
 	// Parse URL to extract host/port/tls
-	host := "bot-gateway.hanzo.svc"
 	port := "18789"
 	useTLS := false
 	url := strings.TrimPrefix(gatewayURL, "wss://")
@@ -802,7 +801,7 @@ func nodeArgs(gatewayURL, nodeID string) []string {
 	}
 	url = strings.TrimPrefix(url, "ws://")
 	parts := strings.SplitN(url, ":", 2)
-	host = parts[0]
+	host := parts[0]
 	if len(parts) > 1 {
 		port = strings.TrimRight(parts[1], "/")
 	} else if useTLS {
