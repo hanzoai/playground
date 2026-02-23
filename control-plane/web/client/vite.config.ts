@@ -30,8 +30,12 @@ export default defineConfig(({ mode }) => {
       outDir: process.env.VITE_BUILD_OUT_DIR || 'dist',
       sourcemap: process.env.VITE_BUILD_SOURCEMAP === 'true',
     },
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
+    },
     define: {
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.1.x'),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '0.1.x'),
     },
     resolve: {
       alias: {

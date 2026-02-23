@@ -2,11 +2,9 @@
  * Bot Node
  *
  * Primary canvas node representing an agent bot.
- * Shows status, emoji/avatar/logo, name, model.
- * Click to drill down into terminal/chat/operative/files.
- * Each bot can have its own emoji, icon, or logo.
- *
- * Responsive: compact on mobile, full on desktop.
+ * Clean card with status, name, and source badge.
+ * Click to expand into terminal/chat/desktop/files.
+ * Handles hidden by default, shown on hover for connecting.
  */
 
 import { Handle, Position, type NodeProps } from '@xyflow/react';
@@ -66,56 +64,87 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        'group relative rounded-xl border bg-card shadow-lg backdrop-blur transition-all touch-manipulation',
-        selected ? 'border-primary shadow-primary/20 ring-1 ring-primary/30' : 'border-border/60',
-        expanded ? 'w-[320px] md:w-[400px]' : 'w-[160px] md:w-[200px]',
+        'group relative rounded-xl bg-card transition-all touch-manipulation',
+        selected
+          ? 'ring-1 ring-primary/40 shadow-[0_0_12px_-2px] shadow-primary/20'
+          : 'ring-1 ring-white/[0.06] hover:ring-white/[0.12]',
+        expanded ? 'w-[320px] md:w-[400px] shadow-2xl' : 'w-[180px] md:w-[200px] shadow-lg',
       )}
     >
-      {/* Handles */}
-      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-border" />
-      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-border" />
+      {/* Handles - hidden by default, shown on hover */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!w-2.5 !h-2.5 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!w-2.5 !h-2.5 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
+      />
 
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none"
+        className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none"
         onClick={handleToggleExpand}
       >
         {/* Status dot */}
         <span className={cn(
           'h-2 w-2 rounded-full shrink-0',
           status.color,
-          status.pulse && 'shadow-[0_0_6px_1px] shadow-current'
+          status.pulse && 'animate-pulse'
         )} />
 
-        {/* Avatar / Emoji / Logo */}
+        {/* Avatar / Emoji */}
         {bot.avatar ? (
           <img src={bot.avatar} alt={bot.name} className="h-6 w-6 rounded-full object-cover shrink-0" />
         ) : (
-          <span className="text-lg leading-none shrink-0">{bot.emoji ?? '🤖'}</span>
+          <span className="text-base leading-none shrink-0">{bot.emoji ?? '🤖'}</span>
         )}
 
         {/* Name + Status */}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate">{bot.name}</div>
-          <div className="text-[10px] text-muted-foreground">{status.label}</div>
+          <div className="text-[10px] text-muted-foreground leading-tight">{status.label}</div>
         </div>
 
         {/* Source badge */}
         <span className={cn(
-          'text-[9px] px-1.5 py-0.5 rounded-full border shrink-0',
+          'text-[9px] px-1.5 py-0.5 rounded-full shrink-0 font-medium',
           bot.source === 'local'
-            ? 'border-green-500/30 text-green-600 bg-green-500/10'
-            : 'border-blue-500/30 text-blue-600 bg-blue-500/10'
+            ? 'text-emerald-400 bg-emerald-500/10'
+            : 'text-blue-400 bg-blue-500/10'
         )}>
           {bot.source === 'local' ? 'local' : 'cloud'}
         </span>
       </div>
 
+      {/* Compact info - model + skills preview */}
+      {!expanded && (
+        <div className="px-3 pb-2.5 space-y-1">
+          {bot.model && (
+            <div className="text-[10px] text-muted-foreground truncate">{bot.model}</div>
+          )}
+          {bot.skills && bot.skills.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {bot.skills.slice(0, 3).map((skill) => (
+                <span key={skill} className="text-[9px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
+                  {skill}
+                </span>
+              ))}
+              {bot.skills.length > 3 && (
+                <span className="text-[9px] text-muted-foreground">+{bot.skills.length - 3}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Expanded content */}
       {expanded && (
-        <div className="border-t border-border/40 bg-card">
+        <div className="border-t border-white/[0.04]">
           {/* View tabs */}
-          <div className="flex border-b border-border/30 overflow-x-auto scrollbar-none">
+          <div className="flex border-b border-white/[0.04] overflow-x-auto scrollbar-none">
             {VIEW_TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -154,13 +183,6 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
           </div>
         </div>
       )}
-
-      {/* Model badge */}
-      {bot.model && !expanded && (
-        <div className="px-3 pb-2 text-[10px] text-muted-foreground truncate">
-          {bot.model}
-        </div>
-      )}
     </div>
   );
 }
@@ -171,13 +193,45 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
 function BotOverview({ bot }: { bot: BotType }) {
   return (
-    <div className="w-full px-3 py-2 space-y-2 text-xs">
-      <Row label="Agent ID" value={bot.agentId} />
-      {bot.model && <Row label="Model" value={bot.model} />}
-      {bot.workspace && <Row label="Workspace" value={bot.workspace} />}
-      {bot.sessionKey && <Row label="Session" value={bot.sessionKey} />}
-      {bot.lastActivity && (
-        <Row label="Last Activity" value={new Date(bot.lastActivity).toLocaleTimeString()} />
+    <div className="w-full px-3 py-2.5 space-y-3 text-xs overflow-y-auto h-full">
+      {/* Info rows */}
+      <div className="space-y-1.5">
+        <Row label="Agent ID" value={bot.agentId} />
+        {bot.model && <Row label="Model" value={bot.model} />}
+        {bot.workspace && <Row label="Workspace" value={bot.workspace} />}
+        {bot.sessionKey && <Row label="Session" value={bot.sessionKey} />}
+        {bot.owner && <Row label="Owner" value={bot.owner} />}
+        {bot.lastActivity && (
+          <Row label="Last Active" value={new Date(bot.lastActivity).toLocaleTimeString()} />
+        )}
+      </div>
+
+      {/* Skills */}
+      {bot.skills && bot.skills.length > 0 && (
+        <div>
+          <div className="text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider font-medium">Skills</div>
+          <div className="flex flex-wrap gap-1">
+            {bot.skills.map((skill) => (
+              <span key={skill} className="text-[10px] px-2 py-0.5 rounded-md bg-muted/50 text-muted-foreground">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Channels */}
+      {bot.channels && bot.channels.length > 0 && (
+        <div>
+          <div className="text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider font-medium">Channels</div>
+          <div className="flex flex-wrap gap-1">
+            {bot.channels.map((ch) => (
+              <span key={ch} className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary/80">
+                {ch}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

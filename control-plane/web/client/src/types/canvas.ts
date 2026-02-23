@@ -31,6 +31,8 @@ export interface Bot {
   image?: string;
   owner?: string;
   org?: string;
+  skills?: string[];
+  channels?: string[];
 }
 
 export interface Starter {

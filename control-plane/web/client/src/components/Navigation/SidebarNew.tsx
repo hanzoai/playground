@@ -28,6 +28,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantStore } from "@/stores/tenantStore";
 
+// Read version from package.json at build time
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.1.x';
+
 // Hanzo "H" logo mark — geometric H from official brand assets.
 function HanzoLogo({ className }: { className?: string }) {
   return (
@@ -48,7 +51,7 @@ interface SidebarNewProps {
 export function SidebarNew({ sections }: SidebarNewProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { isAuthenticated, authRequired, clearAuth } = useAuth();
+  const { isAuthenticated, authRequired, clearAuth, iamUser } = useAuth();
   const orgId = useTenantStore((s) => s.orgId);
 
   return (
@@ -64,7 +67,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold tracking-tight">Hanzo Bot</span>
-                  <span className="truncate text-[10px] text-muted-foreground font-mono">v1.0.0</span>
+                  <span className="truncate text-[10px] text-muted-foreground font-mono">v{APP_VERSION}</span>
                 </div>
               </NavLink>
             </SidebarMenuButton>
@@ -140,15 +143,19 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   className="h-9 text-[13px]"
                   tooltip={isCollapsed ? "Account" : undefined}
                 >
-                  <div className="flex aspect-square size-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
-                    {isAuthenticated ? "U" : "?"}
-                  </div>
+                  {iamUser?.avatar ? (
+                    <img src={iamUser.avatar} alt="" className="size-6 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="flex aspect-square size-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-[10px] font-bold uppercase">
+                      {isAuthenticated ? (iamUser?.name?.[0] || iamUser?.email?.[0] || "U") : "?"}
+                    </div>
+                  )}
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate text-xs font-medium">
-                      {isAuthenticated ? "User" : "Not signed in"}
+                      {isAuthenticated ? (iamUser?.displayName || iamUser?.name || iamUser?.email || "User") : "Not signed in"}
                     </span>
                     <span className="truncate text-[10px] text-muted-foreground">
-                      {orgId || "Hanzo"}
+                      {isAuthenticated ? (iamUser?.email || orgId || "Hanzo") : "Hanzo"}
                     </span>
                   </div>
                   <ChevronDown size={12} className="text-muted-foreground shrink-0" />

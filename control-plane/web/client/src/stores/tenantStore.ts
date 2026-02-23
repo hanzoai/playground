@@ -12,12 +12,12 @@ const STORAGE_ORG_KEY = 'hanzo_iam_current_org';
 const STORAGE_PROJECT_KEY = 'hanzo_iam_current_project';
 const STORAGE_ENV_KEY = 'hanzo_environment';
 
-export type Environment = 'default' | 'staging' | 'production';
+export type Environment = 'production' | 'staging' | 'development';
 
 export const ENVIRONMENTS: { id: Environment; name: string }[] = [
-  { id: 'default', name: 'Default' },
-  { id: 'staging', name: 'Staging' },
   { id: 'production', name: 'Production' },
+  { id: 'staging', name: 'Staging' },
+  { id: 'development', name: 'Development' },
 ];
 
 interface TenantState {
@@ -38,7 +38,11 @@ export const useTenantStore = create<TenantState>((set) => ({
     try { return localStorage.getItem(STORAGE_PROJECT_KEY); } catch { return null; }
   })(),
   environment: (() => {
-    try { return (localStorage.getItem(STORAGE_ENV_KEY) as Environment) || 'default'; } catch { return 'default' as Environment; }
+    try {
+      const stored = localStorage.getItem(STORAGE_ENV_KEY) as Environment | null;
+      if (stored === 'default') return 'production' as Environment;
+      return stored || 'production';
+    } catch { return 'production' as Environment; }
   })(),
 
   setOrg: (orgId) => {
@@ -64,7 +68,7 @@ export const useTenantStore = create<TenantState>((set) => ({
   },
 
   reset: () => {
-    set({ orgId: null, projectId: null, environment: 'default' });
+    set({ orgId: null, projectId: null, environment: 'production' });
     try {
       localStorage.removeItem(STORAGE_ORG_KEY);
       localStorage.removeItem(STORAGE_PROJECT_KEY);
