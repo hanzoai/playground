@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import type { ReactNode } from "react";
-import { setGlobalApiKey } from "../services/api";
+import { setGlobalApiKey, setGlobalIamToken } from "../services/api";
 import { resetAllStores } from "../stores/resetAll";
 import { IamProvider as IamProviderBase, useIam as useIamHook } from "@hanzo/iam/react";
 import type { TokenResponse, IamUser } from "@hanzo/iam";
@@ -87,8 +87,9 @@ const initStoredKey = (() => {
 function IamAuthBridge({ children }: { children: ReactNode }) {
   const iam = useIamHook();
 
-  // Sync IAM access token to global API key so REST calls work
+  // Sync IAM access token so REST calls include Authorization: Bearer
   useEffect(() => {
+    setGlobalIamToken(iam.accessToken);
     setGlobalApiKey(iam.accessToken);
   }, [iam.accessToken]);
 
