@@ -81,7 +81,7 @@ function mergeGatewayNodes(backendNodes: NodeSummary[], gatewayNodes: GatewayNod
       return {
         ...node,
         health_status: 'active' as HealthStatus,
-        lifecycle_status: 'running' as LifecycleStatus,
+        lifecycle_status: 'ready' as LifecycleStatus,
         version: gw.version || node.version,
         last_heartbeat: gw.connectedAtMs
           ? new Date(gw.connectedAtMs).toISOString()
