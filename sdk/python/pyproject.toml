@@ -26,16 +26,16 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "fastapi>=0.115,<1",
-    "uvicorn>=0.34,<1",
-    "requests>=2.28,<3",
-    "pydantic>=2.0,<3",
-    "litellm>=1.55,<2",
-    "psutil>=5.9,<7",
-    "PyYAML>=6.0,<7",
-    "aiohttp>=3.8,<4",
-    "websockets>=13.0,<15",
-    "fal-client>=0.5.0,<1"
+    "fastapi>=0.115,<0.116",
+    "uvicorn>=0.34,<0.35",
+    "requests>=2.32,<2.33",
+    "pydantic>=2.10,<2.11",
+    "litellm>=1.55,<1.56",
+    "psutil>=5.9,<5.10",
+    "PyYAML>=6.0,<6.1",
+    "aiohttp>=3.11,<3.12",
+    "websockets>=14.1,<14.2",
+    "fal-client>=0.5.6,<0.6",
 ]
 keywords = ["playground", "sdk", "agents"]
 
@@ -51,15 +51,16 @@ exclude = ["tests*", "examples*"]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4,<9",
-    "pytest-asyncio>=0.21,<0.24",
-    "pytest-cov>=4.1,<5",
-    "responses>=0.23,<0.26",
-    "respx>=0.20,<0.22",
-    "freezegun>=1.2,<2",
-    "syrupy>=4,<5",
-    "hypothesis>=6.88,<7",
-    "pytest-socket>=0.6,<0.8",
+    "pytest>=8.3,<8.4",
+    "pytest-asyncio>=0.23,<0.24",
+    "pytest-cov>=4.1,<4.2",
+    "responses>=0.25,<0.26",
+    "respx>=0.21,<0.22",
+    "freezegun>=1.4,<1.5",
+    "syrupy>=4.8,<4.9",
+    "hypothesis>=6.119,<6.120",
+    "pytest-socket>=0.7,<0.8",
+    "ruff>=0.9.6,<0.10",
 ]
 
 [tool.pytest.ini_options]
@@ -77,6 +78,17 @@ markers = [
 ]
 addopts = "-ra -q -m \"not mcp\" --strict-markers --strict-config --cov=playground.client --cov=playground.bot_field_handler --cov=playground.execution_context --cov=playground.execution_state --cov=playground.memory --cov=playground.rate_limiter --cov=playground.result_cache --cov-report=term-missing:skip-covered"
 asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["playground"]
 
 [tool.coverage.run]
 source = ["playground"]

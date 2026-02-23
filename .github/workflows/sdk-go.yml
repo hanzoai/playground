@@ -49,6 +49,12 @@ jobs:
         working-directory: sdk/go
         run: go test ./...
 
+      - name: Lint
+        working-directory: sdk/go
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+          golangci-lint run
+
   # Summary job that depends on all critical checks
   required-checks:
     name: All Required Checks Passed
