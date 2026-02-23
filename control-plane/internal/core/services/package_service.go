@@ -204,8 +204,7 @@ func (ps *DefaultPackageService) saveRegistry(registry *packages.InstallationReg
 
 // ListInstalledPackages returns a list of all installed packages
 func (ps *DefaultPackageService) ListInstalledPackages() ([]domain.InstalledPackage, error) {
-	// Load registry using existing packages logic for now
-	// TODO: Eventually migrate to use registryStorage interface
+	// Load registry using direct file system access
 	registry, err := ps.loadRegistryDirect()
 	if err != nil {
 		return nil, err
@@ -237,7 +236,7 @@ func (ps *DefaultPackageService) GetPackageInfo(name string) (*domain.InstalledP
 }
 
 // loadRegistryDirect loads the registry using direct file system access
-// TODO: Eventually replace with registryStorage interface usage
+// loadRegistryDirect loads the registry using direct file system access.
 func (ps *DefaultPackageService) loadRegistryDirect() (*packages.InstallationRegistry, error) {
 	registryPath := filepath.Join(ps.agentsHome, "installed.yaml")
 

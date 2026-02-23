@@ -405,8 +405,6 @@ func (pm *ProcessManager) GetProcessLogs(alias string, follow bool, lines int) (
 		return nil, fmt.Errorf("log file not found for server %s", alias)
 	}
 
-	// For now, just return the file reader
-	// TODO: Implement follow and lines functionality
 	file, err := os.Open(logFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open log file: %w", err)

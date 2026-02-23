@@ -33,9 +33,9 @@ curl -X POST http://localhost:8080/api/v1/execute/{{.NodeID}}.demo_echo \
 ### Enable AI Features
 
 1. Uncomment the `ai_config` in `main.py`
-2. Set your API key: `export OPENAI_API_KEY=sk-...`
-   - Or use `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, etc. for other providers
-   - LiteLLM auto-detects the provider from the model name
+2. Set your API key: `export HANZO_API_KEY=your-key`
+   - Or use `OPENAI_API_KEY` for direct OpenAI access
+   - Routes through api.hanzo.ai by default
 3. Uncomment the `analyze_sentiment` bot in `bots.py`
 4. Restart the agent
 

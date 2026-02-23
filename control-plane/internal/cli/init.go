@@ -417,16 +417,16 @@ Example:
 			fmt.Println("  1. Uncomment the AI config block in main." + getFileExtension(language))
 
 			if language == "python" {
-				fmt.Println("  2. Set API key: export OPENAI_API_KEY=sk-...")
-				fmt.Println("     (or ANTHROPIC_API_KEY, GOOGLE_API_KEY, etc.)")
+				fmt.Println("  2. Set API key: export HANZO_API_KEY=your-key")
+				fmt.Println("     (or OPENAI_API_KEY for direct OpenAI access)")
 				fmt.Println("  3. Uncomment analyze_sentiment in bots.py")
 			} else if language == "go" {
-				fmt.Println("  2. Set API key: export OPENAI_API_KEY=sk-...")
-				fmt.Println("     (or OPENROUTER_API_KEY for OpenRouter)")
+				fmt.Println("  2. Set API key: export HANZO_API_KEY=your-key")
+				fmt.Println("     (or OPENAI_API_KEY for direct OpenAI access)")
 				fmt.Println("  3. Uncomment analyze_sentiment in bots.go")
 			} else if language == "typescript" {
-				fmt.Println("  2. Set API key: export OPENAI_API_KEY=sk-...")
-				fmt.Println("     (or OPENROUTER_API_KEY for OpenRouter)")
+				fmt.Println("  2. Set API key: export HANZO_API_KEY=your-key")
+				fmt.Println("     (or OPENAI_API_KEY for direct OpenAI access)")
 				fmt.Println("  3. Uncomment analyzeSentiment in bots.ts")
 			}
 

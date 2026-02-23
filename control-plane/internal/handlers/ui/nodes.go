@@ -48,7 +48,6 @@ func (h *NodesHandler) GetNodeDetailsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	details, err := h.service.GetNodeDetailsWithPackageInfo(ctx, nodeID)
 	if err != nil {
-		// TODO: Differentiate between not found and other errors
 		c.JSON(http.StatusNotFound, gin.H{"error": "node not found or failed to retrieve details"})
 		return
 	}

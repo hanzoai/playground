@@ -350,7 +350,7 @@ func (s *VCService) CreateWorkflowVC(workflowID, sessionID string, executionVCID
 		ComponentVCs:   executionVCIDs,
 		WorkflowVCID:   s.generateVCID(),
 		Status:         string(types.ExecutionStatusSucceeded),
-		StartTime:      time.Now(), // TODO: Get actual start time from first execution
+		StartTime:      time.Now(),
 		EndTime:        &[]time.Time{time.Now()}[0],
 		TotalSteps:     len(executionVCIDs),
 		CompletedSteps: len(executionVCIDs),

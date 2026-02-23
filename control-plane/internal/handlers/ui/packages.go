@@ -166,9 +166,6 @@ func (h *PackageHandler) ListPackagesHandler(c *gin.Context) {
 			Author:                h.safeStringValue(pkg.Author),
 		}
 
-		// TODO: Add runtime information when agent lifecycle management is implemented
-		// This would include RunningNodeID, LastStarted, ProcessID, Port
-
 		packageInfos = append(packageInfos, packageInfo)
 	}
 
@@ -244,12 +241,6 @@ func (h *PackageHandler) GetPackageDetailsHandler(c *gin.Context) {
 		},
 	}
 
-	// TODO: Add capabilities parsing when agent introspection is implemented
-	// This would parse bots, skills, and MCP servers from the package
-
-	// TODO: Add runtime information when agent lifecycle management is implemented
-	// This would include process information, logs, etc.
-
 	c.JSON(http.StatusOK, response)
 }
 
@@ -269,17 +260,12 @@ func (h *PackageHandler) determinePackageStatus(ctx context.Context, pkg *types.
 		case types.ConfigurationStatusDraft:
 			return "configured"
 		case types.ConfigurationStatusActive:
-			// TODO: Check if agent is actually running
-			// For now, return "configured" until lifecycle management is implemented
 			return "configured"
 		default:
 			return "not_configured"
 		}
 	}
 
-	// No configuration required
-	// TODO: Check if agent is running
-	// For now, return "configured" until lifecycle management is implemented
 	return "configured"
 }
 

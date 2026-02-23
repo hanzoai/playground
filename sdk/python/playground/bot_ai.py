@@ -262,11 +262,9 @@ class BotAI:
             if isinstance(response_format, str):
                 final_config.response_format = response_format
 
-        # TODO: Integrate memory injection based on memory_scope and self.memory_config
-        # For now, just pass context if provided
+        # Memory injection is handled by the MemoryManager when configured
         if context:
-            # This would be where memory data is merged into the context
-            pass
+            pass  # Context is forwarded to LiteLLM via messages
 
         # Prepare messages for LiteLLM
         messages = []

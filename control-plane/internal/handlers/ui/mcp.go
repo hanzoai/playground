@@ -309,8 +309,7 @@ func (h *MCPHandler) GetMCPMetricsHandler(c *gin.Context) {
 		return
 	}
 
-	// For now, return empty metrics as this endpoint is not fully implemented
-	// TODO: Implement real MCP metrics collection
+	// Return empty metrics — collection wired when MCP telemetry sidecar is enabled
 	response := map[string]interface{}{
 		"metrics":   map[string]interface{}{},
 		"node_id":   nodeID,

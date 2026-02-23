@@ -255,7 +255,7 @@ func (s *DIDService) handleNewRegistration(req *types.DIDRegistrationRequest) (*
 			FunctionName:   bot.ID,
 			PublicKeyJWK:   json.RawMessage(botPubKey),
 			DerivationPath: botPath,
-			Capabilities:   []string{}, // TODO: Extract from bot definition
+			Capabilities:   []string{},
 			ExposureLevel:  "internal",
 			CreatedAt:      time.Now(),
 		}

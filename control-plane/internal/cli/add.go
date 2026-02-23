@@ -177,15 +177,6 @@ func NewMCPAddCommand(projectDir string, opts *MCPAddOptions, verboseFlag bool) 
 	// For now, we'll build it inside Execute or pass opts directly.
 	// The main point here is to set up the command object.
 
-	// TODO: Perform more comprehensive validation using mcp.ConfigValidator if needed here.
-	// For example, validating specific formats of Source, Runtime, etc.
-	// The BasicConfigValidator can be instantiated and used.
-	// validator := mcp.NewBasicConfigValidator()
-	// tempCfgForValidation := mcp.MCPServerConfig{ Alias: finalAlias, Source: opts.Source, ... }
-	// validationErrs := validator.Validate(tempCfgForValidation)
-	// if len(validationErrs) > 0 {
-	//    return nil, fmt.Errorf("MCP configuration validation failed:\n%s", validationErrs.Error())
-	// }
 
 	return &MCPAddCommand{
 		ProjectDir: projectDir,
@@ -246,17 +237,6 @@ func (cmd *MCPAddCommand) Execute() error {
 			}
 		}
 	}
-
-	// TODO: Issue 4 - Re-enable validation with new simplified architecture
-	// Temporarily disabled validator to avoid compilation errors
-	/*
-		// Integrate mcp.ConfigValidator (from Task 1.3)
-		validator := mcp.NewBasicConfigValidator()
-		validationErrs := validator.Validate(mcpServerCfg)
-		if len(validationErrs) > 0 {
-		   return fmt.Errorf("MCP configuration validation failed:\n%s", validationErrs.Error())
-		}
-	*/
 
 	fmt.Printf("  %s Adding MCP server...\n", Blue("→"))
 

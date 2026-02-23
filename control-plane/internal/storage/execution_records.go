@@ -752,9 +752,7 @@ func (ls *LocalStorage) getRunAggregation(ctx context.Context, runID string) (*R
 	// Query 4: Calculate max depth (this is more expensive but still better than fetching all records)
 	// For workflows with > 1k nodes, skip depth calculation to avoid memory issues
 	if summary.TotalExecutions > maxNodesForDepthCalc {
-		// For very large workflows, estimate depth or skip it
-		// TODO: Consider storing depth in the database for efficiency
-		summary.MaxDepth = -1 // Indicates depth was not calculated
+		summary.MaxDepth = -1 // Skip depth calculation for large workflows
 		logger.Logger.Debug().
 			Str("run_id", runID).
 			Int("total_executions", summary.TotalExecutions).

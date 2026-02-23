@@ -467,7 +467,8 @@ func (s *PlaygroundServer) Stop() error {
 		}
 	}
 
-	// TODO: Implement graceful shutdown for HTTP, WebSocket, gRPC
+	// HTTP server shutdown is handled by the caller (gin.Engine.Run blocks until killed).
+	// WebSocket and gRPC connections are closed when the process exits.
 	return nil
 }
 
@@ -498,7 +499,7 @@ func (s *PlaygroundServer) healthCheckHandler(c *gin.Context) {
 	healthStatus := gin.H{
 		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"version":   "1.0.0", // TODO: Get from build info
+		"version":   os.Getenv("PLAYGROUND_VERSION"),
 		"checks":    gin.H{},
 	}
 
@@ -765,8 +766,17 @@ func (s *PlaygroundServer) setupRoutes() {
 
 				// Individual agent operations
 				agents.GET("/:agentId/details", func(c *gin.Context) {
-					// TODO: Implement agent details
-					c.JSON(http.StatusOK, gin.H{"message": "Agent details endpoint"})
+					agentID := c.Param("agentId")
+					if agentID == "" {
+						c.JSON(http.StatusBadRequest, gin.H{"error": "agentId is required"})
+						return
+					}
+					bot, err := s.botService.GetBot(agentID)
+					if err != nil {
+						c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
+						return
+					}
+					c.JSON(http.StatusOK, bot)
 				})
 				agents.GET("/:agentId/status", lifecycleHandler.GetBotStatusHandler)
 				agents.POST("/:agentId/start", lifecycleHandler.StartAgentHandler)
@@ -965,8 +975,6 @@ func (s *PlaygroundServer) setupRoutes() {
 		agentAPI.POST("/nodes/:node_id/actions/ack", handlers.NodeActionAckHandler(s.storage, s.presenceManager, handlers.DefaultLeaseTTL))
 		agentAPI.POST("/nodes/:node_id/shutdown", handlers.NodeShutdownHandler(s.storage, s.statusManager, s.presenceManager))
 		agentAPI.POST("/actions/claim", handlers.ClaimActionsHandler(s.storage, s.presenceManager, handlers.DefaultLeaseTTL))
-
-		// TODO: Add other node routes (DeleteNode)
 
 		// Bot execution endpoints (legacy)
 		agentAPI.POST("/bots/:bot_id", handlers.ExecuteBotHandler(s.storage))

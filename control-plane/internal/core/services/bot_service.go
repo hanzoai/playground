@@ -387,8 +387,7 @@ func (as *DefaultBotService) ListRunningAgents() ([]domain.RunningAgent, error) 
 	return runningAgents, nil
 }
 
-// loadRegistryDirect loads the registry using direct file system access
-// TODO: Eventually replace with registryStorage interface usage
+// loadRegistryDirect loads the registry using direct file system access.
 func (as *DefaultBotService) loadRegistryDirect() (*packages.InstallationRegistry, error) {
 	registryPath := filepath.Join(as.agentsHome, "installed.yaml")
 
@@ -406,7 +405,7 @@ func (as *DefaultBotService) loadRegistryDirect() (*packages.InstallationRegistr
 }
 
 // saveRegistryDirect saves the registry using direct file system access
-// TODO: Eventually replace with registryStorage interface usage
+// loadConfigDirect loads agent configuration using direct file system access.
 func (as *DefaultBotService) saveRegistryDirect(registry *packages.InstallationRegistry) error {
 	registryPath := filepath.Join(as.agentsHome, "installed.yaml")
 

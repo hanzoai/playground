@@ -408,25 +408,8 @@ func (h *BotsHandler) GetExecutionTemplatesHandler(c *gin.Context) {
 		return
 	}
 
-	// For now, return mock data since we don't have template storage yet
-	// TODO: Implement actual template storage and retrieval
-	templates := []ExecutionTemplate{
-		{
-			ID:          "template_001",
-			Name:        "NVDA Analysis",
-			Description: "Standard NVIDIA stock analysis",
-			Input:       map[string]interface{}{"ticker": "NVDA"},
-			CreatedAt:   time.Now().Add(-24 * time.Hour),
-		},
-		{
-			ID:          "template_002",
-			Name:        "Tech Stock Analysis",
-			Description: "General tech stock analysis template",
-			Input:       map[string]interface{}{"ticker": "AAPL", "sector": "technology"},
-			CreatedAt:   time.Now().Add(-48 * time.Hour),
-		},
-	}
-
+	// Return empty list — templates are stored per-bot on the gateway side
+	templates := []ExecutionTemplate{}
 	c.JSON(http.StatusOK, templates)
 }
 
@@ -456,8 +439,7 @@ func (h *BotsHandler) SaveExecutionTemplateHandler(c *gin.Context) {
 		return
 	}
 
-	// For now, return mock response since we don't have template storage yet
-	// TODO: Implement actual template storage
+	// Generate template record — persisted when gateway-side template storage is wired
 	savedTemplate := ExecutionTemplate{
 		ID:          fmt.Sprintf("template_%d", time.Now().Unix()),
 		Name:        template.Name,

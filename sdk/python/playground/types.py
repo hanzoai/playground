@@ -282,9 +282,11 @@ class AIConfig(BaseModel):
     Configuration for AI calls, defining default models, temperatures, and other parameters.
     These settings can be overridden at the method call level.
 
-    Leverages LiteLLM's standard environment variable handling for API keys:
-    - OPENAI_API_KEY, ANTHROPIC_API_KEY, AZURE_OPENAI_API_KEY, etc.
-    - LiteLLM automatically detects and uses these standard environment variables
+    API key priority (highest to lowest):
+    - Explicit api_key parameter
+    - HANZO_API_KEY environment variable (preferred)
+    - OPENAI_API_KEY, ANTHROPIC_API_KEY, etc. (provider-specific fallbacks)
+    - LiteLLM automatically detects standard environment variables
 
     All fields have sensible defaults, so you can create an AIConfig with minimal configuration:
 
@@ -423,7 +425,7 @@ class AIConfig(BaseModel):
 
     # LiteLLM configuration - these get passed directly to litellm.completion()
     api_key: Optional[str] = Field(
-        default=None, description="API key override (if not using env vars)"
+        default=None, description="API key override. Falls back to HANZO_API_KEY env var."
     )
     api_base: Optional[str] = Field(default=None, description="Custom API base URL")
     api_version: Optional[str] = Field(
@@ -607,9 +609,12 @@ class AIConfig(BaseModel):
             "num_retries": self.retry_attempts,
         }
 
-        # Add optional parameters if set
-        if self.api_key:
-            params["api_key"] = self.api_key
+        # Add optional parameters if set — HANZO_API_KEY takes priority
+        import os
+
+        resolved_key = self.api_key or os.environ.get("HANZO_API_KEY")
+        if resolved_key:
+            params["api_key"] = resolved_key
         if self.api_base:
             params["api_base"] = self.api_base
         if self.api_version:

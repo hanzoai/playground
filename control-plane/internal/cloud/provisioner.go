@@ -259,7 +259,8 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
 	}
 	if p.config.Kubernetes.CloudAPIKey != "" {
-		env["OPENAI_API_KEY"] = p.config.Kubernetes.CloudAPIKey
+		env["HANZO_API_KEY"] = p.config.Kubernetes.CloudAPIKey
+		env["OPENAI_API_KEY"] = p.config.Kubernetes.CloudAPIKey // backward compat
 	}
 
 	// Terminal-only mode: skip operative desktop, use lightweight ttyd shell access.
