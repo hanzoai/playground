@@ -21,6 +21,7 @@ interface OperativePanelProps {
  */
 function resolveDesktopUrl(agentId: string): string | null {
   const helloOk = gateway.serverInfo;
+  const token = gateway.authToken;
 
   // Derive the gateway HTTP base URL from the WebSocket URL
   const wsUrl = gateway.wsUrl;
@@ -28,7 +29,9 @@ function resolveDesktopUrl(agentId: string): string | null {
     try {
       const parsed = new URL(wsUrl);
       const httpProto = parsed.protocol === 'wss:' ? 'https:' : 'http:';
-      return `${httpProto}//${parsed.host}/vnc-viewer`;
+      const base = `${httpProto}//${parsed.host}/vnc-viewer`;
+      // Pass auth token as query param since iframes cannot send Authorization headers
+      return token ? `${base}?token=${encodeURIComponent(token)}` : base;
     } catch {
       // Fall through to other methods
     }

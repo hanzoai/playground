@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { botsApi, BotsApiError } from '@/services/botsApi';
 import { useNodeEventsSSE, useUnifiedStatusSSE } from '@/hooks/useSSE';
 import { cn } from '@/lib/utils';
-import type { BotFilters, BotsResponse, BotWithNode } from '@/types/bots';
+import type { BotsResponse, BotWithNode } from '@/types/bots';
 
 // ---------------------------------------------------------------------------
 // Types

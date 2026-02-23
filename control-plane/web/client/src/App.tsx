@@ -7,7 +7,6 @@ import { ModeProvider } from "./contexts/ModeContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { useFocusManagement } from "./hooks/useFocusManagement";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
-import { AllBotsPage } from "./pages/AllBotsPage.tsx";
 import { ControlPlanePage } from "./pages/ControlPlanePage";
 import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
 import { ExecutionsPage } from "./pages/ExecutionsPage";

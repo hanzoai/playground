@@ -82,6 +82,11 @@ class GatewayClient {
     return this.url;
   }
 
+  /** The auth token used for gateway connection (for iframe embedding). */
+  get authToken(): string | undefined {
+    return this.connectParams?.auth?.token;
+  }
+
   /**
    * Connect to the gateway WebSocket.
    */

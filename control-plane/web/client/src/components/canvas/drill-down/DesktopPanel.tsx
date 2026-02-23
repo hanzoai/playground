@@ -44,7 +44,8 @@ export function DesktopPanel({ nodeEndpoint, os, vncPort = 6080, className }: De
     // Linux x11vnc, Operative, etc.)
     const gwBase = gatewayHttpBase();
     if (gwBase) {
-      return `${gwBase}/vnc-viewer`;
+      const token = gateway.authToken;
+      return token ? `${gwBase}/vnc-viewer?token=${encodeURIComponent(token)}` : `${gwBase}/vnc-viewer`;
     }
 
     // Fallback: direct node endpoint
