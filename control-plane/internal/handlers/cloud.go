@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanzoai/playground/control-plane/internal/cloud"
@@ -30,6 +31,21 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 		}
 		if org := middleware.GetOrganization(c); org != "" && req.Org == "" {
 			req.Org = org
+		}
+
+		// Pass the user's bearer token for per-user billing.
+		// Cloud bots will use this as HANZO_API_KEY so LLM usage
+		// is tracked and billed to the launching user's account.
+		if auth := c.GetHeader("Authorization"); auth != "" {
+			token := strings.TrimPrefix(auth, "Bearer ")
+			if token != auth { // had Bearer prefix
+				req.UserAPIKey = token
+			}
+		}
+		if req.UserAPIKey == "" {
+			if key := c.GetHeader("X-API-Key"); key != "" {
+				req.UserAPIKey = key
+			}
 		}
 
 		result, err := provisioner.Provision(c.Request.Context(), &req)
