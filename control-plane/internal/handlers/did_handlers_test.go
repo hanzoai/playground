@@ -136,7 +136,7 @@ func TestRegisterNodeHandler_Success(t *testing.T) {
 	router := gin.New()
 	router.POST("/api/v1/did/register", handler.RegisterNode)
 
-	reqBody := `{"node_id":"node-1"}`
+	reqBody := `{"agent_node_id":"node-1"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/did/register", strings.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 

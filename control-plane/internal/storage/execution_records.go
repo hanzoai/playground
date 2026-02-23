@@ -33,14 +33,14 @@ func (ls *LocalStorage) CreateExecutionRecord(ctx context.Context, exec *types.E
 	insert := `
 		INSERT INTO executions (
 			execution_id, run_id, parent_execution_id,
-			node_id, bot_id, node_id,
+			node_id, bot_id,
 			status, input_payload, result_payload, error_message,
 			input_uri, result_uri,
 			session_id, actor_id,
 			started_at, completed_at, duration_ms,
 			notes,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// Serialize notes to JSON
 	var notesJSON []byte
@@ -60,7 +60,6 @@ func (ls *LocalStorage) CreateExecutionRecord(ctx context.Context, exec *types.E
 		exec.ParentExecutionID,
 		exec.NodeID,
 		exec.BotID,
-		exec.NodeID,
 		exec.Status,
 		bytesOrNil(exec.InputPayload),
 		bytesOrNil(exec.ResultPayload),
@@ -87,7 +86,7 @@ func (ls *LocalStorage) CreateExecutionRecord(ctx context.Context, exec *types.E
 func (ls *LocalStorage) GetExecutionRecord(ctx context.Context, executionID string) (*types.Execution, error) {
 	query := `
 		SELECT execution_id, run_id, parent_execution_id,
-		       node_id, bot_id, node_id,
+		       node_id, bot_id,
 		       status, input_payload, result_payload, error_message,
 		       input_uri, result_uri,
 		       session_id, actor_id,
@@ -124,7 +123,7 @@ func (ls *LocalStorage) UpdateExecutionRecord(ctx context.Context, executionID s
 
 	row := tx.QueryRowContext(ctx, `
 		SELECT execution_id, run_id, parent_execution_id,
-		       node_id, bot_id, node_id,
+		       node_id, bot_id,
 		       status, input_payload, result_payload, error_message,
 		       input_uri, result_uri,
 		       session_id, actor_id,
@@ -167,7 +166,6 @@ func (ls *LocalStorage) UpdateExecutionRecord(ctx context.Context, executionID s
 			parent_execution_id = ?,
 			node_id = ?,
 			bot_id = ?,
-			node_id = ?,
 			status = ?,
 			input_payload = ?,
 			result_payload = ?,
@@ -190,7 +188,6 @@ func (ls *LocalStorage) UpdateExecutionRecord(ctx context.Context, executionID s
 		updated.ParentExecutionID,
 		updated.NodeID,
 		updated.BotID,
-		updated.NodeID,
 		updated.Status,
 		bytesOrNil(updated.InputPayload),
 		bytesOrNil(updated.ResultPayload),
@@ -269,7 +266,7 @@ func (ls *LocalStorage) QueryExecutionRecords(ctx context.Context, filter types.
 	queryBuilder := strings.Builder{}
 	queryBuilder.WriteString(`
 		SELECT execution_id, run_id, parent_execution_id,
-		       node_id, bot_id, node_id,
+		       node_id, bot_id,
 		       status, input_payload, result_payload, error_message,
 		       input_uri, result_uri,
 		       session_id, actor_id,
@@ -1045,7 +1042,6 @@ func scanExecution(scanner interface {
 		&parentExecutionID,
 		&exec.NodeID,
 		&exec.BotID,
-		&exec.NodeID,
 		&exec.Status,
 		&inputPayload,
 		&resultPayload,
