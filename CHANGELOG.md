@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.78] - 2026-02-23
+
+
+### Fixed
+
+- Fix(cloud): use node ID as fallback gateway token (#30)
+
+The bot gateway refuses to start on LAN without auth (security check),
+so none mode doesn't work for K8s pods. When no API key is available,
+use the node ID as a service token to satisfy the gateway's auth
+requirement while keeping pods accessible within the cluster. (7c1d9df)
+
 ## [0.1.41-rc.77] - 2026-02-23
 
 
