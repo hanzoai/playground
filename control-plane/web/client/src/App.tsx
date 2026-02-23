@@ -29,6 +29,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { AuthCallbackPage } from "./components/AuthCallbackPage";
 import { GatewaySettings } from "./components/settings/GatewaySettings";
+import { GlobalCommandPalette } from "./components/GlobalCommandPalette";
 
 // Placeholder pages for new routes
 
@@ -103,6 +104,8 @@ function AppContent() {
           </main>
         </SidebarInset>
       </div>
+      {/* Global command palette (Cmd+K) — available on all pages except playground */}
+      <GlobalCommandPalette />
     </SidebarProvider>
   );
 }
