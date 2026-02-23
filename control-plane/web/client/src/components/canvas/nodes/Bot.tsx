@@ -64,10 +64,10 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        'group relative rounded-xl bg-card transition-all touch-manipulation',
+        'group relative rounded-xl bg-zinc-800/90 transition-all touch-manipulation',
         selected
-          ? 'ring-1 ring-primary/40 shadow-[0_0_12px_-2px] shadow-primary/20'
-          : 'ring-1 ring-white/[0.06] hover:ring-white/[0.12]',
+          ? 'ring-1 ring-primary/50 shadow-[0_0_16px_-2px] shadow-primary/25'
+          : 'ring-1 ring-white/[0.10] hover:ring-white/[0.20]',
         expanded ? 'w-[320px] md:w-[400px] shadow-2xl' : 'w-[180px] md:w-[200px] shadow-lg',
       )}
     >
@@ -142,9 +142,9 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
       {/* Expanded content */}
       {expanded && (
-        <div className="border-t border-white/[0.04]">
+        <div className="border-t border-white/[0.08]">
           {/* View tabs */}
-          <div className="flex border-b border-white/[0.04] overflow-x-auto scrollbar-none">
+          <div className="flex border-b border-white/[0.08] overflow-x-auto scrollbar-none">
             {VIEW_TABS.map((tab) => (
               <button
                 key={tab.key}

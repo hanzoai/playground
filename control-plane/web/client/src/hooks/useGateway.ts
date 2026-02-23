@@ -29,7 +29,7 @@ import type {
 // Config
 // ---------------------------------------------------------------------------
 
-const DEFAULT_GATEWAY_URL = 'wss://bot.hanzo.ai';
+const DEFAULT_GATEWAY_URL = 'wss://gw.hanzo.bot';
 const ENV_GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL as string | undefined;
 const ENV_GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN as string | undefined;
 const CLIENT_VERSION = '2.0.0';
