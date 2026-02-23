@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.60] - 2026-02-23
+
+
+### Fixed
+
+- Fix: stabilize gateway WebSocket connection lifecycle
+
+Separate event subscriptions from connect/disconnect to prevent
+rapid reconnect cycles when auth token transitions from null to a
+value. Only reconnect when URL or token actually changes. (0501812)
+
 ## [0.1.41-rc.59] - 2026-02-23
 
 
