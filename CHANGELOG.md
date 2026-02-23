@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.66] - 2026-02-23
+
+
+### Fixed
+
+- Fix: resolve node detail page for gateway-only nodes
+
+Nodes connected via gateway but not tracked in the control-plane DB
+now fall back to gateway.rpc('node.describe') for identity/status.
+Adds display_name and platform fields to Node type and shows friendly
+display name in the detail header. (b61777e)
+
 ## [0.1.41-rc.65] - 2026-02-23
 
 
