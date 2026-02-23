@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.56] - 2026-02-23
+
+
+### Fixed
+
+- Fix(terminal): prevent terminal re-init on sessionKey changes
+
+Remove sessionKey from useEffect dependency array to stop terminal
+from being destroyed and recreated on every gateway sync. Use a ref
+to track sessionKey for input routing instead. (6502136)
+
 ## [0.1.41-rc.55] - 2026-02-23
 
 
