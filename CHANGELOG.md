@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.76] - 2026-02-23
+
+
+### Other
+
+- Fix duplicate node_id SQL bug and DID registration field mismatch (#28)
+
+* Fix duplicate node_id in SQL and DID registration field mismatch
+
+- Remove duplicate node_id column from all execution SQL statements
+  (INSERT, SELECT, UPDATE) which caused Postgres to reject queries
+  while SQLite silently tolerated the duplicate
+- Fix DID registration JSON tag from "node_id" to "agent_node_id"
+  to match what both Python and TypeScript SDKs send
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* Fix DID registration test to use agent_node_id JSON field
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (7c530e0)
+
 ## [0.1.41-rc.75] - 2026-02-23
 
 
