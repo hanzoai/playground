@@ -43,6 +43,9 @@ type ProvisionRequest struct {
 	Memory      string            `json:"memory,omitempty"`
 	Owner       string            `json:"owner,omitempty"` // IAM user sub
 	Org         string            `json:"org,omitempty"`   // Organization
+	// Per-user billing: IAM token of the launching user.
+	// Injected as HANZO_API_KEY so usage is billed to the user, not a shared service key.
+	UserAPIKey string `json:"-"` // Never from JSON; set by handler
 	// Multi-OS desktop support
 	OS           string `json:"os,omitempty"`            // "linux" (default), "macos", "windows"
 	Provider     string `json:"provider,omitempty"`      // Visor provider name for Mac/Windows VMs
@@ -271,10 +274,27 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		env["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
 		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint // backward compat
 	}
-	if p.config.Kubernetes.CloudAPIKey != "" {
-		env["HANZO_API_KEY"] = p.config.Kubernetes.CloudAPIKey
-		env["OPENAI_API_KEY"] = p.config.Kubernetes.CloudAPIKey // backward compat
+	// Per-user billing: use the launching user's API key so usage is
+	// tracked and billed to their account. Fall back to shared service key.
+	apiKey := req.UserAPIKey
+	if apiKey == "" {
+		apiKey = p.config.Kubernetes.CloudAPIKey
 	}
+	if apiKey != "" {
+		env["HANZO_API_KEY"] = apiKey
+		env["OPENAI_API_KEY"] = apiKey // backward compat
+	}
+	if req.UserAPIKey != "" {
+		logger.Logger.Info().
+			Str("node_id", nodeID).
+			Str("owner", req.Owner).
+			Msg("using per-user API key for billing")
+	}
+
+	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
+	// The bot image (Node.js) defaults to ~512MB heap which OOMs under tight limits.
+	// Reserve ~128MB for OS/native overhead and give the rest to V8.
+	env["NODE_OPTIONS"] = nodeOptionsForMemory(p.config.Kubernetes.LimitMemory)
 
 	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
 	// The bot image (Node.js) defaults to ~512MB heap which OOMs under tight limits.
