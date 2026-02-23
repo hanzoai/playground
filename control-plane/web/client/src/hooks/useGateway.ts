@@ -66,6 +66,11 @@ function resolveGatewayUrl(storeUrl: string | null): { url: string; isUserOverri
   return { url: DEFAULT_GATEWAY_URL, isUserOverride: false };
 }
 
+/** Resolve the effective auth token. Priority: IAM SDK > settings > env > localStorage */
+function resolveToken(apiKey: string | null, settingsToken: string | null): string | null {
+  return apiKey || settingsToken || ENV_GATEWAY_TOKEN || getGlobalIamToken() || null;
+}
+
 // ---------------------------------------------------------------------------
 // Tenant context from auth or URL
 // ---------------------------------------------------------------------------
@@ -85,6 +90,8 @@ export interface TenantContext {
 export function useGateway(explicitTenant?: TenantContext) {
   const [connectionState, setConnectionState] = useState<GatewayConnectionState>('disconnected');
   const syncedRef = useRef(false);
+  const connectedUrlRef = useRef<string | null>(null);
+  const connectedTokenRef = useRef<string | null>(null);
   const { apiKey } = useAuth();
 
   // Read custom gateway URL/token from settings store
@@ -96,6 +103,9 @@ export function useGateway(explicitTenant?: TenantContext) {
     () => resolveGatewayUrl(settingsGatewayUrl),
     [settingsGatewayUrl],
   );
+
+  // Resolve effective token
+  const effectiveToken = resolveToken(apiKey, settingsGatewayToken);
 
   // Read tenant from Zustand store (set by OrgProjectSwitcher in IAM mode)
   const storeOrgId = useTenantStore((s) => s.orgId);
@@ -114,11 +124,8 @@ export function useGateway(explicitTenant?: TenantContext) {
   const upsertBot = useCanvasStore((s) => s.upsertBot);
   const addApproval = useActionPillStore((s) => s.add);
 
-  /** Build ConnectParams with auth + tenant context */
-  const buildConnectParams = useCallback((): ConnectParams => {
-    // Token priority: IAM SDK > settings store > env var > localStorage fallback
-    const effectiveToken = apiKey || settingsGatewayToken || ENV_GATEWAY_TOKEN || getGlobalIamToken();
-    return {
+  /** Build ConnectParams with current auth + tenant context */
+  const buildConnectParams = useCallback((): ConnectParams => ({
     minProtocol: 3,
     maxProtocol: 3,
     client: {
@@ -140,8 +147,7 @@ export function useGateway(explicitTenant?: TenantContext) {
         env: tenant.env ?? (import.meta.env.PROD ? 'production' : 'development'),
       },
     } : {}),
-  };
-  }, [apiKey, settingsGatewayToken, tenant]);
+  }), [effectiveToken, tenant]);
 
   /** Convert agents.list response rows into AgentSummary with derived sessionKey */
   const toAgentSummaries = useCallback((resp: AgentsListResponse): AgentSummary[] => {
@@ -195,15 +201,12 @@ export function useGateway(explicitTenant?: TenantContext) {
     }
   }, [setAgents, upsertBot]);
 
+  // Subscribe to gateway events (stable — does not trigger reconnect)
   useEffect(() => {
-    // Subscribe to connection state
     const unsubState = gateway.onStateChange((state) => {
       setConnectionState(state);
-
-      // On connected, sync agents
       if (state === 'connected' && !syncedRef.current) {
         syncedRef.current = true;
-
         const snapshot = gateway.snapshot;
         if (snapshot?.agents && snapshot.agents.length > 0) {
           syncFromSnapshot(snapshot.agents);
@@ -211,41 +214,51 @@ export function useGateway(explicitTenant?: TenantContext) {
           syncAgents();
         }
       }
-
       if (state === 'disconnected' || state === 'error') {
         syncedRef.current = false;
       }
     });
 
-    // Subscribe to real-time events
     const unsubChat = gateway.on('chat', (payload) => {
       handleChatEvent(payload as ChatEvent);
     });
-
     const unsubAgent = gateway.on('agent', (payload) => {
       handleBotEvent(payload as AgentEvent);
     });
-
     const unsubApproval = gateway.on('exec.approval.requested', (payload) => {
       addApproval(payload as ExecApprovalRequestEvent);
     });
-
-    // Disconnect any existing connection before connecting to (possibly new) URL
-    syncedRef.current = false;
-    gateway.disconnect();
-    gateway.connect(effectiveUrl, buildConnectParams());
 
     return () => {
       unsubState();
       unsubChat();
       unsubAgent();
       unsubApproval();
-      // Don't disconnect on unmount — singleton persists across routes
     };
-  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval, buildConnectParams, effectiveUrl]);
+  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval]);
+
+  // Connect/reconnect only when URL or token actually changes
+  useEffect(() => {
+    const urlChanged = effectiveUrl !== connectedUrlRef.current;
+    const tokenChanged = effectiveToken !== connectedTokenRef.current;
+
+    // Skip if already connected with the same URL and token
+    if (!urlChanged && !tokenChanged && gateway.isConnected) return;
+
+    // Skip reconnect if we have no token and already tried without one
+    if (!effectiveToken && connectedTokenRef.current === null && connectedUrlRef.current === effectiveUrl) return;
+
+    connectedUrlRef.current = effectiveUrl;
+    connectedTokenRef.current = effectiveToken;
+    syncedRef.current = false;
+    gateway.disconnect();
+    gateway.connect(effectiveUrl, buildConnectParams());
+  }, [effectiveUrl, effectiveToken, buildConnectParams]);
 
   const reconnect = useCallback(() => {
     syncedRef.current = false;
+    connectedUrlRef.current = null;
+    connectedTokenRef.current = null;
     gateway.disconnect();
     gateway.connect(effectiveUrl, buildConnectParams());
   }, [buildConnectParams, effectiveUrl]);
