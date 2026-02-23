@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.68] - 2026-02-23
+
+
+### CI
+
+- Ci: enforce linting, pin Python deps, format SDK tests
+
+* ci: add golangci config, pin Python deps, add Go SDK linting
+
+- Add .golangci.yml with explicit linter list (errcheck, govet,
+  staticcheck, unused, ineffassign, gosimple)
+- Pin Python SDK deps to minor version ranges for reproducibility
+- Add ruff config to pyproject.toml (target py39, line-length 120)
+- Add golangci-lint step to Go SDK CI workflow
+- Move lint step before build/test in control-plane CI (fail fast)
+- Include ruff in dev dependencies, remove redundant pip install
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* format: apply ruff formatting to Python SDK test files
+
+39 test files reformatted to pass ruff format --check in CI.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix: widen hypothesis range for Python 3.9 compat
+
+hypothesis>=6.142 requires Python >=3.10. Use >=6.131,<6.142 to
+support the full 3.9-3.12 matrix.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (34556c1)
+
 ## [0.1.41-rc.67] - 2026-02-23
 
 
