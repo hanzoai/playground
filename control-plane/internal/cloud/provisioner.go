@@ -292,7 +292,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 
 	// Cloud pods connect as nodes to the central bot-gateway so all nodes
 	// (local Macs, cloud terminals, desktop agents) appear in one unified
-	// gateway at gw.hanzo.bot. The gateway token authenticates the connection.
+	// gateway at gw.hanzo.bot.
+	if p.config.Kubernetes.GatewayURL != "" {
+		env["BOT_NODE_GATEWAY_URL"] = p.config.Kubernetes.GatewayURL
+	}
 	gatewayToken := p.config.Kubernetes.GatewayToken
 	if gatewayToken != "" {
 		env["BOT_GATEWAY_TOKEN"] = gatewayToken
@@ -782,41 +785,21 @@ func nodeOptionsForMemory(memLimit string) string {
 
 // nodeArgs builds the container args to run the bot in node mode,
 // connecting to the central gateway so all nodes are unified.
+// Gateway URL is passed via BOT_NODE_GATEWAY_URL env var.
 // If no gateway URL is configured, falls back to standalone gateway mode.
 func nodeArgs(gatewayURL, nodeID string) []string {
 	if gatewayURL == "" {
-		// Standalone gateway mode (legacy)
 		return []string{
 			"node", "hanzo-bot.mjs", "gateway",
 			"--allow-unconfigured", "--bind", "lan",
 		}
 	}
-	// Node mode: connect to central gateway
-	// Parse URL to extract host/port/tls
-	port := "18789"
-	useTLS := false
-	url := strings.TrimPrefix(gatewayURL, "wss://")
-	if url != gatewayURL {
-		useTLS = true
-	}
-	url = strings.TrimPrefix(url, "ws://")
-	parts := strings.SplitN(url, ":", 2)
-	host := parts[0]
-	if len(parts) > 1 {
-		port = strings.TrimRight(parts[1], "/")
-	} else if useTLS {
-		port = "443"
-	}
-
-	args := []string{
+	// Node mode: gateway URL is set via BOT_NODE_GATEWAY_URL env var.
+	// Only pass --name via CLI args to identify this node.
+	return []string{
 		"node", "hanzo-bot.mjs", "node", "run",
-		"--host", host, "--port", port,
 		"--name", nodeID,
 	}
-	if useTLS {
-		args = append(args, "--tls")
-	}
-	return args
 }
 
 // sanitizeLabel ensures a value is safe for K8s labels.
