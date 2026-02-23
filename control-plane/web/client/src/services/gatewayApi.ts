@@ -85,6 +85,9 @@ export interface CloudProvisionParams {
   labels?: Record<string, string>;
   cpu?: string;
   memory?: string;
+  os?: string;
+  provider?: string;
+  instance_type?: string;
 }
 
 export interface CloudProvisionResult {
@@ -107,6 +110,9 @@ export interface CloudNode {
   endpoint: string;
   owner: string;
   org: string;
+  os: string;
+  remote_protocol: string;
+  remote_url: string;
   labels: Record<string, string>;
   created_at: string;
   last_seen: string;

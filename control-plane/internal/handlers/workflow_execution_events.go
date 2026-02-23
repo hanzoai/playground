@@ -131,7 +131,6 @@ func applyEventToExecution(current *types.Execution, req *WorkflowExecutionEvent
 
 	if current.NodeID == "" {
 		current.NodeID = firstNonEmpty(req.NodeID, req.Type)
-		current.NodeID = current.NodeID
 	}
 	if current.BotID == "" {
 		current.BotID = firstNonEmpty(req.BotID, req.Type, "bot")

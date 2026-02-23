@@ -210,9 +210,9 @@ class AgentRuntime:
 
 
 @pytest.fixture
-def run_agent() -> (
-    Generator[Callable[[Agent, Optional[int]], AgentRuntime], None, None]
-):
+def run_agent() -> Generator[
+    Callable[[Agent, Optional[int]], AgentRuntime], None, None
+]:
     runtimes: list[AgentRuntime] = []
 
     def _start(agent: Agent, port: Optional[int] = None) -> AgentRuntime:

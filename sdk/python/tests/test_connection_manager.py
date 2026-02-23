@@ -397,9 +397,7 @@ class TestHealthCheckLoop:
         mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
-            return_value=True
-        )
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(return_value=True)
 
         manager = ConnectionManager(mock_agent, fast_config)
         await manager.start()
@@ -447,9 +445,7 @@ class TestHealthCheckLoop:
         mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
-            return_value=True
-        )
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(return_value=True)
 
         manager = ConnectionManager(mock_agent, fast_config)
         await manager.start()
@@ -658,9 +654,7 @@ class TestConnectionLifecycle:
         mock_agent.client.register_bot_with_status = AsyncMock(
             return_value=(True, None)
         )
-        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
-            return_value=True
-        )
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(return_value=True)
 
         manager = ConnectionManager(mock_agent, fast_config)
 
@@ -854,9 +848,7 @@ class TestIntegration:
             return (cycle % 2 == 1), None
 
         mock_agent.client.register_bot_with_status = alternate_success
-        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(
-            return_value=True
-        )
+        mock_agent.agents_handler.send_enhanced_heartbeat = AsyncMock(return_value=True)
 
         manager = ConnectionManager(mock_agent, fast_config)
 

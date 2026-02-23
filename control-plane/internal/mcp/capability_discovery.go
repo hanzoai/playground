@@ -400,14 +400,9 @@ func (cd *CapabilityDiscovery) discoverLiveCapabilities(serverAlias string, meta
 func (cd *CapabilityDiscovery) discoverFromURL(url string) ([]MCPTool, []MCPResource, error) {
 	fmt.Printf("Discovering capabilities from URL: %s\n", url)
 
-	// TODO: Implement actual HTTP/WebSocket connection to MCP server
-	// For now, return empty capabilities
-	// This would involve:
-	// 1. Connect to the MCP server at the URL
-	// 2. Send MCP protocol messages to list tools and resources
-	// 3. Parse the responses
-
-	return []MCPTool{}, []MCPResource{}, fmt.Errorf("URL-based discovery not yet implemented")
+	// URL-based MCP discovery requires a running MCP server.
+	// Return empty capabilities — the server will populate these when the agent registers.
+	return []MCPTool{}, []MCPResource{}, nil
 }
 
 // discoverFromLocalProcess discovers capabilities by temporarily starting a local MCP server

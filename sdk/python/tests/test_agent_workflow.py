@@ -182,9 +182,7 @@ async def test_execute_with_tracking_emits_workflow_updates(monkeypatch):
         monkeypatch.setattr(workflow, "notify_call_start", capture_start)
         monkeypatch.setattr(workflow, "notify_call_complete", capture_complete)
 
-        async def child_bot(
-            value: int, execution_context: ExecutionContext = None
-        ):
+        async def child_bot(value: int, execution_context: ExecutionContext = None):
             assert execution_context is not None
             return {"doubled": value * 2}
 
@@ -265,9 +263,7 @@ async def test_execute_with_tracking_error_emits_failure(monkeypatch):
         monkeypatch.setattr(workflow, "notify_call_start", capture_start)
         monkeypatch.setattr(workflow, "notify_call_error", capture_error)
 
-        async def failing_bot(
-            value: int, execution_context: ExecutionContext = None
-        ):
+        async def failing_bot(value: int, execution_context: ExecutionContext = None):
             raise RuntimeError("expected failure")
 
         with pytest.raises(RuntimeError):
@@ -348,6 +344,6 @@ async def test_nested_bots_emit_child_completion_before_parent(monkeypatch):
         if entry[1] == "succeeded" and entry[0].endswith("parent_bot")
     )
 
-    assert (
-        child_complete_index < parent_complete_index
-    ), "Parent bot completion emitted before child finished"
+    assert child_complete_index < parent_complete_index, (
+        "Parent bot completion emitted before child finished"
+    )

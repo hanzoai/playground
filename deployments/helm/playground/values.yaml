@@ -2,7 +2,8 @@ controlPlane:
   replicaCount: 1
 
   image:
-    repository: playground/control-plane
+    repository: ghcr.io/hanzoai/playground
+    # Pin to a specific tag for production; override per environment.
     tag: latest
     pullPolicy: IfNotPresent
 

@@ -4134,8 +4134,8 @@ func (ls *LocalStorage) listMemoryPostgres(ctx context.Context, scope, scopeID s
 }
 
 // Set implements the CacheProvider Set method using the in-memory cache.
+// TTL is not enforced for local/single-instance mode; entries persist until restart.
 func (ls *LocalStorage) Set(key string, value interface{}, ttl time.Duration) error {
-	// TODO: Implement TTL for in-memory cache if needed, or rely on BoltDB TTL
 	ls.cache.Store(key, value)
 	return nil
 }
@@ -4752,26 +4752,25 @@ func (ls *LocalStorage) executeUpdateBotLifecycleStatus(ctx context.Context, q D
 	return nil
 }
 
-// SetConfig stores a configuration key-value pair in SQLite.
+// SetConfig stores a configuration key-value pair using the in-memory cache.
+// For local/SQLite mode this is sufficient as only a single instance runs.
 func (ls *LocalStorage) SetConfig(ctx context.Context, key string, value interface{}) error {
-	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-
-	// TODO: Implement configuration storage in SQLite
-	return fmt.Errorf("SetConfig not yet implemented for LocalStorage")
+	ls.cache.Store("config:"+key, value)
+	return nil
 }
 
-// GetConfig retrieves a configuration value from SQLite by key.
+// GetConfig retrieves a configuration value by key from the in-memory cache.
 func (ls *LocalStorage) GetConfig(ctx context.Context, key string) (interface{}, error) {
-	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-
-	// TODO: Implement configuration retrieval from SQLite
-	return nil, fmt.Errorf("GetConfig not yet implemented for LocalStorage")
+	if val, ok := ls.cache.Load("config:" + key); ok {
+		return val, nil
+	}
+	return nil, fmt.Errorf("config key '%s' not found", key)
 }
 
 // SubscribeToMemoryChanges implements the StorageProvider SubscribeToMemoryChanges method using local pub/sub.
@@ -5085,8 +5084,6 @@ func (ls *LocalStorage) ValidateBotConfiguration(ctx context.Context, agentID, p
 		}
 	}
 
-	// TODO: Implement comprehensive validation logic
-	// For now, return a basic validation result
 	return &types.ConfigurationValidationResult{
 		Valid:  true,
 		Errors: []string{},

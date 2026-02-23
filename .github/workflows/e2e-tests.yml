@@ -63,7 +63,7 @@ jobs:
           E2E_IAM_USER_EMAIL: ${{ secrets.E2E_IAM_USER_EMAIL }}
           E2E_IAM_USER_PASSWORD: ${{ secrets.E2E_IAM_USER_PASSWORD }}
           E2E_IAM_ORGANIZATION: hanzo
-          E2E_IAM_APPLICATION: app-hanzo
+          E2E_IAM_APPLICATION: app-hanzobot
           E2E_COMMERCE_API_URL: https://commerce.hanzo.ai
 
       - name: Upload Playwright report

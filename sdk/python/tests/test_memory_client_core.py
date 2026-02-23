@@ -282,9 +282,7 @@ async def test_scoped_client_delegates(memory_client):
     await scoped.delete_vector("chunk")
     await scoped.similarity_search([0.2])
 
-    base.set.assert_awaited_once_with(
-        "key", 1, scope="session", scope_id="abc"
-    )
+    base.set.assert_awaited_once_with("key", 1, scope="session", scope_id="abc")
     base.get.assert_awaited_once_with(
         "key", default=None, scope="session", scope_id="abc"
     )

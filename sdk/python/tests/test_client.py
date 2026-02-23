@@ -365,7 +365,4 @@ async def test_register_bot(monkeypatch):
     assert posted[0][0] == "POST"
     assert posted[0][1].endswith("/nodes/register")
     body = posted[0][2]
-    assert (
-        body["metadata"]["custom"]["vc_generation"]["bot_overrides"]["foo"]
-        is False
-    )
+    assert body["metadata"]["custom"]["vc_generation"]["bot_overrides"]["foo"] is False

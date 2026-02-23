@@ -148,9 +148,7 @@ def test_call_retry_logic(client):
     # Note: This test may fail if the client doesn't implement retry logic
     # In that case, it will raise an exception on the first 500 response
     try:
-        response = client.execute_sync(
-            target="agent.bot", input_data={"key": "value"}
-        )
+        response = client.execute_sync(target="agent.bot", input_data={"key": "value"})
         assert response is not None
     except Exception:
         # If client doesn't retry, this is expected behavior

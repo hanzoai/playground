@@ -303,7 +303,9 @@ class TestAPIKeyAuthentication:
         monkeypatch.setattr(client_mod.requests, "post", fake_post)
         monkeypatch.setattr(client_mod.requests, "get", fake_get)
 
-        client = PlaygroundClient(base_url="http://example.com", api_key="configured-key")
+        client = PlaygroundClient(
+            base_url="http://example.com", api_key="configured-key"
+        )
         # Try to override with custom header
         client.execute_sync(
             "node.bot",
@@ -332,8 +334,12 @@ class TestAPIKeyAuthentication:
 
         from playground.types import BotStatus, HeartbeatData
 
-        client = PlaygroundClient(base_url="http://example.com", api_key="heartbeat-key")
-        heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
+        client = PlaygroundClient(
+            base_url="http://example.com", api_key="heartbeat-key"
+        )
+        heartbeat = HeartbeatData(
+            status=BotStatus.READY, mcp_servers=[], timestamp="now"
+        )
 
         result = await client.send_enhanced_heartbeat("node-1", heartbeat)
 
@@ -348,9 +354,11 @@ class TestAPIKeyAuthentication:
 
         def fake_post(url, json=None, headers=None, timeout=None):
             captured["headers"] = headers
+
             class Resp:
                 def raise_for_status(self):
                     pass
+
             return Resp()
 
         import playground.client as client_mod
@@ -359,8 +367,12 @@ class TestAPIKeyAuthentication:
 
         from playground.types import BotStatus, HeartbeatData
 
-        client = PlaygroundClient(base_url="http://example.com", api_key="heartbeat-key")
-        heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
+        client = PlaygroundClient(
+            base_url="http://example.com", api_key="heartbeat-key"
+        )
+        heartbeat = HeartbeatData(
+            status=BotStatus.READY, mcp_servers=[], timestamp="now"
+        )
 
         result = client.send_enhanced_heartbeat_sync("node-1", heartbeat)
 

@@ -54,15 +54,77 @@ func (ds *DefaultDevService) RunInDevMode(path string, options domain.DevOptions
 }
 
 func (ds *DefaultDevService) StopDevMode(path string) error {
-	// TODO: Implement dev mode stopping logic
-	// This would involve tracking running dev processes and stopping them
-	return fmt.Errorf("stop dev mode not yet implemented")
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	pidFile := filepath.Join(absPath, ".playground-dev.pid")
+	data, err := os.ReadFile(pidFile)
+	if err != nil {
+		return fmt.Errorf("no running dev process found for %s", absPath)
+	}
+
+	var pid int
+	if _, err := fmt.Sscanf(strings.TrimSpace(string(data)), "%d", &pid); err != nil {
+		return fmt.Errorf("invalid PID file: %w", err)
+	}
+
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		os.Remove(pidFile)
+		return fmt.Errorf("process %d not found", pid)
+	}
+
+	if err := proc.Signal(syscall.SIGTERM); err != nil {
+		os.Remove(pidFile)
+		return fmt.Errorf("failed to stop process %d: %w", pid, err)
+	}
+
+	os.Remove(pidFile)
+	fmt.Printf("Stopped dev process %d for %s\n", pid, absPath)
+	return nil
 }
 
 func (ds *DefaultDevService) GetDevStatus(path string) (*domain.DevStatus, error) {
-	// TODO: Implement dev status retrieval
-	// This would involve checking if a dev server is running for the given path
-	return nil, fmt.Errorf("get dev status not yet implemented")
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	pidFile := filepath.Join(absPath, ".playground-dev.pid")
+	data, err := os.ReadFile(pidFile)
+	if err != nil {
+		return &domain.DevStatus{
+			IsRunning: false,
+			Path:      absPath,
+		}, nil
+	}
+
+	var pid int
+	if _, err := fmt.Sscanf(strings.TrimSpace(string(data)), "%d", &pid); err != nil {
+		os.Remove(pidFile)
+		return &domain.DevStatus{IsRunning: false, Path: absPath}, nil
+	}
+
+	// Check if process is still alive
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		os.Remove(pidFile)
+		return &domain.DevStatus{IsRunning: false, Path: absPath}, nil
+	}
+
+	// Signal 0 checks if the process exists
+	if err := proc.Signal(syscall.Signal(0)); err != nil {
+		os.Remove(pidFile)
+		return &domain.DevStatus{IsRunning: false, Path: absPath}, nil
+	}
+
+	return &domain.DevStatus{
+		IsRunning: true,
+		Path:      absPath,
+		PID:       pid,
+	}, nil
 }
 
 // runDev starts the agent package in development mode
@@ -132,7 +194,8 @@ func (ds *DefaultDevService) runDev(packagePath string, options domain.DevOption
 	fmt.Printf("💡 Access at: http://localhost:%d\n", port)
 	fmt.Printf("💡 Press Ctrl+C to stop\n\n")
 
-	// Wait for process to complete
+	// Wait for process to complete — clean up PID file on exit
+	defer os.Remove(filepath.Join(packagePath, ".playground-dev.pid"))
 	if agentErr := agentCmd.Wait(); agentErr != nil {
 		if exitErr, ok := agentErr.(*exec.ExitError); ok {
 			if ws, ok := exitErr.Sys().(syscall.WaitStatus); ok {
@@ -248,6 +311,10 @@ func (ds *DefaultDevService) startDevProcess(packagePath string, port int, optio
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start process: %w", err)
 	}
+
+	// Write PID file for stop/status tracking
+	pidFile := filepath.Join(packagePath, ".playground-dev.pid")
+	_ = os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0600)
 
 	return cmd, nil
 }

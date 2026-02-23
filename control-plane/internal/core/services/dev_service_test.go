@@ -152,7 +152,7 @@ func TestRunInDevMode_AgentsYamlExists(t *testing.T) {
 	}
 }
 
-func TestStopDevMode_NotImplemented(t *testing.T) {
+func TestStopDevMode_NoPidFile(t *testing.T) {
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
 	fileSystem := newMockFileSystemAdapter()
@@ -161,19 +161,20 @@ func TestStopDevMode_NotImplemented(t *testing.T) {
 
 	err := service.StopDevMode("/some/path")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not yet implemented")
+	assert.Contains(t, err.Error(), "no running dev process found")
 }
 
-func TestGetDevStatus_NotImplemented(t *testing.T) {
+func TestGetDevStatus_NoPidFile(t *testing.T) {
 	processManager := newMockProcessManager()
 	portManager := newMockPortManager()
 	fileSystem := newMockFileSystemAdapter()
 
 	service := NewDevService(processManager, portManager, fileSystem).(*DefaultDevService)
 
-	_, err := service.GetDevStatus("/some/path")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not yet implemented")
+	status, err := service.GetDevStatus("/some/path")
+	assert.NoError(t, err)
+	assert.NotNil(t, status)
+	assert.False(t, status.IsRunning)
 }
 
 func TestGetFreePort(t *testing.T) {

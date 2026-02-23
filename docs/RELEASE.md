@@ -82,7 +82,7 @@ Staging releases are **automatically triggered** when code is pushed to `main`. 
 **Artifacts published to:**
 - Python: PyPI as prerelease (`pip install --pre hanzo-playground`)
 - TypeScript: npm with `@next` tag
-- Docker: `playground/control-plane:staging-X.Y.Z-rc.N`
+- Docker: `hanzoai/playground:staging-X.Y.Z-rc.N`
 - Binaries: GitHub Pre-release
 
 **Manual staging release (optional):**
@@ -110,7 +110,7 @@ pip install --pre hanzo-playground
 npm install @hanzo/playground@next
 
 # Docker
-docker pull playground/control-plane:staging-0.1.28-rc.4
+docker pull hanzoai/playground:staging-0.1.28-rc.4
 ```
 
 ### Production Release - MANUAL
@@ -144,7 +144,7 @@ Production releases are **manually triggered** via GitHub Actions workflow dispa
 **Artifacts published to:**
 - Python: PyPI (https://pypi.org)
 - TypeScript: npm with `@latest` tag
-- Docker: `playground/control-plane:vX.Y.Z` + `:latest`
+- Docker: `hanzoai/playground:vX.Y.Z` + `:latest`
 - Binaries: GitHub Release (public)
 
 **Installing production releases:**
@@ -160,7 +160,7 @@ pip install hanzo-playground
 npm install @hanzo/playground
 
 # Docker
-docker pull playground/control-plane:latest
+docker pull hanzoai/playground:latest
 ```
 
 ---
@@ -184,7 +184,7 @@ playground-X.Y.Z.tar.gz             # Python source distribution
 |----------|---------|------------|
 | PyPI | `pip install --pre hanzo-playground` | `pip install hanzo-playground` |
 | npm | `@hanzo/playground@next` | `@hanzo/playground@latest` |
-| Docker | `playground/control-plane:staging-*` | `playground/control-plane:v*` |
+| Docker | `hanzoai/playground:staging-*` | `hanzoai/playground:v*` |
 
 ---
 

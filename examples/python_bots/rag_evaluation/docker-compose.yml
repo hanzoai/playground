@@ -1,6 +1,6 @@
 services:
   control-plane:
-    image: playground/control-plane:latest
+    image: hanzoai/playground:latest
     environment:
       PLAYGROUND_STORAGE_MODE: local
       PLAYGROUND_HTTP_ADDR: 0.0.0.0:8080

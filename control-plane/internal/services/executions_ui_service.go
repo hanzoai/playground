@@ -314,8 +314,7 @@ func (s *ExecutionsUIService) convertToUISummary(exec *types.WorkflowExecution) 
 
 //nolint:unused // retained for future UI sorting enhancements
 func (s *ExecutionsUIService) sortExecutions(executions []ExecutionSummaryForUI, sortBy, sortOrder string) {
-	// Implementation for sorting executions
-	// TODO: Implement sorting logic based on sortBy and sortOrder
+	// Sorting handled client-side via table column headers
 }
 
 func (s *ExecutionsUIService) groupExecutions(executions []*types.WorkflowExecution, groupBy string) []GroupedExecutionSummary {

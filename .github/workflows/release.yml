@@ -473,7 +473,7 @@ jobs:
           ENVIRONMENT: ${{ needs.prepare.outputs.environment }}
         run: |
           set -euo pipefail
-          image="playground/control-plane"
+          image="hanzoai/playground"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
 
           if [ "${ENVIRONMENT}" = "staging" ]; then

@@ -258,7 +258,9 @@ def create_test_agent(
     memory_store: Dict[str, Any] = {}
 
     class _FakePlaygroundClient(DummyPlaygroundClient):
-        def __init__(self, base_url: str, async_config: Any = None, api_key: Optional[str] = None):
+        def __init__(
+            self, base_url: str, async_config: Any = None, api_key: Optional[str] = None
+        ):
             super().__init__()
             self.base_url = base_url
             self.api_base = f"{base_url}/api/v1"
@@ -398,7 +400,9 @@ def create_test_agent(
             pass
 
     class _FakeDIDManager:
-        def __init__(self, agents_server: str, node: str, api_key: Optional[str] = None):
+        def __init__(
+            self, agents_server: str, node: str, api_key: Optional[str] = None
+        ):
             self.agents_server = agents_server
             self.node_id = node
             self.api_key = api_key

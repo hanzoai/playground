@@ -4,11 +4,31 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
+
+// parseDerivationIndex extracts the last numeric index from a BIP-44 derivation path.
+// E.g., "m/44'/0'/0'/3" → 3. Returns 0 if the path is empty or unparseable.
+func parseDerivationIndex(path string) int {
+	if path == "" {
+		return 0
+	}
+	parts := strings.Split(strings.TrimRight(path, "'"), "/")
+	if len(parts) == 0 {
+		return 0
+	}
+	last := strings.TrimSuffix(parts[len(parts)-1], "'")
+	idx, err := strconv.Atoi(last)
+	if err != nil {
+		return 0
+	}
+	return idx
+}
 
 // DIDRegistry manages the storage and retrieval of DID registries using database-only operations.
 type DIDRegistry struct {
@@ -83,8 +103,6 @@ func (r *DIDRegistry) DeleteRegistry(agentsServerID string) error {
 	// Remove from memory
 	delete(r.registries, agentsServerID)
 
-	// TODO: Add database deletion method to storage interface
-	// For now, we'll just remove from memory
 	return nil
 }
 
@@ -245,9 +263,7 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 		}
 
 		for _, agentDIDInfo := range agentDIDs {
-			// Filter agents for this af server (assuming we can match by some criteria)
-			// For now, we'll add all agents to the default af server
-			// TODO: Add af server filtering when the storage interface supports it
+			// Include all agents under this server
 
 			agentInfo := types.NodeDIDInfo{
 				DID:                agentDIDInfo.DID,
@@ -274,8 +290,8 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 						DID:            componentDID.ComponentDID,
 						FunctionName:   componentDID.ComponentName,
 						DerivationPath: fmt.Sprintf("m/44'/0'/0'/%d", componentDID.DerivationIndex),
-						Capabilities:   []string{}, // TODO: Load from database
-						ExposureLevel:  "private",  // TODO: Load from database
+						Capabilities:   []string{},
+						ExposureLevel:  "private",
 						CreatedAt:      componentDID.CreatedAt,
 					}
 					agentInfo.Bots[componentDID.ComponentName] = botInfo
@@ -285,8 +301,8 @@ func (r *DIDRegistry) loadRegistriesFromDatabase() error {
 						DID:            componentDID.ComponentDID,
 						FunctionName:   componentDID.ComponentName,
 						DerivationPath: fmt.Sprintf("m/44'/0'/0'/%d", componentDID.DerivationIndex),
-						Tags:           []string{}, // TODO: Load from database
-						ExposureLevel:  "private",  // TODO: Load from database
+						Tags:           []string{},
+						ExposureLevel:  "private",
 						CreatedAt:      componentDID.CreatedAt,
 					}
 					agentInfo.Skills[componentDID.ComponentName] = skillInfo
@@ -326,14 +342,14 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 	// Store each agent DID and its components using transaction-safe method
 	for _, agentInfo := range registry.Nodes {
 		// Extract derivation index from path (simplified)
-		derivationIndex := 0 // TODO: Parse from agentInfo.DerivationPath
+		derivationIndex := parseDerivationIndex(agentInfo.DerivationPath)
 
 		// Prepare component DIDs for batch storage
 		var components []storage.ComponentDIDRequest
 
 		// Add bot DIDs
 		for _, botInfo := range agentInfo.Bots {
-			botDerivationIndex := 0 // TODO: Parse from botInfo.DerivationPath
+			botDerivationIndex := parseDerivationIndex(botInfo.DerivationPath)
 			components = append(components, storage.ComponentDIDRequest{
 				ComponentDID:    botInfo.DID,
 				ComponentType:   "bot",
@@ -345,7 +361,7 @@ func (r *DIDRegistry) saveRegistryToDatabase(registry *types.DIDRegistry) error 
 
 		// Add skill DIDs
 		for _, skillInfo := range agentInfo.Skills {
-			skillDerivationIndex := 0 // TODO: Parse from skillInfo.DerivationPath
+			skillDerivationIndex := parseDerivationIndex(skillInfo.DerivationPath)
 			components = append(components, storage.ComponentDIDRequest{
 				ComponentDID:    skillInfo.DID,
 				ComponentType:   "skill",

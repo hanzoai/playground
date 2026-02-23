@@ -127,9 +127,7 @@ async def test_input_validation_resilience(resilient_agent):
         assert resp.status_code == 422  # Validation error
 
         # 2. Wrong types
-        resp = await client.post(
-            "/bots/typed_input", json={"x": "not-int", "y": "ok"}
-        )
+        resp = await client.post("/bots/typed_input", json={"x": "not-int", "y": "ok"})
         assert resp.status_code == 422
 
         # 3. Malformed JSON

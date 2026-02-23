@@ -16,8 +16,7 @@ def test_detect_input_type_and_helpers(tmp_path):
 
     # Dict/list detection
     assert (
-        BotUtils.detect_input_type({"role": "user", "content": "hi"})
-        == "message_dict"
+        BotUtils.detect_input_type({"role": "user", "content": "hi"}) == "message_dict"
     )
     assert (
         BotUtils.detect_input_type([{"role": "user", "content": "hi"}])
@@ -56,9 +55,7 @@ def test_detect_input_type_bytes_and_structured(tmp_path):
 
     payload = {"image": "https://example.com/foo.png"}
     assert BotUtils.detect_input_type(payload) == "structured_input"
-    assert (
-        BotUtils.detect_input_type(["hello", {"image": "data"}]) == "multimodal_list"
-    )
+    assert BotUtils.detect_input_type(["hello", {"image": "data"}]) == "multimodal_list"
 
 
 def test_serialize_result_handles_complex_objects():

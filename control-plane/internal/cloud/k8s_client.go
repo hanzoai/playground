@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 type InClusterK8sClient struct {
 	apiServer string
 	token     string
-	caCert    string
 	client    *http.Client
 }
 
@@ -59,8 +59,8 @@ func (c *InClusterK8sClient) CreateAgentPod(ctx context.Context, spec *PodSpec) 
 		return nil, fmt.Errorf("failed to marshal pod spec: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/namespaces/%s/pods", c.apiServer, spec.Namespace)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	createURL := fmt.Sprintf("%s/api/v1/namespaces/%s/pods", c.apiServer, spec.Namespace)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, createURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -93,10 +93,10 @@ func (c *InClusterK8sClient) CreateAgentPod(ctx context.Context, spec *PodSpec) 
 
 // DeleteAgentPod deletes a pod.
 func (c *InClusterK8sClient) DeleteAgentPod(ctx context.Context, namespace, podName string, gracePeriod time.Duration) error {
-	url := fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s?gracePeriodSeconds=%d",
+	deleteURL := fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s?gracePeriodSeconds=%d",
 		c.apiServer, namespace, podName, int64(gracePeriod.Seconds()))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteURL, nil)
 	if err != nil {
 		return err
 	}
@@ -121,9 +121,9 @@ func (c *InClusterK8sClient) DeleteAgentPod(ctx context.Context, namespace, podN
 
 // GetNodePod gets the status of a pod.
 func (c *InClusterK8sClient) GetNodePod(ctx context.Context, namespace, podName string) (*PodStatus, error) {
-	url := fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s", c.apiServer, namespace, podName)
+	getURL := fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s", c.apiServer, namespace, podName)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -149,10 +149,10 @@ func (c *InClusterK8sClient) GetNodePod(ctx context.Context, namespace, podName 
 
 // ListAgentPods lists pods matching a label selector.
 func (c *InClusterK8sClient) ListAgentPods(ctx context.Context, namespace, labelSelector string) ([]*PodStatus, error) {
-	url := fmt.Sprintf("%s/api/v1/namespaces/%s/pods?labelSelector=%s",
-		c.apiServer, namespace, labelSelector)
+	listURL := fmt.Sprintf("%s/api/v1/namespaces/%s/pods?labelSelector=%s",
+		c.apiServer, namespace, url.QueryEscape(labelSelector))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, listURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -189,10 +189,10 @@ func (c *InClusterK8sClient) ListAgentPods(ctx context.Context, namespace, label
 
 // GetPodLogs returns recent logs for a pod.
 func (c *InClusterK8sClient) GetPodLogs(ctx context.Context, namespace, podName string, tailLines int64) (string, error) {
-	url := fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s/log?tailLines=%d",
+	logsURL := fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s/log?tailLines=%d",
 		c.apiServer, namespace, podName, tailLines)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logsURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -235,6 +235,39 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		},
 		"ports": []map[string]interface{}{
 			{"containerPort": 8001, "name": "agent", "protocol": "TCP"},
+		},
+		// Readiness probe: agent is ready to accept traffic
+		"readinessProbe": map[string]interface{}{
+			"httpGet": map[string]interface{}{
+				"path": "/health",
+				"port": 8001,
+			},
+			"initialDelaySeconds": 5,
+			"periodSeconds":       10,
+			"timeoutSeconds":      3,
+			"failureThreshold":    3,
+		},
+		// Liveness probe: agent process is alive
+		"livenessProbe": map[string]interface{}{
+			"httpGet": map[string]interface{}{
+				"path": "/health",
+				"port": 8001,
+			},
+			"initialDelaySeconds": 15,
+			"periodSeconds":       20,
+			"timeoutSeconds":      5,
+			"failureThreshold":    3,
+		},
+		// Startup probe: give agent time to initialize on first boot
+		"startupProbe": map[string]interface{}{
+			"httpGet": map[string]interface{}{
+				"path": "/health",
+				"port": 8001,
+			},
+			"initialDelaySeconds": 2,
+			"periodSeconds":       5,
+			"timeoutSeconds":      3,
+			"failureThreshold":    30, // up to 150s for cold start
 		},
 	}
 
@@ -289,6 +322,10 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		podSpec["imagePullSecrets"] = []map[string]string{
 			{"name": spec.ImagePullSecret},
 		}
+	}
+
+	if len(spec.NodeSelector) > 0 {
+		podSpec["nodeSelector"] = spec.NodeSelector
 	}
 
 	pod := map[string]interface{}{

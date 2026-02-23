@@ -329,7 +329,9 @@ class TestBotAIProviderRouting:
             assert provider1 is provider2
 
     @pytest.mark.asyncio
-    async def test_ai_with_vision_routes_fal_ai_prefix(self, agent_with_ai, monkeypatch):
+    async def test_ai_with_vision_routes_fal_ai_prefix(
+        self, agent_with_ai, monkeypatch
+    ):
         """ai_with_vision should route fal-ai/ models to FalProvider."""
         ai = BotAI(agent_with_ai)
 
@@ -386,7 +388,9 @@ class TestBotAIProviderRouting:
 
         mock_response = MultimodalResponse(
             text="Hello",
-            audio=AudioOutput(url="https://fal.media/audio.wav", data=None, format="wav"),
+            audio=AudioOutput(
+                url="https://fal.media/audio.wav", data=None, format="wav"
+            ),
             images=[],
             files=[],
         )
@@ -423,7 +427,11 @@ class TestAIGenerateVideo:
             text="",
             audio=None,
             images=[],
-            files=[FileOutput(url="https://fal.media/video.mp4", data=None, mime_type="video/mp4")],
+            files=[
+                FileOutput(
+                    url="https://fal.media/video.mp4", data=None, mime_type="video/mp4"
+                )
+            ],
         )
         mock_generate = AsyncMock(return_value=mock_response)
 
@@ -448,7 +456,11 @@ class TestAIGenerateVideo:
             text="",
             audio=None,
             images=[],
-            files=[FileOutput(url="https://fal.media/video.mp4", data=None, mime_type="video/mp4")],
+            files=[
+                FileOutput(
+                    url="https://fal.media/video.mp4", data=None, mime_type="video/mp4"
+                )
+            ],
         )
         mock_generate = AsyncMock(return_value=mock_response)
 
@@ -499,9 +511,7 @@ class TestAITranscribeAudio:
         mock_provider.transcribe_audio = mock_transcribe
         ai._fal_provider_instance = mock_provider
 
-        result = await ai.ai_transcribe_audio(
-            audio_url="https://example.com/audio.mp3"
-        )
+        result = await ai.ai_transcribe_audio(audio_url="https://example.com/audio.mp3")
 
         call_kwargs = mock_transcribe.call_args[1]
         assert call_kwargs["model"] == "fal-ai/whisper"
@@ -512,7 +522,9 @@ class TestAITranscribeAudio:
         """ai_transcribe_audio should pass language hint."""
         ai = BotAI(agent_with_ai)
 
-        mock_response = MultimodalResponse(text="Hola mundo", audio=None, images=[], files=[])
+        mock_response = MultimodalResponse(
+            text="Hola mundo", audio=None, images=[], files=[]
+        )
         mock_transcribe = AsyncMock(return_value=mock_response)
 
         # Patch the instance attribute directly
@@ -560,7 +572,8 @@ class TestUnifiedMultimodalUX:
         async def mock_fal_generate(*args, **kwargs):
             calls.append(("fal", kwargs.get("model")))
             return MultimodalResponse(
-                text="", audio=None,
+                text="",
+                audio=None,
                 images=[ImageOutput(url="https://fal.media/img.png")],
                 files=[],
             )
