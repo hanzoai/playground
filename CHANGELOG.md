@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.69] - 2026-02-23
+
+
+### Other
+
+- Filter out phantom 'Hanzo Assistant' default agent from canvas
+
+The gateway always returns a "main" agent with DEFAULT_ASSISTANT_IDENTITY
+even when zero agents are configured. This caused a fake "Hanzo Assistant"
+bot node to appear on every page load.
+
+- useGateway: filter agents where id="main" and name="Hanzo Assistant"
+  before syncing to bot store and canvas
+- canvasStore: strip phantom nodes during restore() to clean up
+  previously persisted phantom bots from localStorage (41117b5)
+
 ## [0.1.41-rc.68] - 2026-02-23
 
 
