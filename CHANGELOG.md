@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.48] - 2026-02-23
+
+
+### Fixed
+
+- Fix(ui): minimap dark mode, background dots, bot card bg, sidebar order
+
+- MiniMap: use inline style with hsl(var(--card)) for dark mode,
+  rounded-xl corners, overflow-hidden
+- Background dots: increase size to 1.2, muted-foreground at 25% opacity
+- Bot node: add bg-card to expanded panel for dark mode
+- Sidebar: move Playground just below Dashboard (0d19956)
+
+- Fix(deploy): use kubectl rollout restart on DOKS cluster for auto-deploy
+
+The playground runs on do-sfo3-hanzo-k8s (DigitalOcean Kubernetes).
+After building and pushing to GHCR, trigger a rollout restart so the
+cluster pulls the new :latest image. Uses doctl for kubeconfig auth. (b3c8dfd)
+
 ## [0.1.41-rc.47] - 2026-02-23
 
 
