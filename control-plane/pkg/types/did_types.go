@@ -251,7 +251,7 @@ type VCFilters struct {
 
 // DIDRegistrationRequest represents a request to register an agent with DIDs.
 type DIDRegistrationRequest struct {
-	NodeID string               `json:"node_id"`
+	NodeID string               `json:"agent_node_id"`
 	Bots   []BotDefinition `json:"bots"`
 	Skills      []SkillDefinition    `json:"skills"`
 }
