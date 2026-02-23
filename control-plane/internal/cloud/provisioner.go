@@ -253,11 +253,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 
 	// Build env vars
 	env := map[string]string{
-		"AGENT_NODE_ID":           nodeID,
-		"PLAYGROUND_SERVER":           fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
-		"AGENT_NODE_TYPE":             string(NodeTypeCloud),
-		"HANZO_PLAYGROUND_MODE":       "production",
-		"HANZO_PLAYGROUND_CLOUD_NODE": "true",
+		"AGENT_NODE_ID":         nodeID,
+		"PLAYGROUND_SERVER":     fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
+		"AGENT_NODE_TYPE":       string(NodeTypeCloud),
+		"HANZO_PLAYGROUND_MODE": "production",
 	}
 	if req.Model != "" {
 		env["AGENT_MODEL"] = req.Model
@@ -291,12 +290,13 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Msg("using per-user API key for billing")
 	}
 
-	// The bot gateway auto-detects IAM mode when HANZO_PLAYGROUND_CLOUD_NODE=true,
-	// but it reads IAM config from its config file (gateway.auth.iam), not env vars.
-	// Always use token auth mode. The gateway refuses to start on LAN without auth,
-	// so when no API key is available, use the node ID as a service token.
-	env["BOT_GATEWAY_AUTH_MODE"] = "token"
-	if apiKey != "" {
+	// Cloud pods connect as nodes to the central bot-gateway so all nodes
+	// (local Macs, cloud terminals, desktop agents) appear in one unified
+	// gateway at gw.hanzo.bot. The gateway token authenticates the connection.
+	gatewayToken := p.config.Kubernetes.GatewayToken
+	if gatewayToken != "" {
+		env["BOT_GATEWAY_TOKEN"] = gatewayToken
+	} else if apiKey != "" {
 		env["BOT_GATEWAY_TOKEN"] = apiKey
 	} else {
 		env["BOT_GATEWAY_TOKEN"] = nodeID
@@ -375,7 +375,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Memory:          memory,
 		LimitCPU:        p.config.Kubernetes.LimitCPU,
 		LimitMemory:     p.config.Kubernetes.LimitMemory,
-		Args:            []string{}, // Agent image entrypoint handles startup
+		Args:            nodeArgs(p.config.Kubernetes.GatewayURL, nodeID),
 		ControlPlaneURL: fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
 		Sidecars:        sidecars,
 		NodeSelector:    p.config.Kubernetes.NodeSelector,
@@ -410,7 +410,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Image:          image,
 		OS:             nodeOS,
 		RemoteProtocol: nodeProtocol,
-		Endpoint:       fmt.Sprintf("http://%s.%s.svc:18789", podName, namespace),
+		Endpoint:       p.config.Kubernetes.GatewayURL, // Cloud pods are accessed through the central gateway
 		Owner:          req.Owner,
 		Org:            req.Org,
 		Labels:         labels,
@@ -778,6 +778,46 @@ func nodeOptionsForMemory(memLimit string) string {
 		heapMB = 256
 	}
 	return fmt.Sprintf("--max-old-space-size=%d", heapMB)
+}
+
+// nodeArgs builds the container args to run the bot in node mode,
+// connecting to the central gateway so all nodes are unified.
+// If no gateway URL is configured, falls back to standalone gateway mode.
+func nodeArgs(gatewayURL, nodeID string) []string {
+	if gatewayURL == "" {
+		// Standalone gateway mode (legacy)
+		return []string{
+			"node", "hanzo-bot.mjs", "gateway",
+			"--allow-unconfigured", "--bind", "lan",
+		}
+	}
+	// Node mode: connect to central gateway
+	// Parse URL to extract host/port/tls
+	host := "bot-gateway.hanzo.svc"
+	port := "18789"
+	useTLS := false
+	url := strings.TrimPrefix(gatewayURL, "wss://")
+	if url != gatewayURL {
+		useTLS = true
+	}
+	url = strings.TrimPrefix(url, "ws://")
+	parts := strings.SplitN(url, ":", 2)
+	host = parts[0]
+	if len(parts) > 1 {
+		port = strings.TrimRight(parts[1], "/")
+	} else if useTLS {
+		port = "443"
+	}
+
+	args := []string{
+		"node", "hanzo-bot.mjs", "node", "run",
+		"--host", host, "--port", port,
+		"--name", nodeID,
+	}
+	if useTLS {
+		args = append(args, "--tls")
+	}
+	return args
 }
 
 // sanitizeLabel ensures a value is safe for K8s labels.
