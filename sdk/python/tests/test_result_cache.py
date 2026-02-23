@@ -28,9 +28,7 @@ def test_cache_ttl_expiration():
 
 
 def test_cache_lru_eviction():
-    cfg = AsyncConfig(
-        enable_result_caching=True, result_cache_ttl=5.0, result_cache_max_size=2
-    )
+    cfg = AsyncConfig(enable_result_caching=True, result_cache_ttl=5.0, result_cache_max_size=2)
     cache = ResultCache(cfg)
     cache.set("a", 1)
     cache.set("b", 2)
@@ -44,9 +42,7 @@ def test_cache_lru_eviction():
 
 def test_cache_async_context_and_cleanup_loop():
     # Use very small TTL and cleanup interval
-    cfg = AsyncConfig(
-        enable_result_caching=True, result_cache_ttl=0.05, cleanup_interval=0.02
-    )
+    cfg = AsyncConfig(enable_result_caching=True, result_cache_ttl=0.05, cleanup_interval=0.02)
     cache = ResultCache(cfg)
 
     async def run():

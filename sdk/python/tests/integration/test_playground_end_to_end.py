@@ -8,9 +8,7 @@ from playground.bot import Agent
 from playground.types import BotStatus
 
 
-async def _wait_for_node(
-    client: httpx.AsyncClient, node_id: str, attempts: int = 40
-) -> Dict[str, Any]:
+async def _wait_for_node(client: httpx.AsyncClient, node_id: str, attempts: int = 40) -> Dict[str, Any]:
     for _ in range(attempts):
         response = await client.get(f"/api/v1/nodes/{node_id}")
         if response.status_code == 200:
@@ -57,9 +55,7 @@ async def test_agent_registration_and_status_propagation(agents_server, run_agen
     await agent.agents_handler.register_with_playground_server(runtime.port)
     assert agent.agents_connected is True
 
-    async with httpx.AsyncClient(
-        base_url=agents_server.base_url, timeout=5.0
-    ) as client:
+    async with httpx.AsyncClient(base_url=agents_server.base_url, timeout=5.0) as client:
         node = await _wait_for_node(client, agent.node_id)
         assert any(r["id"] == "ping" for r in node.get("bots", []))
 
@@ -91,9 +87,7 @@ async def test_bot_execution_roundtrip(agents_server, run_agent):
     agent._current_status = BotStatus.READY
     await agent.agents_handler.send_enhanced_heartbeat()
 
-    async with httpx.AsyncClient(
-        base_url=agents_server.base_url, timeout=5.0
-    ) as client:
+    async with httpx.AsyncClient(base_url=agents_server.base_url, timeout=5.0) as client:
         await _wait_for_node(client, agent.node_id)
         await _wait_for_status(client, agent.node_id, expected="ready")
 
@@ -147,9 +141,7 @@ async def test_app_ctx_available_during_execution(agents_server, run_agent):
     agent._current_status = BotStatus.READY
     await agent.agents_handler.send_enhanced_heartbeat()
 
-    async with httpx.AsyncClient(
-        base_url=agents_server.base_url, timeout=5.0
-    ) as client:
+    async with httpx.AsyncClient(base_url=agents_server.base_url, timeout=5.0) as client:
         await _wait_for_node(client, agent.node_id)
         await _wait_for_status(client, agent.node_id, expected="ready")
 

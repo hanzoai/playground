@@ -69,9 +69,7 @@ def install_httpx_stub(monkeypatch, *, on_request):
 
     monkeypatch.setitem(sys.modules, "httpx", module)
     client_mod.httpx = module
-    monkeypatch.setattr(
-        client_mod, "_ensure_httpx", lambda force_reload=False: module, raising=False
-    )
+    monkeypatch.setattr(client_mod, "_ensure_httpx", lambda force_reload=False: module, raising=False)
     return module
 
 
@@ -303,9 +301,7 @@ class TestAPIKeyAuthentication:
         monkeypatch.setattr(client_mod.requests, "post", fake_post)
         monkeypatch.setattr(client_mod.requests, "get", fake_get)
 
-        client = PlaygroundClient(
-            base_url="http://example.com", api_key="configured-key"
-        )
+        client = PlaygroundClient(base_url="http://example.com", api_key="configured-key")
         # Try to override with custom header
         client.execute_sync(
             "node.bot",
@@ -334,12 +330,8 @@ class TestAPIKeyAuthentication:
 
         from playground.types import BotStatus, HeartbeatData
 
-        client = PlaygroundClient(
-            base_url="http://example.com", api_key="heartbeat-key"
-        )
-        heartbeat = HeartbeatData(
-            status=BotStatus.READY, mcp_servers=[], timestamp="now"
-        )
+        client = PlaygroundClient(base_url="http://example.com", api_key="heartbeat-key")
+        heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
 
         result = await client.send_enhanced_heartbeat("node-1", heartbeat)
 
@@ -367,12 +359,8 @@ class TestAPIKeyAuthentication:
 
         from playground.types import BotStatus, HeartbeatData
 
-        client = PlaygroundClient(
-            base_url="http://example.com", api_key="heartbeat-key"
-        )
-        heartbeat = HeartbeatData(
-            status=BotStatus.READY, mcp_servers=[], timestamp="now"
-        )
+        client = PlaygroundClient(base_url="http://example.com", api_key="heartbeat-key")
+        heartbeat = HeartbeatData(status=BotStatus.READY, mcp_servers=[], timestamp="now")
 
         result = client.send_enhanced_heartbeat_sync("node-1", heartbeat)
 
@@ -392,9 +380,7 @@ class TestAPIKeyAuthentication:
         install_httpx_stub(monkeypatch, on_request=on_request)
 
         client = PlaygroundClient(base_url="http://example.com", api_key="register-key")
-        ok, payload = await client.register_bot(
-            "node-1", [], [], base_url="http://agent"
-        )
+        ok, payload = await client.register_bot("node-1", [], [], base_url="http://agent")
 
         assert ok is True
         # Note: register_bot may not use _get_auth_headers currently

@@ -126,9 +126,7 @@ def test_parse_function_args_json(mock_agent):
     def test_func(data: dict, items: list):
         pass
 
-    args = cli._parse_function_args(
-        test_func, ["--data", '{"key": "value"}', "--items", '["a", "b"]']
-    )
+    args = cli._parse_function_args(test_func, ["--data", '{"key": "value"}', "--items", '["a", "b"]'])
     assert args["data"] == {"key": "value"}
     assert args["items"] == ["a", "b"]
 
@@ -144,9 +142,7 @@ def test_call_function_sync(mock_agent):
 
     with patch("builtins.print") as mock_print:
         with patch.object(cli, "_get_function", return_value=sync_func):
-            with patch.object(
-                cli, "_parse_function_args", return_value={"name": "World"}
-            ):
+            with patch.object(cli, "_parse_function_args", return_value={"name": "World"}):
                 cli._call_function("sync_func", [])
 
                 # Should print JSON result
@@ -164,9 +160,7 @@ def test_call_function_async(mock_agent):
 
     with patch("builtins.print"):
         with patch.object(cli, "_get_function", return_value=async_func):
-            with patch.object(
-                cli, "_parse_function_args", return_value={"name": "World"}
-            ):
+            with patch.object(cli, "_parse_function_args", return_value={"name": "World"}):
                 with patch("asyncio.run") as mock_asyncio_run:
                     mock_asyncio_run.return_value = {"result": "Hello World"}
                     cli._call_function("async_func", [])
@@ -283,9 +277,7 @@ def test_run_cli_help_command(mock_agent):
                 mock_help.assert_called_once_with("func1")
 
 
-@pytest.mark.skip(
-    reason="Complex argparse mocking - functionality tested in integration"
-)
+@pytest.mark.skip(reason="Complex argparse mocking - functionality tested in integration")
 def test_run_cli_no_command(mock_agent):
     """Test running CLI with no command shows help."""
     # This test requires complex argparse mocking that's brittle

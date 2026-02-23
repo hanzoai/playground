@@ -143,9 +143,7 @@ class TestMCPClientHealthCheck:
         """Test health check with network error"""
         client = MCPClient("http://localhost:8080", "test-server", dev_mode=True)
 
-        with patch.object(
-            ClientSession, "get", side_effect=ConnectionError("Connection refused")
-        ):
+        with patch.object(ClientSession, "get", side_effect=ConnectionError("Connection refused")):
             result = await client.health_check()
 
         assert result is False
@@ -249,9 +247,7 @@ class TestMCPClientListTools:
         """Test list_tools with network error"""
         client = MCPClient("http://localhost:8080", "test-server", dev_mode=True)
 
-        with patch.object(
-            ClientSession, "post", side_effect=ConnectionError("Connection refused")
-        ):
+        with patch.object(ClientSession, "post", side_effect=ConnectionError("Connection refused")):
             tools = await client.list_tools()
 
         assert tools == []
@@ -311,9 +307,7 @@ class TestMCPClientEdgeCases:
 
         mock_tools_response = AsyncMock()
         mock_tools_response.status = 200
-        mock_tools_response.json = AsyncMock(
-            return_value={"result": {"tools": [{"name": "tool1"}]}}
-        )
+        mock_tools_response.json = AsyncMock(return_value={"result": {"tools": [{"name": "tool1"}]}})
         mock_tools_response.__aenter__.return_value = mock_tools_response
         mock_tools_response.__aexit__.return_value = None
 

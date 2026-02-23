@@ -108,7 +108,4 @@ def test_register_bot_with_status_async(monkeypatch):
     success, payload = asyncio.run(run())
     assert success is True
     assert payload == {}
-    assert (
-        captured["json"]["metadata"]["custom"]["vc_generation"]["agent_default"]
-        is False
-    )
+    assert captured["json"]["metadata"]["custom"]["vc_generation"]["agent_default"] is False

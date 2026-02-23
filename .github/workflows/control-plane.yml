@@ -52,6 +52,12 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
+      - name: Lint
+        working-directory: control-plane
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+          golangci-lint run
+
       - name: Build control plane
         working-directory: control-plane
         run: GOFLAGS=-buildvcs=false go build ./...
@@ -59,12 +65,6 @@ jobs:
       - name: Run tests
         working-directory: control-plane
         run: go test ./...
-
-      - name: Lint
-        working-directory: control-plane
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
-          golangci-lint run
 
   compile-matrix:
     runs-on: ubuntu-latest

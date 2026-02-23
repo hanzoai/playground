@@ -43,21 +43,14 @@ def test_generate_execution_vc_success(monkeypatch):
 
     monkeypatch.setattr("playground.vc_generator.requests.post", fake_post)
 
-    vc = generator.generate_execution_vc(
-        make_execution_context(), {"x": 1}, {"y": 2}, status="succeeded"
-    )
+    vc = generator.generate_execution_vc(make_execution_context(), {"x": 1}, {"y": 2}, status="succeeded")
     assert vc.execution_id == "exec-1"
 
 
 def test_generate_execution_vc_disabled():
     generator = VCGenerator("http://playground")
     generator.set_enabled(False)
-    assert (
-        generator.generate_execution_vc(
-            make_execution_context(), None, None, status="succeeded"
-        )
-        is None
-    )
+    assert generator.generate_execution_vc(make_execution_context(), None, None, status="succeeded") is None
 
 
 def test_verify_vc(monkeypatch):

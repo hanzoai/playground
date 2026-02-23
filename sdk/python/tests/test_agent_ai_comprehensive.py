@@ -88,9 +88,7 @@ def setup_litellm_stub(monkeypatch):
 
 
 def make_chat_response(content: str):
-    return SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=content, audio=None))]
-    )
+    return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content, audio=None))])
 
 
 @pytest.mark.asyncio
@@ -139,9 +137,7 @@ async def test_ai_streaming_response(monkeypatch, agent_with_ai):
     # Create a mock streaming response
     async def stream_generator():
         for chunk in ["chunk1", "chunk2", "chunk3"]:
-            yield SimpleNamespace(
-                choices=[SimpleNamespace(delta=SimpleNamespace(content=chunk))]
-            )
+            yield SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content=chunk))])
 
     litellm_module.acompletion.return_value = stream_generator()
 
@@ -186,9 +182,7 @@ async def test_ai_error_recovery_and_retry(monkeypatch, agent_with_ai):
         if call_count < 2:
             from httpx import HTTPStatusError
 
-            error = HTTPStatusError(
-                "Rate limit", request=MagicMock(), response=MagicMock()
-            )
+            error = HTTPStatusError("Rate limit", request=MagicMock(), response=MagicMock())
             error.response.status_code = 429
             raise error
         return make_chat_response("success after retry")
@@ -210,9 +204,7 @@ async def test_ai_with_schema_validation(monkeypatch, agent_with_ai):
         age: int
 
     litellm_module = setup_litellm_stub(monkeypatch)
-    litellm_module.acompletion.return_value = make_chat_response(
-        '{"name": "John", "age": 30}'
-    )
+    litellm_module.acompletion.return_value = make_chat_response('{"name": "John", "age": 30}')
 
     ai = BotAI(agent_with_ai)
     result = await ai.ai("test", schema=TestSchema)
@@ -265,9 +257,7 @@ async def test_ai_model_limits_caching(monkeypatch, agent_with_ai):
 
     # Mock get_model_limits to track calls
     original_get_model_limits = agent_with_ai.ai_config.get_model_limits
-    agent_with_ai.ai_config.get_model_limits = AsyncMock(
-        side_effect=original_get_model_limits
-    )
+    agent_with_ai.ai_config.get_model_limits = AsyncMock(side_effect=original_get_model_limits)
 
     ai = BotAI(agent_with_ai)
 

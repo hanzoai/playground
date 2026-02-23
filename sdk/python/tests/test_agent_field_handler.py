@@ -96,9 +96,7 @@ async def test_register_with_playground_server_resolves_when_no_candidates(monke
     agent = StubAgent(callback_url=None, base_url=None)
     agent.client = DummyPlaygroundClient()
 
-    monkeypatch.setattr(
-        "playground.agent._build_callback_candidates", lambda *a, **k: []
-    )
+    monkeypatch.setattr("playground.agent._build_callback_candidates", lambda *a, **k: [])
     monkeypatch.setattr(
         "playground.agent._resolve_callback_url",
         lambda url, port: f"http://resolved:{port}",
@@ -148,12 +146,8 @@ async def test_register_with_playground_server_propagates_request_exception(
     agent = StubAgent(callback_url=None, base_url="http://already", dev_mode=False)
     agent.client = DummyPlaygroundClient()
     monkeypatch.setattr(agent.client, "register_bot", failing_register)
-    monkeypatch.setattr(
-        "playground.agent._build_callback_candidates", lambda *a, **k: []
-    )
-    monkeypatch.setattr(
-        "playground.agent._resolve_callback_url", lambda url, port: "http://already"
-    )
+    monkeypatch.setattr("playground.agent._build_callback_candidates", lambda *a, **k: [])
+    monkeypatch.setattr("playground.agent._resolve_callback_url", lambda url, port: "http://already")
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
@@ -171,12 +165,8 @@ async def test_register_with_playground_server_unsuccessful_response(monkeypatch
         return False, None
 
     monkeypatch.setattr(agent.client, "register_bot", register_returns_false)
-    monkeypatch.setattr(
-        "playground.agent._build_callback_candidates", lambda *a, **k: []
-    )
-    monkeypatch.setattr(
-        "playground.agent._resolve_callback_url", lambda url, port: "http://host:5000"
-    )
+    monkeypatch.setattr("playground.agent._build_callback_candidates", lambda *a, **k: [])
+    monkeypatch.setattr("playground.agent._resolve_callback_url", lambda url, port: "http://host:5000")
     monkeypatch.setattr("playground.agent._is_running_in_container", lambda: False)
 
     playground = PlaygroundHandler(agent)
@@ -282,9 +272,7 @@ def test_start_and_stop_heartbeat(monkeypatch):
 async def test_enhanced_heartbeat_and_shutdown(monkeypatch):
     agent = StubAgent()
     agent.client = DummyPlaygroundClient()
-    agent.mcp_handler = type(
-        "MCP", (), {"_get_mcp_server_health": lambda self: ["mcp"]}
-    )()
+    agent.mcp_handler = type("MCP", (), {"_get_mcp_server_health": lambda self: ["mcp"]})()
     agent.dev_mode = True
     playground = PlaygroundHandler(agent)
 

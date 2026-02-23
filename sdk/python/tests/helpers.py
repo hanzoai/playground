@@ -69,9 +69,7 @@ class DummyPlaygroundClient:
             agent_metadata=agent_metadata,
         )
 
-    async def send_enhanced_heartbeat(
-        self, node_id: str, heartbeat: HeartbeatData
-    ) -> bool:
+    async def send_enhanced_heartbeat(self, node_id: str, heartbeat: HeartbeatData) -> bool:
         self.heartbeat_calls.append({"node_id": node_id, "heartbeat": heartbeat})
         return True
 
@@ -99,11 +97,7 @@ class StubAgent:
     async_config: Any = None
     client: DummyPlaygroundClient = field(default_factory=DummyPlaygroundClient)
     did_manager: Any = None
-    mcp_handler: Any = field(
-        default_factory=lambda: type(
-            "MCP", (), {"_get_mcp_server_health": lambda self: []}
-        )()
-    )
+    mcp_handler: Any = field(default_factory=lambda: type("MCP", (), {"_get_mcp_server_health": lambda self: []})())
     bots: List[Dict[str, Any]] = field(default_factory=list)
     skills: List[Dict[str, Any]] = field(default_factory=list)
     agents_connected: bool = True
@@ -169,9 +163,7 @@ class StubAgent:
     def _apply_discovery_response(self, payload: Optional[Dict[str, Any]]) -> None:
         if not payload:
             return
-        resolved = (
-            payload.get("resolved_base_url") if isinstance(payload, dict) else None
-        )
+        resolved = payload.get("resolved_base_url") if isinstance(payload, dict) else None
         if resolved:
             self.base_url = resolved
 
@@ -258,9 +250,7 @@ def create_test_agent(
     memory_store: Dict[str, Any] = {}
 
     class _FakePlaygroundClient(DummyPlaygroundClient):
-        def __init__(
-            self, base_url: str, async_config: Any = None, api_key: Optional[str] = None
-        ):
+        def __init__(self, base_url: str, async_config: Any = None, api_key: Optional[str] = None):
             super().__init__()
             self.base_url = base_url
             self.api_base = f"{base_url}/api/v1"
@@ -317,15 +307,9 @@ def create_test_agent(
         ) -> None:
             memory_store.pop((scope or "global", scope_id, key), None)
 
-        async def list_keys(
-            self, scope: str, scope_id: Optional[str] = None
-        ) -> List[str]:
+        async def list_keys(self, scope: str, scope_id: Optional[str] = None) -> List[str]:
             prefix = (scope or "global", scope_id)
-            return [
-                stored_key[2]
-                for stored_key in memory_store.keys()
-                if stored_key[:2] == prefix
-            ]
+            return [stored_key[2] for stored_key in memory_store.keys() if stored_key[:2] == prefix]
 
         async def set_vector(
             self,
@@ -342,9 +326,7 @@ def create_test_agent(
                 scope_id=scope_id,
             )
 
-        async def delete_vector(
-            self, key: str, scope: Optional[str] = None, scope_id: Optional[str] = None
-        ) -> None:
+        async def delete_vector(self, key: str, scope: Optional[str] = None, scope_id: Optional[str] = None) -> None:
             await self.delete(key, scope=scope, scope_id=scope_id)
 
         async def similarity_search(
@@ -355,11 +337,7 @@ def create_test_agent(
             scope_id: Optional[str] = None,
             filters: Optional[Dict[str, Any]] = None,
         ):
-            return [
-                {"key": key, "score": 1.0}
-                for (_, _, key) in memory_store.keys()
-                if key.startswith("chunk")
-            ]
+            return [{"key": key, "score": 1.0} for (_, _, key) in memory_store.keys() if key.startswith("chunk")]
 
     class _FakeMemoryEventClient:
         def __init__(self, *args, **kwargs):
@@ -400,9 +378,7 @@ def create_test_agent(
             pass
 
     class _FakeDIDManager:
-        def __init__(
-            self, agents_server: str, node: str, api_key: Optional[str] = None
-        ):
+        def __init__(self, agents_server: str, node: str, api_key: Optional[str] = None):
             self.agents_server = agents_server
             self.node_id = node
             self.api_key = api_key
@@ -513,20 +489,12 @@ def create_test_agent(
     monkeypatch.setattr("playground.agent.BotMCP", _FakeBotMCP)
     monkeypatch.setattr("playground.agent.MCPManager", _FakeMCPManager)
     monkeypatch.setattr("playground.agent.MCPClientRegistry", _FakeMCPClientRegistry)
-    monkeypatch.setattr(
-        "playground.agent.DynamicMCPSkillManager", _FakeDynamicSkillManager
-    )
+    monkeypatch.setattr("playground.agent.DynamicMCPSkillManager", _FakeDynamicSkillManager)
     monkeypatch.setattr("playground.agent.DIDManager", _FakeDIDManager)
     monkeypatch.setattr("playground.agent.VCGenerator", _FakeVCGenerator)
-    monkeypatch.setattr(
-        BotWorkflow, "notify_call_start", _record_call_start, raising=False
-    )
-    monkeypatch.setattr(
-        BotWorkflow, "notify_call_complete", _record_call_complete, raising=False
-    )
-    monkeypatch.setattr(
-        BotWorkflow, "notify_call_error", _record_call_error, raising=False
-    )
+    monkeypatch.setattr(BotWorkflow, "notify_call_start", _record_call_start, raising=False)
+    monkeypatch.setattr(BotWorkflow, "notify_call_complete", _record_call_complete, raising=False)
+    monkeypatch.setattr(BotWorkflow, "notify_call_error", _record_call_error, raising=False)
     monkeypatch.setattr(
         BotWorkflow,
         "fire_and_forget_update",

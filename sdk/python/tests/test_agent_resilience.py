@@ -31,9 +31,7 @@ def mock_client(monkeypatch):
     monkeypatch.setattr("playground.client.PlaygroundClient", MockClient)
 
     # Also mock BotUtils.is_port_available to avoid binding issues
-    monkeypatch.setattr(
-        "playground.bot_utils.BotUtils.is_port_available", lambda p: True
-    )
+    monkeypatch.setattr("playground.bot_utils.BotUtils.is_port_available", lambda p: True)
 
 
 @pytest.fixture
@@ -57,9 +55,7 @@ async def test_concurrent_execution_resilience(resilient_agent):
         await asyncio.sleep(0.1)
         return {"value": value}
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=resilient_agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=resilient_agent), base_url="http://test") as client:
         # Fire 50 requests concurrently
         tasks = []
         num_requests = 50
@@ -119,9 +115,7 @@ async def test_input_validation_resilience(resilient_agent):
     async def typed_input(x: int, y: str) -> dict:
         return {"result": f"{y}-{x}"}
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=resilient_agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=resilient_agent), base_url="http://test") as client:
         # 1. Missing fields
         resp = await client.post("/bots/typed_input", json={"x": 1})
         assert resp.status_code == 422  # Validation error

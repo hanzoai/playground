@@ -49,9 +49,7 @@ async def test_execute_with_tracking_success(monkeypatch):
         captured.setdefault("complete", []).append((ctx, result))
 
     monkeypatch.setattr("playground.decorators._send_workflow_start", record_start)
-    monkeypatch.setattr(
-        "playground.decorators._send_workflow_completion", record_complete
-    )
+    monkeypatch.setattr("playground.decorators._send_workflow_completion", record_complete)
 
     agent = StubAgent()
     set_current_bot(agent)
@@ -91,9 +89,7 @@ async def test_execute_with_tracking_error(monkeypatch):
     async def record_error(agent, ctx, message, duration_ms, payload):
         calls.setdefault("error", []).append((ctx, message))
 
-    monkeypatch.setattr(
-        "playground.decorators._send_workflow_start", lambda *a, **k: asyncio.sleep(0)
-    )
+    monkeypatch.setattr("playground.decorators._send_workflow_start", lambda *a, **k: asyncio.sleep(0))
     monkeypatch.setattr("playground.decorators._send_workflow_error", record_error)
 
     agent = StubAgent()

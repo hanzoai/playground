@@ -54,9 +54,7 @@ class TestSkillPydanticModels:
             return UserResponse(user_id=request.user_id, created=True)
 
         # Simulate input from control plane
-        input_dict = {
-            "request": {"user_id": 123, "name": "John Doe", "email": "john@example.com"}
-        }
+        input_dict = {"request": {"user_id": 123, "name": "John Doe", "email": "john@example.com"}}
 
         args, kwargs = convert_function_args(skill_with_model, (), input_dict)
 
@@ -111,9 +109,7 @@ class TestSkillPydanticModels:
         )
 
         @app.skill()
-        async def create_user(
-            user_id: int, name: str, email: str = None
-        ) -> UserResponse:
+        async def create_user(user_id: int, name: str, email: str = None) -> UserResponse:
             """Skill with plain parameters."""
             return UserResponse(user_id=user_id, created=True)
 

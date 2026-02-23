@@ -18,9 +18,7 @@ def make_agent_stub():
     agent.node_id = "node"
     agent.agents_server = "http://playground"
     agent.dev_mode = False
-    agent.async_config = SimpleNamespace(
-        enable_async_execution=True, fallback_to_sync=True
-    )
+    agent.async_config = SimpleNamespace(enable_async_execution=True, fallback_to_sync=True)
     agent._async_execution_manager = None
     agent._current_execution_context = None
     agent.client = SimpleNamespace(api_base="http://playground/api/v1")
@@ -117,9 +115,7 @@ async def test_note_sends_async_request(monkeypatch):
 
             return DummyResponse()
 
-    stub_aiohttp = SimpleNamespace(
-        ClientTimeout=DummyTimeout, ClientSession=DummySession
-    )
+    stub_aiohttp = SimpleNamespace(ClientTimeout=DummyTimeout, ClientSession=DummySession)
     monkeypatch.setitem(sys.modules, "aiohttp", stub_aiohttp)
     monkeypatch.setattr("playground.agent.aiohttp", stub_aiohttp)
 

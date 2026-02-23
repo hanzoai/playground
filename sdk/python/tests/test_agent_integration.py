@@ -12,9 +12,7 @@ from tests.helpers import create_test_agent
 
 @pytest.mark.asyncio
 async def test_agent_bot_routing_and_workflow(monkeypatch):
-    agent, playground_client = create_test_agent(
-        monkeypatch, callback_url="https://callback.example.com"
-    )
+    agent, playground_client = create_test_agent(monkeypatch, callback_url="https://callback.example.com")
     # Disable async execution for this test to get synchronous 200 responses
     agent.async_config.enable_async_execution = False
     # Disable agents_server to prevent async callback execution
@@ -50,9 +48,7 @@ async def test_agent_bot_routing_and_workflow(monkeypatch):
     assert registration["bots"][0]["id"] == "double"
     assert registration["skills"][0]["id"] == "annotate"
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         bot_resp = await client.post(
             "/bots/double",
             json={"value": 3},
@@ -91,9 +87,7 @@ async def test_agent_bot_custom_name(monkeypatch):
     assert "reports_generate" in agent._bot_registry
     assert hasattr(agent, "reports_generate")
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         response = await client.post(
             "/bots/generate_report",
             json={"report_id": "r-123"},
@@ -119,9 +113,7 @@ async def test_agent_bot_without_parentheses(monkeypatch):
 
     assert any(r["id"] == "greet" for r in agent.bots)
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         response = await client.post(
             "/bots/greet",
             json={"name": "Playground"},
@@ -161,9 +153,7 @@ async def test_agent_router_prefix_registration(monkeypatch):
     assert hasattr(agent, "demo_hello")
     assert hasattr(agent, "demo_repeat")
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         bot_resp = await client.post(
             "/bots/demo_hello",
             json={"name": "Agent"},
@@ -234,9 +224,7 @@ async def test_agent_router_prefix_sanitization(monkeypatch):
     ],
 )
 @pytest.mark.asyncio
-async def test_router_prefix_translation_examples(
-    monkeypatch, prefix, func_name, expected_id
-):
+async def test_router_prefix_translation_examples(monkeypatch, prefix, func_name, expected_id):
     """Test all documented prefix translation examples and edge cases."""
     agent, _ = create_test_agent(monkeypatch)
     agent.async_config.enable_async_execution = False
@@ -267,8 +255,7 @@ async def {func_name}() -> dict:
     agent.include_router(router)
 
     assert any(r["id"] == expected_id for r in agent.bots), (
-        f"Expected ID '{expected_id}' not found. "
-        f"Found IDs: {[r['id'] for r in agent.bots]}"
+        f"Expected ID '{expected_id}' not found. Found IDs: {[r['id'] for r in agent.bots]}"
     )
     assert hasattr(agent, expected_id)
 
@@ -318,9 +305,7 @@ async def test_router_include_router_with_additional_prefix(monkeypatch):
     assert hasattr(agent, "users_get_profile")
 
     # The HTTP path should include the include_router prefix
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         response = await client.post(
             "/bots/users_get_profile",
             json={},
@@ -412,9 +397,7 @@ async def test_router_skill_with_prefix(monkeypatch):
     assert any(s["id"] == "billing_calculate_cost" for s in agent.skills)
     assert hasattr(agent, "billing_calculate_cost")
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         response = await client.post(
             "/skills/billing_calculate_cost",
             json={"amount": 100.0},
@@ -439,9 +422,7 @@ async def test_agent_skill_without_parentheses(monkeypatch):
 
     assert any(s["id"] == "shout" for s in agent.skills)
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=agent), base_url="http://test"
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=agent), base_url="http://test") as client:
         response = await client.post(
             "/skills/shout",
             json={"text": "playground"},
@@ -491,15 +472,10 @@ async def test_bot_tags_propagate_to_metadata(monkeypatch):
 async def test_callback_url_precedence_and_env(monkeypatch):
     monkeypatch.setenv("HANZO_CALLBACK_URL", "https://env.example.com")
 
-    explicit_agent, explicit_client = create_test_agent(
-        monkeypatch, callback_url="https://explicit.example.com"
-    )
+    explicit_agent, explicit_client = create_test_agent(monkeypatch, callback_url="https://explicit.example.com")
     await explicit_agent.agents_handler.register_with_playground_server(port=9200)
     assert explicit_agent.base_url == "https://explicit.example.com:9200"
-    assert (
-        explicit_client.register_calls[-1]["base_url"]
-        == "https://explicit.example.com:9200"
-    )
+    assert explicit_client.register_calls[-1]["base_url"] == "https://explicit.example.com:9200"
 
     env_agent, env_client = create_test_agent(monkeypatch)
     await env_agent.agents_handler.register_with_playground_server(port=9300)

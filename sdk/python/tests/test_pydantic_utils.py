@@ -46,8 +46,6 @@ def func_with_model(inner: Inner, y: int):
 def test_convert_function_args_and_should_convert():
     assert should_convert_args(func_with_model) is True
     # Provide dict for inner; expect conversion
-    args, kwargs = convert_function_args(
-        func_with_model, tuple(), {"inner": {"x": 2}, "y": 3}
-    )
+    args, kwargs = convert_function_args(func_with_model, tuple(), {"inner": {"x": 2}, "y": 3})
     assert isinstance(kwargs["inner"], Inner)
     assert kwargs["inner"].x == 2
