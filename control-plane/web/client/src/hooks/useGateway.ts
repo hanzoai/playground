@@ -124,7 +124,11 @@ export function useGateway(explicitTenant?: TenantContext) {
   const upsertBot = useCanvasStore((s) => s.upsertBot);
   const addApproval = useActionPillStore((s) => s.add);
 
-  /** Build ConnectParams with current auth + tenant context */
+  /** Build ConnectParams with current auth context.
+   *  Tenant params are omitted: the gateway does not require org membership
+   *  for operator connections, and including them triggers
+   *  tenant_org_not_member rejections for IAM-authenticated users.
+   */
   const buildConnectParams = useCallback((): ConnectParams => ({
     minProtocol: 3,
     maxProtocol: 3,
@@ -138,16 +142,7 @@ export function useGateway(explicitTenant?: TenantContext) {
     role: 'operator',
     scopes: ['operator.admin'],
     ...(effectiveToken ? { auth: { token: effectiveToken } } : {}),
-    ...(tenant ? {
-      tenant: {
-        orgId: tenant.orgId,
-        projectId: tenant.projectId,
-        tenantId: tenant.tenantId ?? tenant.orgId,
-        actorId: tenant.actorId,
-        env: tenant.env ?? (import.meta.env.PROD ? 'production' : 'development'),
-      },
-    } : {}),
-  }), [effectiveToken, tenant]);
+  }), [effectiveToken]);
 
   /** Convert agents.list response rows into AgentSummary with derived sessionKey */
   const toAgentSummaries = useCallback((resp: AgentsListResponse): AgentSummary[] => {
