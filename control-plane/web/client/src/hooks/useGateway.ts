@@ -120,17 +120,30 @@ export function useGateway() {
     ...(effectiveToken ? { auth: { token: effectiveToken } } : {}),
   }), [effectiveToken]);
 
-  /** Convert agents.list response rows into AgentSummary with derived sessionKey */
+  /** Convert agents.list response rows into AgentSummary with derived sessionKey.
+   *  Filters out the gateway's default phantom "main" agent that has no real
+   *  configuration — it appears as "Hanzo Assistant" with id "main" when the
+   *  gateway has zero configured agents. */
   const toAgentSummaries = useCallback((resp: AgentsListResponse): AgentSummary[] => {
     const mainKey = resp.mainKey || 'main';
-    return resp.agents.map((row) => ({
-      id: row.id,
-      name: row.identity?.name ?? row.name ?? row.id,
-      emoji: row.identity?.emoji,
-      avatar: row.identity?.avatarUrl ?? row.identity?.avatar,
-      status: 'idle' as const,
-      sessionKey: `agent:${row.id}:${mainKey}`,
-    }));
+    return resp.agents
+      .filter((row) => {
+        // Skip the default phantom agent — gateway always returns a "main"
+        // agent even with zero config, using DEFAULT_ASSISTANT_IDENTITY.
+        const name = row.identity?.name ?? row.name;
+        if (row.id === 'main' && (!name || name === 'Hanzo Assistant')) {
+          return false;
+        }
+        return true;
+      })
+      .map((row) => ({
+        id: row.id,
+        name: row.identity?.name ?? row.name ?? row.id,
+        emoji: row.identity?.emoji,
+        avatar: row.identity?.avatarUrl ?? row.identity?.avatar,
+        status: 'idle' as const,
+        sessionKey: `agent:${row.id}:${mainKey}`,
+      }));
   }, []);
 
   // Sync agents from gateway to both stores
