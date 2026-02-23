@@ -1,8 +1,8 @@
 /**
  * OperativePanel
  *
- * Remote desktop view for the bot's host machine.
- * - Uses the gateway's /vnc-viewer endpoint (noVNC proxy to local VNC server)
+ * Remote desktop view for a bot node's host machine.
+ * - Uses the gateway's /vnc-viewer endpoint with optional nodeId for tunnel mode
  * - Falls back to canvas host URL if available
  * - Works for macOS Screen Sharing, Linux x11vnc, etc.
  */
@@ -12,14 +12,17 @@ import { gateway } from '@/services/gatewayClient';
 
 interface OperativePanelProps {
   agentId: string;
+  /** Node ID to tunnel VNC through the gateway to a remote node. */
+  nodeId?: string;
   className?: string;
 }
 
 /**
  * Resolve the VNC viewer URL from the gateway connection.
- * Priority: gateway /vnc-viewer > canvasHostUrl
+ * When nodeId is provided, the gateway tunnels VNC data through the node's
+ * WebSocket connection to reach the node's local VNC server.
  */
-function resolveDesktopUrl(agentId: string): string | null {
+function resolveDesktopUrl(agentId: string, nodeId?: string): string | null {
   const helloOk = gateway.serverInfo;
   const token = gateway.authToken;
 
@@ -29,9 +32,11 @@ function resolveDesktopUrl(agentId: string): string | null {
     try {
       const parsed = new URL(wsUrl);
       const httpProto = parsed.protocol === 'wss:' ? 'https:' : 'http:';
-      const base = `${httpProto}//${parsed.host}/vnc-viewer`;
-      // Pass auth token as query param since iframes cannot send Authorization headers
-      return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+      const params = new URLSearchParams();
+      if (token) params.set('token', token);
+      if (nodeId) params.set('nodeId', nodeId);
+      const qs = params.toString();
+      return `${httpProto}//${parsed.host}/vnc-viewer${qs ? `?${qs}` : ''}`;
     } catch {
       // Fall through to other methods
     }
@@ -45,8 +50,8 @@ function resolveDesktopUrl(agentId: string): string | null {
   return null;
 }
 
-export function OperativePanel({ agentId, className }: OperativePanelProps) {
-  const desktopUrl = useMemo(() => resolveDesktopUrl(agentId), [agentId]);
+export function OperativePanel({ agentId, nodeId, className }: OperativePanelProps) {
+  const desktopUrl = useMemo(() => resolveDesktopUrl(agentId, nodeId), [agentId, nodeId]);
 
   if (!desktopUrl) {
     return (
