@@ -314,7 +314,7 @@ func (ds *DefaultDevService) startDevProcess(packagePath string, port int, optio
 
 	// Write PID file for stop/status tracking
 	pidFile := filepath.Join(packagePath, ".playground-dev.pid")
-	os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0600)
+	_ = os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0600)
 
 	return cmd, nil
 }
