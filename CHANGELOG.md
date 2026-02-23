@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.49] - 2026-02-23
+
+
+### Added
+
+- Feat(ui): redesign as control plane with right-click context menus
+
+- Replace flat "All Bots" CRUD page with infrastructure-style Control Plane
+  view showing agent hierarchy, metrics strip, and live activity stream
+- Flatten sidebar navigation: remove section titles, merge Bot Hub into
+  core nav, rename Bots to Control Plane
+- Add BotContextMenu with Stop/Restart/Delete/Open Terminal/Chat/Desktop
+  actions, accessible via right-click on canvas nodes and sidebar items
+- Fix double-dot status indicator on bot nodes (was ping animation
+  creating two overlapping circles, now single dot with glow)
+- Wire onNodeContextMenu in CanvasFlow for bot-specific right-click
+- Add right-click handler to sidebar bot items in CanvasSidebar
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (fbc7c02)
+
 ## [0.1.41-rc.48] - 2026-02-23
 
 
