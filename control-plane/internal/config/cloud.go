@@ -64,7 +64,7 @@ func DefaultCloudConfig() CloudConfig {
 		Kubernetes: KubernetesConfig{
 			Enabled:          false,
 			Namespace:        "hanzo",
-			BotImage:         "ghcr.io/hanzoai/bot:2026.2.23",
+			BotImage:         "ghcr.io/hanzoai/bot:latest",
 			ImagePullSecret:  "ghcr-secret",
 			ServiceAccount:   "playground-agent",
 			MaxAgentsPerOrg:  20,
@@ -74,8 +74,8 @@ func DefaultCloudConfig() CloudConfig {
 			LimitMemory:      "2Gi",
 			PodTTL:           24 * time.Hour,
 			GracefulShutdown: 30 * time.Second,
-			OperativeEnabled: false,
-			OperativeImage:   "ghcr.io/hanzoai/operative:v0.1.0",
+			OperativeEnabled: true,
+			OperativeImage:   "ghcr.io/hanzoai/operative:latest",
 			CloudAPIEndpoint: "http://cloud-api.hanzo.svc:8000/api",
 		},
 		Visor: VisorConfig{
