@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.64] - 2026-02-23
+
+
+### Added
+
+- Feat: add Terminal and Desktop tabs to node detail page (#12)
+
+Adds Terminal (xterm.js) and Desktop (noVNC via gateway proxy) tabs
+to the node detail page, enabling remote terminal access and screen
+sharing for connected bot nodes directly from the dashboard. (ad5878e)
+
 ## [0.1.41-rc.63] - 2026-02-23
 
 
