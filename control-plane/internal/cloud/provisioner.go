@@ -7,6 +7,7 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -206,12 +207,12 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	cpu := p.config.Kubernetes.DefaultCPU
 	memory := p.config.Kubernetes.DefaultMemory
 	if req.OS == "terminal" {
-		// Terminal-only: lightweight, no X11/VNC overhead
+		// Terminal-only: no X11/VNC but still needs Node.js heap for bot agent
 		if cpu == p.config.Kubernetes.DefaultCPU {
 			cpu = "200m"
 		}
 		if memory == p.config.Kubernetes.DefaultMemory {
-			memory = "384Mi"
+			memory = "512Mi"
 		}
 	}
 	if req.CPU != "" {
@@ -264,14 +265,21 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if req.DisplayName != "" {
 		env["AGENT_DISPLAY_NAME"] = req.DisplayName
 	}
-	// Inject Hanzo Cloud AI backend env vars for bot LLM calls
+	// Inject Hanzo API env vars for bot LLM calls.
+	// Default: api.hanzo.ai; overridable via CLOUD_API_ENDPOINT env var.
 	if p.config.Kubernetes.CloudAPIEndpoint != "" {
-		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
+		env["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
+		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint // backward compat
 	}
 	if p.config.Kubernetes.CloudAPIKey != "" {
 		env["HANZO_API_KEY"] = p.config.Kubernetes.CloudAPIKey
 		env["OPENAI_API_KEY"] = p.config.Kubernetes.CloudAPIKey // backward compat
 	}
+
+	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
+	// The bot image (Node.js) defaults to ~512MB heap which OOMs under tight limits.
+	// Reserve ~128MB for OS/native overhead and give the rest to V8.
+	env["NODE_OPTIONS"] = nodeOptionsForMemory(p.config.Kubernetes.LimitMemory)
 
 	// Terminal-only mode: skip operative desktop, use lightweight ttyd shell access.
 	// This is for "xterm + Claude Code" — no desktop environment needed.
@@ -717,6 +725,33 @@ func sanitizePodName(name string) string {
 		name = name[:63]
 	}
 	return name
+}
+
+// nodeOptionsForMemory returns a NODE_OPTIONS string with --max-old-space-size
+// set appropriately for the given K8s memory limit (e.g. "4Gi", "2Gi", "512Mi").
+// Reserves 128MB for OS and native heap, gives the rest to V8.
+func nodeOptionsForMemory(memLimit string) string {
+	limitMB := 0
+	memLimit = strings.TrimSpace(memLimit)
+	if strings.HasSuffix(memLimit, "Gi") {
+		s := strings.TrimSuffix(memLimit, "Gi")
+		if n, err := strconv.Atoi(s); err == nil {
+			limitMB = n * 1024
+		}
+	} else if strings.HasSuffix(memLimit, "Mi") {
+		s := strings.TrimSuffix(memLimit, "Mi")
+		if n, err := strconv.Atoi(s); err == nil {
+			limitMB = n
+		}
+	}
+	if limitMB <= 256 {
+		limitMB = 1024 // fallback: 1GB
+	}
+	heapMB := limitMB - 128 // reserve for OS + native
+	if heapMB < 256 {
+		heapMB = 256
+	}
+	return fmt.Sprintf("--max-old-space-size=%d", heapMB)
 }
 
 // sanitizeLabel ensures a value is safe for K8s labels.
