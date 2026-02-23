@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.71] - 2026-02-23
+
+
+### Other
+
+- Increase cloud agent memory, add terminal-first mode, improve logging
+
+- Default memory: 256Mi → 512Mi, limit: 2Gi → 4Gi, CPU: 100m → 250m
+- Terminal-only mode auto-scales to lighter resources (384Mi)
+- spaceApi: expose all provisioning params (cpu, memory, os, image, env)
+- spaceApi: add getCloudNode, getCloudLogs, syncCloudNodes endpoints
+- CanvasFlow: use real node_id from API response, structured logging
+- CanvasControls: show resource hints in FAB menu, terminal first (0fae18b)
+
 ## [0.1.41-rc.70] - 2026-02-23
 
 
