@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.47] - 2026-02-23
+
+
+### Added
+
+- Feat(deploy): auto-deploy to Hanzo PaaS on push and tagged releases
+
+- Add control-plane/hanzo.toml deployment manifest for Hanzo PaaS
+- deploy.yml: trigger on version tags (v*), compute proper image tags,
+  deploy to PaaS via hanzo CLI after GHCR push
+- release.yml: deploy production releases to PaaS after Docker push
+- Both workflows authenticate via HANZO_API_KEY secret from KMS (5be7cc5)
+
 ## [0.1.41-rc.46] - 2026-02-23
 
 
