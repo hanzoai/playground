@@ -174,8 +174,10 @@ export function CanvasFlow({ className }: { className?: string }) {
           className="!bg-background"
         />
         <MiniMap
-          className="!bg-card/80 !border-border/40 !rounded-lg !shadow-lg hidden md:block"
-          maskColor="rgba(0, 0, 0, 0.15)"
+          className="!bg-card/90 !border-border/40 !rounded-lg !shadow-lg hidden md:block"
+          maskColor="hsl(var(--muted) / 0.4)"
+          nodeColor="hsl(var(--foreground) / 0.6)"
+          nodeStrokeColor="hsl(var(--foreground) / 0.3)"
           nodeStrokeWidth={2}
           pannable
           zoomable
