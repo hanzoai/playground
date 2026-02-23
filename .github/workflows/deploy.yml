@@ -74,7 +74,7 @@ jobs:
 
       - name: Configure kubectl
         run: |
-          doctl kubernetes cluster kubeconfig save do-sfo3-hanzo-k8s
+          doctl kubernetes cluster kubeconfig save hanzo-k8s
 
       - name: Rollout restart
         run: |
