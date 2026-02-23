@@ -935,10 +935,10 @@ func TestHealthMonitor_RecoverFromDatabase_MarksUnreachableNodesInactive(t *test
 	time.Sleep(100 * time.Millisecond)
 
 	hm.agentsMutex.RLock()
-	activeAgent = hm.activeAgents["unreachable-agent"]
+	inactiveAgent := hm.activeAgents["unreachable-agent"]
 	hm.agentsMutex.RUnlock()
 
-	assert.Equal(t, types.HealthStatusInactive, activeAgent.LastStatus, "Agent should be marked inactive after consecutive failed health checks")
+	assert.Equal(t, types.HealthStatusInactive, inactiveAgent.LastStatus, "Agent should be marked inactive after consecutive failed health checks")
 }
 
 func TestHealthMonitor_RecoverFromDatabase_MarksReachableNodesActive(t *testing.T) {
