@@ -286,7 +286,7 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		if err != nil {
 			logger.Logger.Warn().Err(err).Msg("K8s in-cluster client unavailable — cloud provisioning disabled")
 		} else {
-			cloudProvisioner = cloud.NewProvisioner(cfg.Cloud, cfg.IAM, k8sClient)
+			cloudProvisioner = cloud.NewProvisioner(cfg.Cloud, k8sClient)
 			// Sync existing cloud agents from K8s
 			go func() {
 				ctx := context.Background()

@@ -87,7 +87,6 @@ type CloudNode struct {
 // Mac/Windows bots: Real VMs via Visor (AWS EC2, DO, GCP, etc.) with RDP/VNC access.
 type Provisioner struct {
 	config    config.CloudConfig
-	iamConfig config.IAMConfig
 	k8s       KubernetesClient
 	visor     *VisorClient // nil if Visor not configured
 	mu        sync.RWMutex
@@ -153,11 +152,10 @@ type PodStatus struct {
 }
 
 // NewProvisioner creates a new cloud agent provisioner.
-func NewProvisioner(cfg config.CloudConfig, iamCfg config.IAMConfig, k8sClient KubernetesClient) *Provisioner {
+func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient) *Provisioner {
 	p := &Provisioner{
-		config:    cfg,
-		iamConfig: iamCfg,
-		k8s:       k8sClient,
+		config: cfg,
+		k8s:    k8sClient,
 		nodes:     make(map[string]*CloudNode),
 	}
 	// Initialize Visor client for Mac/Windows VM provisioning
@@ -293,37 +291,14 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Msg("using per-user API key for billing")
 	}
 
-	// Inject IAM config so the bot gateway can authenticate users.
-	// Without this, HANZO_PLAYGROUND_CLOUD_NODE=true triggers IAM mode
-	// but the gateway crashes with "no IAM config was provided".
-	if p.iamConfig.Enabled {
-		iamEndpoint := p.iamConfig.PublicEndpoint
-		if p.iamConfig.Endpoint != "" {
-			iamEndpoint = p.iamConfig.Endpoint // prefer internal endpoint in-cluster
-		}
-		env["GATEWAY_IAM_SERVER_URL"] = iamEndpoint
-		env["GATEWAY_IAM_CLIENT_ID"] = p.iamConfig.ClientID
-		if p.iamConfig.ClientSecret != "" {
-			env["GATEWAY_IAM_CLIENT_SECRET"] = p.iamConfig.ClientSecret
-		}
-		if p.iamConfig.Organization != "" {
-			env["GATEWAY_IAM_ORG_NAME"] = p.iamConfig.Organization
-		}
-		if p.iamConfig.Application != "" {
-			env["GATEWAY_IAM_APP_NAME"] = p.iamConfig.Application
-		}
-	} else {
-		// No IAM — use token mode instead of crashing
-		env["BOT_GATEWAY_AUTH_MODE"] = "token"
-		if apiKey != "" {
-			env["BOT_GATEWAY_TOKEN"] = apiKey
-		}
+	// The bot gateway auto-detects IAM mode when HANZO_PLAYGROUND_CLOUD_NODE=true,
+	// but it reads IAM config from its config file (gateway.auth.iam), not env vars.
+	// Since we can't inject a config file, override to token auth mode and provide
+	// the API key as the shared token. The playground handles real auth upstream.
+	env["BOT_GATEWAY_AUTH_MODE"] = "token"
+	if apiKey != "" {
+		env["BOT_GATEWAY_TOKEN"] = apiKey
 	}
-
-	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
-	// The bot image (Node.js) defaults to ~512MB heap which OOMs under tight limits.
-	// Reserve ~128MB for OS/native overhead and give the rest to V8.
-	env["NODE_OPTIONS"] = nodeOptionsForMemory(p.config.Kubernetes.LimitMemory)
 
 	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
 	// The bot image (Node.js) defaults to ~512MB heap which OOMs under tight limits.
