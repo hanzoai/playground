@@ -1,21 +1,11 @@
 import React, { Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ui/mode-toggle";
-import { ChevronDown } from "@/components/ui/icon-bridge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantStore, ENVIRONMENTS } from "@/stores/tenantStore";
-import type { Environment } from "@/stores/tenantStore";
+import { useTenantStore, DEFAULT_ENVIRONMENT } from "@/stores/tenantStore";
 
 // ---------------------------------------------------------------------------
 // Org selector — uses IAM hook when available, otherwise tenantStore
@@ -60,31 +50,13 @@ function LocalOrgFallback() {
 
 function EnvironmentSelector() {
   const environment = useTenantStore((s) => s.environment);
-  const setEnvironment = useTenantStore((s) => s.setEnvironment);
-  const currentEnv = ENVIRONMENTS.find((e) => e.id === environment) || ENVIRONMENTS[0];
+  const label =
+    environment === DEFAULT_ENVIRONMENT.id ? DEFAULT_ENVIRONMENT.name : environment;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
-          <span className="truncate">{currentEnv.name}</span>
-          <ChevronDown size={10} className="text-muted-foreground/60 shrink-0" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-40">
-        <DropdownMenuLabel>Environment</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {ENVIRONMENTS.map((env) => (
-          <DropdownMenuItem
-            key={env.id}
-            onClick={() => setEnvironment(env.id as Environment)}
-            className={cn(env.id === environment && "bg-accent")}
-          >
-            {env.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <span className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground select-none">
+      <span className="truncate">{label}</span>
+    </span>
   );
 }
 
