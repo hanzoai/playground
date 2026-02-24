@@ -124,7 +124,7 @@ test.describe('Trial Credits & Billing', () => {
     await page.waitForURL(/\/bots\//, { timeout: 15_000 });
 
     // Execute button should be visible and enabled (user has credits)
-    const executeButton = page.getByRole('button', { name: /execute bot|execute/i });
+    const executeButton = page.getByRole('button', { name: 'Execute Bot' });
     await expect(executeButton).toBeVisible({ timeout: 10_000 });
     await expect(executeButton).toBeEnabled();
   });

@@ -36,9 +36,9 @@ export class AllBotsPage {
     this.pageTitle = page.getByRole('heading', { name: 'Control Plane' });
     this.pageDescription = page.getByText(/orchestrate local and cloud agents/i);
 
-    this.liveIndicator = page.getByText('Live', { exact: true });
-    this.offlineIndicator = page.getByText('Offline', { exact: true });
-    this.liveUpdatesBadge = page.getByText(/Live|Offline/);
+    this.liveIndicator = page.locator('span.font-mono.text-green-400', { hasText: 'Live' });
+    this.offlineIndicator = page.locator('span.font-mono.text-red-400', { hasText: 'Offline' });
+    this.liveUpdatesBadge = this.liveIndicator.or(this.offlineIndicator);
 
     this.refreshButton = page.locator('button[title="Refresh"]');
     this.registerAgentButton = page.getByText('Register Agent');

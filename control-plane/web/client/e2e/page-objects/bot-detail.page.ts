@@ -43,12 +43,12 @@ export class BotDetailPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.botName = page.locator('.text-display, h2').first();
-    this.botDescription = page.locator('.text-body, .text-muted-foreground').first();
+    this.botName = page.locator('h2.text-display');
+    this.botDescription = page.locator('h2.text-display + p.text-body');
     this.statusIndicator = page.locator('[class*="status"]').first();
     this.copyCurlButton = page.getByRole('button', { name: /copy curl/i });
 
-    this.executeButton = page.getByRole('button', { name: /execute bot|execute/i });
+    this.executeButton = page.getByRole('button', { name: 'Execute Bot' });
     this.executingIndicator = page.getByText(/executing\.\.\./i);
 
     this.inputSchemaTab = page.getByRole('tab', { name: /input schema/i });
@@ -71,8 +71,14 @@ export class BotDetailPage {
   }
 
   async expectPageLoaded() {
-    // Wait for either bot name or loading to finish
-    await expect(this.botName.or(this.errorAlert)).toBeVisible({ timeout: 15_000 });
+    // Wait for either bot name heading or error alert to appear
+    const loaded = await Promise.race([
+      this.botName.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false),
+      this.errorAlert.first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false),
+    ]);
+    if (!loaded) {
+      throw new Error('Bot detail page did not load — neither bot name nor error alert visible');
+    }
   }
 
   async expectBotNameVisible(name?: string) {

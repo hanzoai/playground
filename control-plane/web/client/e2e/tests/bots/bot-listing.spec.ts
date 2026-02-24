@@ -79,8 +79,8 @@ test.describe('Control Plane', () => {
 
   test('metrics strip shows agent and bot counts', async () => {
     // The metrics strip should show Agents, Cloud, Local, Bots, Healthy
-    await expect(botsPage.page.getByText('Agents')).toBeVisible({ timeout: 10_000 });
-    await expect(botsPage.page.getByText('Bots')).toBeVisible({ timeout: 5_000 });
+    await expect(botsPage.page.getByText('Agents', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(botsPage.page.getByText('Bots', { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test('register agent button is visible', async () => {

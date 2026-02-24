@@ -48,18 +48,18 @@ export class TopNavigationPage {
     this.sidebarLogo = page.getByText(/hanzo bot/i).first();
     this.sidebarVersion = page.getByText(/v\d+\.\d+\.\d+/);
 
-    // Sidebar nav links — use href + text to avoid matching logo/breadcrumb duplicates
-    this.dashboardLink = page.locator('a[href="/dashboard"]').filter({ hasText: 'Dashboard' });
-    this.botsLink = page.locator('a[href="/bots/all"]');
-    this.nodesLink = page.getByRole('link', { name: /^node$/i });
-    this.executionsLink = page.getByRole('link', { name: /individual executions/i });
-    this.workflowsLink = page.getByRole('link', { name: /workflow executions/i });
-    this.spacesLink = page.getByRole('link', { name: /spaces/i });
-    this.playgroundLink = page.getByRole('link', { name: /playground/i });
-    this.teamsLink = page.getByRole('link', { name: /teams/i });
-    this.didExplorerLink = page.getByRole('link', { name: /did explorer/i });
-    this.credentialsLink = page.getByRole('link', { name: /credentials/i });
-    this.settingsLink = page.getByRole('link', { name: /observability webhook/i });
+    // Sidebar nav links — use href to avoid matching breadcrumb/heading duplicates
+    this.dashboardLink = page.locator('a[href="/dashboard"]').first();
+    this.botsLink = page.locator('a[href="/bots/all"]').first();
+    this.nodesLink = page.locator('a[href="/nodes"]').first();
+    this.executionsLink = page.locator('a[href="/executions"]').first();
+    this.workflowsLink = page.locator('a[href="/workflows"]').first();
+    this.spacesLink = page.locator('a[href="/spaces"]').first();
+    this.playgroundLink = page.locator('a[href="/playground"]').first();
+    this.teamsLink = page.locator('a[href="/teams"]').first();
+    this.didExplorerLink = page.locator('a[href="/identity/dids"]').first();
+    this.credentialsLink = page.locator('a[href="/identity/credentials"]').first();
+    this.settingsLink = page.locator('a[href="/settings"]').first();
 
     // User menu
     this.userMenuButton = page.locator('[class*="sidebar-footer"] button, [class*="user-menu"]')
