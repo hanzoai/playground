@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.82] - 2026-02-24
+
+
+### Fixed
+
+- Fix: point Top Up to IAM billing portal, remove hardcoded environment dropdown (#35)
+
+- Change TOP_UP_URL from marketing page (hanzo.ai/billing) to IAM billing
+  portal (iam.hanzo.ai/billing) so users can actually add credits
+- Remove hardcoded Staging/Development environments from dropdown —
+  only show current environment (Production by default)
+- Clean up unused dropdown imports from TopNavigation
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (573f080)
+
 ## [0.1.41-rc.81] - 2026-02-23
 
 
