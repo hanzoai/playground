@@ -6,6 +6,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.85] - 2026-02-24
+
+
+### Fixed
+
+- Fix(e2e): update selectors for Control Plane UI
+
+* fix(e2e): update page objects and tests for Control Plane UI
+
+The /bots/all page was redesigned from "All Bots" grid/search/filter view
+to "Control Plane" with agent network cards and activity stream. Updates
+E2E selectors to match the current page title ("Control Plane"), status
+indicators ("Live"/"Offline"), agent cards, and bot navigation flow.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(e2e): use getByRole('heading') for Control Plane title
+
+The getByText('Control Plane') selector matched 3 elements (nav links +
+heading). Use getByRole('heading') to target the h1 specifically.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(e2e): fix remaining selector mismatches for Control Plane UI
+
+- Use getByRole('heading') for unique Control Plane title match
+- Update breadcrumb test to expect 'Control Plane' instead of 'Bots'
+- Update credits test to use agent card navigation instead of old
+  bot card selectors
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(e2e): resolve strict mode violations across page objects
+
+- bot-detail: use specific h2.text-display selector and exact
+  'Execute Bot' button name to avoid matching view toggle button
+- all-bots: use class-specific selectors for Live/Offline status
+  to avoid matching activity stream messages
+- top-navigation: use href-based selectors for sidebar links to
+  match actual navigation config (Executions, not Individual Executions)
+- bot-listing: use exact:true for metrics label matches
+- credits: use exact 'Execute Bot' button selector
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(e2e): replace breadcrumb check with heading assertion
+
+The breadcrumb element doesn't exist on the Control Plane page.
+Use heading assertion instead to verify page loaded correctly.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (d98aee3)
+
 ## [0.1.41-rc.84] - 2026-02-24
 
 
