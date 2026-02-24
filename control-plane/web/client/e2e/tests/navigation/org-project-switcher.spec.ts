@@ -57,7 +57,7 @@ test.describe('Org & Project Switcher', () => {
 
   test('breadcrumb updates on navigation', async ({ page }) => {
     await page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
-    await nav.expectBreadcrumbContains('Bots');
+    await nav.expectBreadcrumbContains('Control Plane');
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     // Dashboard breadcrumb may show "Home" or "Dashboard"
