@@ -22,16 +22,20 @@ test.describe('Control Plane', () => {
     await expect(botsPage.pageTitle).toBeVisible();
   });
 
-  test('agent network displays agents or empty state', async () => {
-    const hasAgents = await botsPage.hasAgents();
+  test('agent network displays agents or empty state', async ({ page }) => {
+    // Wait for either agent cards or empty state to appear (SSE may take time)
+    const agentCard = botsPage.agentCards.first();
+    const emptyState = botsPage.emptyState;
 
+    await expect(agentCard.or(emptyState)).toBeVisible({ timeout: 15_000 });
+
+    const hasAgents = await botsPage.hasAgents();
     if (hasAgents) {
       const count = await botsPage.getAgentCount();
       expect(count).toBeGreaterThan(0);
       console.log(`Found ${count} agents`);
     } else {
-      // Empty state should be shown
-      await expect(botsPage.emptyState).toBeVisible({ timeout: 10_000 });
+      await expect(emptyState).toBeVisible();
     }
   });
 
