@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.87] - 2026-02-24
+
+
+### Fixed
+
+- Fix(billing): point billingApi to Commerce REST API instead of non-existent ZAP endpoint (#41)
+
+The billingApi.ts was calling POST api.hanzo.ai/zap which doesn't exist
+(returns HTML). Updated to use Commerce REST API at commerce.hanzo.ai
+with proper GET /api/v1/billing/balance endpoint. Extracts user ID from
+JWT payload for the balance query. Added VITE_COMMERCE_API_URL env var.
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (e208930)
+
 ## [0.1.41-rc.86] - 2026-02-24
 
 
