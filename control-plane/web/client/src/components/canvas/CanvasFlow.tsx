@@ -228,29 +228,31 @@ export function CanvasFlow({ className }: { className?: string }) {
           color="color-mix(in oklch, var(--muted-foreground) 25%, transparent)"
           className="!bg-background"
         />
-        <MiniMap
-          className="canvas-minimap hidden md:block"
-          style={{ backgroundColor: '#161616', width: 180, height: 120 }}
-          maskColor="rgba(0, 0, 0, 0.55)"
-          maskStrokeColor="rgba(255, 255, 255, 0.15)"
-          maskStrokeWidth={1}
-          nodeColor={(node) => {
-            if (node.type === 'starter') return '#6b7280';
-            if (node.type === 'team') return '#818cf8';
-            const status = (node.data as Record<string, unknown>)?.status as string;
-            if (status === 'busy') return '#34d399';
-            if (status === 'error') return '#f87171';
-            if (status === 'waiting') return '#fbbf24';
-            if (status === 'provisioning') return '#c084fc';
-            if (status === 'offline') return '#6b7280';
-            return '#60a5fa';
-          }}
-          nodeStrokeColor="rgba(255, 255, 255, 0.08)"
-          nodeStrokeWidth={1}
-          nodeBorderRadius={3}
-          pannable
-          zoomable
-        />
+        {nodes.length > 0 && (
+          <MiniMap
+            className="canvas-minimap hidden md:block"
+            style={{ backgroundColor: '#161616', width: 180, height: 120 }}
+            maskColor="rgba(0, 0, 0, 0.55)"
+            maskStrokeColor="rgba(255, 255, 255, 0.15)"
+            maskStrokeWidth={1}
+            nodeColor={(node) => {
+              if (node.type === 'starter') return '#6b7280';
+              if (node.type === 'team') return '#818cf8';
+              const status = (node.data as Record<string, unknown>)?.status as string;
+              if (status === 'busy') return '#34d399';
+              if (status === 'error') return '#f87171';
+              if (status === 'waiting') return '#fbbf24';
+              if (status === 'provisioning') return '#c084fc';
+              if (status === 'offline') return '#6b7280';
+              return '#60a5fa';
+            }}
+            nodeStrokeColor="rgba(255, 255, 255, 0.08)"
+            nodeStrokeWidth={1}
+            nodeBorderRadius={3}
+            pannable
+            zoomable
+          />
+        )}
         <CanvasControls
           onFitView={() => fitView({ padding: 0.3 })}
           onAddBot={handleAddBot}
