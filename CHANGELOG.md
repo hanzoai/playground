@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.86] - 2026-02-24
+
+
+### Fixed
+
+- Fix(e2e): skip JSON view test when tab not visible (#40)
+
+* fix(e2e): skip JSON view test when tab not visible after execution
+
+The JSON/Formatted view tabs may not appear for all execution result
+types. Check tab visibility before attempting to click, and skip the
+test gracefully instead of timing out.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(e2e): wait for SSE before checking agents or empty state
+
+The agent network test was racing with SSE connection — checking
+hasAgents() instantly (0 count) then expecting empty state text that
+hadn't rendered yet. Now waits for either agent cards or empty state
+to appear before branching.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix: hide minimap when canvas has no nodes, fix E2E SSE race
+
+- Only render MiniMap when nodes.length > 0 (no empty minimap widget)
+- Fix agent network E2E test to wait for SSE before checking state
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix: remove phantom New Bot nodes, hide minimap when <2 bots, clean up balance bar
+
+- Canvas store: filter out unprovisioned "New Bot" placeholder nodes on restore
+- MiniMap: only render when 2+ real bot nodes exist on canvas
+- UserBalanceBar: hide balance and top-up when API unavailable instead of showing error
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (e19c8dd)
+
 ## [0.1.41-rc.85] - 2026-02-24
 
 
