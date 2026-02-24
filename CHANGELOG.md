@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.90] - 2026-02-24
+
+
+### Fixed
+
+- Fix: apply env overrides for IAM config in CLI startup path
+
+The HANZO_PLAYGROUND_IAM_ENDPOINT and related env vars were only applied
+when loading from a YAML config file. When no config file is found (the
+common CLI/Docker case), viper unmarshals defaults but never calls
+applyCloudEnvOverrides, leaving IAM config empty. Export
+ApplyAllEnvOverrides and call it from the CLI loadConfig path so the
+auth proxy endpoints resolve correctly.
+
+Also add error logging to auth proxy handlers for debugging. (b5db332)
+
 ## [0.1.41-rc.89] - 2026-02-24
 
 
