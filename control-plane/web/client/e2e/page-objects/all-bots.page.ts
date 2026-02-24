@@ -33,7 +33,7 @@ export class AllBotsPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.pageTitle = page.getByText('Control Plane', { exact: false });
+    this.pageTitle = page.getByRole('heading', { name: 'Control Plane' });
     this.pageDescription = page.getByText(/orchestrate local and cloud agents/i);
 
     this.liveIndicator = page.getByText('Live', { exact: true });
