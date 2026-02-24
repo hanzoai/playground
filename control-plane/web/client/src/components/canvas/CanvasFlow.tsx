@@ -228,7 +228,7 @@ export function CanvasFlow({ className }: { className?: string }) {
           color="color-mix(in oklch, var(--muted-foreground) 25%, transparent)"
           className="!bg-background"
         />
-        {nodes.length > 0 && (
+        {nodes.filter(n => n.type === 'bot').length >= 2 && (
           <MiniMap
             className="canvas-minimap hidden md:block"
             style={{ backgroundColor: '#161616', width: 180, height: 120 }}
