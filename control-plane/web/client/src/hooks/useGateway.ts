@@ -113,7 +113,7 @@ export function useGateway() {
       version: CLIENT_VERSION,
       platform: 'web',
       mode: 'ui',
-      displayName: 'Hanzo Playground',
+      displayName: 'Hanzo Bot',
     },
     role: 'operator',
     scopes: ['operator.admin'],

@@ -61,7 +61,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               </g>
             </svg>
             <div>
-              <h2 className="text-2xl font-semibold">Hanzo Playground</h2>
+              <h2 className="text-2xl font-semibold">Hanzo Bot</h2>
               <p className="text-muted-foreground text-sm">Agent Control Plane</p>
             </div>
           </div>
@@ -98,7 +98,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             <path d="M256 160L352 256L256 352L160 256L256 160Z" fill="currentColor" className="text-primary" />
           </svg>
           <div>
-            <h2 className="text-2xl font-semibold">Hanzo Playground</h2>
+            <h2 className="text-2xl font-semibold">Hanzo Bot</h2>
             <p className="text-muted-foreground text-sm">Agent Control Plane</p>
           </div>
         </div>
