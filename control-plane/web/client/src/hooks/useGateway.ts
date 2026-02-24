@@ -130,8 +130,9 @@ export function useGateway() {
       .filter((row) => {
         // Skip the default phantom agent — gateway always returns a "main"
         // agent even with zero config, using DEFAULT_ASSISTANT_IDENTITY.
+        // The name may be absent, "Hanzo Assistant", or literally "main".
         const name = row.identity?.name ?? row.name;
-        if (row.id === 'main' && (!name || name === 'Hanzo Assistant')) {
+        if (row.id === 'main' && (!name || name === 'Hanzo Assistant' || name === 'main')) {
           return false;
         }
         return true;
