@@ -421,6 +421,11 @@ func loadConfig(configFile string) (*config.Config, error) {
 		}
 	}
 
+	// Apply HANZO_PLAYGROUND_* and PLAYGROUND_*/AGENTS_* env overrides for IAM,
+	// cloud, secrets, etc.  This was previously only called from the YAML-based
+	// LoadConfig path; ensure it also runs for viper-based CLI config.
+	config.ApplyAllEnvOverrides(&cfg)
+
 	fmt.Printf("Loaded config - Storage mode: %s, Agents Port: %d, UI Mode: %s, UI Enabled: %t, DID Enabled: %t\n",
 		cfg.Storage.Mode, cfg.Agents.Port, cfg.UI.Mode, cfg.UI.Enabled, cfg.Features.DID.Enabled)
 

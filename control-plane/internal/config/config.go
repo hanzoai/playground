@@ -233,6 +233,14 @@ func envWithFallback(key string) string {
 	return os.Getenv("AGENTS_" + key)
 }
 
+// ApplyAllEnvOverrides applies all environment variable overrides to the config.
+// Call this after unmarshalling config (from viper or YAML) to pick up
+// PLAYGROUND_*, AGENTS_*, and HANZO_PLAYGROUND_* env vars.
+func ApplyAllEnvOverrides(cfg *Config) {
+	applyEnvOverrides(cfg)
+	applyCloudEnvOverrides(cfg)
+}
+
 // applyEnvOverrides applies environment variable overrides to the config.
 // Environment variables take precedence over YAML config values.
 // Reads PLAYGROUND_* first, falls back to AGENTS_* for backward compatibility.

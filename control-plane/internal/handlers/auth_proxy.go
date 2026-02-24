@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -43,6 +44,7 @@ func AuthTokenProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 
 		resp, err := proxyClient.Do(req)
 		if err != nil {
+			log.Printf("[auth-proxy] token endpoint %s error: %v", cfg.TokenEndpoint, err)
 			c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable"})
 			return
 		}
@@ -76,6 +78,7 @@ func AuthUserinfoProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 
 		resp, err := proxyClient.Do(req)
 		if err != nil {
+			log.Printf("[auth-proxy] userinfo endpoint %s error: %v", cfg.UserinfoEndpoint, err)
 			c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable"})
 			return
 		}
