@@ -664,6 +664,22 @@ func (s *PlaygroundServer) setupRoutes() {
 		c.Next()
 	})
 
+	// OAuth proxy routes — registered BEFORE auth middleware since the user
+	// doesn't have a token yet during login. These proxy token exchange and
+	// userinfo requests to the IAM server, bypassing browser CORS restrictions.
+	{
+		iamEndpoint := s.config.IAM.Endpoint
+		if iamEndpoint == "" {
+			iamEndpoint = s.config.IAM.PublicEndpoint
+		}
+		authProxyCfg := handlers.AuthProxyConfig{
+			TokenEndpoint:    iamEndpoint + "/oauth/token",
+			UserinfoEndpoint: iamEndpoint + "/oauth/userinfo",
+		}
+		s.Router.POST("/auth/token", handlers.AuthTokenProxyHandler(authProxyCfg))
+		s.Router.GET("/auth/userinfo", handlers.AuthUserinfoProxyHandler(authProxyCfg))
+	}
+
 	// IAM token authentication middleware (validates Bearer JWTs against hanzo.id)
 	// Runs BEFORE API key auth — if IAM validates, request proceeds.
 	// If no JWT present, falls through to API key auth.

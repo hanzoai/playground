@@ -25,6 +25,7 @@ const iamConfig = isIamMode
       redirectUri:
         IAM_REDIRECT_URI ||
         `${window.location.origin}${basePath}/auth/callback`,
+      proxyBaseUrl: window.location.origin,
     }
   : null;
 
