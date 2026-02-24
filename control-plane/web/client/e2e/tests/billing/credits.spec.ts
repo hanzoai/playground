@@ -99,21 +99,32 @@ test.describe('Trial Credits & Billing', () => {
   test('bot execution button is enabled when user has credits', async ({ page }) => {
     await page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
 
-    // Check if there are any bots
-    const botCards = page.locator('[role="button"][aria-label*="View bot"]');
-    const botCount = await botCards.count();
+    // Wait for Control Plane page to load
+    await expect(page.getByRole('heading', { name: 'Control Plane' })).toBeVisible({ timeout: 15_000 });
 
-    if (botCount === 0) {
+    // Check if there are any agent cards with bots
+    const agentCards = page.locator('.border.border-border\\/30.rounded-md');
+    const agentCount = await agentCards.count();
+
+    if (agentCount === 0) {
       test.skip(true, 'No bots available to check execution button');
       return;
     }
 
-    // Click first bot
-    await botCards.first().click();
+    // Expand first agent card and click first bot
+    await agentCards.first().locator('button').first().click();
+    await page.waitForTimeout(300);
+    const botButton = agentCards.first().locator('.border-t button').first();
+    const hasBots = await botButton.count() > 0;
+    if (!hasBots) {
+      test.skip(true, 'No bots available to check execution button');
+      return;
+    }
+    await botButton.click();
     await page.waitForURL(/\/bots\//, { timeout: 15_000 });
 
     // Execute button should be visible and enabled (user has credits)
-    const executeButton = page.getByRole('button', { name: /execute bot|execute/i });
+    const executeButton = page.getByRole('button', { name: 'Execute Bot' });
     await expect(executeButton).toBeVisible({ timeout: 10_000 });
     await expect(executeButton).toBeEnabled();
   });

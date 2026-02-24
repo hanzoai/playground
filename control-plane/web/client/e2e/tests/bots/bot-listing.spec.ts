@@ -2,13 +2,14 @@ import { test, expect } from '../../fixtures';
 import { AllBotsPage } from '../../page-objects/all-bots.page';
 
 /**
- * Bot Listing E2E tests.
+ * Control Plane E2E tests.
  *
- * Verifies bot grid loads, SSE connection works, search/filter functions.
+ * Verifies the control plane page loads, SSE connection works,
+ * agent cards display, and bot navigation functions.
  * All tests run authenticated via cached auth state.
  */
 
-test.describe('Bot Listing', () => {
+test.describe('Control Plane', () => {
   let botsPage: AllBotsPage;
 
   test.beforeEach(async ({ page }) => {
@@ -17,71 +18,49 @@ test.describe('Bot Listing', () => {
     await botsPage.expectPageLoaded();
   });
 
-  test('bot listing page loads and shows header', async () => {
+  test('control plane page loads and shows header', async () => {
     await expect(botsPage.pageTitle).toBeVisible();
   });
 
-  test('bot grid displays bots or empty state', async () => {
-    const hasBots = await botsPage.hasBots();
+  test('agent network displays agents or empty state', async () => {
+    const hasAgents = await botsPage.hasAgents();
 
-    if (hasBots) {
-      const count = await botsPage.getBotCount();
+    if (hasAgents) {
+      const count = await botsPage.getAgentCount();
       expect(count).toBeGreaterThan(0);
-      console.log(`Found ${count} bots`);
+      console.log(`Found ${count} agents`);
     } else {
       // Empty state should be shown
       await expect(botsPage.emptyState).toBeVisible({ timeout: 10_000 });
     }
   });
 
-  test('SSE live updates badge is visible', async () => {
-    // The page should show "Live Updates" or "Disconnected"
+  test('SSE live status indicator is visible', async () => {
+    // The page should show "Live" or "Offline"
     await expect(botsPage.liveUpdatesBadge).toBeVisible({ timeout: 15_000 });
   });
 
-  test('refresh button triggers bot reload', async ({ page }) => {
+  test('refresh button triggers agent reload', async () => {
     await botsPage.refresh();
 
     // Page should still be loaded after refresh
     await botsPage.expectPageLoaded();
   });
 
-  test('search filters bot list', async () => {
-    const hasBots = await botsPage.hasBots();
-    if (!hasBots) {
-      test.skip(true, 'No bots available for search test');
+  test('agent card expands to show bots', async () => {
+    const hasAgents = await botsPage.hasAgents();
+    if (!hasAgents) {
+      test.skip(true, 'No agents available for expansion test');
       return;
     }
 
-    // Search for a nonexistent bot — should show no results
-    await botsPage.searchForBot('zzz_nonexistent_bot_xyz');
-    const countAfterBadSearch = await botsPage.getBotCount();
-    expect(countAfterBadSearch).toBe(0);
+    // Expand first agent
+    await botsPage.expandAgent(0);
 
-    // Clear search — bots should reappear
-    await botsPage.clearSearch();
-    const countAfterClear = await botsPage.getBotCount();
-    expect(countAfterClear).toBeGreaterThan(0);
-  });
-
-  test('status filter switches between online/all/offline', async () => {
-    // Click "All" filter
-    await botsPage.filterByStatus('all');
-    const allCount = await botsPage.getBotCount();
-
-    // Click "Online" filter
-    await botsPage.filterByStatus('online');
-    const onlineCount = await botsPage.getBotCount();
-
-    // Online count should be <= all count
-    expect(onlineCount).toBeLessThanOrEqual(allCount);
-
-    // Click "Offline" filter
-    await botsPage.filterByStatus('offline');
-    const offlineCount = await botsPage.getBotCount();
-
-    // Online + offline should roughly equal all (depending on filtering logic)
-    console.log(`Bots: all=${allCount}, online=${onlineCount}, offline=${offlineCount}`);
+    // After expanding, the bot list should be visible inside the agent card
+    const firstAgent = botsPage.agentCards.first();
+    const botList = firstAgent.locator('.border-t');
+    await expect(botList).toBeVisible({ timeout: 5_000 });
   });
 
   test('clicking a bot navigates to bot detail page', async ({ page }) => {
@@ -96,5 +75,15 @@ test.describe('Bot Listing', () => {
 
     // Should be on a bot detail page
     expect(page.url()).toMatch(/\/bots\/.+/);
+  });
+
+  test('metrics strip shows agent and bot counts', async () => {
+    // The metrics strip should show Agents, Cloud, Local, Bots, Healthy
+    await expect(botsPage.page.getByText('Agents', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(botsPage.page.getByText('Bots', { exact: true })).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('register agent button is visible', async () => {
+    await expect(botsPage.registerAgentButton).toBeVisible({ timeout: 5_000 });
   });
 });

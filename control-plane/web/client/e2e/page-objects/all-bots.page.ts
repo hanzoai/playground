@@ -1,8 +1,8 @@
 import { type Page, type Locator, expect } from '@playwright/test';
 
 /**
- * Page object for the All Bots page (/bots/all).
- * Bot grid, SSE live updates, search/filter, bot card navigation.
+ * Page object for the Control Plane page (/bots/all).
+ * Agent network view, live status, agent cards with nested bots, activity stream.
  */
 export class AllBotsPage {
   readonly page: Page;
@@ -11,48 +11,48 @@ export class AllBotsPage {
   readonly pageTitle: Locator;
   readonly pageDescription: Locator;
 
-  // View controls
-  readonly gridViewButton: Locator;
-  readonly tableViewButton: Locator;
+  // Status indicator
+  readonly liveIndicator: Locator;
+  readonly offlineIndicator: Locator;
   readonly liveUpdatesBadge: Locator;
+
+  // Actions
   readonly refreshButton: Locator;
+  readonly registerAgentButton: Locator;
 
-  // Search & filters
-  readonly searchInput: Locator;
-  readonly onlineFilterButton: Locator;
-  readonly allFilterButton: Locator;
-  readonly offlineFilterButton: Locator;
-  readonly clearFiltersLink: Locator;
+  // Metrics
+  readonly metricsStrip: Locator;
 
-  // Content
-  readonly botCards: Locator;
-  readonly loadMoreButton: Locator;
+  // Agent cards
+  readonly agentCards: Locator;
   readonly emptyState: Locator;
+
+  // Activity
+  readonly activityStream: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
-    this.pageTitle = page.getByText('All Bots', { exact: false });
-    this.pageDescription = page.getByText(/browse and execute bots/i);
+    this.pageTitle = page.getByRole('heading', { name: 'Control Plane' });
+    this.pageDescription = page.getByText(/orchestrate local and cloud agents/i);
 
-    this.gridViewButton = page.getByLabel(/grid/i).or(page.locator('[value="grid"]'));
-    this.tableViewButton = page.getByLabel(/table|list/i).or(page.locator('[value="table"]'));
-    this.liveUpdatesBadge = page.getByText(/live updates|disconnected/i);
-    this.refreshButton = page.getByRole('button', { name: /refresh/i });
+    this.liveIndicator = page.locator('span.font-mono.text-green-400', { hasText: 'Live' });
+    this.offlineIndicator = page.locator('span.font-mono.text-red-400', { hasText: 'Offline' });
+    this.liveUpdatesBadge = this.liveIndicator.or(this.offlineIndicator);
 
-    this.searchInput = page.locator('input[placeholder*="Search bots" i]');
-    this.onlineFilterButton = page.getByRole('button', { name: /^online\b/i });
-    this.allFilterButton = page.getByRole('button', { name: /^all\b/i });
-    this.offlineFilterButton = page.getByRole('button', { name: /^offline\b/i });
-    this.clearFiltersLink = page.getByText(/clear filters/i);
+    this.refreshButton = page.locator('button[title="Refresh"]');
+    this.registerAgentButton = page.getByText('Register Agent');
 
-    this.botCards = page.locator('[role="button"][aria-label*="View bot"]');
-    this.loadMoreButton = page.getByRole('button', { name: /load more/i });
-    this.emptyState = page.getByText(/no bots available|no online bots|no offline bots/i);
+    this.metricsStrip = page.locator('.flex.items-center.gap-4.py-2');
+
+    this.agentCards = page.locator('.border.border-border\\/30.rounded-md');
+    this.emptyState = page.getByText(/no agents connected/i);
+
+    this.activityStream = page.getByText('Activity');
   }
 
   async goto() {
-    // Use 'domcontentloaded' — the bots page has SSE connections that prevent 'networkidle'
+    // Use 'domcontentloaded' — the page has SSE connections that prevent 'networkidle'
     await this.page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
   }
 
@@ -60,57 +60,102 @@ export class AllBotsPage {
     await expect(this.pageTitle).toBeVisible({ timeout: 15_000 });
   }
 
-  async getBotCount(): Promise<number> {
-    return this.botCards.count();
+  async getAgentCount(): Promise<number> {
+    return this.agentCards.count();
   }
 
-  async hasBots(): Promise<boolean> {
-    return (await this.getBotCount()) > 0;
+  async hasAgents(): Promise<boolean> {
+    return (await this.getAgentCount()) > 0;
   }
 
-  async searchForBot(query: string) {
-    await this.searchInput.fill(query);
-    // Wait for filter to take effect
-    await this.page.waitForTimeout(500);
+  /** Expand an agent card to reveal its bots. */
+  async expandAgent(index: number = 0) {
+    const card = this.agentCards.nth(index);
+    await expect(card).toBeVisible({ timeout: 10_000 });
+    const header = card.locator('button').first();
+    await header.click();
+    // Wait for expansion animation
+    await this.page.waitForTimeout(300);
   }
 
-  async clearSearch() {
-    await this.searchInput.clear();
-    await this.page.waitForTimeout(500);
+  /** Get all bot buttons inside an expanded agent card. */
+  getBotButtons(agentIndex: number = 0): Locator {
+    return this.agentCards.nth(agentIndex).locator('button.w-full.flex.items-center').filter({ hasNot: this.page.locator('svg') });
   }
 
-  async filterByStatus(status: 'online' | 'all' | 'offline') {
-    const button = {
-      online: this.onlineFilterButton,
-      all: this.allFilterButton,
-      offline: this.offlineFilterButton,
-    }[status];
-    await button.click();
-    await this.page.waitForTimeout(500);
-  }
-
+  /** Click the first bot inside the first agent card. */
   async clickFirstBot() {
-    const firstBot = this.botCards.first();
-    await expect(firstBot).toBeVisible({ timeout: 10_000 });
-    await firstBot.click();
-  }
+    // Expand first agent if not already expanded
+    const firstAgent = this.agentCards.first();
+    await expect(firstAgent).toBeVisible({ timeout: 10_000 });
 
-  async clickBotByName(name: string) {
-    const bot = this.page.locator(`[role="button"][aria-label*="${name}"]`).first();
-    await expect(bot).toBeVisible({ timeout: 10_000 });
-    await bot.click();
+    // Check if agent has expanded bot list (border-t border-border/20 div)
+    const botList = firstAgent.locator('.border-t');
+    const isExpanded = await botList.count() > 0;
+    if (!isExpanded) {
+      await this.expandAgent(0);
+    }
+
+    // Click first bot button inside the expanded area
+    const botButton = firstAgent.locator('.border-t button').first();
+    await expect(botButton).toBeVisible({ timeout: 5_000 });
+    await botButton.click();
   }
 
   async expectSSEConnected() {
-    await expect(this.page.getByText(/live updates/i)).toBeVisible({ timeout: 15_000 });
+    await expect(this.liveIndicator).toBeVisible({ timeout: 15_000 });
   }
 
   async expectSSEDisconnected() {
-    await expect(this.page.getByText(/disconnected/i)).toBeVisible();
+    await expect(this.offlineIndicator).toBeVisible();
   }
 
   async refresh() {
     await this.refreshButton.first().click();
     await this.page.waitForTimeout(1_000);
+  }
+
+  /** @deprecated No search input in Control Plane view. Kept for backward compat — no-ops. */
+  async searchForBot(_query: string) {
+    // Control Plane view has no search input
+  }
+
+  /** @deprecated No search input in Control Plane view. Kept for backward compat — no-ops. */
+  async clearSearch() {
+    // Control Plane view has no search input
+  }
+
+  /** @deprecated No status filter in Control Plane view. Kept for backward compat — no-ops. */
+  async filterByStatus(_status: 'online' | 'all' | 'offline') {
+    // Control Plane view has no status filter buttons
+  }
+
+  /** Check if bots exist (agents with bots inside). */
+  async hasBots(): Promise<boolean> {
+    const hasAgents = await this.hasAgents();
+    if (!hasAgents) return false;
+
+    // Check if any agent card mentions bots
+    const botCountTexts = this.page.locator('text=/\\d+ bots?/');
+    const count = await botCountTexts.count();
+    return count > 0;
+  }
+
+  async getBotCount(): Promise<number> {
+    return this.agentCards.count();
+  }
+
+  async clickBotByName(name: string) {
+    // Expand all agents to find the bot
+    const agentCount = await this.getAgentCount();
+    for (let i = 0; i < agentCount; i++) {
+      await this.expandAgent(i);
+      const botButton = this.agentCards.nth(i).locator('.border-t button', { hasText: name }).first();
+      if (await botButton.count() > 0) {
+        await botButton.click();
+        return;
+      }
+    }
+    throw new Error(`Bot "${name}" not found in any agent card`);
   }
 }

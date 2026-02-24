@@ -8,7 +8,7 @@ import { getAccessToken, extractTokenFromPage } from '../../helpers/iam-auth.hel
  * Bot Execution E2E tests.
  *
  * Verifies that an authenticated user can:
- * - Navigate to a bot
+ * - Navigate to a bot via the Control Plane
  * - Execute it
  * - See results
  * - Credits are deducted
@@ -26,7 +26,7 @@ test.describe('Bot Execution', () => {
       return;
     }
 
-    // Navigate to first available bot
+    // Navigate to first available bot via agent card expansion
     await botsPage.clickFirstBot();
     await page.waitForURL(/\/bots\//, { timeout: 15_000 });
 
