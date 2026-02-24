@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.89] - 2026-02-24
+
+
+### Fixed
+
+- Fix: check io.Copy return values in auth proxy (261116e)
+
 ## [0.1.41-rc.88] - 2026-02-24
 
 
