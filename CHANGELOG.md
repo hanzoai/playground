@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.88] - 2026-02-24
+
+
+### Fixed
+
+- Fix: add OAuth proxy endpoints to bypass IAM CORS restrictions
+
+The IAM server (hanzo.id) doesn't send Access-Control-Allow-Origin
+headers, blocking browser-side OAuth flows.  This adds /auth/token and
+/auth/userinfo proxy endpoints that forward requests server-to-server,
+and configures the frontend to use them via BrowserIamSdk proxyBaseUrl. (41fe1c7)
+
 ## [0.1.41-rc.87] - 2026-02-24
 
 
