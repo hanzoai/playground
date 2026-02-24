@@ -51,7 +51,7 @@ func AuthTokenProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 		// Stream the response back with the same status code and content type.
 		c.Status(resp.StatusCode)
 		c.Header("Content-Type", resp.Header.Get("Content-Type"))
-		io.Copy(c.Writer, resp.Body)
+		_, _ = io.Copy(c.Writer, resp.Body)
 	}
 }
 
@@ -83,6 +83,6 @@ func AuthUserinfoProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 
 		c.Status(resp.StatusCode)
 		c.Header("Content-Type", resp.Header.Get("Content-Type"))
-		io.Copy(c.Writer, resp.Body)
+		_, _ = io.Copy(c.Writer, resp.Body)
 	}
 }
