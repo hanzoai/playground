@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.84] - 2026-02-24
+
+
+### Other
+
+- Rename 'Hanzo Playground' to 'Hanzo Bot' on login page and client display name (#37)
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (ed3d6b5)
+
 ## [0.1.41-rc.83] - 2026-02-24
 
 
