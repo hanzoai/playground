@@ -46,5 +46,5 @@ export async function getBalance(): Promise<BalanceResult> {
   return data.result as BalanceResult;
 }
 
-/** Top-up URL for the user's billing page */
-export const TOP_UP_URL = 'https://hanzo.ai/billing';
+/** Top-up URL — Hanzo IAM billing portal */
+export const TOP_UP_URL = 'https://iam.hanzo.ai/billing';

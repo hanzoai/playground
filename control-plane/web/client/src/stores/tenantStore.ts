@@ -12,13 +12,13 @@ const STORAGE_ORG_KEY = 'hanzo_iam_current_org';
 const STORAGE_PROJECT_KEY = 'hanzo_iam_current_project';
 const STORAGE_ENV_KEY = 'hanzo_environment';
 
-export type Environment = 'production' | 'staging' | 'development';
+export type Environment = string;
 
-export const ENVIRONMENTS: { id: Environment; name: string }[] = [
-  { id: 'production', name: 'Production' },
-  { id: 'staging', name: 'Staging' },
-  { id: 'development', name: 'Development' },
-];
+/** Default environment. Additional environments are created by the user. */
+export const DEFAULT_ENVIRONMENT: { id: string; name: string } = {
+  id: 'production',
+  name: 'Production',
+};
 
 interface TenantState {
   orgId: string | null;
