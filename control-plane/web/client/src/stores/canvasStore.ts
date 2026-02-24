@@ -154,11 +154,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const raw = localStorage.getItem(storageKey(tenantId));
       if (!raw) return;
       const { nodes, edges, viewport } = JSON.parse(raw);
-      // Filter out phantom "Hanzo Assistant" / "main" nodes persisted from gateway defaults
+      // Filter out phantom nodes: gateway defaults and unprovisioned "New Bot" placeholders
       const filtered = (nodes ?? []).filter((n: Node) => {
         if (n.type !== NODE_TYPES.bot) return true;
         const bot = n.data as unknown as Bot;
-        return !(bot.agentId === 'main' && (!bot.name || bot.name === 'Hanzo Assistant' || bot.name === 'main'));
+        // Remove gateway default "Hanzo Assistant" / "main" phantom
+        if (bot.agentId === 'main' && (!bot.name || bot.name === 'Hanzo Assistant' || bot.name === 'main')) return false;
+        // Remove unprovisioned "New Bot" placeholders (created but never connected)
+        if (n.id?.startsWith('new-') && bot.name === 'New Bot' && bot.status === 'idle') return false;
+        return true;
       });
       set({
         nodes: filtered,

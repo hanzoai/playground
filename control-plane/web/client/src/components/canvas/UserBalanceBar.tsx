@@ -80,18 +80,14 @@ export function UserBalanceBar() {
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          {loading ? (
-            <span className="text-[10px] text-muted-foreground">Loading...</span>
-          ) : error ? (
-            <span className="text-[10px] text-muted-foreground/60">Balance unavailable</span>
-          ) : (
+          {!loading && !error && balanceValue != null && (
             <span
               className={cn(
                 'text-xs tabular-nums font-medium',
                 isLow ? 'text-red-400' : 'text-emerald-400'
               )}
             >
-              ${balanceValue?.toFixed(2) ?? '—'}
+              ${balanceValue.toFixed(2)}
             </span>
           )}
           {email && (
@@ -102,24 +98,26 @@ export function UserBalanceBar() {
         </div>
       </div>
 
-      {/* Top-up button */}
-      <a
-        href={TOP_UP_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          'ml-1 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium',
-          'transition-colors',
-          isLow
-            ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
-            : 'bg-accent/50 text-muted-foreground hover:bg-accent hover:text-foreground'
-        )}
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        Top Up
-      </a>
+      {/* Top-up button — only show when balance is loaded */}
+      {!loading && !error && balanceValue != null && (
+        <a
+          href={TOP_UP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            'ml-1 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium',
+            'transition-colors',
+            isLow
+              ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+              : 'bg-accent/50 text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          Top Up
+        </a>
+      )}
     </div>
   );
 }

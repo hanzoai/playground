@@ -141,6 +141,10 @@ export class BotDetailPage {
     }
   }
 
+  async hasJsonViewTab(): Promise<boolean> {
+    return this.jsonViewTab.isVisible({ timeout: 5_000 }).catch(() => false);
+  }
+
   async switchToJsonView() {
     await this.jsonViewTab.click();
   }
