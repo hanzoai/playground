@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.83] - 2026-02-24
+
+
+### Other
+
+- Fix phantom node filter to catch name='main' variant (#36)
+
+* Fix phantom node filter to catch name='main' variant
+
+The gateway may report the default agent with name 'main' instead of
+'Hanzo Assistant' or empty. Tighten both the useGateway filter and
+canvasStore restore filter to also exclude name === 'main'.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* Update Top Up URL to billing.hanzo.ai
+
+Point to the new standalone billing portal instead of iam.hanzo.ai/billing.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (0fa766f)
+
 ## [0.1.41-rc.82] - 2026-02-24
 
 
