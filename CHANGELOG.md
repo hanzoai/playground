@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.92] - 2026-02-25
+
+
+### Other
+
+- Update @hanzo/iam SDK to fix authorization_endpoint path
+
+SDK now uses /login/oauth/authorize (the SPA route) instead of
+/oauth/authorize in the CORS fallback discovery. (02ff493)
+
 ## [0.1.41-rc.91] - 2026-02-25
 
 
