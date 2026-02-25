@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.91] - 2026-02-25
+
+
+### Fixed
+
+- Fix: update @hanzo/iam to 3602d84 with CORS fallback and proxy support
+
+The previous lockfile pinned to 280fdcb which predated the CORS
+discovery fallback and proxyBaseUrl support. The new commit includes
+pre-built dist/ so the SDK works when installed from GitHub without
+a build step. (1e60a59)
+
 ## [0.1.41-rc.90] - 2026-02-24
 
 
