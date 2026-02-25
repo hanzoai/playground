@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.93] - 2026-02-25
+
+
+### Other
+
+- Rebrand: replace litellm dep with hanzo-llm (1a6fe01)
+
 ## [0.1.41-rc.92] - 2026-02-25
 
 
