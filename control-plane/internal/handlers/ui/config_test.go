@@ -575,7 +575,7 @@ func setupTestRouter() (*gin.Engine, *MockStorageProvider) {
 	mockStorage := &MockStorageProvider{}
 	configHandler := NewConfigHandler(mockStorage)
 
-	v1 := router.Group("/api/ui/v1")
+	v1 := router.Group("/api/v1")
 	{
 		agents := v1.Group("/agents")
 		{
@@ -614,7 +614,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 		mockStorage.On("GetBotPackage", "test-package").Return(agentPackage, nil)
 
 		// Make request
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config/schema?packageId=test-package", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/config/schema?packageId=test-package", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -634,7 +634,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 
 	t.Run("Missing AgentId", func(t *testing.T) {
 		router, _ := setupTestRouter()
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents//config/schema?packageId=test-package", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents//config/schema?packageId=test-package", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -643,7 +643,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 
 	t.Run("Missing PackageId", func(t *testing.T) {
 		router, _ := setupTestRouter()
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config/schema", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/config/schema", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -659,7 +659,7 @@ func TestGetConfigSchemaHandler(t *testing.T) {
 		router, mockStorage := setupTestRouter()
 		mockStorage.On("GetBotPackage", "nonexistent-package").Return(nil, fmt.Errorf("package not found"))
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config/schema?packageId=nonexistent-package", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/config/schema?packageId=nonexistent-package", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -690,7 +690,7 @@ func TestGetConfigHandler(t *testing.T) {
 
 		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(config, nil)
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config?packageId=test-package", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/config?packageId=test-package", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -713,7 +713,7 @@ func TestGetConfigHandler(t *testing.T) {
 		// Create a fresh mock for this test
 		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(nil, fmt.Errorf("configuration not found"))
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config?packageId=test-package", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/config?packageId=test-package", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -733,7 +733,7 @@ func TestGetConfigHandler(t *testing.T) {
 
 	t.Run("Missing PackageId", func(t *testing.T) {
 		router, _ := setupTestRouter()
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/config", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/config", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -764,7 +764,7 @@ func TestSetConfigHandler(t *testing.T) {
 		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(nil, fmt.Errorf("configuration not found"))
 		mockStorage.On("StoreBotConfiguration", mock.AnythingOfType("*types.BotConfiguration")).Return(nil)
 
-		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
+		req, _ := http.NewRequest("POST", "/api/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -806,7 +806,7 @@ func TestSetConfigHandler(t *testing.T) {
 		mockStorage.On("GetBotConfiguration", "test-agent", "test-package").Return(existingConfig, nil)
 		mockStorage.On("UpdateBotConfiguration", mock.AnythingOfType("*types.BotConfiguration")).Return(nil)
 
-		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
+		req, _ := http.NewRequest("POST", "/api/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -838,7 +838,7 @@ func TestSetConfigHandler(t *testing.T) {
 
 		mockStorage.On("ValidateBotConfiguration", "test-agent", "test-package", requestBody.Configuration).Return(validationResult, nil)
 
-		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
+		req, _ := http.NewRequest("POST", "/api/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -856,7 +856,7 @@ func TestSetConfigHandler(t *testing.T) {
 
 	t.Run("Invalid Request Body", func(t *testing.T) {
 		router, _ := setupTestRouter()
-		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer([]byte("invalid json")))
+		req, _ := http.NewRequest("POST", "/api/v1/agents/test-agent/config?packageId=test-package", bytes.NewBuffer([]byte("invalid json")))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -876,7 +876,7 @@ func TestSetConfigHandler(t *testing.T) {
 		}
 		bodyBytes, _ := json.Marshal(requestBody)
 
-		req, _ := http.NewRequest("POST", "/api/ui/v1/agents/test-agent/config", bytes.NewBuffer(bodyBytes))
+		req, _ := http.NewRequest("POST", "/api/v1/agents/test-agent/config", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)

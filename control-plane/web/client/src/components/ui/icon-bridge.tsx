@@ -113,6 +113,10 @@ import { TreeStructureIcon } from "@phosphor-icons/react/dist/csr/TreeStructure"
 import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
 import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
 import { MonitorIcon } from "@phosphor-icons/react/dist/csr/Monitor";
+import { CurrencyDollarIcon } from "@phosphor-icons/react/dist/csr/CurrencyDollar";
+import { WalletIcon } from "@phosphor-icons/react/dist/csr/Wallet";
+import { ChartPieSliceIcon } from "@phosphor-icons/react/dist/csr/ChartPieSlice";
+import { SlidersHorizontalIcon } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 
 const withDefaults = (Component: Icon, defaults?: Partial<IconProps>, displayName?: string) => {
   const Wrapped = forwardRef<SVGSVGElement, IconProps>((props, ref) => (
@@ -296,6 +300,10 @@ export const Target = TargetIcon;
 export const Sun = SunIcon;
 export const Moon = MoonIcon;
 export const Monitor = MonitorIcon;
+export const CurrencyDollar = CurrencyDollarIcon;
+export const Wallet = WalletIcon;
+export const ChartPieSlice = ChartPieSliceIcon;
+export const SlidersHorizontal = SlidersHorizontalIcon;
 export type IconComponent = Icon;
 export type IconComponentProps = IconProps;
 export type IconWeight = PhosphorIconWeight;

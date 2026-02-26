@@ -69,7 +69,7 @@ test.describe('Full Authentication Flow', () => {
 
     // Call the dashboard summary API directly with the token
     const baseURL = process.env.E2E_BASE_URL || 'https://app.hanzo.bot';
-    const response = await page.request.get(`${baseURL}/api/ui/v1/dashboard/summary`, {
+    const response = await page.request.get(`${baseURL}/api/v1/dashboard/summary`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 

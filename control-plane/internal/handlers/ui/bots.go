@@ -452,7 +452,7 @@ func (h *BotsHandler) SaveExecutionTemplateHandler(c *gin.Context) {
 }
 
 // StreamBotEventsHandler handles bot event streaming
-// GET /api/ui/v1/bots/events
+// GET /api/v1/bots/events
 func (h *BotsHandler) StreamBotEventsHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")

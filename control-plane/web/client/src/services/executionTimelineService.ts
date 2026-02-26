@@ -69,7 +69,7 @@ function isCacheValid(): boolean {
 
 /**
  * Get execution timeline data with intelligent caching
- * GET /api/ui/v1/executions/timeline
+ * GET /api/v1/executions/timeline
  */
 export async function getExecutionTimeline(forceRefresh: boolean = false): Promise<ExecutionTimelineResponse> {
   // Return cached data if valid and not forcing refresh

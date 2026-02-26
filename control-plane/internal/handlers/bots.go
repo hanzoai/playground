@@ -78,9 +78,9 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 		executionID := utils.GenerateExecutionID()
 
 		// Parse bot ID from URL
-		botID := c.Param("bot_id")
+		botID := c.Param("botId")
 		if botID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "botId is required"})
 			return
 		}
 

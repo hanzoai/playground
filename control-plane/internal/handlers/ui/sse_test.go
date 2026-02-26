@@ -51,9 +51,9 @@ func TestStreamExecutionEventsHandler(t *testing.T) {
 
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	// Start handler in goroutine with timeout
@@ -105,9 +105,9 @@ func TestStreamExecutionEventsHandler_Headers(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	// Start and immediately cancel to test header setting
@@ -135,9 +135,9 @@ func TestSSEConnectionLifecycle(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	ctx, cancel := context.WithCancel(req.Context())
 	req = req.WithContext(ctx)
 	resp := httptest.NewRecorder()
@@ -172,9 +172,9 @@ func TestSSEEventDelivery(t *testing.T) {
 	eventBus := realStorage.GetExecutionEventBus()
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	done := make(chan bool)
@@ -220,9 +220,9 @@ func TestSSEHeartbeatMechanism(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	done := make(chan bool)
@@ -258,7 +258,7 @@ func TestSSEMultipleConnections(t *testing.T) {
 	eventBus := realStorage.GetExecutionEventBus()
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
 	// Create multiple connections
 	connections := 3
@@ -266,7 +266,7 @@ func TestSSEMultipleConnections(t *testing.T) {
 
 	for i := 0; i < connections; i++ {
 		go func() {
-			req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 			resp := httptest.NewRecorder()
 			router.ServeHTTP(resp, req)
 			done <- true
@@ -300,9 +300,9 @@ func TestSSEErrorHandling(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	// Test that handler works correctly with valid storage
@@ -330,16 +330,16 @@ func TestSSERequestValidation(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
 	// Test with different HTTP methods (should only accept GET)
 	tests := []struct {
 		method string
 		path   string
 	}{
-		{"GET", "/api/ui/v1/executions/events"},
-		{"POST", "/api/ui/v1/executions/events"},
-		{"PUT", "/api/ui/v1/executions/events"},
+		{"GET", "/api/v1/executions/events"},
+		{"POST", "/api/v1/executions/events"},
+		{"PUT", "/api/v1/executions/events"},
 	}
 
 	for _, tt := range tests {
@@ -367,10 +367,10 @@ func TestSSEContextCancellation(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	req = req.WithContext(ctx)
 	resp := httptest.NewRecorder()
 
@@ -404,9 +404,9 @@ func TestSSEConcurrentEvents(t *testing.T) {
 	eventBus := realStorage.GetExecutionEventBus()
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	done := make(chan bool)
@@ -461,9 +461,9 @@ func TestSSEResponseFormat(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	go func() {
@@ -492,10 +492,10 @@ func TestSSEWithQueryParameters(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
 	// Test with query parameters (should be ignored but not cause errors)
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events?filter=test&limit=10", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events?filter=test&limit=10", nil)
 	resp := httptest.NewRecorder()
 
 	go func() {
@@ -518,11 +518,11 @@ func TestSSEConnectionReuse(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
 	// Create connection, close it, create another
 	for i := 0; i < 2; i++ {
-		req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 		ctx, cancel := context.WithCancel(req.Context())
 		req = req.WithContext(ctx)
 		resp := httptest.NewRecorder()
@@ -552,9 +552,9 @@ func TestSSEWithInvalidStorage(t *testing.T) {
 	realStorage := setupTestStorage(t)
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	// Test that handler works correctly with valid storage
@@ -583,9 +583,9 @@ func TestSSEPerformance(t *testing.T) {
 	eventBus := realStorage.GetExecutionEventBus()
 	handler := NewExecutionHandler(realStorage, nil, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/executions/events", handler.StreamExecutionEventsHandler)
+	router.GET("/api/v1/executions/events", handler.StreamExecutionEventsHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ui/v1/executions/events", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/executions/events", nil)
 	resp := httptest.NewRecorder()
 
 	start := time.Now()

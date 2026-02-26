@@ -376,7 +376,7 @@ func (c *EnhancedDashboardCache) Set(key string, data *EnhancedDashboardResponse
 }
 
 // GetDashboardSummaryHandler handles dashboard summary requests
-// GET /api/ui/v1/dashboard/summary
+// GET /api/v1/dashboard/summary
 func (h *DashboardHandler) GetDashboardSummaryHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	now := time.Now().UTC()
@@ -524,7 +524,7 @@ func calculateComparisonPeriod(startTime, endTime time.Time) (prevStart, prevEnd
 }
 
 // GetEnhancedDashboardSummaryHandler handles requests for the enhanced dashboard view
-// GET /api/ui/v1/dashboard/enhanced
+// GET /api/v1/dashboard/enhanced
 // Query params:
 //   - preset: "1h", "24h", "7d", "30d", "custom" (default: "24h")
 //   - start_time: RFC3339 timestamp (required if preset=custom)

@@ -201,7 +201,7 @@ function MCPDashboard({ nodeId }: { nodeId: string }) {
 
 ```bash
 # API Base URL
-VITE_API_BASE_URL=/api/ui/v1
+VITE_API_BASE_URL=/v1
 
 # Development mode
 NODE_ENV=development

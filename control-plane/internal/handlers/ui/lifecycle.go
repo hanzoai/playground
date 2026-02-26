@@ -56,7 +56,7 @@ type StartAgentRequest struct {
 }
 
 // StartAgentHandler handles requests for starting an agent with configuration
-// POST /api/ui/v1/agents/:agentId/start
+// POST /api/v1/agents/:agentId/start
 func (h *LifecycleHandler) StartAgentHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	agentID := c.Param("agentId")
@@ -118,7 +118,7 @@ func (h *LifecycleHandler) StartAgentHandler(c *gin.Context) {
 }
 
 // StopAgentHandler handles requests for stopping a running agent
-// POST /api/ui/v1/agents/:agentId/stop
+// POST /api/v1/agents/:agentId/stop
 func (h *LifecycleHandler) StopAgentHandler(c *gin.Context) {
 	agentID := c.Param("agentId")
 	if agentID == "" {
@@ -159,7 +159,7 @@ func (h *LifecycleHandler) StopAgentHandler(c *gin.Context) {
 }
 
 // GetBotStatusHandler handles requests for getting agent status
-// GET /api/ui/v1/agents/:agentId/status
+// GET /api/v1/agents/:agentId/status
 func (h *LifecycleHandler) GetBotStatusHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	agentID := c.Param("agentId")
@@ -228,7 +228,7 @@ func (h *LifecycleHandler) GetBotStatusHandler(c *gin.Context) {
 }
 
 // ListRunningAgentsHandler handles requests for listing all running agents
-// GET /api/ui/v1/agents/running
+// GET /api/v1/agents/running
 func (h *LifecycleHandler) ListRunningAgentsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	// Get all running agents from service
@@ -297,7 +297,7 @@ func getConfigurationStatus(config *types.BotConfiguration) string {
 }
 
 // ReconcileAgentHandler forces reconciliation of agent state with actual process state
-// POST /api/ui/v1/agents/:agentId/reconcile
+// POST /api/v1/agents/:agentId/reconcile
 func (h *LifecycleHandler) ReconcileAgentHandler(c *gin.Context) {
 	agentID := c.Param("agentId")
 	if agentID == "" {

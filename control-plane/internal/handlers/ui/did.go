@@ -32,9 +32,9 @@ func NewDIDHandler(storage storage.StorageProvider, didService *services.DIDServ
 }
 
 // GetNodeDIDHandler handles requests for DID information about a specific node.
-// GET /api/ui/v1/nodes/:nodeId/did
+// GET /api/v1/nodes/:nodeId/did
 func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nodeId is required"})
 		return
@@ -111,9 +111,9 @@ func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
 }
 
 // GetNodeVCStatusHandler handles requests for VC status information about a specific node.
-// GET /api/ui/v1/nodes/:nodeId/vc-status
+// GET /api/v1/nodes/:nodeId/vc-status
 func (h *DIDHandler) GetNodeVCStatusHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nodeId is required"})
 		return
@@ -194,7 +194,7 @@ func (h *DIDHandler) GetNodeVCStatusHandler(c *gin.Context) {
 }
 
 // GetExecutionVCStatusHandler handles requests for VC status information about a specific execution.
-// GET /api/ui/v1/executions/:executionId/vc-status
+// GET /api/v1/executions/:executionId/vc-status
 func (h *DIDHandler) GetExecutionVCStatusHandler(c *gin.Context) {
 	// Try both parameter names for compatibility with UI and Agent API routes
 	executionID := c.Param("executionId")
@@ -276,7 +276,7 @@ func (h *DIDHandler) GetExecutionVCStatusHandler(c *gin.Context) {
 }
 
 // GetExecutionVCHandler handles requests for VC information about a specific execution.
-// GET /api/ui/v1/executions/:executionId/vc
+// GET /api/v1/executions/:executionId/vc
 func (h *DIDHandler) GetExecutionVCHandler(c *gin.Context) {
 	// Try both parameter names for compatibility with UI and Agent API routes
 	executionID := c.Param("executionId")
@@ -321,7 +321,7 @@ type workflowVCStatusBatchRequest struct {
 }
 
 // GetWorkflowVCStatusBatchHandler returns VC status summaries for multiple workflows.
-// POST /api/ui/v1/workflows/vc-status
+// POST /api/v1/workflows/vc-status
 func (h *DIDHandler) GetWorkflowVCStatusBatchHandler(c *gin.Context) {
 	var req workflowVCStatusBatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil || len(req.WorkflowIDs) == 0 {
@@ -359,7 +359,7 @@ func (h *DIDHandler) GetWorkflowVCStatusBatchHandler(c *gin.Context) {
 }
 
 // GetWorkflowVCChainHandler handles requests for workflow VC chain information.
-// GET /api/ui/v1/workflows/:workflowId/vc-chain
+// GET /api/v1/workflows/:workflowId/vc-chain
 func (h *DIDHandler) GetWorkflowVCChainHandler(c *gin.Context) {
 	workflowID := c.Param("workflowId")
 	if workflowID == "" {
@@ -396,7 +396,7 @@ func (h *DIDHandler) GetWorkflowVCChainHandler(c *gin.Context) {
 }
 
 // DownloadVCHandler handles requests to download a VC document.
-// GET /api/ui/v1/vc/:vc_id/download
+// GET /api/v1/vc/:vc_id/download
 func (h *DIDHandler) DownloadVCHandler(c *gin.Context) {
 	vcID := c.Param("vc_id")
 	if vcID == "" {
@@ -438,7 +438,7 @@ func (h *DIDHandler) DownloadVCHandler(c *gin.Context) {
 }
 
 // VerifyVCHandler handles requests to verify a VC.
-// POST /api/ui/v1/vc/verify
+// POST /api/v1/vc/verify
 func (h *DIDHandler) VerifyVCHandler(c *gin.Context) {
 	var req types.VCVerificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -469,7 +469,7 @@ func (h *DIDHandler) VerifyVCHandler(c *gin.Context) {
 }
 
 // VerifyExecutionVCComprehensiveHandler handles requests for comprehensive VC verification.
-// POST /api/ui/v1/executions/:executionId/verify-vc
+// POST /api/v1/executions/:executionId/verify-vc
 func (h *DIDHandler) VerifyExecutionVCComprehensiveHandler(c *gin.Context) {
 	// Try both parameter names for compatibility with UI and Agent API routes
 	executionID := c.Param("executionId")
@@ -501,7 +501,7 @@ func (h *DIDHandler) VerifyExecutionVCComprehensiveHandler(c *gin.Context) {
 }
 
 // VerifyWorkflowVCComprehensiveHandler handles requests for comprehensive workflow VC verification.
-// POST /api/ui/v1/workflows/:workflowId/verify-vc
+// POST /api/v1/workflows/:workflowId/verify-vc
 func (h *DIDHandler) VerifyWorkflowVCComprehensiveHandler(c *gin.Context) {
 	workflowID := c.Param("workflowId")
 	if workflowID == "" {
@@ -529,7 +529,7 @@ func (h *DIDHandler) VerifyWorkflowVCComprehensiveHandler(c *gin.Context) {
 }
 
 // ExportVCsHandler handles requests to export VCs with optional filtering.
-// GET /api/ui/v1/did/export/vcs
+// GET /api/v1/did/export/vcs
 func (h *DIDHandler) ExportVCsHandler(c *gin.Context) {
 	// If VC service is not available, return empty response
 	if h.vcService == nil {
@@ -594,7 +594,7 @@ func (h *DIDHandler) ExportVCsHandler(c *gin.Context) {
 }
 
 // GetDIDSystemStatusHandler handles requests for DID system status.
-// GET /api/ui/v1/did/status
+// GET /api/v1/did/status
 func (h *DIDHandler) GetDIDSystemStatusHandler(c *gin.Context) {
 	if h.didService == nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -614,7 +614,7 @@ func (h *DIDHandler) GetDIDSystemStatusHandler(c *gin.Context) {
 }
 
 // GetDIDResolutionBundleHandler handles requests for DID resolution bundle information.
-// GET /api/ui/v1/did/:did/resolution-bundle
+// GET /api/v1/did/:did/resolution-bundle
 func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 	did := c.Param("did")
 	if did == "" {
@@ -818,7 +818,7 @@ func (h *DIDHandler) GetDIDResolutionBundleHandler(c *gin.Context) {
 }
 
 // DownloadDIDResolutionBundleHandler handles requests to download a DID resolution bundle.
-// GET /api/ui/v1/did/:did/resolution-bundle/download
+// GET /api/v1/did/:did/resolution-bundle/download
 func (h *DIDHandler) DownloadDIDResolutionBundleHandler(c *gin.Context) {
 	did := c.Param("did")
 	if did == "" {

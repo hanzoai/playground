@@ -188,6 +188,19 @@ type StorageProvider interface {
 	GetDeadLetterQueue(ctx context.Context, limit, offset int) ([]types.ObservabilityDeadLetterEntry, error)
 	DeleteFromDeadLetterQueue(ctx context.Context, ids []int64) error
 	ClearDeadLetterQueue(ctx context.Context) error
+
+	// User Preferences
+	GetUserPreferences(ctx context.Context, userID string) (*UserPreferences, error)
+	SetUserPreferences(ctx context.Context, prefs *UserPreferences) error
+
+	// Bot Budget Management
+	GetBotBudget(ctx context.Context, botID string) (*BotBudget, error)
+	SetBotBudget(ctx context.Context, budget *BotBudget) error
+	DeleteBotBudget(ctx context.Context, botID string) error
+	ListBotBudgets(ctx context.Context) ([]*BotBudget, error)
+	CheckBotBudget(ctx context.Context, botID string) (*BudgetStatus, error)
+	RecordBotSpend(ctx context.Context, record *BotSpendRecord) error
+	GetBotSpendHistory(ctx context.Context, botID string, since time.Time, limit int) ([]*BotSpendRecord, error)
 }
 
 // ComponentDIDRequest represents a component DID to be stored

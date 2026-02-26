@@ -111,7 +111,7 @@ type PackageRuntime struct {
 }
 
 // ListPackagesHandler handles requests for listing installed agent packages
-// GET /api/ui/v1/agents/packages
+// GET /api/v1/agents/packages
 func (h *PackageHandler) ListPackagesHandler(c *gin.Context) {
 	// Get query parameters for filtering
 	status := c.Query("status")
@@ -178,7 +178,7 @@ func (h *PackageHandler) ListPackagesHandler(c *gin.Context) {
 }
 
 // GetPackageDetailsHandler handles requests for getting detailed package information
-// GET /api/ui/v1/agents/packages/:packageId/details
+// GET /api/v1/agents/packages/:packageId/details
 func (h *PackageHandler) GetPackageDetailsHandler(c *gin.Context) {
 	packageID := c.Param("packageId")
 	if packageID == "" {

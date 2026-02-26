@@ -9,7 +9,6 @@ import { normalizeExecutionStatus } from '../utils/status';
 import { getGlobalApiKey } from './api';
 
 const API_V1_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
-const API_V2_BASE_URL = import.meta.env.VITE_API_V2_BASE_URL || '/v2';
 
 async function fetchWrapper<T>(url: string, options?: RequestInit, baseUrl: string = API_V1_BASE_URL): Promise<T> {
   const headers = new Headers(options?.headers || {});
@@ -182,7 +181,7 @@ export async function getWorkflowsSummary(
   const queryString = buildQueryString(queryParams);
   const url = `/workflow-runs${queryString ? `?${queryString}` : ''}`;
 
-  const response = await fetchWrapper<WorkflowRunListResponse>(url, { signal }, API_V2_BASE_URL);
+  const response = await fetchWrapper<WorkflowRunListResponse>(url, { signal }, API_V1_BASE_URL);
 
   const workflows = response.runs.map(mapApiRunToWorkflowSummary);
   const totalPages = response.page_size > 0
@@ -341,7 +340,7 @@ export async function getWorkflowRunDetail(
   return fetchWrapper<WorkflowRunDetailResponse>(
     `/workflow-runs/${runId}`,
     { signal },
-    API_V2_BASE_URL
+    API_V1_BASE_URL
   );
 }
 
@@ -353,7 +352,7 @@ export async function getWorkflowRunSummary(
   const response = await fetchWrapper<WorkflowRunListResponse>(
     `/workflow-runs?${query}`,
     { signal },
-    API_V2_BASE_URL
+    API_V1_BASE_URL
   );
 
   const [run] = response.runs;

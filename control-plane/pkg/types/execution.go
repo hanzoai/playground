@@ -156,16 +156,16 @@ var LegacyExecutionEndpoints = struct {
 	ExecutionStream:   "/api/v1/agents/:agent/workflow/executions/:execution_id/events/stream",
 	RunCleanup:        "/api/v1/agents/:agent/workflows/:workflow_id/cleanup",
 
-	UIWorkflowSummary:        "/api/ui/v1/workflows/summary",
-	UIWorkflowSummaryFast:    "/api/ui/v1/workflows/summary/optimized",
-	UIWorkflowDag:            "/api/ui/v1/workflows/:workflowId/dag",
-	UIWorkflowNotes:          "/api/ui/v1/workflows/:workflowId/notes/events",
-	UIBotExecutionList:     "/api/ui/v1/agents/:agentId/executions",
-	UIBotExecutionDetail:   "/api/ui/v1/agents/:agentId/executions/:executionId",
-	UIBotExecutionTimeline: "/api/ui/v1/agents/:agentId/executions/:executionId/timeline",
+	UIWorkflowSummary:        "/api/v1/workflows/summary",
+	UIWorkflowSummaryFast:    "/api/v1/workflows/summary/optimized",
+	UIWorkflowDag:            "/api/v1/workflows/:workflowId/dag",
+	UIWorkflowNotes:          "/api/v1/workflows/:workflowId/notes/events",
+	UIBotExecutionList:     "/api/v1/agents/:agentId/executions",
+	UIBotExecutionDetail:   "/api/v1/agents/:agentId/executions/:executionId",
+	UIBotExecutionTimeline: "/api/v1/agents/:agentId/executions/:executionId/timeline",
 
-	UIWorkflowRunList:   "/api/ui/v2/workflow-runs",
-	UIWorkflowRunDetail: "/api/ui/v2/workflow-runs/:run_id",
+	UIWorkflowRunList:   "/api/v1/workflow-runs",
+	UIWorkflowRunDetail: "/api/v1/workflow-runs/:run_id",
 
-	UISessionRuns: "/api/ui/v1/sessions/:session_id/workflows",
+	UISessionRuns: "/api/v1/sessions/:session_id/workflows",
 }

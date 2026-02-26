@@ -559,7 +559,6 @@ export async function registerServerlessBot(invocationUrl: string): Promise<{
     skills_count: number;
   };
 }> {
-  // Use /api/v1 base for this endpoint (not /api/ui/v1)
   const API_V1_BASE = '/api/v1';
   const timeout = 15000;
 

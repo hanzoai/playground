@@ -10,6 +10,8 @@ import {
   Time,
   View,
 } from "../components/ui/icon-bridge";
+import { BotBudgetCard } from "../components/bots/BotBudgetCard";
+import { useBotBudget } from "../hooks/useBotBudget";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useParams } from "react-router-dom";
@@ -80,6 +82,9 @@ export function BotDetailPage() {
   const [formData, setFormData] = useState<any>({});
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
+
+  // Budget
+  const { budget, status: budgetStatus, spendHistory, saveBudget, removeBudget } = useBotBudget(fullBotId);
 
   const gatewayOrigin = (import.meta.env.VITE_BOT_GATEWAY_URL as string) || "https://gw.hanzo.bot";
 
@@ -376,6 +381,16 @@ export function BotDetailPage() {
           </Card>
         </ResponsiveGrid>
       )}
+
+      {/* Budget */}
+      <BotBudgetCard
+        botId={fullBotId!}
+        budget={budget}
+        status={budgetStatus}
+        spendHistory={spendHistory}
+        onSave={saveBudget}
+        onDelete={removeBudget}
+      />
 
       {/* Responsive Layout */}
       <ResponsiveGrid columns={{ base: 1, lg: 12 }} gap="md" align="start">

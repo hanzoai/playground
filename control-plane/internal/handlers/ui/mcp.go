@@ -26,10 +26,10 @@ func NewMCPHandler(uiService *services.UIService, nodeClient interfaces.NodeClie
 }
 
 // GetMCPHealthHandler handles requests for detailed MCP health information
-// GET /api/ui/v1/nodes/{nodeId}/mcp/health?mode=developer|user
+// GET /api/v1/nodes/{nodeId}/mcp/health?mode=developer|user
 func (h *MCPHandler) GetMCPHealthHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "nodeId is required"})
 		return
@@ -77,9 +77,9 @@ func (h *MCPHandler) GetMCPHealthHandler(c *gin.Context) {
 }
 
 // RestartMCPServerHandler handles requests to restart a specific MCP server
-// POST /api/ui/v1/nodes/{nodeId}/mcp/servers/{alias}/restart
+// POST /api/v1/nodes/{nodeId}/mcp/servers/{alias}/restart
 func (h *MCPHandler) RestartMCPServerHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	alias := c.Param("alias")
 
 	if nodeID == "" {
@@ -122,9 +122,9 @@ func (h *MCPHandler) RestartMCPServerHandler(c *gin.Context) {
 }
 
 // GetMCPToolsHandler handles requests to get tools from a specific MCP server
-// GET /api/ui/v1/nodes/{nodeId}/mcp/servers/{alias}/tools
+// GET /api/v1/nodes/{nodeId}/mcp/servers/{alias}/tools
 func (h *MCPHandler) GetMCPToolsHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	alias := c.Param("alias")
 
 	if nodeID == "" {
@@ -167,7 +167,7 @@ func (h *MCPHandler) GetMCPToolsHandler(c *gin.Context) {
 }
 
 // GetMCPStatusHandler handles requests for overall MCP status across all nodes
-// GET /api/ui/v1/mcp/status
+// GET /api/v1/mcp/status
 func (h *MCPHandler) GetMCPStatusHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	// Get mode parameter
@@ -245,9 +245,9 @@ func (h *MCPHandler) GetMCPStatusHandler(c *gin.Context) {
 }
 
 // GetMCPEventsHandler handles requests for MCP events (SSE endpoint)
-// GET /api/ui/v1/nodes/{nodeId}/mcp/events
+// GET /api/v1/nodes/{nodeId}/mcp/events
 func (h *MCPHandler) GetMCPEventsHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "nodeId is required"})
 		return
@@ -301,9 +301,9 @@ func (h *MCPHandler) GetMCPEventsHandler(c *gin.Context) {
 }
 
 // GetMCPMetricsHandler handles requests for MCP metrics
-// GET /api/ui/v1/nodes/{nodeId}/mcp/metrics
+// GET /api/v1/nodes/{nodeId}/mcp/metrics
 func (h *MCPHandler) GetMCPMetricsHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "nodeId is required"})
 		return

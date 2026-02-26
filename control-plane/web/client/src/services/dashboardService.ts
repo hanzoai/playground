@@ -81,7 +81,7 @@ async function retryOperation<T>(
 
 /**
  * Get dashboard summary data
- * GET /api/ui/v1/dashboard/summary
+ * GET /api/v1/dashboard/summary
  */
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return retryOperation(() =>
@@ -140,7 +140,7 @@ function buildDashboardQueryString(params: EnhancedDashboardParams): string {
 
 /**
  * Get enhanced dashboard summary data
- * GET /api/ui/v1/dashboard/enhanced
+ * GET /api/v1/dashboard/enhanced
  *
  * @param params - Optional parameters for time range and comparison
  */

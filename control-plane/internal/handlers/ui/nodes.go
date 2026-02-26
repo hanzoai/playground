@@ -39,7 +39,7 @@ func (h *NodesHandler) GetNodesSummaryHandler(c *gin.Context) {
 
 // GetNodeDetailsHandler handles requests for detailed information about a specific node.
 func (h *NodesHandler) GetNodeDetailsHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nodeId is required"})
 		return
@@ -132,9 +132,9 @@ func (h *NodesHandler) StreamNodeEventsHandler(c *gin.Context) {
 }
 
 // GetNodeStatusHandler handles requests for getting a specific node's unified status
-// GET /api/ui/v1/nodes/:nodeId/status
+// GET /api/v1/nodes/:nodeId/status
 func (h *NodesHandler) GetNodeStatusHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nodeId is required"})
 		return
@@ -151,9 +151,9 @@ func (h *NodesHandler) GetNodeStatusHandler(c *gin.Context) {
 }
 
 // RefreshNodeStatusHandler handles requests for refreshing a specific node's status
-// POST /api/ui/v1/nodes/:nodeId/status/refresh
+// POST /api/v1/nodes/:nodeId/status/refresh
 func (h *NodesHandler) RefreshNodeStatusHandler(c *gin.Context) {
-	nodeID := c.Param("nodeId")
+	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nodeId is required"})
 		return
@@ -177,7 +177,7 @@ func (h *NodesHandler) RefreshNodeStatusHandler(c *gin.Context) {
 }
 
 // BulkNodeStatusHandler handles requests for bulk status operations
-// POST /api/ui/v1/nodes/status/bulk
+// POST /api/v1/nodes/status/bulk
 func (h *NodesHandler) BulkNodeStatusHandler(c *gin.Context) {
 	var request struct {
 		NodeIDs []string `json:"node_ids" binding:"required"`
@@ -199,7 +199,7 @@ func (h *NodesHandler) BulkNodeStatusHandler(c *gin.Context) {
 }
 
 // RefreshAllNodeStatusHandler handles requests for refreshing all node statuses
-// POST /api/ui/v1/nodes/status/refresh
+// POST /api/v1/nodes/status/refresh
 func (h *NodesHandler) RefreshAllNodeStatusHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	statuses, err := h.service.RefreshAllNodeStatus(ctx)

@@ -29,7 +29,11 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { AuthCallbackPage } from "./components/AuthCallbackPage";
 import { GatewaySettings } from "./components/settings/GatewaySettings";
+import { PreferencesSettings } from "./components/settings/PreferencesSettings";
 import { GlobalCommandPalette } from "./components/GlobalCommandPalette";
+import { PreferencesOnboarding } from "./components/onboarding/PreferencesOnboarding";
+import { usePreferencesStore } from "./stores/preferencesStore";
+import { useNotificationSound } from "./hooks/useNotificationSound";
 
 // Placeholder pages for new routes
 
@@ -50,6 +54,25 @@ function AgentsPage() {
 
 function SettingsPage() {
   return <GatewaySettings />;
+}
+
+function PreferencesGate({ children }: { children: React.ReactNode }) {
+  const onboardingComplete = usePreferencesStore((s) => s.onboardingComplete);
+
+  if (!onboardingComplete) {
+    return (
+      <PreferencesOnboarding
+        onComplete={() => usePreferencesStore.getState().setOnboardingComplete(true)}
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function NotificationSoundProvider({ children }: { children: React.ReactNode }) {
+  useNotificationSound();
+  return <>{children}</>;
 }
 
 function AppContent() {
@@ -91,6 +114,7 @@ function AppContent() {
               />
               <Route path="/packages" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PackagesPage /></div>} />
               <Route path="/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SettingsPage /></div>} />
+              <Route path="/settings/preferences" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PreferencesSettings /></div>} />
               <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><AgentsPage /></div>} />
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
@@ -119,7 +143,11 @@ function AppRoutes() {
         path="/*"
         element={
           <AuthGuard>
-            <AppContent />
+            <PreferencesGate>
+              <NotificationSoundProvider>
+                <AppContent />
+              </NotificationSoundProvider>
+            </PreferencesGate>
           </AuthGuard>
         }
       />

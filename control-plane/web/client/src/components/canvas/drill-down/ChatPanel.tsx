@@ -10,6 +10,9 @@ import { gateway } from '@/services/gatewayClient';
 import { chatSend } from '@/services/gatewayApi';
 import type { ChatEvent } from '@/types/gateway';
 import { cn } from '@/lib/utils';
+import { MicButton } from './MicButton';
+import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { usePreferencesStore } from '@/stores/preferencesStore';
 
 interface Message {
   id: string;
@@ -46,6 +49,16 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Voice I/O
+  const voiceInputEnabled = usePreferencesStore((s) => s.voiceInputEnabled);
+  const voiceOutputEnabled = usePreferencesStore((s) => s.voiceOutputEnabled);
+  const voiceOutputVoice = usePreferencesStore((s) => s.voiceOutputVoice);
+  const { speak, isSpeaking, stop: stopSpeaking } = useSpeechSynthesis(voiceOutputVoice);
+
+  const handleVoiceTranscript = useCallback((text: string) => {
+    setInput(text);
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -183,6 +196,16 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
               )}
             >
               <pre className="whitespace-pre-wrap font-sans break-words">{msg.content}</pre>
+              {voiceOutputEnabled && msg.role === 'assistant' && !msg.streaming && msg.content && (
+                <button
+                  type="button"
+                  onClick={() => isSpeaking ? stopSpeaking() : speak(msg.content)}
+                  className="mt-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  title={isSpeaking ? 'Stop reading' : 'Read aloud'}
+                >
+                  {isSpeaking ? '⏹' : '🔊'}
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -191,6 +214,12 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
       {/* Input */}
       <div className="border-t border-border/40 p-2">
         <div className="flex gap-2">
+          {voiceInputEnabled && (
+            <MicButton
+              onTranscript={handleVoiceTranscript}
+              disabled={!sessionKey || streaming}
+            />
+          )}
           <input
             type="text"
             value={input}

@@ -50,7 +50,7 @@ async function fetchWrapper<T>(url: string, options?: RequestInit & { timeout?: 
 
 /**
  * Get recent activity data
- * GET /api/ui/v1/executions/recent
+ * GET /api/v1/executions/recent
  */
 export async function getRecentActivity(): Promise<RecentActivityResponse> {
   return fetchWrapper<RecentActivityResponse>('/executions/recent', {

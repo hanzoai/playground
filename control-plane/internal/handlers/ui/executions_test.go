@@ -33,7 +33,7 @@ func setupExecutionTestRouter() (*gin.Engine, *MockStorageProvider) {
 	executionHandler := NewExecutionHandler(mockStorage, nil, nil)
 
 	router := gin.New()
-	v1 := router.Group("/api/ui/v1")
+	v1 := router.Group("/api/v1")
 	{
 		agents := v1.Group("/agents")
 		{
@@ -116,7 +116,7 @@ func TestListExecutionsHandler(t *testing.T) {
 		mockStorage.On("QueryExecutions", mock.AnythingOfType("context.Context"), expectedFilters).Return(executions, nil)
 
 		// Make request
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -159,7 +159,7 @@ func TestListExecutionsHandler(t *testing.T) {
 		mockStorage.On("QueryExecutions", mock.AnythingOfType("context.Context"), expectedFilters).Return(executions, nil)
 
 		// Make request with query parameters
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions?page=3&pageSize=5&status=succeeded&workflowId=workflow-1", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions?page=3&pageSize=5&status=succeeded&workflowId=workflow-1", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -179,7 +179,7 @@ func TestListExecutionsHandler(t *testing.T) {
 	t.Run("missing_agent_id", func(t *testing.T) {
 		router, _ := setupExecutionTestRouter()
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents//executions", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents//executions", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -202,7 +202,7 @@ func TestListExecutionsHandler(t *testing.T) {
 
 		mockStorage.On("QueryExecutions", mock.AnythingOfType("context.Context"), expectedFilters).Return([]*types.BotExecution(nil), assert.AnError)
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -247,7 +247,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 		mockStorage.On("GetExecution", mock.AnythingOfType("context.Context"), int64(123)).Return(execution, nil)
 
 		// Make request
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions/123", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions/123", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -285,7 +285,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 	t.Run("missing_agent_id", func(t *testing.T) {
 		router, _ := setupExecutionTestRouter()
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents//executions/123", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents//executions/123", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -301,7 +301,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 		router, _ := setupExecutionTestRouter()
 
 		// Test with a URL that has trailing slash - Gin will redirect
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions/", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions/", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -312,7 +312,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 	t.Run("invalid_execution_id_format", func(t *testing.T) {
 		router, _ := setupExecutionTestRouter()
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions/invalid", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions/invalid", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -329,7 +329,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 
 		mockStorage.On("GetExecution", mock.AnythingOfType("context.Context"), int64(123)).Return((*types.BotExecution)(nil), assert.AnError)
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions/123", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions/123", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -353,7 +353,7 @@ func TestGetExecutionDetailsHandler(t *testing.T) {
 
 		mockStorage.On("GetExecution", mock.AnythingOfType("context.Context"), int64(123)).Return(execution, nil)
 
-		req, _ := http.NewRequest("GET", "/api/ui/v1/agents/test-agent/executions/123", nil)
+		req, _ := http.NewRequest("GET", "/api/v1/agents/test-agent/executions/123", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -397,9 +397,9 @@ func TestGetExecutionDetailsHandler_FallbacksToPayloadStore(t *testing.T) {
 
 	handler := NewExecutionHandler(mockStorage, payloadStore, nil)
 	router := gin.New()
-	router.GET("/api/ui/v1/agents/:agentId/executions/:executionId", handler.GetExecutionDetailsHandler)
+	router.GET("/api/v1/agents/:agentId/executions/:executionId", handler.GetExecutionDetailsHandler)
 
-	req, _ := http.NewRequest("GET", "/api/ui/v1/agents/agent-1/executions/123", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/agents/agent-1/executions/123", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

@@ -409,3 +409,47 @@ type ObservabilityDeadLetterQueueModel struct {
 }
 
 func (ObservabilityDeadLetterQueueModel) TableName() string { return "observability_dead_letter_queue" }
+
+// UserPreferencesModel stores per-user notification and voice preferences.
+type UserPreferencesModel struct {
+	UserID                string    `gorm:"column:user_id;primaryKey"`
+	NotificationSound     string    `gorm:"column:notification_sound;not null;default:'chime'"`
+	NotificationVolume    float64   `gorm:"column:notification_volume;not null;default:0.7"`
+	SoundOnTaskComplete   bool      `gorm:"column:sound_on_task_complete;not null;default:true"`
+	SoundOnApprovalNeeded bool      `gorm:"column:sound_on_approval_needed;not null;default:true"`
+	VoiceInputEnabled     bool      `gorm:"column:voice_input_enabled;not null;default:false"`
+	VoiceOutputEnabled    bool      `gorm:"column:voice_output_enabled;not null;default:false"`
+	VoiceOutputVoice      string    `gorm:"column:voice_output_voice;not null;default:''"`
+	OnboardingComplete    bool      `gorm:"column:onboarding_complete;not null;default:false"`
+	UpdatedAt             time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (UserPreferencesModel) TableName() string { return "user_preferences" }
+
+// BotBudgetModel stores per-bot spending budget configuration.
+type BotBudgetModel struct {
+	BotID           string    `gorm:"column:bot_id;primaryKey"`
+	MonthlyLimitUSD float64   `gorm:"column:monthly_limit_usd;not null;default:0"`
+	DailyLimitUSD   float64   `gorm:"column:daily_limit_usd;not null;default:0"`
+	AlertThreshold  float64   `gorm:"column:alert_threshold;not null;default:0.8"`
+	Enabled         bool      `gorm:"column:enabled;not null;default:true"`
+	CurrentMonthUSD float64   `gorm:"column:current_month_usd;not null;default:0"`
+	CurrentDayUSD   float64   `gorm:"column:current_day_usd;not null;default:0"`
+	LastResetDate   string    `gorm:"column:last_reset_date;not null;default:''"`
+	CreatedAt       time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt       time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (BotBudgetModel) TableName() string { return "bot_budgets" }
+
+// BotSpendRecordModel tracks individual spend events per bot.
+type BotSpendRecordModel struct {
+	ID          int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	BotID       string    `gorm:"column:bot_id;not null;index"`
+	ExecutionID string    `gorm:"column:execution_id;not null;index"`
+	AmountUSD   float64   `gorm:"column:amount_usd;not null"`
+	Description string    `gorm:"column:description;not null;default:''"`
+	RecordedAt  time.Time `gorm:"column:recorded_at;not null;index"`
+}
+
+func (BotSpendRecordModel) TableName() string { return "bot_spend_records" }

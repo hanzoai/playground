@@ -26,7 +26,7 @@ type ErrorResponse struct {
 }
 
 // GetConfigSchemaHandler handles requests for getting configuration schema for an agent
-// GET /api/ui/v1/agents/:agentId/config/schema
+// GET /api/v1/agents/:agentId/config/schema
 func (h *ConfigHandler) GetConfigSchemaHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	agentID := c.Param("agentId")
@@ -71,7 +71,7 @@ func (h *ConfigHandler) GetConfigSchemaHandler(c *gin.Context) {
 }
 
 // GetConfigHandler handles requests for getting current configuration for an agent
-// GET /api/ui/v1/agents/:agentId/config
+// GET /api/v1/agents/:agentId/config
 func (h *ConfigHandler) GetConfigHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	agentID := c.Param("agentId")
@@ -125,7 +125,7 @@ type SetConfigRequest struct {
 }
 
 // SetConfigHandler handles requests for setting configuration for an agent
-// POST /api/ui/v1/agents/:agentId/config
+// POST /api/v1/agents/:agentId/config
 func (h *ConfigHandler) SetConfigHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	agentID := c.Param("agentId")

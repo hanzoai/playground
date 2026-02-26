@@ -85,7 +85,7 @@ type VCSearchResult struct {
 }
 
 // GetDIDStats returns statistics about DIDs in the system
-// GET /api/ui/v1/identity/dids/stats
+// GET /api/v1/identity/dids/stats
 func (h *IdentityHandlers) GetDIDStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -128,7 +128,7 @@ func (h *IdentityHandlers) GetDIDStats(c *gin.Context) {
 }
 
 // SearchDIDs searches for DIDs by query string
-// GET /api/ui/v1/identity/dids/search?q=greeting&type=all&limit=20&offset=0
+// GET /api/v1/identity/dids/search?q=greeting&type=all&limit=20&offset=0
 func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 	ctx := c.Request.Context()
 	query := strings.ToLower(c.Query("q"))
@@ -214,7 +214,7 @@ func (h *IdentityHandlers) SearchDIDs(c *gin.Context) {
 }
 
 // ListNodes returns a paginated list of agent DIDs
-// GET /api/ui/v1/identity/agents?limit=10&offset=0
+// GET /api/v1/identity/agents?limit=10&offset=0
 func (h *IdentityHandlers) ListNodes(c *gin.Context) {
 	ctx := c.Request.Context()
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -289,7 +289,7 @@ func (h *IdentityHandlers) ListNodes(c *gin.Context) {
 }
 
 // GetNodeDetails returns detailed information about an agent and its components
-// GET /api/ui/v1/identity/agents/:agent_id/details?limit=20&offset=0
+// GET /api/v1/identity/agents/:agent_id/details?limit=20&offset=0
 func (h *IdentityHandlers) GetNodeDetails(c *gin.Context) {
 	ctx := c.Request.Context()
 	nodeID := c.Param("agent_id")
@@ -386,7 +386,7 @@ func (h *IdentityHandlers) GetNodeDetails(c *gin.Context) {
 }
 
 // SearchCredentials searches for verifiable credentials with time-range filtering
-// GET /api/ui/v1/identity/credentials/search?start_time=...&end_time=...&workflow_id=...&status=...&limit=50&offset=0
+// GET /api/v1/identity/credentials/search?start_time=...&end_time=...&workflow_id=...&status=...&limit=50&offset=0
 func (h *IdentityHandlers) SearchCredentials(c *gin.Context) {
 	ctx := c.Request.Context()
 

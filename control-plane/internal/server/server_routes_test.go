@@ -365,6 +365,33 @@ func (s *stubStorage) GetDeadLetterQueue(ctx context.Context, limit, offset int)
 func (s *stubStorage) DeleteFromDeadLetterQueue(ctx context.Context, ids []int64) error { return nil }
 func (s *stubStorage) ClearDeadLetterQueue(ctx context.Context) error                   { return nil }
 
+func (s *stubStorage) GetUserPreferences(ctx context.Context, userID string) (*storage.UserPreferences, error) {
+	return nil, nil
+}
+func (s *stubStorage) SetUserPreferences(ctx context.Context, prefs *storage.UserPreferences) error {
+	return nil
+}
+
+func (s *stubStorage) GetBotBudget(ctx context.Context, botID string) (*storage.BotBudget, error) {
+	return nil, nil
+}
+func (s *stubStorage) SetBotBudget(ctx context.Context, budget *storage.BotBudget) error {
+	return nil
+}
+func (s *stubStorage) DeleteBotBudget(ctx context.Context, botID string) error { return nil }
+func (s *stubStorage) ListBotBudgets(ctx context.Context) ([]*storage.BotBudget, error) {
+	return nil, nil
+}
+func (s *stubStorage) CheckBotBudget(ctx context.Context, botID string) (*storage.BudgetStatus, error) {
+	return &storage.BudgetStatus{Allowed: true}, nil
+}
+func (s *stubStorage) RecordBotSpend(ctx context.Context, record *storage.BotSpendRecord) error {
+	return nil
+}
+func (s *stubStorage) GetBotSpendHistory(ctx context.Context, botID string, since time.Time, limit int) ([]*storage.BotSpendRecord, error) {
+	return nil, nil
+}
+
 // stubPayloadStore implements services.PayloadStore
 type stubPayloadStore struct{}
 
@@ -450,7 +477,7 @@ func TestSetupRoutesRegistersWorkflowCleanupUIRoute(t *testing.T) {
 
 	srv.setupRoutes()
 
-	req, _ := http.NewRequest(http.MethodDelete, "/api/ui/v1/workflows/run_test_123/cleanup?confirm=true", nil)
+	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/workflows/run_test_123/cleanup?confirm=true", nil)
 	w := httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
 
