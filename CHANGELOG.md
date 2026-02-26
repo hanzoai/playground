@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.100] - 2026-02-26
+
+
+### Fixed
+
+- Fix: E2E auth handles preferences onboarding gate, add page screenshots
+
+- Auth helper clicks Continue on preferences onboarding after login
+- Add screenshot test suite for all major pages
+- Fix playground screenshot assertion (canvas renders no text) (d0c25b8)
+
 ## [0.1.41-rc.99] - 2026-02-26
 
 
