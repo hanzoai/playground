@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.109] - 2026-02-26
+
+
+### Fixed
+
+- Fix(api): use middleware for /api/v1 rewrite, fix admin route prefix
+
+Replace wildcard route with middleware to avoid gin route conflicts.
+Move admin routes from /api/v1/admin to /v1/admin to match new prefix. (6df8f91)
+
 ## [0.1.41-rc.108] - 2026-02-26
 
 
