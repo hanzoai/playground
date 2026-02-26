@@ -8,8 +8,8 @@ import type {
 import { normalizeExecutionStatus } from '../utils/status';
 import { getGlobalApiKey } from './api';
 
-const API_V1_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
-const API_V2_BASE_URL = import.meta.env.VITE_API_V2_BASE_URL || '/api/ui/v2';
+const API_V1_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
+const API_V2_BASE_URL = import.meta.env.VITE_API_V2_BASE_URL || '/v2';
 
 async function fetchWrapper<T>(url: string, options?: RequestInit, baseUrl: string = API_V1_BASE_URL): Promise<T> {
   const headers = new Headers(options?.headers || {});

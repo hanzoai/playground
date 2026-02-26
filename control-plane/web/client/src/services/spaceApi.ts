@@ -2,7 +2,7 @@
 
 import { getGlobalIamToken, getGlobalApiKey } from './api';
 
-const BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 function headers(): HeadersInit {
   const h: HeadersInit = { 'Content-Type': 'application/json' };

@@ -147,7 +147,7 @@ function ApiKeyAuthProvider({ children }: { children: ReactNode }) {
         if (apiKey) {
           headers["X-API-Key"] = apiKey;
         }
-        const response = await fetch("/api/ui/v1/dashboard/summary", {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/v1'}/dashboard/summary`, {
           headers,
         });
         if (response.ok) {

@@ -1,7 +1,7 @@
 import type { ConfigurationSchema, BotConfiguration, BotPackage, BotLifecycleInfo } from '../types/playground';
 import { getGlobalApiKey } from './api';
 
-const API_BASE = '/api/ui/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 export class ConfigurationApiError extends Error {
   public status?: number;

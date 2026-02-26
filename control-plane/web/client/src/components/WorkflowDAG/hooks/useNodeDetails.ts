@@ -57,7 +57,7 @@ export function useNodeDetails(executionId?: string): UseNodeDetailsReturn {
     try {
       // Fetch execution details from the API (using same endpoint as ExecutionDetailPage)
       console.log(`🔍 SIDEBAR DEBUG: Fetching execution details for ${executionId}`);
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
       const headers: HeadersInit = {};
       const apiKey = getGlobalApiKey();
       if (apiKey) {

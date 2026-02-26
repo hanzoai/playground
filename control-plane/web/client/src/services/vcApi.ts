@@ -14,7 +14,7 @@ import type {
 import { normalizeExecutionStatus, isSuccessStatus, isFailureStatus } from '../utils/status';
 import { getGlobalApiKey } from './api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 async function fetchWrapper<T>(url: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers || {});

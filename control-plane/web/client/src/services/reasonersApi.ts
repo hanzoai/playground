@@ -10,7 +10,7 @@ import type {
 } from '../types/execution';
 import { getGlobalApiKey } from './api';
 
-const API_BASE_URL = '/api/ui/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 const withAuthHeaders = (headers?: HeadersInit) => {
   const merged = new Headers(headers || {});
   const apiKey = getGlobalApiKey();

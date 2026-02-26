@@ -1,7 +1,7 @@
 import type { ExecutionTimelineResponse } from '../types/executionTimeline';
 import { getGlobalApiKey } from './api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 // In-memory cache for timeline data to reduce API calls
 let timelineCache: {

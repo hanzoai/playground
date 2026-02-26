@@ -1,7 +1,7 @@
 import type { RecentActivityResponse } from '../types/recentActivity';
 import { getGlobalApiKey } from './api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/ui/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 /**
  * Enhanced fetch wrapper with error handling and timeout support

@@ -753,7 +753,7 @@ func (s *PlaygroundServer) setupRoutes() {
 			// SPA fallback
 			s.Router.NoRoute(func(c *gin.Context) {
 				path := c.Request.URL.Path
-				if strings.HasPrefix(path, "/api/") {
+				if strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/v1/") {
 					c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
 					return
 				}
@@ -768,6 +768,8 @@ func (s *PlaygroundServer) setupRoutes() {
 	if s.config.UI.Enabled { // Only add UI API routes if UI is generally enabled
 		uiAPI := s.Router.Group("/api/ui/v1")
 		{
+			// Health check (mirrors /api/v1/health for api.hanzo.bot/v1/ access)
+			uiAPI.GET("/health", s.healthCheckHandler)
 			// Agents management group - All agent-related operations
 			agents := uiAPI.Group("/agents")
 			{
@@ -1132,6 +1134,13 @@ func (s *PlaygroundServer) setupRoutes() {
 			settings.DELETE("/observability-webhook/dlq", obsHandler.ClearDeadLetterQueueHandler)
 		}
 	}
+
+	// /v1/* → /api/ui/v1/* rewrite — enables clean URLs via api.hanzo.bot/v1/
+	// and removes the /api/ui prefix from frontend calls.
+	s.Router.Any("/v1/*path", func(c *gin.Context) {
+		c.Request.URL.Path = "/api/ui/v1" + c.Param("path")
+		s.Router.HandleContext(c)
+	})
 
 }
 

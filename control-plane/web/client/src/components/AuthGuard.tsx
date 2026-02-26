@@ -22,7 +22,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setValidating(true);
 
     try {
-      const response = await fetch("/api/ui/v1/dashboard/summary", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/v1'}/dashboard/summary`, {
         headers: { "X-API-Key": inputKey },
       });
 
