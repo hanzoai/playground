@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.97] - 2026-02-26
+
+
+### Other
+
+- Add no-cache headers for HTML responses to prevent stale deploys (dcd254d)
+
 ## [0.1.41-rc.96] - 2026-02-26
 
 
