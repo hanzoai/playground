@@ -1104,55 +1104,18 @@ func (s *PlaygroundServer) setupRoutes() {
 		// Note: Removed unused/unimplemented DID endpoint placeholders for system simplification
 
 		// Cloud provisioning endpoints — full cloud nodes on DOKS
+		// Registered under both /api/v1 and /api/ui/v1 for frontend compatibility.
 		if s.cloudProvisioner != nil {
-			cloudAPI := agentAPI.Group("/cloud")
-			{
-				cloudAPI.POST("/nodes/provision", handlers.CloudProvisionHandler(s.cloudProvisioner))
-				cloudAPI.DELETE("/nodes/:node_id", handlers.CloudDeprovisionHandler(s.cloudProvisioner))
-				cloudAPI.GET("/nodes", handlers.CloudListNodesHandler(s.cloudProvisioner))
-				cloudAPI.GET("/nodes/:node_id", handlers.CloudGetNodeHandler(s.cloudProvisioner))
-				cloudAPI.GET("/nodes/:node_id/logs", handlers.CloudGetLogsHandler(s.cloudProvisioner))
-				cloudAPI.POST("/nodes/sync", handlers.CloudSyncHandler(s.cloudProvisioner))
-				cloudAPI.POST("/teams/provision", handlers.TeamProvisionHandler(s.cloudProvisioner))
-			}
+			s.registerCloudRoutes(agentAPI.Group("/cloud"))
+			s.registerCloudRoutes(s.Router.Group("/api/ui/v1/cloud"))
 			logger.Logger.Info().Msg("☁️  Cloud provisioning routes registered")
 		}
 
 		// Space API routes — IAM-scoped project workspaces
+		// Registered under both /api/v1 and /api/ui/v1 for frontend compatibility.
 		if s.spaceStore != nil {
-			spacesAPI := agentAPI.Group("/spaces")
-			{
-				spaceHandler := handlers.NewSpaceHandler(s.spaceStore)
-				spacesAPI.POST("", spaceHandler.CreateSpace)
-				spacesAPI.GET("", spaceHandler.ListSpaces)
-				spacesAPI.GET("/:id", spaceHandler.GetSpace)
-				spacesAPI.PUT("/:id", spaceHandler.UpdateSpace)
-				spacesAPI.DELETE("/:id", spaceHandler.DeleteSpace)
-
-				// Members
-				spacesAPI.POST("/:id/members", spaceHandler.AddMember)
-				spacesAPI.GET("/:id/members", spaceHandler.ListMembers)
-				spacesAPI.DELETE("/:id/members/:uid", spaceHandler.RemoveMember)
-
-				// Nodes within a space
-				spaceNodeHandler := handlers.NewSpaceNodeHandler(s.spaceStore)
-				spacesAPI.POST("/:id/nodes/register", spaceNodeHandler.RegisterNode)
-				spacesAPI.GET("/:id/nodes", spaceNodeHandler.ListNodes)
-				spacesAPI.DELETE("/:id/nodes/:nid", spaceNodeHandler.RemoveNode)
-				spacesAPI.POST("/:id/nodes/:nid/heartbeat", spaceNodeHandler.Heartbeat)
-
-				// Bots within a space
-				spaceBotHandler := handlers.NewSpaceBotHandler(s.spaceStore)
-				spacesAPI.POST("/:id/bots", spaceBotHandler.CreateBot)
-				spacesAPI.GET("/:id/bots", spaceBotHandler.ListBots)
-				spacesAPI.DELETE("/:id/bots/:bid", spaceBotHandler.RemoveBot)
-				spacesAPI.POST("/:id/bots/:bid/chat", spaceBotHandler.ChatMessage)
-				spacesAPI.GET("/:id/bots/:bid/chat", spaceBotHandler.ChatHistory)
-
-				// Node V2 API proxy — forward any request to the hanzo/node
-				nodeProxy := proxy.NewNodeProxy(s.spaceStore)
-				spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)
-			}
+			s.registerSpaceRoutes(agentAPI.Group("/spaces"))
+			s.registerSpaceRoutes(s.Router.Group("/api/ui/v1/spaces"))
 			logger.Logger.Info().Msg("🚀 Space API routes registered")
 		}
 
@@ -1170,6 +1133,47 @@ func (s *PlaygroundServer) setupRoutes() {
 		}
 	}
 
+}
+
+// registerCloudRoutes registers cloud provisioning endpoints on the given router group.
+func (s *PlaygroundServer) registerCloudRoutes(cloudAPI *gin.RouterGroup) {
+	cloudAPI.POST("/nodes/provision", handlers.CloudProvisionHandler(s.cloudProvisioner))
+	cloudAPI.DELETE("/nodes/:node_id", handlers.CloudDeprovisionHandler(s.cloudProvisioner))
+	cloudAPI.GET("/nodes", handlers.CloudListNodesHandler(s.cloudProvisioner))
+	cloudAPI.GET("/nodes/:node_id", handlers.CloudGetNodeHandler(s.cloudProvisioner))
+	cloudAPI.GET("/nodes/:node_id/logs", handlers.CloudGetLogsHandler(s.cloudProvisioner))
+	cloudAPI.POST("/nodes/sync", handlers.CloudSyncHandler(s.cloudProvisioner))
+	cloudAPI.POST("/teams/provision", handlers.TeamProvisionHandler(s.cloudProvisioner))
+}
+
+// registerSpaceRoutes registers the Space API endpoints on the given router group.
+func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
+	spaceHandler := handlers.NewSpaceHandler(s.spaceStore)
+	spacesAPI.POST("", spaceHandler.CreateSpace)
+	spacesAPI.GET("", spaceHandler.ListSpaces)
+	spacesAPI.GET("/:id", spaceHandler.GetSpace)
+	spacesAPI.PUT("/:id", spaceHandler.UpdateSpace)
+	spacesAPI.DELETE("/:id", spaceHandler.DeleteSpace)
+
+	spacesAPI.POST("/:id/members", spaceHandler.AddMember)
+	spacesAPI.GET("/:id/members", spaceHandler.ListMembers)
+	spacesAPI.DELETE("/:id/members/:uid", spaceHandler.RemoveMember)
+
+	spaceNodeHandler := handlers.NewSpaceNodeHandler(s.spaceStore)
+	spacesAPI.POST("/:id/nodes/register", spaceNodeHandler.RegisterNode)
+	spacesAPI.GET("/:id/nodes", spaceNodeHandler.ListNodes)
+	spacesAPI.DELETE("/:id/nodes/:nid", spaceNodeHandler.RemoveNode)
+	spacesAPI.POST("/:id/nodes/:nid/heartbeat", spaceNodeHandler.Heartbeat)
+
+	spaceBotHandler := handlers.NewSpaceBotHandler(s.spaceStore)
+	spacesAPI.POST("/:id/bots", spaceBotHandler.CreateBot)
+	spacesAPI.GET("/:id/bots", spaceBotHandler.ListBots)
+	spacesAPI.DELETE("/:id/bots/:bid", spaceBotHandler.RemoveBot)
+	spacesAPI.POST("/:id/bots/:bid/chat", spaceBotHandler.ChatMessage)
+	spacesAPI.GET("/:id/bots/:bid/chat", spaceBotHandler.ChatHistory)
+
+	nodeProxy := proxy.NewNodeProxy(s.spaceStore)
+	spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)
 }
 
 // resolveUIDistPath returns the filesystem path to the UI dist directory.
