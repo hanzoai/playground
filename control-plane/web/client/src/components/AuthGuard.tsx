@@ -57,8 +57,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // IAM mode — auto-redirect in progress, show brief loading state
   if (authMode === "iam" && iamLogin) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full text-center">
+      <div className="flex items-center justify-center min-h-screen bg-background px-4">
+        <div className="p-4 sm:p-8 bg-card rounded-lg shadow-lg max-w-md w-full text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
             <svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
               <rect width="64" height="64" rx="8" fill="currentColor" className="text-primary" />
@@ -80,8 +80,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // API key mode — show Hanzo branding + API key form with optional IAM
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full">
+    <div className="flex items-center justify-center min-h-screen bg-background px-4">
+      <div className="p-4 sm:p-8 bg-card rounded-lg shadow-lg max-w-md w-full">
         {/* Hanzo Logo */}
         <div className="flex items-center gap-3 mb-6">
           <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">

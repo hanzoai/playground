@@ -26,7 +26,7 @@ export function SpaceSettingsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-4 sm:px-0">
       <h1 className="text-heading-1 mb-1">{activeSpace.name}</h1>
       <p className="text-sm text-muted-foreground mb-6">
         {activeSpace.slug} &middot; {activeSpace.org_id}
@@ -42,10 +42,10 @@ export function SpaceSettingsPage() {
         ) : (
           <div className="space-y-2">
             {nodes.map(node => (
-              <div key={node.node_id} className="border rounded-lg p-3 flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-sm">{node.name || node.node_id}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
+              <div key={node.node_id} className="border rounded-lg p-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <span className="font-medium text-sm truncate block">{node.name || node.node_id}</span>
+                  <span className="text-xs text-muted-foreground">
                     {node.type} &middot; {node.os || 'unknown'} &middot; {node.status}
                   </span>
                 </div>
@@ -69,14 +69,14 @@ export function SpaceSettingsPage() {
         ) : (
           <div className="space-y-2">
             {bots.map(bot => (
-              <div key={bot.bot_id} className="border rounded-lg p-3 flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-sm">{bot.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
+              <div key={bot.bot_id} className="border rounded-lg p-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <span className="font-medium text-sm truncate block">{bot.name}</span>
+                  <span className="text-xs text-muted-foreground">
                     {bot.model || 'default'} &middot; {bot.view} &middot; {bot.status}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground shrink-0 truncate">
                   on {bot.node_id}
                 </span>
               </div>

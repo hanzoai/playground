@@ -252,7 +252,7 @@ export function ControlPlanePage() {
   return (
     <div className="space-y-0">
       {/* ─── Top Bar ─── */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Control Plane</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -300,7 +300,7 @@ export function ControlPlanePage() {
       </div>
 
       {/* ─── Metrics Strip ─── */}
-      <div className="flex items-center gap-4 py-2 px-0 mb-4 border-y border-border/30 text-xs font-mono text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4 py-2 px-0 mb-4 border-y border-border/30 text-xs font-mono text-muted-foreground">
         <MetricCell label="Agents" value={agents.length} />
         <Sep />
         <MetricCell label="Cloud" value={cloudCount} />
@@ -320,7 +320,7 @@ export function ControlPlanePage() {
       )}
 
       {/* ─── Main 60/40 Split ─── */}
-      <div className="flex gap-4 min-h-[400px]">
+      <div className="flex flex-col lg:flex-row gap-4 min-h-[400px]">
         {/* LEFT: Agent Network State (60%) */}
         <div className="flex-[3] min-w-0">
           <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
@@ -350,7 +350,7 @@ export function ControlPlanePage() {
         </div>
 
         {/* RIGHT: Activity Stream (40%) */}
-        <div className="flex-[2] min-w-0 border-l border-border/30 pl-4">
+        <div className="flex-[2] min-w-0 border-t lg:border-t-0 lg:border-l border-border/30 pt-4 lg:pt-0 lg:pl-4">
           <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
             Activity
           </div>

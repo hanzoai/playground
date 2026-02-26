@@ -21,9 +21,9 @@ import type {
 
 const ITEMS_PER_PAGE = 50;
 const GRID_TEMPLATE =
-    "80px minmax(200px,1fr) minmax(300px,2fr) minmax(150px,1fr) 120px 80px";
+    "80px minmax(120px,1fr) minmax(180px,2fr) minmax(100px,1fr) 100px 60px";
 const GRID_TEMPLATE_REASONERS =
-    "minmax(200px,1fr) minmax(350px,2fr) 100px 140px";
+    "minmax(120px,1fr) minmax(200px,2fr) 80px 120px";
 
 export function DIDExplorerPage() {
     // State

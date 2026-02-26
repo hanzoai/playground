@@ -46,7 +46,7 @@ import { formatRelativeTime } from "../utils/dateFormat";
 
 const ITEMS_PER_PAGE = 50;
 const GRID_TEMPLATE =
-    "60px minmax(200px,1.8fr) minmax(220px,2fr) minmax(180px,1.5fr) minmax(100px,0.7fr) 60px";
+    "60px minmax(120px,1.8fr) minmax(140px,2fr) minmax(100px,1.5fr) minmax(80px,0.7fr) 60px";
 
 // Helper function to truncate DID smartly
 const truncateDID = (did: string): string => {
@@ -1025,7 +1025,7 @@ export function CredentialsPage() {
                         </div>
                     ) : (
                         // Credentials List View
-                        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div className="flex min-h-0 flex-1 flex-col overflow-hidden overflow-x-auto">
                             <CompactTable
                                 data={visibleCredentials}
                                 loading={loading}
