@@ -97,19 +97,26 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   });
   page.on('pageerror', (err) => console.log(`[browser exception] ${err.message}`));
 
-  // Navigate to app — should see AuthGuard
+  // Navigate to app — AuthGuard may show a button or auto-redirect to hanzo.id
   console.log(`[e2e] Navigating to ${baseURL}`);
-  await page.goto(baseURL, { waitUntil: 'networkidle' });
+  await page.goto(baseURL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   console.log(`[e2e] Loaded: ${page.url()}`);
 
-  // Click "Sign in with Hanzo" — triggers OIDC redirect to hanzo.id
+  // Wait for either: sign-in button appears, or auto-redirect to hanzo.id
   const signInButton = page.getByRole('button', { name: /sign in with hanzo/i });
-  await expect(signInButton).toBeVisible({ timeout: 15_000 });
-  await signInButton.click();
-  console.log(`[e2e] Clicked sign-in, waiting for hanzo.id redirect...`);
+  const onHanzoId = page.waitForURL(`${cfg.serverUrl}/**`, { timeout: 30_000 });
+  const onButton = signInButton.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'button' as const);
 
-  // Wait for redirect to hanzo.id login page
-  await page.waitForURL(`${cfg.serverUrl}/**`, { timeout: 30_000 });
+  const landedOn = await Promise.race([
+    onHanzoId.then(() => 'hanzo-id' as const),
+    onButton,
+  ]);
+
+  if (landedOn === 'button') {
+    await signInButton.click();
+    console.log(`[e2e] Clicked sign-in, waiting for hanzo.id redirect...`);
+    await page.waitForURL(`${cfg.serverUrl}/**`, { timeout: 30_000 });
+  }
   console.log(`[e2e] On hanzo.id: ${page.url()}`);
 
   // Fill the login form
@@ -128,32 +135,14 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   await passwordInput.first().fill(cfg.password);
   console.log(`[e2e] Filled credentials`);
 
-  // Submit — use deterministic selector for hanzo.id login form
-  const submitButton =
-    page.locator('#submitBtn').or(
-    page.locator('form#loginForm button[type="submit"]')).or(
-    page.getByRole('button', { name: /sign in/i }));
-
-  await submitButton.first().click();
+  // Submit — click Sign In button
+  const submitButton = page.getByRole('button', { name: /sign in/i }).first();
+  await submitButton.waitFor({ state: 'visible', timeout: 10_000 });
+  await submitButton.click({ force: true, timeout: 10_000 });
   console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
-  // Race: redirect back to app OR error message on login form
-  const redirected = page.waitForURL(`${baseURL}/**`, { timeout: 30_000 });
-  const errorVisible = page.locator('#error-msg:not(:empty), .ant-alert-error, [class*="error"]').first()
-    .waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'error' as const);
-
-  const result = await Promise.race([
-    redirected.then(() => 'redirect' as const),
-    errorVisible,
-  ]);
-
-  if (result === 'error') {
-    const errorText = await page.locator('#error-msg').textContent().catch(() => null)
-      || await page.locator('.ant-alert-error').textContent().catch(() => null)
-      || 'unknown login error';
-    console.error(`[e2e] Login error on hanzo.id: ${errorText}`);
-    throw new Error(`IAM login failed: ${errorText}`);
-  }
+  // Wait for redirect back to app (login form submits and OIDC redirects)
+  await page.waitForURL(`${baseURL}/**`, { timeout: 60_000 });
 
   console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
 
@@ -170,8 +159,8 @@ export async function performBrowserLogin(page: Page): Promise<void> {
     // No onboarding — already completed or not present
   }
 
-  // Wait for callback to process tokens and redirect to dashboard
-  await page.waitForURL(/\/(playground|dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
+  // Wait for callback to process tokens and redirect to app
+  await page.waitForURL(/\/(launch|playground|dashboard|bots|nodes|executions|workflows|canvas|spaces|settings|metrics|identity)/, {
     timeout: 60_000,
   });
 
