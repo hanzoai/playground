@@ -67,14 +67,15 @@ type VisorProvider struct {
 
 // VMProvisionRequest describes a VM to provision via a cloud provider.
 type VMProvisionRequest struct {
-	NodeID      string    `json:"node_id"`
-	DisplayName string    `json:"display_name"`
-	OS          DesktopOS `json:"os"`              // "linux", "macos", "windows"
-	Provider    string    `json:"provider"`        // Visor provider name (e.g. "aws-us-east-1")
-	Region      string    `json:"region,omitempty"`
-	InstanceType string   `json:"instance_type,omitempty"` // e.g. "t3.medium", "mac2.metal"
-	Owner       string    `json:"owner,omitempty"`
-	Org         string    `json:"org,omitempty"`
+	NodeID       string            `json:"node_id"`
+	DisplayName  string            `json:"display_name"`
+	OS           DesktopOS         `json:"os"`                       // "linux", "macos", "windows"
+	Provider     string            `json:"provider"`                 // Visor provider name (e.g. "aws-us-east-1")
+	Region       string            `json:"region,omitempty"`
+	InstanceType string            `json:"instance_type,omitempty"`  // e.g. "t3.medium", "mac2.metal"
+	Owner        string            `json:"owner,omitempty"`
+	Org          string            `json:"org,omitempty"`
+	Tags         map[string]string `json:"tags,omitempty"`           // env vars passed to cloud-init (prefix "env:")
 }
 
 // VMProvisionResult describes the outcome of VM provisioning.
@@ -218,6 +219,9 @@ func (vc *VisorClient) CreateMachine(ctx context.Context, req *VMProvisionReques
 	if req.Region != "" {
 		spec["region"] = req.Region
 	}
+	if len(req.Tags) > 0 {
+		spec["tags"] = req.Tags
+	}
 
 	provider := req.Provider
 	if provider == "" {
@@ -358,6 +362,15 @@ func (vc *VisorClient) doPost(ctx context.Context, url string, payload interface
 
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("visor API %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Visor (Beego) returns HTTP 200 with {"status":"error","msg":"..."} for application errors
+	var envelope struct {
+		Status string `json:"status"`
+		Msg    string `json:"msg"`
+	}
+	if json.Unmarshal(body, &envelope) == nil && envelope.Status == "error" {
+		return nil, fmt.Errorf("visor API error: %s", envelope.Msg)
 	}
 
 	logger.Logger.Debug().
