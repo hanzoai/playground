@@ -184,6 +184,12 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 	if os == OSMacOS || os == OSWindows {
 		return p.provisionVM(ctx, req)
 	}
+	// Route DigitalOcean droplet requests to Visor VM provisioning.
+	// This creates a real DO droplet with @hanzo/bot pre-installed via cloud-init,
+	// giving users a full Linux VM (not just a K8s pod) for heavier workloads.
+	if req.Provider == "digitalocean" {
+		return p.provisionDroplet(ctx, req)
+	}
 	// Default: Linux K8s pod (with or without operative desktop sidecar)
 	return p.provisionK8sPod(ctx, req)
 }
@@ -587,6 +593,106 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 	}, nil
 }
 
+// provisionDroplet creates a DigitalOcean droplet with @hanzo/bot pre-installed.
+// The droplet boots with cloud-init that installs the bot and connects to the gateway.
+// Unlike K8s pods, droplets give users a full Linux VM with root access.
+func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
+	if p.visor == nil {
+		return nil, fmt.Errorf("visor not configured — DigitalOcean droplet provisioning requires Visor (set HANZO_AGENTS_VISOR_ENABLED=true)")
+	}
+
+	nodeID := req.NodeID
+	if nodeID == "" {
+		nodeID = fmt.Sprintf("do-%s", uuid.New().String()[:8])
+	}
+
+	org := req.Org
+	if org == "" {
+		org = "hanzo"
+	}
+
+	// Check org limits
+	if req.Org != "" {
+		count := p.countByOrg(req.Org)
+		if count >= p.config.Kubernetes.MaxAgentsPerOrg {
+			return nil, fmt.Errorf("organization %q has reached the maximum of %d cloud agents", req.Org, p.config.Kubernetes.MaxAgentsPerOrg)
+		}
+	}
+
+	instanceType := req.InstanceType
+	if instanceType == "" {
+		instanceType = "s-2vcpu-4gb"
+	}
+
+	displayName := req.DisplayName
+	if displayName == "" {
+		displayName = fmt.Sprintf("agent-%s", nodeID)
+	}
+
+	logger.Logger.Info().
+		Str("node_id", nodeID).
+		Str("instance_type", instanceType).
+		Str("provider", "digitalocean").
+		Str("org", org).
+		Msg("provisioning DO droplet via visor")
+
+	vmReq := &VMProvisionRequest{
+		NodeID:       nodeID,
+		DisplayName:  displayName,
+		OS:           OSLinux,
+		Provider:     "DigitalOcean",
+		InstanceType: instanceType,
+		Owner:        req.Owner,
+		Org:          org,
+	}
+
+	created, err := p.visor.CreateMachine(ctx, vmReq)
+	if err != nil {
+		return nil, fmt.Errorf("visor create droplet: %w", err)
+	}
+
+	machineName := created.Name
+	remoteURL := fmt.Sprintf("%s/api/get-asset-tunnel?assetId=%s/%s",
+		p.config.Visor.Endpoint, org, machineName)
+
+	node := &CloudNode{
+		NodeID:         nodeID,
+		PodName:        machineName,
+		Namespace:      org,
+		NodeType:       NodeTypeCloud,
+		Status:         created.State,
+		Image:          fmt.Sprintf("droplet:%s", instanceType),
+		OS:             "linux",
+		RemoteProtocol: "ssh",
+		RemoteURL:      remoteURL,
+		Endpoint:       p.config.Kubernetes.GatewayURL,
+		Owner:          req.Owner,
+		Org:            req.Org,
+		Labels: map[string]string{
+			"playground.hanzo.ai/node-id":  nodeID,
+			"playground.hanzo.ai/type":     "droplet",
+			"playground.hanzo.ai/provider": "digitalocean",
+			"playground.hanzo.ai/size":     instanceType,
+		},
+		CreatedAt: time.Now(),
+		LastSeen:  time.Now(),
+	}
+
+	p.mu.Lock()
+	p.nodes[nodeID] = node
+	p.mu.Unlock()
+
+	return &ProvisionResult{
+		NodeID:    nodeID,
+		PodName:   machineName,
+		Namespace: org,
+		NodeType:  NodeTypeCloud,
+		Status:    node.Status,
+		Endpoint:  remoteURL,
+		CreatedAt: node.CreatedAt,
+	}, nil
+}
+
 // Deprovision removes a cloud agent from the cluster or terminates a VM.
 func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 	p.mu.RLock()
@@ -603,18 +709,19 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 		Str("os", node.OS).
 		Msg("deprovisioning cloud agent")
 
-	// Route VM nodes (macOS/Windows) to Visor for teardown
+	// Route VM/droplet nodes to Visor for teardown
 	os := DesktopOS(node.OS)
-	if os == OSMacOS || os == OSWindows {
+	isVisorManaged := os == OSMacOS || os == OSWindows || node.Labels["playground.hanzo.ai/type"] == "droplet"
+	if isVisorManaged {
 		if p.visor == nil {
-			return fmt.Errorf("visor not configured — cannot deprovision VM node %q", nodeID)
+			return fmt.Errorf("visor not configured — cannot deprovision node %q", nodeID)
 		}
 		owner := node.Org
 		if owner == "" {
 			owner = "hanzo"
 		}
 		if err := p.visor.DeleteMachine(ctx, owner, node.PodName); err != nil {
-			return fmt.Errorf("failed to delete VM via visor: %w", err)
+			return fmt.Errorf("failed to delete machine via visor: %w", err)
 		}
 	} else {
 		// Linux/terminal pods: delete via K8s API

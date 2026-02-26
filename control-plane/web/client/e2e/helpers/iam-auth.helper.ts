@@ -157,6 +157,19 @@ export async function performBrowserLogin(page: Page): Promise<void> {
 
   console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
 
+  // Wait for app to load after auth callback
+  await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+
+  // Handle preferences onboarding gate if it appears
+  const continueButton = page.getByRole('button', { name: /continue/i });
+  try {
+    await continueButton.waitFor({ state: 'visible', timeout: 10_000 });
+    console.log(`[e2e] Preferences onboarding shown — clicking Continue`);
+    await continueButton.click();
+  } catch {
+    // No onboarding — already completed or not present
+  }
+
   // Wait for callback to process tokens and redirect to dashboard
   await page.waitForURL(/\/(playground|dashboard|bots|nodes|executions|workflows|canvas|spaces)/, {
     timeout: 60_000,

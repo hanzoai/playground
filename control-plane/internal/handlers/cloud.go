@@ -198,6 +198,102 @@ func CloudSyncHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	}
 }
 
+// CloudPricingHandler returns available droplet sizes and their hourly cost in cents.
+func CloudPricingHandler() gin.HandlerFunc {
+	type PricingTier struct {
+		Slug     string `json:"slug"`
+		VCPUs    int    `json:"vcpus"`
+		MemoryMB int    `json:"memory_mb"`
+		DiskGB   int    `json:"disk_gb"`
+		CentsHr  int    `json:"cents_per_hour"`
+	}
+
+	// Curated pricing tiers from DigitalOcean's standard droplet sizes.
+	// Hourly costs sourced from visor/billing/pricing.go.
+	tiers := []PricingTier{
+		{Slug: "s-1vcpu-1gb", VCPUs: 1, MemoryMB: 1024, DiskGB: 25, CentsHr: 1},
+		{Slug: "s-1vcpu-2gb", VCPUs: 1, MemoryMB: 2048, DiskGB: 50, CentsHr: 2},
+		{Slug: "s-2vcpu-2gb", VCPUs: 2, MemoryMB: 2048, DiskGB: 60, CentsHr: 3},
+		{Slug: "s-2vcpu-4gb", VCPUs: 2, MemoryMB: 4096, DiskGB: 80, CentsHr: 4},
+		{Slug: "s-4vcpu-8gb", VCPUs: 4, MemoryMB: 8192, DiskGB: 160, CentsHr: 7},
+		{Slug: "s-8vcpu-16gb", VCPUs: 8, MemoryMB: 16384, DiskGB: 320, CentsHr: 14},
+		{Slug: "s-16vcpu-32gb", VCPUs: 16, MemoryMB: 32768, DiskGB: 640, CentsHr: 29},
+		{Slug: "g-2vcpu-8gb", VCPUs: 2, MemoryMB: 8192, DiskGB: 25, CentsHr: 7},
+		{Slug: "g-4vcpu-16gb", VCPUs: 4, MemoryMB: 16384, DiskGB: 50, CentsHr: 14},
+		{Slug: "c-2vcpu-4gb", VCPUs: 2, MemoryMB: 4096, DiskGB: 25, CentsHr: 6},
+		{Slug: "c-4vcpu-8gb", VCPUs: 4, MemoryMB: 8192, DiskGB: 50, CentsHr: 13},
+	}
+
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"provider": "digitalocean",
+			"region":   "sfo3",
+			"tiers":    tiers,
+		})
+	}
+}
+
+// CloudPresetsHandler returns curated spec presets for the LaunchPage.
+func CloudPresetsHandler() gin.HandlerFunc {
+	type Preset struct {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Slug        string `json:"slug"`
+		VCPUs       int    `json:"vcpus"`
+		MemoryGB    int    `json:"memory_gb"`
+		CentsHr     int    `json:"cents_per_hour"`
+		Provider    string `json:"provider"`
+	}
+
+	presets := []Preset{
+		{
+			ID:          "starter",
+			Name:        "Starter",
+			Description: "Light tasks, chat bots, simple automations",
+			Slug:        "s-1vcpu-2gb",
+			VCPUs:       1,
+			MemoryGB:    2,
+			CentsHr:     2,
+			Provider:    "digitalocean",
+		},
+		{
+			ID:          "pro",
+			Name:        "Pro",
+			Description: "Code generation, research, multi-tool agents",
+			Slug:        "s-2vcpu-4gb",
+			VCPUs:       2,
+			MemoryGB:    4,
+			CentsHr:     4,
+			Provider:    "digitalocean",
+		},
+		{
+			ID:          "power",
+			Name:        "Power",
+			Description: "Heavy workloads, browser automation, large projects",
+			Slug:        "s-4vcpu-8gb",
+			VCPUs:       4,
+			MemoryGB:    8,
+			CentsHr:     7,
+			Provider:    "digitalocean",
+		},
+		{
+			ID:          "gpu",
+			Name:        "GPU",
+			Description: "ML training, image generation, video processing",
+			Slug:        "g-2vcpu-8gb",
+			VCPUs:       2,
+			MemoryGB:    8,
+			CentsHr:     7,
+			Provider:    "digitalocean",
+		},
+	}
+
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"presets": presets})
+	}
+}
+
 // TeamProvisionHandler provisions an entire team of cloud agents.
 func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	return func(c *gin.Context) {

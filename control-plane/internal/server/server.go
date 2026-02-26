@@ -1105,6 +1105,8 @@ func (s *PlaygroundServer) registerCloudRoutes(cloudAPI *gin.RouterGroup) {
 	cloudAPI.GET("/nodes/:node_id/logs", handlers.CloudGetLogsHandler(s.cloudProvisioner))
 	cloudAPI.POST("/nodes/sync", handlers.CloudSyncHandler(s.cloudProvisioner))
 	cloudAPI.POST("/teams/provision", handlers.TeamProvisionHandler(s.cloudProvisioner))
+	cloudAPI.GET("/pricing", handlers.CloudPricingHandler())
+	cloudAPI.GET("/presets", handlers.CloudPresetsHandler())
 }
 
 // registerSpaceRoutes registers the Space API endpoints on the given router group.

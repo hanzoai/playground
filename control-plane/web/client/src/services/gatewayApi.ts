@@ -174,6 +174,41 @@ export async function cloudTeamProvision(teamName: string, agents: CloudProvisio
 }
 
 // ---------------------------------------------------------------------------
+// Cloud Pricing & Presets
+// ---------------------------------------------------------------------------
+
+export interface PricingTier {
+  slug: string;
+  vcpus: number;
+  memory_mb: number;
+  disk_gb: number;
+  cents_per_hour: number;
+}
+
+export interface CloudPreset {
+  id: string;
+  name: string;
+  description: string;
+  slug: string;
+  vcpus: number;
+  memory_gb: number;
+  cents_per_hour: number;
+  provider: string;
+}
+
+export async function cloudGetPricing(): Promise<{ provider: string; region: string; tiers: PricingTier[] }> {
+  const resp = await fetch('/v1/cloud/pricing');
+  if (!resp.ok) throw new Error(`cloud pricing failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function cloudGetPresets(): Promise<{ presets: CloudPreset[] }> {
+  const resp = await fetch('/v1/cloud/presets');
+  if (!resp.ok) throw new Error(`cloud presets failed: ${resp.status}`);
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------
 

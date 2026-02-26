@@ -2,22 +2,22 @@ import type { NavigationSection } from '@/components/Navigation/types';
 
 export const navigationSections: NavigationSection[] = [
   {
-    id: 'core',
+    id: 'main',
     title: '',
     items: [
       {
-        id: 'dashboard',
-        label: 'Dashboard',
-        href: '/dashboard',
-        icon: 'dashboard',
-        description: 'System overview and operational metrics'
+        id: 'launch',
+        label: 'Launch',
+        href: '/launch',
+        icon: 'rocket',
+        description: 'Launch a cloud agent'
       },
       {
-        id: 'control-plane',
-        label: 'Control Plane',
-        href: '/bots/all',
-        icon: 'data-center',
-        description: 'Orchestrate distributed agents and runtime execution'
+        id: 'nodes',
+        label: 'My Agents',
+        href: '/nodes',
+        icon: 'function',
+        description: 'Running agents and connected nodes'
       },
       {
         id: 'playground',
@@ -26,19 +26,32 @@ export const navigationSections: NavigationSection[] = [
         icon: 'bot',
         description: 'Visual agent orchestration canvas'
       },
+    ]
+  },
+  {
+    id: 'work',
+    title: '',
+    items: [
       {
-        id: 'nodes',
-        label: 'Nodes',
-        href: '/nodes',
-        icon: 'function',
-        description: 'Agent node infrastructure and status'
+        id: 'control-plane',
+        label: 'Control Plane',
+        href: '/bots/all',
+        icon: 'data-center',
+        description: 'Orchestrate distributed agents'
       },
       {
-        id: 'spaces',
-        label: 'Spaces',
-        href: '/spaces',
-        icon: 'data-center',
-        description: 'Project workspaces for agents and teams'
+        id: 'executions',
+        label: 'Executions',
+        href: '/executions',
+        icon: 'run',
+        description: 'Agent executions and runtime calls'
+      },
+      {
+        id: 'workflows',
+        label: 'Workflows',
+        href: '/workflows',
+        icon: 'flow-data',
+        description: 'Multi-step workflow processes'
       },
       {
         id: 'teams',
@@ -46,67 +59,27 @@ export const navigationSections: NavigationSection[] = [
         href: '/teams',
         icon: 'users',
         description: 'Provision and manage agent teams'
-      }
+      },
     ]
   },
   {
-    id: 'executions',
+    id: 'manage',
     title: '',
     items: [
       {
-        id: 'individual-executions',
-        label: 'Executions',
-        href: '/executions',
-        icon: 'run',
-        description: 'Agent executions and runtime calls'
+        id: 'metrics',
+        label: 'Metrics',
+        href: '/metrics',
+        icon: 'dashboard',
+        description: 'System overview and operational metrics'
       },
       {
-        id: 'workflow-executions',
-        label: 'Workflows',
-        href: '/workflows',
-        icon: 'flow-data',
-        description: 'Multi-step workflow processes'
-      }
-    ]
-  },
-  {
-    id: 'identity-trust',
-    title: '',
-    items: [
-      {
-        id: 'did-explorer',
-        label: 'DID Explorer',
-        href: '/identity/dids',
-        icon: 'identification',
-        description: 'Decentralized identifiers for agents'
-      },
-      {
-        id: 'credentials',
-        label: 'Credentials',
-        href: '/identity/credentials',
-        icon: 'shield-check',
-        description: 'Execution credentials and verification'
-      }
-    ]
-  },
-  {
-    id: 'settings',
-    title: '',
-    items: [
-      {
-        id: 'gateway',
-        label: 'Gateway',
+        id: 'settings',
+        label: 'Settings',
         href: '/settings',
-        icon: 'link',
-        description: 'Agent gateway connection'
-      },
-      {
-        id: 'observability-webhook',
-        label: 'Observability',
-        href: '/settings/observability-webhook',
         icon: 'settings',
-        description: 'Event forwarding and observability'
-      }
+        description: 'Gateway, identity, and observability'
+      },
     ]
   }
 ];

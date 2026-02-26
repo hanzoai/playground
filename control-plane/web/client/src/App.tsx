@@ -22,6 +22,7 @@ import { DIDExplorerPage } from "./pages/DIDExplorerPage";
 import { CredentialsPage } from "./pages/CredentialsPage";
 import { ObservabilityWebhookSettingsPage } from "./pages/ObservabilityWebhookSettingsPage";
 import { CanvasPage } from "./pages/CanvasPage";
+import { LaunchPage } from "./pages/LaunchPage";
 import { TeamPage } from "./pages/TeamPage";
 import { SpacesPage } from "./pages/SpacesPage";
 import { SpaceSettingsPage } from "./pages/SpaceSettingsPage";
@@ -34,23 +35,6 @@ import { GlobalCommandPalette } from "./components/GlobalCommandPalette";
 import { PreferencesOnboarding } from "./components/onboarding/PreferencesOnboarding";
 import { usePreferencesStore } from "./stores/preferencesStore";
 import { useNotificationSound } from "./hooks/useNotificationSound";
-
-// Placeholder pages for new routes
-
-function AgentsPage() {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-center">
-        <h2 className="text-heading-1 mb-2">
-          My Bots
-        </h2>
-        <p className="text-body">
-          Your configured and running agents
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function SettingsPage() {
   return <GatewaySettings />;
