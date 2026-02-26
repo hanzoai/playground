@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.108] - 2026-02-26
+
+
+### Changed
+
+- Refactor(api): use /v1 as primary route prefix, point frontend to api.hanzo.bot
+
+Move all API routes from /api/v1 to /v1 as the canonical prefix.
+Add /api/v1→/v1 backward-compat rewrite. Frontend now calls
+api.hanzo.bot/v1 for all API requests, separating SPA from API
+traffic. Update CORS, auth middleware, and vite dev proxy. (9aa1d76)
+
 ## [0.1.41-rc.107] - 2026-02-26
 
 
