@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { setGlobalApiKey } from "../services/api";
@@ -15,6 +15,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
   const [validating, setValidating] = useState(false);
   const [showApiKeyForm, setShowApiKeyForm] = useState(false);
+  const iamRedirectAttempted = useRef(false);
+
+  // Auto-redirect to IAM login — skip the intermediate "Sign in" button page
+  useEffect(() => {
+    if (authMode === "iam" && iamLogin && authRequired && !isAuthenticated && !iamRedirectAttempted.current) {
+      iamRedirectAttempted.current = true;
+      iamLogin().catch(() => {
+        iamRedirectAttempted.current = false;
+      });
+    }
+  }, [authMode, iamLogin, authRequired, isAuthenticated]);
 
   const handleApiKeySubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -43,13 +54,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // IAM mode — show "Sign in with Hanzo" button
+  // IAM mode — auto-redirect in progress, show brief loading state
   if (authMode === "iam" && iamLogin) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full">
-          {/* Hanzo Logo */}
-          <div className="flex items-center gap-3 mb-6">
+        <div className="p-8 bg-card rounded-lg shadow-lg max-w-md w-full text-center">
+          <div className="flex items-center justify-center gap-3 mb-6">
             <svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
               <rect width="64" height="64" rx="8" fill="currentColor" className="text-primary" />
               <g transform="translate(8, 8) scale(0.716)">
@@ -60,27 +70,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
                 <path d="M66.7198 67V44.6369H44.5098V67H66.7198Z" fill="currentColor" className="text-primary-foreground" />
               </g>
             </svg>
-            <div>
-              <h2 className="text-2xl font-semibold">Hanzo Bot</h2>
-              <p className="text-muted-foreground text-sm">Agent Control Plane</p>
-            </div>
+            <h2 className="text-2xl font-semibold">Hanzo Bot</h2>
           </div>
-
-          {error && <p className="text-destructive mb-4">{error}</p>}
-
-          <button
-            onClick={() => {
-              setError("");
-              iamLogin().catch((err) =>
-                setError(
-                  err instanceof Error ? err.message : "Login failed",
-                ),
-              );
-            }}
-            className="w-full bg-primary text-primary-foreground p-3 rounded-md font-medium hover:opacity-90 transition-opacity"
-          >
-            Sign in with Hanzo
-          </button>
+          <p className="text-muted-foreground">Redirecting to sign in...</p>
         </div>
       </div>
     );
