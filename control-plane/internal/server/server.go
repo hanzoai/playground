@@ -732,8 +732,9 @@ func (s *PlaygroundServer) setupRoutes() {
 			s.Router.Static("/assets", filepath.Join(distPath, "assets"))
 			s.Router.StaticFile("/favicon.svg", filepath.Join(distPath, "favicon.svg"))
 
-			// Serve index.html at root
+			// Serve index.html at root (no-cache so deploys take effect immediately)
 			s.Router.GET("/", func(c *gin.Context) {
+				c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 				c.File(filepath.Join(distPath, "index.html"))
 			})
 
@@ -757,6 +758,7 @@ func (s *PlaygroundServer) setupRoutes() {
 					c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
 					return
 				}
+				c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 				c.File(filepath.Join(distPath, "index.html"))
 			})
 
