@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.94] - 2026-02-26
+
+
+### Fixed
+
+- Fix: register space and cloud routes under /api/ui/v1 for frontend compatibility
+
+Production frontend uses VITE_API_BASE_URL=/api/ui/v1 but space and cloud
+routes were only registered under /api/v1, causing all space API calls to
+return 404. Extract route registration into helper methods and register
+under both prefixes. (5c7f14a)
+
 ## [0.1.41-rc.93] - 2026-02-25
 
 
