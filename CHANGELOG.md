@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.102] - 2026-02-26
+
+
+### Other
+
+- Remove heartbeat-based staleness tiers from nodes list
+
+Trust gateway lifecycle_status as source of truth instead of
+aggressive 2/5-minute heartbeat thresholds that created false
+"very stale" warnings on healthy nodes. Nodes are now categorized
+as Running, Degraded, Starting, or Offline. (71e0696)
+
 ## [0.1.41-rc.101] - 2026-02-26
 
 
