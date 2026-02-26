@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.101] - 2026-02-26
+
+
+### Added
+
+- Feat(ui): add /launch and /metrics routes, redirect root to Launch page
+
+- Add /launch route pointing to LaunchPage (spec picker for cloud agents)
+- Add /metrics route as alias for EnhancedDashboardPage
+- Keep /dashboard for backward compatibility
+- Change /agents route from undefined AgentsPage to LaunchPage
+- Root redirect now goes to /launch instead of /playground
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (704845c)
+
+
+
+### Fixed
+
+- Fix(storage): check tx.Rollback error return to satisfy errcheck lint
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (ea4df8e)
+
+- Fix(ui): remove unused Plus import from LaunchPage
+
+CI failed on TS6133: 'Plus' is declared but its value is never read.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (115914f)
+
 ## [0.1.41-rc.100] - 2026-02-26
 
 
