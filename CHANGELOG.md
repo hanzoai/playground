@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.107] - 2026-02-26
+
+
+### Fixed
+
+- Fix(cloud): handle both snake_case and camelCase preset fields
+
+Pricing service returns camelCase (memoryGB, centsPerHour) while
+Go fallback returns snake_case (memory_gb, cents_per_hour). Accept
+both conventions with nullish coalescing fallback. (71bc7bb)
+
 ## [0.1.41-rc.106] - 2026-02-26
 
 
