@@ -801,10 +801,11 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 		return result, nil
 	}
 
-	// Sync in-memory state with K8s
+	// Sync in-memory state with K8s and include non-K8s nodes (e.g. DO droplets).
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	seen := make(map[string]bool)
 	var result []*CloudNode
 	for _, ps := range pods {
 		nodeID := ""
@@ -812,6 +813,7 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 		if strings.HasPrefix(ps.Name, "agent-") {
 			nodeID = strings.TrimPrefix(ps.Name, "agent-")
 		}
+		seen[nodeID] = true
 		if existing, ok := p.nodes[nodeID]; ok {
 			existing.Status = ps.Phase
 			existing.LastSeen = time.Now()
@@ -829,6 +831,17 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 			p.nodes[nodeID] = node
 			result = append(result, node)
 		}
+	}
+
+	// Include non-K8s nodes (DO droplets, VMs) that are only tracked in memory.
+	for id, n := range p.nodes {
+		if seen[id] {
+			continue
+		}
+		if org != "" && n.Org != org {
+			continue
+		}
+		result = append(result, n)
 	}
 
 	return result, nil
