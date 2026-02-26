@@ -1,8 +1,6 @@
-import { useSpaceStore } from '@/stores/spaceStore';
 import { useGateway } from '@/hooks/useGateway';
 
 export function DeployCLIStep() {
-  const activeSpace = useSpaceStore((s) => s.activeSpace);
   const { gatewayUrl } = useGateway();
   const gwUrl = gatewayUrl ?? 'wss://gw.hanzo.bot';
 
@@ -11,27 +9,23 @@ export function DeployCLIStep() {
       <div>
         <h3 className="text-sm font-semibold mb-1">Use the CLI</h3>
         <p className="text-xs text-muted-foreground">
-          Run a headless bot node from your terminal.
+          One command to log in, connect, and start your node.
         </p>
       </div>
 
       <div className="space-y-3">
         <div className="border rounded-lg p-3 bg-muted/30">
-          <p className="text-xs font-medium mb-2">1. Install</p>
+          <p className="text-xs font-medium mb-2">Quick start</p>
           <pre className="text-xs bg-background border rounded p-2 overflow-x-auto font-mono select-all">
-npm install -g @hanzo/bot
+npx @hanzo/bot
           </pre>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            Handles login, configuration, and gateway connection automatically.
+          </p>
         </div>
 
         <div className="border rounded-lg p-3 bg-muted/30">
-          <p className="text-xs font-medium mb-2">2. Run as foreground process</p>
-          <pre className="text-xs bg-background border rounded p-2 overflow-x-auto font-mono select-all">
-{`hanzo-bot node run`}
-          </pre>
-        </div>
-
-        <div className="border rounded-lg p-3 bg-muted/30">
-          <p className="text-xs font-medium mb-2">Or install as system service</p>
+          <p className="text-xs font-medium mb-2">Install as system service</p>
           <pre className="text-xs bg-background border rounded p-2 overflow-x-auto font-mono select-all">
 hanzo-bot node install
           </pre>
@@ -43,7 +37,6 @@ hanzo-bot node install
 
       <p className="text-[10px] text-muted-foreground">
         Gateway: <code className="text-[10px]">{gwUrl}</code>
-        {activeSpace ? ` | Space: ${activeSpace.id}` : ''}
       </p>
     </div>
   );
