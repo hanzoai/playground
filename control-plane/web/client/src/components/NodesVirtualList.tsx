@@ -32,8 +32,6 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
   const [visibleInactiveCount, setVisibleInactiveCount] = useState(20);
 
   const readyPresentation = getNodeStatusPresentation("ready", "active");
-  const stalePresentation = getNodeStatusPresentation("starting");
-  const veryStalePresentation = getNodeStatusPresentation("degraded");
   const degradedPresentation = getNodeStatusPresentation("degraded");
   const startingPresentation = getNodeStatusPresentation("starting");
   const offlinePresentation = getNodeStatusPresentation("offline", "inactive");
@@ -42,34 +40,18 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
     "px-4 py-3 shadow-sm"
   );
 
-  // Two-tier categorization: Primary (Running/Offline) + Secondary (Health Details)
+  // Categorize by lifecycle status — the gateway is the source of truth
   const categorizedNodes = useMemo(() => {
-    const now = new Date();
-
     const categorized = nodes.reduce((acc, node) => {
-      // Safe date handling - check for null/undefined heartbeat
-      const lastHeartbeat = node.last_heartbeat ? new Date(node.last_heartbeat) : null;
-      const isValidHeartbeat = lastHeartbeat && !isNaN(lastHeartbeat.getTime());
-      const minutesSinceHeartbeat = isValidHeartbeat
-        ? (now.getTime() - lastHeartbeat.getTime()) / (1000 * 60)
-        : Infinity;
-
-      // Primary categorization based on lifecycle status (what users care about)
       const isRunning = node.lifecycle_status === 'ready' || node.lifecycle_status === 'running' || node.lifecycle_status === 'degraded';
 
       if (isRunning) {
-        // Node is running - categorize by health details
         if (node.lifecycle_status === 'degraded') {
           acc.running.degraded.push(node);
-        } else if (minutesSinceHeartbeat <= 2) {
-          acc.running.fresh.push(node);
-        } else if (minutesSinceHeartbeat <= 5) {
-          acc.running.stale.push(node);
         } else {
-          acc.running.veryStale.push(node);
+          acc.running.active.push(node);
         }
       } else {
-        // Node is offline - categorize by reason
         if (node.lifecycle_status === 'starting') {
           acc.offline.starting.push(node);
         } else {
@@ -80,9 +62,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
       return acc;
     }, {
       running: {
-        fresh: [] as NodeSummary[],
-        stale: [] as NodeSummary[],
-        veryStale: [] as NodeSummary[],
+        active: [] as NodeSummary[],
         degraded: [] as NodeSummary[],
       },
       offline: {
@@ -121,9 +101,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
     };
 
     // Sort all subcategories
-    categorized.running.fresh.sort(sortByImportance);
-    categorized.running.stale.sort(sortByImportance);
-    categorized.running.veryStale.sort(sortByImportance);
+    categorized.running.active.sort(sortByImportance);
     categorized.running.degraded.sort(sortByImportance);
     categorized.offline.starting.sort(sortByImportance);
     categorized.offline.down.sort(sortByImportance);
@@ -148,9 +126,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
 
     return {
       running: {
-        fresh: filterBySearch(categorizedNodes.running.fresh),
-        stale: filterBySearch(categorizedNodes.running.stale),
-        veryStale: filterBySearch(categorizedNodes.running.veryStale),
+        active: filterBySearch(categorizedNodes.running.active),
         degraded: filterBySearch(categorizedNodes.running.degraded),
       },
       offline: {
@@ -167,7 +143,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
   const offlineNodes = (filteredNodes?.offline && typeof filteredNodes.offline === 'object' && filteredNodes.offline !== null)
     ? Object.values(filteredNodes.offline).flat()
     : [];
-  const { fresh = [], stale = [], veryStale = [], degraded = [] } = filteredNodes?.running || {};
+  const { active = [], degraded = [] } = filteredNodes?.running || {};
   const { starting = [], down = [] } = filteredNodes?.offline || {};
 
   // Loading skeleton
@@ -226,8 +202,8 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
       {/* Running Nodes Section */}
       {runningNodes.length > 0 && (
         <div className="space-y-6">
-          {/* Fresh Running Nodes */}
-          {fresh.length > 0 && (
+          {/* Running Nodes */}
+          {active.length > 0 && (
             <div className={sectionContainerClasses}>
               <div className="flex items-center gap-3 border-b border-border/60 pb-2">
                 <span
@@ -237,7 +213,7 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
                   )}
                 />
                 <h3 className="text-sm font-semibold text-foreground">
-                  Ready &amp; responsive
+                  Running
                 </h3>
                 <span
                   className={cn(
@@ -245,89 +221,27 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
                     readyPresentation.theme.pillClass
                   )}
                 >
-                  {fresh.length} fresh
+                  {active.length} online
                 </span>
               </div>
 
               <div className="space-y-3 pt-3">
-                {fresh.slice(0, visibleFreshCount).map((node) => (
+                {active.slice(0, visibleFreshCount).map((node) => (
                   <NodeCard key={node.id} nodeSummary={node} density={density} />
                 ))}
               </div>
 
-              {fresh.length > visibleFreshCount && (
+              {active.length > visibleFreshCount && (
                 <div className="pt-2 text-center">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setVisibleFreshCount((prev) => prev + 20)}
                   >
-                    Show {Math.min(20, fresh.length - visibleFreshCount)} more running nodes
+                    Show {Math.min(20, active.length - visibleFreshCount)} more running nodes
                   </Button>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Stale Running Nodes */}
-          {stale.length > 0 && (
-            <div className={sectionContainerClasses}>
-              <div className="flex items-center gap-3 border-b border-border/60 pb-2">
-                <span
-                  className={cn(
-                    "h-2.5 w-2.5 rounded-full",
-                    stalePresentation.theme.indicatorClass
-                  )}
-                />
-                <h3 className="text-sm font-semibold text-foreground">
-                  Running (Stale)
-                </h3>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-body-small font-medium",
-                    stalePresentation.theme.pillClass
-                  )}
-                >
-                  {stale.length} stale
-                </span>
-              </div>
-
-              <div className="space-y-3 pt-3">
-                {stale.map((node) => (
-                  <NodeCard key={node.id} nodeSummary={node} density={density} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Very Stale Running Nodes */}
-          {veryStale.length > 0 && (
-            <div className={sectionContainerClasses}>
-              <div className="flex items-center gap-3 border-b border-border/60 pb-2">
-                <span
-                  className={cn(
-                    "h-2.5 w-2.5 rounded-full",
-                    veryStalePresentation.theme.indicatorClass
-                  )}
-                />
-                <h3 className="text-sm font-semibold text-foreground">
-                  Running (Very Stale)
-                </h3>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-body-small font-medium",
-                    veryStalePresentation.theme.pillClass
-                  )}
-                >
-                  {veryStale.length} very stale
-                </span>
-              </div>
-
-              <div className="space-y-3 pt-3">
-                {veryStale.map((node) => (
-                  <NodeCard key={node.id} nodeSummary={node} density={density} />
-                ))}
-              </div>
             </div>
           )}
 
