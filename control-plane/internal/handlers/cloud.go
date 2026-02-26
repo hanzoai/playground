@@ -1,14 +1,19 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanzoai/playground/control-plane/internal/cloud"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 )
+
+var pricingHTTPClient = &http.Client{Timeout: 5 * time.Second}
 
 // CloudProvisionHandler creates a new cloud agent in the DOKS cluster.
 func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
@@ -199,43 +204,68 @@ func CloudSyncHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 }
 
 // CloudPricingHandler returns available droplet sizes and their hourly cost in cents.
-func CloudPricingHandler() gin.HandlerFunc {
-	type PricingTier struct {
+// Fetches from the centralized pricing service; falls back to hardcoded tiers if unreachable.
+func CloudPricingHandler(pricingURL string) gin.HandlerFunc {
+	type fallbackTier struct {
 		Slug     string `json:"slug"`
 		VCPUs    int    `json:"vcpus"`
-		MemoryMB int    `json:"memory_mb"`
-		DiskGB   int    `json:"disk_gb"`
-		CentsHr  int    `json:"cents_per_hour"`
+		MemoryMB int    `json:"memoryMB"`
+		DiskGB   int    `json:"diskGB"`
+		CentsHr  int    `json:"centsPerHour"`
 	}
 
-	// Curated pricing tiers from DigitalOcean's standard droplet sizes.
-	// Hourly costs sourced from visor/billing/pricing.go.
-	tiers := []PricingTier{
-		{Slug: "s-1vcpu-1gb", VCPUs: 1, MemoryMB: 1024, DiskGB: 25, CentsHr: 1},
-		{Slug: "s-1vcpu-2gb", VCPUs: 1, MemoryMB: 2048, DiskGB: 50, CentsHr: 2},
-		{Slug: "s-2vcpu-2gb", VCPUs: 2, MemoryMB: 2048, DiskGB: 60, CentsHr: 3},
-		{Slug: "s-2vcpu-4gb", VCPUs: 2, MemoryMB: 4096, DiskGB: 80, CentsHr: 4},
-		{Slug: "s-4vcpu-8gb", VCPUs: 4, MemoryMB: 8192, DiskGB: 160, CentsHr: 7},
-		{Slug: "s-8vcpu-16gb", VCPUs: 8, MemoryMB: 16384, DiskGB: 320, CentsHr: 14},
-		{Slug: "s-16vcpu-32gb", VCPUs: 16, MemoryMB: 32768, DiskGB: 640, CentsHr: 29},
-		{Slug: "g-2vcpu-8gb", VCPUs: 2, MemoryMB: 8192, DiskGB: 25, CentsHr: 7},
-		{Slug: "g-4vcpu-16gb", VCPUs: 4, MemoryMB: 16384, DiskGB: 50, CentsHr: 14},
-		{Slug: "c-2vcpu-4gb", VCPUs: 2, MemoryMB: 4096, DiskGB: 25, CentsHr: 6},
-		{Slug: "c-4vcpu-8gb", VCPUs: 4, MemoryMB: 8192, DiskGB: 50, CentsHr: 13},
+	fallback := gin.H{
+		"provider": "digitalocean",
+		"region":   "sfo3",
+		"tiers": []fallbackTier{
+			{Slug: "s-1vcpu-1gb", VCPUs: 1, MemoryMB: 1024, DiskGB: 25, CentsHr: 1},
+			{Slug: "s-1vcpu-2gb", VCPUs: 1, MemoryMB: 2048, DiskGB: 50, CentsHr: 2},
+			{Slug: "s-2vcpu-2gb", VCPUs: 2, MemoryMB: 2048, DiskGB: 60, CentsHr: 3},
+			{Slug: "s-2vcpu-4gb", VCPUs: 2, MemoryMB: 4096, DiskGB: 80, CentsHr: 4},
+			{Slug: "s-4vcpu-8gb", VCPUs: 4, MemoryMB: 8192, DiskGB: 160, CentsHr: 7},
+			{Slug: "s-8vcpu-16gb", VCPUs: 8, MemoryMB: 16384, DiskGB: 320, CentsHr: 14},
+			{Slug: "s-16vcpu-32gb", VCPUs: 16, MemoryMB: 32768, DiskGB: 640, CentsHr: 29},
+			{Slug: "g-2vcpu-8gb", VCPUs: 2, MemoryMB: 8192, DiskGB: 25, CentsHr: 7},
+			{Slug: "g-4vcpu-16gb", VCPUs: 4, MemoryMB: 16384, DiskGB: 50, CentsHr: 14},
+			{Slug: "c-2vcpu-4gb", VCPUs: 2, MemoryMB: 4096, DiskGB: 25, CentsHr: 6},
+			{Slug: "c-4vcpu-8gb", VCPUs: 4, MemoryMB: 8192, DiskGB: 50, CentsHr: 13},
+		},
 	}
 
 	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"provider": "digitalocean",
-			"region":   "sfo3",
-			"tiers":    tiers,
-		})
+		resp, err := pricingHTTPClient.Get(pricingURL + "/v1/pricing/compute")
+		if err != nil {
+			logger.Logger.Warn().Err(err).Msg("pricing service unreachable, using fallback")
+			c.JSON(http.StatusOK, fallback)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			logger.Logger.Warn().Int("status", resp.StatusCode).Msg("pricing service returned error, using fallback")
+			c.JSON(http.StatusOK, fallback)
+			return
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusOK, fallback)
+			return
+		}
+
+		var data map[string]interface{}
+		if err := json.Unmarshal(body, &data); err != nil {
+			c.JSON(http.StatusOK, fallback)
+			return
+		}
+		c.JSON(http.StatusOK, data)
 	}
 }
 
 // CloudPresetsHandler returns curated spec presets for the LaunchPage.
-func CloudPresetsHandler() gin.HandlerFunc {
-	type Preset struct {
+// Fetches from the centralized pricing service; falls back to hardcoded presets if unreachable.
+func CloudPresetsHandler(pricingURL string) gin.HandlerFunc {
+	type fallbackPreset struct {
 		ID          string `json:"id"`
 		Name        string `json:"name"`
 		Description string `json:"description"`
@@ -246,51 +276,40 @@ func CloudPresetsHandler() gin.HandlerFunc {
 		Provider    string `json:"provider"`
 	}
 
-	presets := []Preset{
-		{
-			ID:          "starter",
-			Name:        "Starter",
-			Description: "Light tasks, chat bots, simple automations",
-			Slug:        "s-1vcpu-2gb",
-			VCPUs:       1,
-			MemoryGB:    2,
-			CentsHr:     2,
-			Provider:    "digitalocean",
-		},
-		{
-			ID:          "pro",
-			Name:        "Pro",
-			Description: "Code generation, research, multi-tool agents",
-			Slug:        "s-2vcpu-4gb",
-			VCPUs:       2,
-			MemoryGB:    4,
-			CentsHr:     4,
-			Provider:    "digitalocean",
-		},
-		{
-			ID:          "power",
-			Name:        "Power",
-			Description: "Heavy workloads, browser automation, large projects",
-			Slug:        "s-4vcpu-8gb",
-			VCPUs:       4,
-			MemoryGB:    8,
-			CentsHr:     7,
-			Provider:    "digitalocean",
-		},
-		{
-			ID:          "gpu",
-			Name:        "GPU",
-			Description: "ML training, image generation, video processing",
-			Slug:        "g-2vcpu-8gb",
-			VCPUs:       2,
-			MemoryGB:    8,
-			CentsHr:     7,
-			Provider:    "digitalocean",
-		},
-	}
+	fallbackPresets := gin.H{"presets": []fallbackPreset{
+		{ID: "starter", Name: "Starter", Description: "Light tasks, chat bots, simple automations", Slug: "s-1vcpu-2gb", VCPUs: 1, MemoryGB: 2, CentsHr: 2, Provider: "digitalocean"},
+		{ID: "pro", Name: "Pro", Description: "Code generation, research, multi-tool agents", Slug: "s-2vcpu-4gb", VCPUs: 2, MemoryGB: 4, CentsHr: 4, Provider: "digitalocean"},
+		{ID: "power", Name: "Power", Description: "Heavy workloads, browser automation, large projects", Slug: "s-4vcpu-8gb", VCPUs: 4, MemoryGB: 8, CentsHr: 7, Provider: "digitalocean"},
+		{ID: "gpu", Name: "GPU", Description: "ML training, image generation, video processing", Slug: "g-2vcpu-8gb", VCPUs: 2, MemoryGB: 8, CentsHr: 7, Provider: "digitalocean"},
+	}}
 
 	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"presets": presets})
+		resp, err := pricingHTTPClient.Get(pricingURL + "/v1/pricing/compute/presets")
+		if err != nil {
+			logger.Logger.Warn().Err(err).Msg("pricing service unreachable, using fallback presets")
+			c.JSON(http.StatusOK, fallbackPresets)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			logger.Logger.Warn().Int("status", resp.StatusCode).Msg("pricing service returned error, using fallback presets")
+			c.JSON(http.StatusOK, fallbackPresets)
+			return
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusOK, fallbackPresets)
+			return
+		}
+
+		var data map[string]interface{}
+		if err := json.Unmarshal(body, &data); err != nil {
+			c.JSON(http.StatusOK, fallbackPresets)
+			return
+		}
+		c.JSON(http.StatusOK, data)
 	}
 }
 
