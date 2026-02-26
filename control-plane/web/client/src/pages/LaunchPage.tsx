@@ -8,7 +8,6 @@ import {
   Terminal,
   Monitor,
   Cpu,
-  Plus,
 } from "@/components/ui/icon-bridge";
 import {
   cloudProvision,
