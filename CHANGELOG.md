@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.103] - 2026-02-26
+
+
+### Fixed
+
+- Fix(auth): auto-redirect to IAM login, skip intermediate button page (#43)
+
+Instead of showing a "Sign in with Hanzo" button that the user must
+click, automatically redirect to the IAM provider (hanzo.id) when
+authentication is required. Shows a brief "Redirecting..." state while
+the redirect happens.
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (2870af1)
+
 ## [0.1.41-rc.102] - 2026-02-26
 
 
