@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.110] - 2026-02-26
+
+
+### Fixed
+
+- Fix(cloud): include DO droplets in ListNodes alongside K8s pods (#46)
+
+ListNodes only iterated K8s pods, ignoring non-K8s cloud nodes like
+DigitalOcean droplets that are tracked in-memory. Add a second pass
+to include droplets and VMs provisioned via Visor.
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (2b0cdc3)
+
 ## [0.1.41-rc.109] - 2026-02-26
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@hanzo/playground",
-  "version": "0.1.41-rc.109",
+  "version": "0.1.41-rc.110",
   "description": "Playground TypeScript SDK",
   "type": "module",
   "main": "dist/index.js",
