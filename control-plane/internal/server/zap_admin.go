@@ -137,7 +137,7 @@ func zapRespond(status int, data interface{}) *zap.Message {
 
 // registerAdminRESTRoutes adds REST endpoints for admin operations on the Gin router.
 func registerAdminRESTRoutes(router *gin.Engine, store storage.StorageProvider) {
-	admin := router.Group("/api/v1/admin")
+	admin := router.Group("/v1/admin")
 	{
 		admin.GET("/bots", func(c *gin.Context) {
 			ctx := c.Request.Context()

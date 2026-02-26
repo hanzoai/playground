@@ -616,6 +616,14 @@ func (s *PlaygroundServer) checkCacheHealth(ctx context.Context) gin.H {
 }
 
 func (s *PlaygroundServer) setupRoutes() {
+	// Backward-compat: rewrite /api/v1/* → /v1/* so old URLs keep working.
+	s.Router.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/") {
+			c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/api")
+		}
+		c.Next()
+	})
+
 	// Configure CORS from configuration
 	corsConfig := cors.Config{
 		AllowOrigins:     s.config.API.CORS.AllowedOrigins,
@@ -1094,11 +1102,6 @@ func (s *PlaygroundServer) setupRoutes() {
 		}
 	}
 
-	// /api/v1/* → /v1/* backward-compat rewrite for old URLs
-	s.Router.Any("/api/v1/*path", func(c *gin.Context) {
-		c.Request.URL.Path = "/v1" + c.Param("path")
-		s.Router.HandleContext(c)
-	})
 
 }
 
