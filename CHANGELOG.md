@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.98] - 2026-02-26
+
+
+### Added
+
+- Feat: per-bot budget system, notification sounds, voice I/O, route consolidation
+
+- Consolidate all API routes into /api/v1, remove /api/ui/v1 and /api/ui/v2
+- Add per-bot budget backend: storage, handlers, spend tracking with daily/monthly limits
+- Add budget frontend: Apple-style progress ring, spend bars, sparkline trends, settings dialog
+- Add notification sounds service with Web Audio API synthesized tones
+- Add voice I/O hooks (SpeechRecognition STT, SpeechSynthesis TTS)
+- Add preferences onboarding gate and settings page
+- Add preferences backend API (GET/PUT /v1/preferences)
+- Integrate MicButton and TTS speaker into ChatPanel
+- Fix Gin route param conflicts (nodeId→node_id, bot_id→botId, vcId→vc_id) (a8c5cdf)
+
 ## [0.1.41-rc.97] - 2026-02-26
 
 
