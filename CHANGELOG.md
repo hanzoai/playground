@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.106] - 2026-02-26
+
+
+### Added
+
+- Feat(cloud): fetch pricing from centralized pricing service (#45)
+
+* feat(cloud): fetch pricing from centralized pricing service with fallback
+
+Pricing and presets handlers now query the in-cluster pricing service
+at /v1/pricing/compute and /v1/pricing/compute/presets. Falls back to
+hardcoded tiers when the service is unreachable.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(cloud): pass env tags to DO droplets and detect visor errors
+
+- Pass gateway URL, token, API key as cloud-init env tags so droplets
+  auto-connect to gw.hanzo.bot on boot
+- Use public gateway URL (wss://gw.hanzo.bot) for external droplets
+  instead of internal K8s service URL
+- Detect Beego-style error responses (HTTP 200 with status=error) in
+  visor client to surface provider configuration errors
+- Add Tags field to VMProvisionRequest
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (8f43ea0)
+
 ## [0.1.41-rc.105] - 2026-02-26
 
 
