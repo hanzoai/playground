@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.104] - 2026-02-26
+
+
+### Other
+
+- Harden E2E auth helper for new hanzo.id login page
+
+- Handle auto-redirect to hanzo.id (no sign-in button click needed)
+- Use domcontentloaded instead of networkidle for faster initial load
+- Add /launch and other new routes to post-login URL pattern
+- Remove overly broad [class*="error"] selector that false-triggered
+- Force-click submit button to bypass Ant Design overlays
+- Increase timeouts for slow OIDC cross-origin flows (1ef07d3)
+
 ## [0.1.41-rc.103] - 2026-02-26
 
 
