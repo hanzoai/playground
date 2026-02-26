@@ -636,6 +636,24 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		Str("org", org).
 		Msg("provisioning DO droplet via visor")
 
+	// Pass gateway URL and API key as env tags for cloud-init.
+	// Droplets run outside K8s, so use the public gateway URL (wss://gw.hanzo.bot)
+	// rather than the internal K8s service URL.
+	gatewayURL := p.config.Kubernetes.GatewayURL
+	if strings.HasPrefix(gatewayURL, "ws://") && strings.Contains(gatewayURL, ".svc") {
+		gatewayURL = "wss://gw.hanzo.bot"
+	}
+	tags := map[string]string{
+		"env:BOT_NODE_GATEWAY_URL": gatewayURL,
+		"env:AGENT_NODE_ID":        nodeID,
+	}
+	if p.config.Kubernetes.GatewayToken != "" {
+		tags["env:BOT_GATEWAY_TOKEN"] = p.config.Kubernetes.GatewayToken
+	}
+	if req.UserAPIKey != "" {
+		tags["env:HANZO_API_KEY"] = req.UserAPIKey
+	}
+
 	vmReq := &VMProvisionRequest{
 		NodeID:       nodeID,
 		DisplayName:  displayName,
@@ -644,6 +662,7 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		InstanceType: instanceType,
 		Owner:        req.Owner,
 		Org:          org,
+		Tags:         tags,
 	}
 
 	created, err := p.visor.CreateMachine(ctx, vmReq)

@@ -8,9 +8,10 @@ import (
 
 // CloudConfig holds configuration for cloud agent provisioning.
 type CloudConfig struct {
-	Enabled    bool             `yaml:"enabled" mapstructure:"enabled"`
-	Kubernetes KubernetesConfig `yaml:"kubernetes" mapstructure:"kubernetes"`
-	Visor      VisorConfig      `yaml:"visor" mapstructure:"visor"`
+	Enabled           bool             `yaml:"enabled" mapstructure:"enabled"`
+	PricingServiceURL string           `yaml:"pricing_service_url" mapstructure:"pricing_service_url"`
+	Kubernetes        KubernetesConfig `yaml:"kubernetes" mapstructure:"kubernetes"`
+	Visor             VisorConfig      `yaml:"visor" mapstructure:"visor"`
 }
 
 // KubernetesConfig holds K8s-specific provisioning settings.
@@ -64,7 +65,8 @@ type IAMConfig struct {
 // DefaultCloudConfig returns sensible defaults for cloud provisioning.
 func DefaultCloudConfig() CloudConfig {
 	return CloudConfig{
-		Enabled: false,
+		Enabled:           false,
+		PricingServiceURL: "http://pricing.hanzo.svc.cluster.local:8080",
 		Kubernetes: KubernetesConfig{
 			Enabled:          false,
 			Namespace:        "hanzo",
@@ -115,6 +117,9 @@ func applyCloudEnvOverrides(cfg *Config) {
 	// Cloud
 	if v := hanzoEnvWithFallback("CLOUD_ENABLED"); v != "" {
 		cfg.Cloud.Enabled = v == "true" || v == "1"
+	}
+	if v := hanzoEnvWithFallback("CLOUD_PRICING_SERVICE_URL"); v != "" {
+		cfg.Cloud.PricingServiceURL = v
 	}
 	if v := hanzoEnvWithFallback("CLOUD_K8S_ENABLED"); v != "" {
 		cfg.Cloud.Kubernetes.Enabled = v == "true" || v == "1"
