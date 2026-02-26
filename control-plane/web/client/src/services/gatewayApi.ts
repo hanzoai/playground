@@ -191,9 +191,12 @@ export interface CloudPreset {
   description: string;
   slug: string;
   vcpus: number;
-  memory_gb: number;
-  cents_per_hour: number;
-  provider: string;
+  // Go backend sends snake_case, pricing service sends camelCase.
+  memory_gb?: number;
+  memoryGB?: number;
+  cents_per_hour?: number;
+  centsPerHour?: number;
+  provider?: string;
 }
 
 export async function cloudGetPricing(): Promise<{ provider: string; region: string; tiers: PricingTier[] }> {

@@ -102,8 +102,8 @@ export function LaunchPage() {
             description: p.description,
             slug: p.slug,
             vcpus: p.vcpus,
-            memoryGB: p.memory_gb,
-            centsPerHour: p.cents_per_hour,
+            memoryGB: p.memory_gb ?? p.memoryGB ?? 2,
+            centsPerHour: p.cents_per_hour ?? p.centsPerHour ?? 0,
           }))
         );
       }
