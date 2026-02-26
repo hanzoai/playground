@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.95] - 2026-02-26
+
+
+### Fixed
+
+- Fix: simplify onboarding to single npx @hanzo/bot command
+
+Replace the 3-step install/configure/connect instructions with a single
+npx @hanzo/bot command that handles everything automatically. Add
+download links for platform-specific GUI apps. (877d47d)
+
 ## [0.1.41-rc.94] - 2026-02-26
 
 
