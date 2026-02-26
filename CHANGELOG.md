@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.105] - 2026-02-26
+
+
+### Fixed
+
+- Fix(ui): responsive design for all pages at mobile/tablet/laptop/desktop (#44)
+
+- CredentialsPage: reduce grid template min-widths, add overflow-x-auto
+- DIDExplorerPage: reduce grid template min-widths for smaller screens
+- SpacesPage: stack header on mobile, add responsive padding, truncate
+- SpaceSettingsPage: responsive padding, stack items on mobile
+- ControlPlanePage: stack 60/40 split on mobile, wrap metrics strip
+- LaunchPage: stack running agents on mobile, responsive connect section
+- PackagesPage: responsive dialog sizing (95vw on mobile)
+- ObservabilityWebhookSettingsPage: stack header on mobile
+- AuthGuard: responsive padding (p-4 → p-8 at sm), add px-4 container
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (f8de186)
+
 ## [0.1.41-rc.104] - 2026-02-26
 
 
