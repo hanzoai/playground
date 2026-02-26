@@ -157,7 +157,7 @@ func (ls *LocalStorage) RecordBotSpend(ctx context.Context, record *BotSpendReco
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Insert spend record
 	_, err = tx.ExecContext(ctx, `
