@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.99] - 2026-02-26
+
+
+### Fixed
+
+- Fix: resolve TS strict build errors for CI
+
+- Remove unused dailyPct variable in BotBudgetCard
+- Remove unused Warning import in BudgetSettingsDialog
+- Define local SpeechRecognition types to avoid missing DOM lib dependency
+- Fix type cast in useNotificationSound approval handler (53ee10b)
+
 ## [0.1.41-rc.98] - 2026-02-26
 
 
