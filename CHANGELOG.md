@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.96] - 2026-02-26
+
+
+### Other
+
+- Consolidate API routes to /v1/ prefix, remove /api/ui path
+
+Add /v1/* → /api/ui/v1/* URL rewrite in GIN router so frontend uses
+clean /v1/ prefix. Set up api.hanzo.bot DNS + Traefik middleware for
+external API access. Update all frontend service files to use
+VITE_API_BASE_URL with /v1 fallback instead of hardcoded /api/ui/v1. (19a6599)
+
 ## [0.1.41-rc.95] - 2026-02-26
 
 
