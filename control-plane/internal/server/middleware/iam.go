@@ -100,12 +100,12 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 
 		// Always allow health, metrics, UI
 		path := c.Request.URL.Path
-		if strings.HasPrefix(path, "/api/v1/health") || path == "/health" || path == "/metrics" {
+		if strings.HasPrefix(path, "/v1/health") || strings.HasPrefix(path, "/api/v1/health") || path == "/health" || path == "/metrics" {
 			c.Next()
 			return
 		}
-		// Allow UI static files and SPA routes (everything not under /api/)
-		if !strings.HasPrefix(path, "/api/") {
+		// Allow UI static files and SPA routes (everything not under /v1/ or /api/)
+		if !strings.HasPrefix(path, "/v1/") && !strings.HasPrefix(path, "/api/") {
 			c.Next()
 			return
 		}

@@ -6,6 +6,7 @@
  */
 
 import { gateway } from './gatewayClient';
+import { API_BASE_URL } from './api';
 import type {
   AgentsCreateParams,
   AgentsCreateResult,
@@ -120,7 +121,7 @@ export interface CloudNode {
 
 /** Provision a full cloud hanzo node on DOKS. */
 export async function cloudProvision(params: CloudProvisionParams): Promise<CloudProvisionResult> {
-  const resp = await fetch('/v1/cloud/nodes/provision', {
+  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/provision`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
@@ -131,13 +132,13 @@ export async function cloudProvision(params: CloudProvisionParams): Promise<Clou
 
 /** Deprovision a cloud hanzo node. */
 export async function cloudDeprovision(nodeId: string): Promise<void> {
-  const resp = await fetch(`/v1/cloud/nodes/${nodeId}`, { method: 'DELETE' });
+  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}`, { method: 'DELETE' });
   if (!resp.ok) throw new Error(`cloud deprovision failed: ${resp.status}`);
 }
 
 /** List all cloud nodes (optionally filtered by org). */
 export async function cloudListNodes(org?: string): Promise<{ nodes: CloudNode[]; count: number }> {
-  const url = org ? `/v1/cloud/nodes?org=${org}` : '/v1/cloud/nodes';
+  const url = org ? `${API_BASE_URL}/cloud/nodes?org=${org}` : `${API_BASE_URL}/cloud/nodes`;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`cloud list failed: ${resp.status}`);
   return resp.json();
@@ -145,14 +146,14 @@ export async function cloudListNodes(org?: string): Promise<{ nodes: CloudNode[]
 
 /** Get a specific cloud node. */
 export async function cloudGetNode(nodeId: string): Promise<CloudNode> {
-  const resp = await fetch(`/v1/cloud/nodes/${nodeId}`);
+  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}`);
   if (!resp.ok) throw new Error(`cloud get node failed: ${resp.status}`);
   return resp.json();
 }
 
 /** Get logs for a cloud node. */
 export async function cloudGetLogs(nodeId: string, tail = 100): Promise<{ node_id: string; logs: string }> {
-  const resp = await fetch(`/v1/cloud/nodes/${nodeId}/logs?tail=${tail}`);
+  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}/logs?tail=${tail}`);
   if (!resp.ok) throw new Error(`cloud logs failed: ${resp.status}`);
   return resp.json();
 }
@@ -164,7 +165,7 @@ export async function cloudTeamProvision(teamName: string, agents: CloudProvisio
   errors: string[];
   count: number;
 }> {
-  const resp = await fetch('/v1/cloud/teams/provision', {
+  const resp = await fetch(`${API_BASE_URL}/cloud/teams/provision`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ team_name: teamName, agents, workspace }),
@@ -200,13 +201,13 @@ export interface CloudPreset {
 }
 
 export async function cloudGetPricing(): Promise<{ provider: string; region: string; tiers: PricingTier[] }> {
-  const resp = await fetch('/v1/cloud/pricing');
+  const resp = await fetch(`${API_BASE_URL}/cloud/pricing`);
   if (!resp.ok) throw new Error(`cloud pricing failed: ${resp.status}`);
   return resp.json();
 }
 
 export async function cloudGetPresets(): Promise<{ presets: CloudPreset[] }> {
-  const resp = await fetch('/v1/cloud/presets');
+  const resp = await fetch(`${API_BASE_URL}/cloud/presets`);
   if (!resp.ok) throw new Error(`cloud presets failed: ${resp.status}`);
   return resp.json();
 }

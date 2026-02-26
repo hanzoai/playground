@@ -629,6 +629,9 @@ func (s *PlaygroundServer) setupRoutes() {
 	if len(corsConfig.AllowOrigins) == 0 {
 		corsConfig.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173"}
 	}
+	// Ensure api.hanzo.bot and app.hanzo.bot are always allowed for cross-origin API calls
+	corsConfig.AllowOrigins = append(corsConfig.AllowOrigins, "https://api.hanzo.bot", "https://app.hanzo.bot")
+	corsConfig.AllowCredentials = true
 	if len(corsConfig.AllowMethods) == 0 {
 		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	}
@@ -676,6 +679,9 @@ func (s *PlaygroundServer) setupRoutes() {
 			TokenEndpoint:    iamEndpoint + "/oauth/token",
 			UserinfoEndpoint: iamEndpoint + "/oauth/userinfo",
 		}
+		s.Router.POST("/v1/auth/token", handlers.AuthTokenProxyHandler(authProxyCfg))
+		s.Router.GET("/v1/auth/userinfo", handlers.AuthUserinfoProxyHandler(authProxyCfg))
+		// Backward compat: old /auth/* paths
 		s.Router.POST("/auth/token", handlers.AuthTokenProxyHandler(authProxyCfg))
 		s.Router.GET("/auth/userinfo", handlers.AuthUserinfoProxyHandler(authProxyCfg))
 	}
@@ -754,7 +760,7 @@ func (s *PlaygroundServer) setupRoutes() {
 			// SPA fallback
 			s.Router.NoRoute(func(c *gin.Context) {
 				path := c.Request.URL.Path
-				if strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/v1/") {
+				if strings.HasPrefix(path, "/v1/") || strings.HasPrefix(path, "/api/") {
 					c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
 					return
 				}
@@ -766,8 +772,8 @@ func (s *PlaygroundServer) setupRoutes() {
 		}
 	}
 
-	// All API routes under /api/v1
-	agentAPI := s.Router.Group("/api/v1")
+	// All API routes under /v1
+	agentAPI := s.Router.Group("/v1")
 	{
 		// Health check endpoint
 		agentAPI.GET("/health", s.healthCheckHandler)
@@ -1088,9 +1094,9 @@ func (s *PlaygroundServer) setupRoutes() {
 		}
 	}
 
-	// /v1/* → /api/v1/* rewrite for clean URLs via api.hanzo.bot/v1/
-	s.Router.Any("/v1/*path", func(c *gin.Context) {
-		c.Request.URL.Path = "/api/v1" + c.Param("path")
+	// /api/v1/* → /v1/* backward-compat rewrite for old URLs
+	s.Router.Any("/api/v1/*path", func(c *gin.Context) {
+		c.Request.URL.Path = "/v1" + c.Param("path")
 		s.Router.HandleContext(c)
 	})
 

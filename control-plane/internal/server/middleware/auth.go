@@ -40,14 +40,14 @@ func APIKeyAuth(config AuthConfig) gin.HandlerFunc {
 		}
 
 		// Always allow health and metrics by default
-		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/health") || c.Request.URL.Path == "/health" || c.Request.URL.Path == "/metrics" {
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/health") || strings.HasPrefix(c.Request.URL.Path, "/api/v1/health") || c.Request.URL.Path == "/health" || c.Request.URL.Path == "/metrics" {
 			c.Next()
 			return
 		}
 
 		// Allow UI static files and SPA routes to load (the React app handles auth prompting).
-		// API routes start with /api/ and are checked for auth; everything else is UI.
-		if !strings.HasPrefix(c.Request.URL.Path, "/api/") {
+		// API routes start with /v1/ or /api/ and are checked for auth; everything else is UI.
+		if !strings.HasPrefix(c.Request.URL.Path, "/v1/") && !strings.HasPrefix(c.Request.URL.Path, "/api/") {
 			c.Next()
 			return
 		}

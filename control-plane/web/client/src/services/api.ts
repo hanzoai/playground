@@ -21,7 +21,7 @@ import type {
   BotStatusUpdate
 } from '../types/playground';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.hanzo.bot/v1';
 const STORAGE_KEY = "af_api_key";
 const IAM_TOKEN_KEY = "af_iam_token";
 
