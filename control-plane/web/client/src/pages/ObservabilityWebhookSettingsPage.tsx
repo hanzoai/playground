@@ -276,12 +276,12 @@ export function ObservabilityWebhookSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Settings className="h-8 w-8 text-muted-foreground" />
+          <Settings className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground shrink-0" />
           <div>
-            <h1 className="text-2xl font-bold">Observability Webhook</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold">Observability Webhook</h1>
+            <p className="text-sm text-muted-foreground">
               Forward all platform events to an external endpoint
             </p>
           </div>

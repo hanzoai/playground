@@ -220,19 +220,19 @@ export function LaunchPage() {
       </div>
 
       {/* Connect Your Own */}
-      <div className="rounded-xl border border-dashed border-border bg-card/50 p-6">
-        <div className="flex items-start gap-4">
-          <div className="rounded-lg bg-primary/10 p-3">
+      <div className="rounded-xl border border-dashed border-border bg-card/50 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+          <div className="rounded-lg bg-primary/10 p-3 shrink-0">
             <Terminal size={24} className="text-primary" />
           </div>
-          <div>
+          <div className="min-w-0 w-full">
             <h3 className="text-base font-semibold">
               Connect your own machine
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Run your bot locally and connect it to the cloud gateway.
             </p>
-            <code className="mt-3 inline-block rounded-md bg-muted px-3 py-2 font-mono text-sm">
+            <code className="mt-3 inline-block rounded-md bg-muted px-3 py-2 font-mono text-xs sm:text-sm break-all">
               npx @hanzo/bot
             </code>
           </div>
@@ -253,11 +253,11 @@ export function LaunchPage() {
             {nodes.map((node) => (
               <div
                 key={node.node_id}
-                className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border bg-card px-3 sm:px-4 py-3"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`h-2 w-2 rounded-full ${
+                    className={`h-2 w-2 rounded-full shrink-0 ${
                       node.status === "Running"
                         ? "bg-green-500"
                         : node.status === "Pending"
@@ -265,15 +265,15 @@ export function LaunchPage() {
                           : "bg-muted-foreground"
                     }`}
                   />
-                  <div>
-                    <span className="font-medium">{node.node_id}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
+                  <div className="min-w-0">
+                    <span className="font-medium text-sm truncate block">{node.node_id}</span>
+                    <span className="text-xs text-muted-foreground">
                       {node.image} · {node.os}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 pl-5 sm:pl-0">
                   <Badge
                     variant={
                       node.status === "Running" ? "default" : "secondary"
@@ -281,7 +281,7 @@ export function LaunchPage() {
                   >
                     {node.status}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="hidden sm:inline text-xs text-muted-foreground">
                     {formatRelativeTime(node.created_at)}
                   </span>
                   <Button
