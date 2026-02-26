@@ -7,7 +7,44 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-interface SpeechRecognitionResult {
+// Web Speech API types (not available in all TS lib bundles)
+interface SpeechRecognitionResultItem {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionResultEntry {
+  isFinal: boolean;
+  readonly length: number;
+  [index: number]: SpeechRecognitionResultItem;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  [index: number]: SpeechRecognitionResultEntry;
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: unknown) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionInstance;
+}
+
+interface UseSpeechRecognitionReturn {
   transcript: string;
   isListening: boolean;
   supported: boolean;
@@ -15,15 +52,15 @@ interface SpeechRecognitionResult {
   stop: () => void;
 }
 
-const SpeechRecognitionCtor: typeof SpeechRecognition | undefined =
+const SpeechRecognitionCtor: SpeechRecognitionConstructor | undefined =
   typeof window !== 'undefined'
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : undefined;
 
-export function useSpeechRecognition(): SpeechRecognitionResult {
+export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const supported = !!SpeechRecognitionCtor;
 
@@ -35,7 +72,7 @@ export function useSpeechRecognition(): SpeechRecognitionResult {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {

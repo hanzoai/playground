@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { gateway } from '@/services/gatewayClient';
 import { audioService } from '@/services/audioService';
 import { usePreferencesStore } from '@/stores/preferencesStore';
-import type { ChatEvent, ExecApprovalRequestEvent } from '@/types/gateway';
+import type { ChatEvent } from '@/types/gateway';
 
 export function useNotificationSound() {
   const sound = usePreferencesStore((s) => s.notificationSound);
@@ -31,8 +31,7 @@ export function useNotificationSound() {
     }
 
     if (onApproval) {
-      const unsub = gateway.on('exec.approval.requested', (_payload: unknown) => {
-        void _payload as ExecApprovalRequestEvent;
+      const unsub = gateway.on('exec.approval.requested', () => {
         audioService.play(sound, volume).catch(() => {});
       });
       unsubs.push(unsub);

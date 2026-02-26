@@ -15,7 +15,6 @@ import {
   CurrencyDollar,
   Trash,
   Save,
-  Warning,
 } from '@/components/ui/icon-bridge';
 import type { BotBudget } from '@/services/budgetApi';
 

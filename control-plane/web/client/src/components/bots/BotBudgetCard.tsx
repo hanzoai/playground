@@ -128,10 +128,6 @@ export function BotBudgetCard({
   const monthlyPct = budget.monthly_limit_usd > 0
     ? budget.current_month_usd / budget.monthly_limit_usd
     : 0;
-  const dailyPct = budget.daily_limit_usd > 0
-    ? budget.current_day_usd / budget.daily_limit_usd
-    : 0;
-
   const isAlert = status?.alert_triggered ?? false;
   const isBlocked = status ? !status.allowed : false;
 
