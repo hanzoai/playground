@@ -7,6 +7,7 @@ export interface NavigationItem {
   icon?: IconProps['name'];
   description?: string;
   disabled?: boolean;
+  adminOnly?: boolean;
 }
 
 export interface NavigationSection {

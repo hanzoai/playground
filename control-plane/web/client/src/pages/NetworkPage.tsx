@@ -7,9 +7,11 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNetworkStore } from '@/stores/networkStore';
 import { NetworkStatusBadge } from '@/components/network/NetworkStatusBadge';
 import { EarningsChart } from '@/components/network/EarningsChart';
+import { WalletConnect } from '@/components/network/WalletConnect';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +79,9 @@ and are never transmitted to the network.`,
 Settings → Network. AI coin is distributed on the Hanzo mainnet and can be bridged to other chains.
 Withdrawals process within 24 hours. There is no minimum withdrawal amount.`,
   },
+];
+
+const MARKETPLACE_FAQ_ITEMS = [
   {
     q: 'How do I sell my Claude Code access?',
     a: `Go to Marketplace → Sell Capacity. Choose "Claude Code" as the capacity type, set your hourly rate
@@ -102,6 +107,8 @@ datasets and checkpoints, and the seller's VM processes them. All traffic is enc
 
 export function NetworkPage() {
   const navigate = useNavigate();
+  const { iamUser } = useAuth();
+  const isAdmin = iamUser?.isAdmin || iamUser?.isGlobalAdmin || false;
   const config = useNetworkStore((s) => s.sharingConfig);
   const earnings = useNetworkStore((s) => s.earnings);
   const earningsHistory = useNetworkStore((s) => s.earningsHistory);
@@ -113,6 +120,8 @@ export function NetworkPage() {
   const setSharingEnabled = useNetworkStore((s) => s.setSharingEnabled);
   const syncFromBackend = useNetworkStore((s) => s.syncFromBackend);
   const refreshMarketplace = useNetworkStore((s) => s.refreshMarketplace);
+
+  const faqItems = isAdmin ? [...FAQ_ITEMS, ...MARKETPLACE_FAQ_ITEMS] : FAQ_ITEMS;
 
   useEffect(() => {
     syncFromBackend().catch(() => {});
@@ -165,42 +174,32 @@ export function NetworkPage() {
         />
       </div>
 
-      {/* Wallet banner */}
+      {/* Wallet — required to receive rewards */}
       {!wallet && (
+        <WalletConnect />
+      )}
+
+      {/* Marketplace quick-access — admin only */}
+      {isAdmin && (
         <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="flex items-center justify-between p-4">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium">Connect a wallet to withdraw earnings</p>
+              <p className="text-sm font-medium">AI Capacity Marketplace</p>
               <p className="text-xs text-muted-foreground">
-                AI coin accumulates in your Hanzo account. Connect a wallet to transfer to any EVM chain.
+                Browse {marketplaceStats?.activeListings?.toLocaleString() ?? '—'} active listings or sell your own Claude Code, API keys, and GPU capacity.
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/settings/network')}>
-              Connect Wallet
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
+                Browse
+              </Button>
+              <Button size="sm" onClick={() => navigate('/marketplace/create')}>
+                Sell Capacity
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
-
-      {/* Marketplace quick-access */}
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium">AI Capacity Marketplace</p>
-            <p className="text-xs text-muted-foreground">
-              Browse {marketplaceStats?.activeListings?.toLocaleString() ?? '—'} active listings or sell your own Claude Code, API keys, and GPU capacity.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
-              Browse
-            </Button>
-            <Button size="sm" onClick={() => navigate('/marketplace/create')}>
-              Sell Capacity
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Earnings chart */}
       <Card>
@@ -305,7 +304,7 @@ export function NetworkPage() {
           <CardTitle className="text-base">How It Works</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {FAQ_ITEMS.map((item, i) => (
+          {faqItems.map((item, i) => (
             <Collapsible key={i}>
               <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors text-left">
                 {item.q}

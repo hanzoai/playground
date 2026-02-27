@@ -54,6 +54,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
   const isCollapsed = state === "collapsed";
   const { isAuthenticated, authRequired, clearAuth, iamUser } = useAuth();
   const orgId = useTenantStore((s) => s.orgId);
+  const isAdmin = iamUser?.isAdmin || iamUser?.isGlobalAdmin || false;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
@@ -78,7 +79,10 @@ export function SidebarNew({ sections }: SidebarNewProps) {
 
       {/* Content */}
       <SidebarContent className="space-y-1 px-2">
-        {sections.map((section, idx) => (
+        {sections.map((section, idx) => {
+          const visibleItems = section.items.filter(item => !item.adminOnly || isAdmin);
+          if (visibleItems.length === 0) return null;
+          return (
           <SidebarGroup key={section.id} className="space-y-0.5">
             {section.title ? (
               <SidebarGroupLabel className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 px-2 mb-1">
@@ -89,7 +93,7 @@ export function SidebarNew({ sections }: SidebarNewProps) {
             ) : null}
             <SidebarGroupContent>
               <SidebarMenu>
-                {section.items.map((item) => (
+                {visibleItems.map((item) => (
                   <SidebarMenuItem key={item.id}>
                     {item.disabled ? (
                       <SidebarMenuButton
@@ -131,7 +135,8 @@ export function SidebarNew({ sections }: SidebarNewProps) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ))}
+          );
+        })}
       </SidebarContent>
 
       {/* Footer — balance + user menu */}

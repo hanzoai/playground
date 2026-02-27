@@ -89,9 +89,9 @@ export function WalletConnect() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Connect Wallet</CardTitle>
+        <CardTitle className="text-base">Connect Wallet to Start Earning</CardTitle>
         <CardDescription>
-          Connect a wallet to receive AI coin earned from sharing unused capacity.
+          A connected wallet is required to receive AI coin rewards. Enable sharing, connect your wallet, and start earning automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

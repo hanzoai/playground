@@ -1,4 +1,5 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
 import { SidebarNew } from "./components/Navigation/SidebarNew";
 import { TopNavigation } from "./components/Navigation/TopNavigation";
 import { RootRedirect } from "./components/RootRedirect";
@@ -60,6 +61,13 @@ function PreferencesGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { iamUser } = useAuth();
+  const isAdmin = iamUser?.isAdmin || iamUser?.isGlobalAdmin || false;
+  if (!isAdmin) return <Navigate to="/network" replace />;
+  return <>{children}</>;
+}
+
 function NotificationSoundProvider({ children }: { children: React.ReactNode }) {
   useNotificationSound();
   return <>{children}</>;
@@ -109,10 +117,10 @@ function AppContent() {
               <Route path="/settings/preferences" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PreferencesSettings /></div>} />
               <Route path="/settings/network" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NetworkSettings /></div>} />
               <Route path="/network" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NetworkPage /></div>} />
-              <Route path="/marketplace" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><MarketplacePage /></div>} />
-              <Route path="/marketplace/listing/:listingId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ListingDetailPage /></div>} />
-              <Route path="/marketplace/create" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CreateListingPage /></div>} />
-              <Route path="/marketplace/seller" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SellerDashboardPage /></div>} />
+              <Route path="/marketplace" element={<AdminRoute><div className="p-4 md:p-6 lg:p-8 min-h-full"><MarketplacePage /></div></AdminRoute>} />
+              <Route path="/marketplace/listing/:listingId" element={<AdminRoute><div className="p-4 md:p-6 lg:p-8 min-h-full"><ListingDetailPage /></div></AdminRoute>} />
+              <Route path="/marketplace/create" element={<AdminRoute><div className="p-4 md:p-6 lg:p-8 min-h-full"><CreateListingPage /></div></AdminRoute>} />
+              <Route path="/marketplace/seller" element={<AdminRoute><div className="p-4 md:p-6 lg:p-8 min-h-full"><SellerDashboardPage /></div></AdminRoute>} />
               <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
