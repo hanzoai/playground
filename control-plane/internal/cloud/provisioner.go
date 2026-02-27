@@ -604,7 +604,7 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 
 	nodeID := req.NodeID
 	if nodeID == "" {
-		nodeID = fmt.Sprintf("do-%s", uuid.New().String()[:8])
+		nodeID = fmt.Sprintf("hz-%s", uuid.New().String()[:8])
 	}
 
 	org := req.Org
