@@ -75,7 +75,7 @@ export function PreferencesOnboarding({ onComplete }: PreferencesOnboardingProps
               Volume
             </Label>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground">🔈</span>
+              <span className="text-xs text-muted-foreground">{volume === 0 ? '\u{1F507}' : '\u{1F508}'}</span>
               <input
                 id="volume-slider"
                 type="range"
