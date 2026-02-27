@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.121] - 2026-02-27
+
+
+### Added
+
+- Feat(bots): add bot wallets with funding, on-chain settlement, and auto-purchase
+
+Each bot gets a server-managed custodial wallet. Users fund bots from
+their AI coin or USD balance. Bots can autonomously purchase marketplace
+capacity via configurable auto-purchase rules with price caps, quantity
+limits, and minimum balance triggers. Sidebar shows bot funding summary. (c5f61e9)
+
 ## [0.1.41-rc.120] - 2026-02-27
 
 
