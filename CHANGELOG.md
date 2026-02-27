@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.112] - 2026-02-27
+
+
+### Fixed
+
+- Fix(ui): add 'none' entry to SOUND_GENERATORS to satisfy TypeScript Record type
+
+The 'None' option was added to SoundName but the SOUND_GENERATORS Record was
+missing the 'none' key, causing tsc to fail with TS2741. (d582bc6)
+
+- Fix(cloud): fix visor auth for delete/update, add rehydration and SSH keys
+
+Three production fixes for DO droplet provisioning:
+
+1. Fix 403 on deprovision: DeleteMachine and UpdateMachineState URLs
+   were missing '?' before query params — authQuery() returns '&...'
+   but these URLs had no existing query string. Add authQueryFirst()
+   that uses '?' prefix for URLs without existing params.
+
+2. Add visor rehydration on startup: rehydrateFromVisor() calls
+   visor.ListMachines() to recover DO droplet state after restart,
+   preventing orphaned droplets from disappearing from the node list.
+
+3. Add SSHKeyIDs passthrough: forward SSH key IDs from ProvisionRequest
+   through VMProvisionRequest to visor CreateMachine so droplets can
+   be provisioned with SSH access for debugging.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (bca1c85)
+
 ## [0.1.41-rc.111] - 2026-02-27
 
 
