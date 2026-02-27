@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.120] - 2026-02-27
+
+
+### Added
+
+- Feat(marketplace): public marketplace with custom agents, DID listings, and confidential computing
+
+Revert admin-only gating — marketplace visible to all users. Add custom-agent
+capacity type with DID-backed agent metadata. Add privacy levels (standard,
+private, confidential) with NVIDIA Blackwell/H100 TEE support and attestation
+verification. Keep wallet requirement for receiving rewards. (26861c1)
+
 ## [0.1.41-rc.119] - 2026-02-27
 
 
