@@ -11,7 +11,12 @@ import {
   View,
 } from "../components/ui/icon-bridge";
 import { BotBudgetCard } from "../components/bots/BotBudgetCard";
+import { BotWalletCard } from "../components/bots/BotWalletCard";
+import { AutoPurchaseCard } from "../components/bots/AutoPurchaseCard";
 import { useBotBudget } from "../hooks/useBotBudget";
+import { useBotWallet } from "../hooks/useBotWallet";
+import { useNetworkStore } from "../stores/networkStore";
+import { getBalance } from "../services/billingApi";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useParams } from "react-router-dom";
@@ -85,6 +90,14 @@ export function BotDetailPage() {
 
   // Budget
   const { budget, status: budgetStatus, spendHistory, saveBudget, removeBudget } = useBotBudget(fullBotId);
+
+  // Wallet
+  const botWallet = useBotWallet(fullBotId);
+  const aiCoinBalance = useNetworkStore((s) => s.aiCoinBalance);
+  const [usdBalanceCents, setUsdBalanceCents] = useState(0);
+  useEffect(() => {
+    getBalance().then((r) => setUsdBalanceCents(r.available)).catch(() => {});
+  }, []);
 
   const gatewayOrigin = (import.meta.env.VITE_BOT_GATEWAY_URL as string) || "https://gw.hanzo.bot";
 
@@ -390,6 +403,27 @@ export function BotDetailPage() {
         spendHistory={spendHistory}
         onSave={saveBudget}
         onDelete={removeBudget}
+      />
+
+      {/* Wallet */}
+      <BotWalletCard
+        botId={fullBotId!}
+        wallet={botWallet.wallet}
+        transactions={botWallet.transactions}
+        userAiCoinBalance={aiCoinBalance}
+        userUsdBalanceCents={usdBalanceCents}
+        onFund={botWallet.fundWallet}
+        onWithdraw={botWallet.withdrawFromWallet}
+      />
+
+      {/* Auto-Purchase */}
+      <AutoPurchaseCard
+        botId={fullBotId!}
+        rules={botWallet.autoPurchaseRules}
+        walletBalance={botWallet.wallet?.aiCoinBalance ?? 0}
+        onSave={botWallet.saveAutoPurchaseRule}
+        onDelete={botWallet.removeAutoPurchaseRule}
+        onExecute={botWallet.triggerAutoPurchase}
       />
 
       {/* Responsive Layout */}

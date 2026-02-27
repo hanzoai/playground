@@ -12,7 +12,9 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { useNetworkStore } from '@/stores/networkStore';
 import { getBalance } from '@/services/billingApi';
+import { getBotWalletSummary } from '@/services/botWalletApi';
 import type { SharingStatus } from '@/types/network';
+import type { BotWalletSummary } from '@/types/botWallet';
 
 const STATUS_DOT: Record<SharingStatus, string> = {
   active:   'bg-emerald-500',
@@ -31,6 +33,7 @@ export function SidebarBalanceWidget() {
   const syncFromBackend = useNetworkStore((s) => s.syncFromBackend);
 
   const [usdBalance, setUsdBalance] = useState<number | null>(null);
+  const [botSummary, setBotSummary] = useState<BotWalletSummary | null>(null);
 
   // Init network store on mount
   useEffect(() => {
@@ -46,6 +49,7 @@ export function SidebarBalanceWidget() {
         .catch(() => {});
     }
     fetchUsd();
+    getBotWalletSummary().then(setBotSummary).catch(() => {});
     const timer = setInterval(fetchUsd, 60_000);
     return () => { mounted = false; clearInterval(timer); };
   }, []);
@@ -76,7 +80,9 @@ export function SidebarBalanceWidget() {
               {usdDisplay}
             </span>
             <span className="truncate text-[10px] text-muted-foreground">
-              {sharingStatus === 'active' ? 'Sharing capacity' : 'Network balance'}
+              {botSummary && botSummary.totalBots > 0
+                ? `${botSummary.totalBots} bot${botSummary.totalBots > 1 ? 's' : ''} funded`
+                : sharingStatus === 'active' ? 'Sharing capacity' : 'Network balance'}
             </span>
           </div>
         </SidebarMenuButton>
