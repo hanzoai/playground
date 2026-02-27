@@ -42,7 +42,7 @@ type PreferencesState = UserPreferences & PreferencesActions;
 
 const DEFAULTS: UserPreferences = {
   onboardingComplete: false,
-  notificationSound: 'chime',
+  notificationSound: 'chaching',
   notificationVolume: 0.7,
   soundOnTaskComplete: true,
   soundOnApprovalNeeded: true,

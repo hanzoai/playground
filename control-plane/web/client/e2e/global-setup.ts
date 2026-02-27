@@ -22,14 +22,17 @@ async function globalSetup() {
   // Health check — app must be reachable
   const baseURL = process.env.E2E_BASE_URL!;
   try {
-    const res = await fetch(`${baseURL}/api/v1/health`, { signal: AbortSignal.timeout(10_000) });
+    const healthURL = process.env.E2E_API_BASE_URL
+      ? `${process.env.E2E_API_BASE_URL}/health`
+      : 'https://api.hanzo.bot/v1/health';
+    const res = await fetch(healthURL, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       console.warn(`Health check returned ${res.status} — tests may fail`);
     } else {
-      console.log(`Health check OK: ${baseURL}/api/v1/health → ${res.status}`);
+      console.log(`Health check OK: ${healthURL} → ${res.status}`);
     }
   } catch (err) {
-    throw new Error(`Cannot reach ${baseURL}/api/v1/health — is the app running?\n${err}`);
+    throw new Error(`Cannot reach API health endpoint — is the app running?\n${err}`);
   }
 
   // IAM server health check

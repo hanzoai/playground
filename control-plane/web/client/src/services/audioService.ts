@@ -8,6 +8,9 @@
 
 export type SoundName =
   | 'none'
+  | 'chaching'
+  | 'synth'
+  | 'jazz'
   | 'chime'
   | 'ding'
   | 'droplet'
@@ -19,6 +22,9 @@ export type SoundName =
 
 export const SOUND_LABELS: Record<SoundName, string> = {
   none: 'None',
+  chaching: 'Cha-Ching',
+  synth: 'Synth',
+  jazz: 'Jazz',
   chime: 'Chime',
   ding: 'Ding',
   droplet: 'Droplet',
@@ -31,6 +37,9 @@ export const SOUND_LABELS: Record<SoundName, string> = {
 
 export const ALL_SOUNDS: SoundName[] = [
   'none',
+  'chaching',
+  'synth',
+  'jazz',
   'chime',
   'ding',
   'droplet',
@@ -260,16 +269,159 @@ function genTap(ctx: OfflineAudioContext) {
   oT.stop(0.05);
 }
 
+function genChaChing(ctx: OfflineAudioContext) {
+  // Cash register cha-ching: two bright metallic hits + shimmer
+  const hit1 = ctx.createOscillator();
+  hit1.type = 'square';
+  hit1.frequency.setValueAtTime(1800, 0);
+  hit1.frequency.exponentialRampToValueAtTime(900, 0.06);
+  const g1 = ctx.createGain();
+  g1.gain.setValueAtTime(0.4, 0);
+  g1.gain.exponentialRampToValueAtTime(0.001, 0.12);
+  hit1.connect(g1);
+  g1.connect(ctx.destination);
+  hit1.start(0);
+  hit1.stop(0.12);
+
+  // Second hit (higher, delayed)
+  const hit2 = ctx.createOscillator();
+  hit2.type = 'square';
+  hit2.frequency.setValueAtTime(2400, 0.12);
+  hit2.frequency.exponentialRampToValueAtTime(1200, 0.18);
+  const g2 = ctx.createGain();
+  g2.gain.setValueAtTime(0.5, 0.12);
+  g2.gain.exponentialRampToValueAtTime(0.001, 0.35);
+  hit2.connect(g2);
+  g2.connect(ctx.destination);
+  hit2.start(0.12);
+  hit2.stop(0.35);
+
+  // Shimmer tail: high sine ring-out
+  const shimmer = ctx.createOscillator();
+  shimmer.type = 'sine';
+  shimmer.frequency.setValueAtTime(4186, 0.15);
+  const gs = ctx.createGain();
+  gs.gain.setValueAtTime(0.2, 0.15);
+  gs.gain.exponentialRampToValueAtTime(0.001, 0.7);
+  shimmer.connect(gs);
+  gs.connect(ctx.destination);
+  shimmer.start(0.15);
+  shimmer.stop(0.7);
+}
+
+function genSynth(ctx: OfflineAudioContext) {
+  // AI/futuristic synth: saw wave with filter sweep + sub bass
+  const saw = ctx.createOscillator();
+  saw.type = 'sawtooth';
+  saw.frequency.setValueAtTime(220, 0);
+  saw.frequency.linearRampToValueAtTime(440, 0.3);
+  saw.frequency.linearRampToValueAtTime(330, 0.6);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(200, 0);
+  filter.frequency.exponentialRampToValueAtTime(6000, 0.25);
+  filter.frequency.exponentialRampToValueAtTime(800, 0.8);
+  filter.Q.setValueAtTime(8, 0);
+
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, 0);
+  g.gain.linearRampToValueAtTime(0.3, 0.05);
+  g.gain.linearRampToValueAtTime(0.25, 0.4);
+  g.gain.exponentialRampToValueAtTime(0.001, 0.9);
+
+  saw.connect(filter);
+  filter.connect(g);
+  g.connect(ctx.destination);
+  saw.start(0);
+  saw.stop(0.9);
+
+  // Sub bass layer
+  const sub = ctx.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.setValueAtTime(110, 0);
+  const gSub = ctx.createGain();
+  gSub.gain.setValueAtTime(0, 0);
+  gSub.gain.linearRampToValueAtTime(0.2, 0.05);
+  gSub.gain.exponentialRampToValueAtTime(0.001, 0.6);
+  sub.connect(gSub);
+  gSub.connect(ctx.destination);
+  sub.start(0);
+  sub.stop(0.6);
+}
+
+function genJazz(ctx: OfflineAudioContext) {
+  // Jazzy: muted trumpet-like tone with vibrato + walking bass note
+  // Trumpet: triangle wave with gentle vibrato
+  const trumpet = ctx.createOscillator();
+  trumpet.type = 'triangle';
+  trumpet.frequency.setValueAtTime(587.33, 0); // D5
+
+  const vibLfo = ctx.createOscillator();
+  vibLfo.type = 'sine';
+  vibLfo.frequency.setValueAtTime(5.5, 0);
+  const vibDepth = ctx.createGain();
+  vibDepth.gain.setValueAtTime(12, 0);
+  vibLfo.connect(vibDepth);
+  vibDepth.connect(trumpet.frequency);
+  vibLfo.start(0);
+  vibLfo.stop(0.8);
+
+  const mute = ctx.createBiquadFilter();
+  mute.type = 'lowpass';
+  mute.frequency.setValueAtTime(1200, 0);
+  mute.Q.setValueAtTime(3, 0);
+
+  const gT = ctx.createGain();
+  gT.gain.setValueAtTime(0, 0);
+  gT.gain.linearRampToValueAtTime(0.35, 0.04);
+  gT.gain.linearRampToValueAtTime(0.3, 0.3);
+  gT.gain.exponentialRampToValueAtTime(0.001, 0.8);
+
+  trumpet.connect(mute);
+  mute.connect(gT);
+  gT.connect(ctx.destination);
+  trumpet.start(0);
+  trumpet.stop(0.8);
+
+  // Walking bass pluck
+  const bass = ctx.createOscillator();
+  bass.type = 'sine';
+  bass.frequency.setValueAtTime(146.83, 0.05); // D3
+  const gB = ctx.createGain();
+  gB.gain.setValueAtTime(0.3, 0.05);
+  gB.gain.exponentialRampToValueAtTime(0.001, 0.45);
+  bass.connect(gB);
+  gB.connect(ctx.destination);
+  bass.start(0.05);
+  bass.stop(0.45);
+
+  // Second bass note
+  const bass2 = ctx.createOscillator();
+  bass2.type = 'sine';
+  bass2.frequency.setValueAtTime(196, 0.35); // G3
+  const gB2 = ctx.createGain();
+  gB2.gain.setValueAtTime(0.25, 0.35);
+  gB2.gain.exponentialRampToValueAtTime(0.001, 0.7);
+  bass2.connect(gB2);
+  gB2.connect(ctx.destination);
+  bass2.start(0.35);
+  bass2.stop(0.7);
+}
+
 const SOUND_GENERATORS: Record<SoundName, { gen: SoundGenerator; duration: number }> = {
-  none:    { gen: () => {},    duration: 0   },
-  chime:   { gen: genChime,   duration: 1.0 },
-  ding:    { gen: genDing,    duration: 0.5 },
-  droplet: { gen: genDroplet, duration: 0.7 },
-  pulse:   { gen: genPulse,   duration: 0.8 },
-  bell:    { gen: genBell,    duration: 1.0 },
-  pop:     { gen: genPop,     duration: 0.3 },
-  whoosh:  { gen: genWhoosh,  duration: 0.7 },
-  tap:     { gen: genTap,     duration: 0.2 },
+  none:     { gen: () => {},      duration: 0   },
+  chaching: { gen: genChaChing,   duration: 0.8 },
+  synth:    { gen: genSynth,      duration: 1.0 },
+  jazz:     { gen: genJazz,       duration: 0.9 },
+  chime:    { gen: genChime,      duration: 1.0 },
+  ding:     { gen: genDing,       duration: 0.5 },
+  droplet:  { gen: genDroplet,    duration: 0.7 },
+  pulse:    { gen: genPulse,      duration: 0.8 },
+  bell:     { gen: genBell,       duration: 1.0 },
+  pop:      { gen: genPop,        duration: 0.3 },
+  whoosh:   { gen: genWhoosh,     duration: 0.7 },
+  tap:      { gen: genTap,        duration: 0.2 },
 };
 
 // ---------------------------------------------------------------------------

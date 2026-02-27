@@ -118,8 +118,22 @@ export class NodesPage {
     await this.page.waitForTimeout(1_500);
   }
 
-  /** Get the total node count from the badge */
+  /** Get the total node count from the badge. Returns 0 if badge is not visible. */
   async getTotalCount(): Promise<number> {
+    const isVisible = await this.totalBadge.isVisible({ timeout: 5_000 }).catch(() => false);
+    if (!isVisible) {
+      // Fallback: try the status summary text "X nodes"
+      const statusText = this.page.locator('text=/\\d+ nodes?/i');
+      const statusVisible = await statusText.isVisible({ timeout: 3_000 }).catch(() => false);
+      if (statusVisible) {
+        const text = await statusText.textContent();
+        const match = text?.match(/(\d+)\s*nodes?/i);
+        return match ? parseInt(match[1], 10) : 0;
+      }
+      // Last fallback: count the node cards
+      const cards = await this.getNodeCards();
+      return cards.length;
+    }
     const text = await this.totalBadge.textContent();
     const match = text?.match(/(\d+)\s*total/i);
     return match ? parseInt(match[1], 10) : 0;

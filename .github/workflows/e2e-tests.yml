@@ -64,6 +64,7 @@ jobs:
           E2E_IAM_USER_PASSWORD: ${{ secrets.E2E_IAM_USER_PASSWORD }}
           E2E_IAM_ORGANIZATION: hanzo
           E2E_IAM_APPLICATION: app-hanzobot
+          E2E_API_BASE_URL: https://api.hanzo.bot/v1
           E2E_COMMERCE_API_URL: https://commerce.hanzo.ai
 
       - name: Upload Playwright report
@@ -81,3 +82,11 @@ jobs:
           name: test-results
           path: control-plane/web/client/test-results/
           retention-days: 7
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: control-plane/web/client/e2e/screenshots/
+          retention-days: 30

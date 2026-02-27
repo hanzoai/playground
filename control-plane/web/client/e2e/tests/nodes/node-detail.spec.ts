@@ -198,18 +198,18 @@ test.describe('Node Detail Page', () => {
   });
 
   test('node detail API returns valid data', async ({ page }) => {
-    const baseURL = process.env.E2E_BASE_URL || 'https://app.hanzo.bot';
+    const apiBase = process.env.E2E_API_BASE_URL || 'https://api.hanzo.bot/v1';
     const token = await page.evaluate(() => {
       return sessionStorage.getItem('hanzo_iam_access_token')
         || localStorage.getItem('af_iam_token');
     });
 
     if (!token) {
-      test.skip();
+      test.skip(true, 'No auth token available');
       return;
     }
 
-    const response = await page.request.get(`${baseURL}/api/v1/nodes/summary`, {
+    const response = await page.request.get(`${apiBase}/nodes/summary`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
