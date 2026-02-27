@@ -193,11 +193,18 @@ class GatewayClient {
       this.handleMessage(event.data as string);
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event: CloseEvent) => {
       this.ws = null;
       if (!this.disposed) {
         this.rejectAllPending('Connection lost');
-        this.scheduleReconnect();
+        if (event.code === 1008) {
+          // WS 1008 = Policy Violation (gateway sends this for auth failures).
+          // Don't retry with a stale token — surface the failure so the UI
+          // can redirect to login.
+          this.setState('unauthorized');
+        } else {
+          this.scheduleReconnect();
+        }
       }
     };
 

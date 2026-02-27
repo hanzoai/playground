@@ -79,7 +79,7 @@ export function useGateway() {
   const syncedRef = useRef(false);
   const connectedUrlRef = useRef<string | null>(null);
   const connectedTokenRef = useRef<string | null>(null);
-  const { apiKey } = useAuth();
+  const { apiKey, clearAuth } = useAuth();
 
   // Read custom gateway URL/token from settings store
   const settingsGatewayUrl = useSettingsStore((s) => s.gatewayUrl);
@@ -202,6 +202,12 @@ export function useGateway() {
       if (state === 'disconnected' || state === 'error') {
         syncedRef.current = false;
       }
+      if (state === 'unauthorized') {
+        // Gateway rejected our JWT (e.g. after cert rotation).
+        // Clear auth state so the IAM SDK redirects to login for
+        // a fresh token signed with the current signing key.
+        clearAuth();
+      }
     });
 
     const unsubChat = gateway.on('chat', (payload) => {
@@ -220,7 +226,7 @@ export function useGateway() {
       unsubAgent();
       unsubApproval();
     };
-  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval]);
+  }, [syncAgents, syncFromSnapshot, handleChatEvent, handleBotEvent, addApproval, clearAuth]);
 
   // Connect/reconnect only when URL or token actually changes
   useEffect(() => {

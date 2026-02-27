@@ -294,4 +294,5 @@ export type GatewayConnectionState =
   | 'authenticating'
   | 'connected'
   | 'reconnecting'
+  | 'unauthorized'
   | 'error';
