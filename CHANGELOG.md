@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.115] - 2026-02-27
+
+
+### Fixed
+
+- Fix(e2e): fix all 7 failing tests, add responsive tests, add 3 new sounds
+
+- Logout: handle redirect to hanzo.id after signOut
+- Billing: graceful skip when auth token unavailable
+- Bot listing: resilient refresh button locator
+- Node listing: fallback count when badge not visible
+- Node detail: use api.hanzo.bot/v1 for API calls
+- Search: use card count for filter verification
+- Add responsive landing page tests (mobile/tablet/laptop/desktop)
+- Add cha-ching (default), synth, jazz sounds
+- CI: add E2E_API_BASE_URL, upload screenshots artifact (0a1db91)
+
 ## [0.1.41-rc.114] - 2026-02-27
 
 
