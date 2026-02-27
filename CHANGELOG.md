@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.124] - 2026-02-27
+
+
+### Other
+
+- Add unauthorized state to ConnectionIndicator
+
+Show 'Session expired' label when gateway rejects JWT auth, completing
+the GatewayConnectionState Record required by TypeScript. (2dd68f2)
+
 ## [0.1.41-rc.123] - 2026-02-27
 
 
