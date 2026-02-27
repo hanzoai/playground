@@ -7,6 +7,7 @@
  */
 
 export type SoundName =
+  | 'none'
   | 'chime'
   | 'ding'
   | 'droplet'
@@ -17,6 +18,7 @@ export type SoundName =
   | 'tap';
 
 export const SOUND_LABELS: Record<SoundName, string> = {
+  none: 'None',
   chime: 'Chime',
   ding: 'Ding',
   droplet: 'Droplet',
@@ -28,6 +30,7 @@ export const SOUND_LABELS: Record<SoundName, string> = {
 };
 
 export const ALL_SOUNDS: SoundName[] = [
+  'none',
   'chime',
   'ding',
   'droplet',
@@ -293,7 +296,7 @@ class AudioService {
 
   /** Pre-render a sound into the cache. */
   async preload(name: SoundName): Promise<void> {
-    if (this.cache.has(name)) return;
+    if (name === 'none' || this.cache.has(name)) return;
     const spec = SOUND_GENERATORS[name];
     const buffer = await renderSound(spec.gen, spec.duration);
     this.cache.set(name, buffer);
@@ -306,6 +309,7 @@ class AudioService {
 
   /** Play a notification sound at the given volume (0–1). */
   async play(name: SoundName, volume = 0.7): Promise<void> {
+    if (name === 'none') return;
     await this.resume();
     await this.preload(name);
 

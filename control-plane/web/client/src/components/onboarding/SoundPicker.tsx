@@ -16,6 +16,7 @@ interface SoundPickerProps {
 }
 
 const SOUND_ICONS: Record<SoundName, string> = {
+  none: '\u{1F507}',
   chime: '\u266A',
   ding: '\u{1F514}',
   droplet: '\u{1F4A7}',

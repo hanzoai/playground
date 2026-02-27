@@ -18,6 +18,7 @@ export function useNotificationSound() {
   const onApproval = usePreferencesStore((s) => s.soundOnApprovalNeeded);
 
   useEffect(() => {
+    if (sound === 'none') return;
     const unsubs: Array<() => void> = [];
 
     if (onComplete) {
