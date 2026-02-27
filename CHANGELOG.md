@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.111] - 2026-02-27
+
+
+### Added
+
+- Feat(ui): add "None" option to notification sound picker
+
+Allow users to opt out of notification sounds entirely during
+onboarding and in settings. (3c412c5)
+
 ## [0.1.41-rc.110] - 2026-02-26
 
 
