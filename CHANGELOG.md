@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.117] - 2026-02-27
+
+
+### Added
+
+- Feat(network): add AI capacity marketplace for reselling unused LLM capacity
+
+Users can share idle AI/LLM API capacity with the Hanzo network and earn
+AI coin on the mainnet. Opt-in by default with auto/manual/scheduled modes.
+
+- Network types, API service (with mock mode), Zustand store
+- Sidebar balance widget showing dual AI coin + USD balance
+- Network page with stats, earnings chart, history, FAQ
+- Network settings with sharing controls and wallet connection
+- Wired into navigation, routes, icons, and store reset (c13ec3b)
+
 ## [0.1.41-rc.116] - 2026-02-27
 
 
