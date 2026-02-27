@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.113] - 2026-02-27
+
+
+### Added
+
+- Feat(ui): show muted speaker icon when volume slider is at zero (85fed75)
+
 ## [0.1.41-rc.112] - 2026-02-27
 
 
