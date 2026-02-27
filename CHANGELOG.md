@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.119] - 2026-02-27
+
+
+### Added
+
+- Feat(network): hide marketplace for non-admins, require wallet for rewards
+
+Marketplace pages and nav item are now admin-only (iamUser.isAdmin gate).
+Non-admin users see a simplified Network page focused on opt-in sharing
+with a prominent wallet connection flow — wallet is required to receive
+AI coin rewards. Marketplace FAQ items also hidden for non-admins. (25f31af)
+
 ## [0.1.41-rc.118] - 2026-02-27
 
 
