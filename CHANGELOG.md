@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.116] - 2026-02-27
+
+
+### Fixed
+
+- Fix(e2e): resolve all remaining test failures for 100% pass rate
+
+- logout: verify redirect to hanzo.id instead of checking storage after re-auth
+- billing: read JWT from saved auth state file instead of unsupported ROPC grant
+- node search: use card count directly instead of flaky getTotalCount badge lookup
+- responsive: skip horizontal scroll check on external hanzo.id pages
+- responsive: raise clipped element threshold for hanzo.id login page (2f2a4c4)
+
 ## [0.1.41-rc.115] - 2026-02-27
 
 
