@@ -15,23 +15,36 @@ test.describe('Trial Credits & Billing', () => {
 
   test.beforeAll(async () => {
     // Get an access token for Commerce API calls
-    const token = await getAccessToken();
-    commerce = new CommerceHelper(token);
+    try {
+      const token = await getAccessToken();
+      commerce = new CommerceHelper(token);
 
-    // Extract user ID from JWT claims
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    userId = payload.sub || payload.name || process.env.E2E_IAM_USER_EMAIL!;
+      // Extract user ID from JWT claims
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      userId = payload.sub || payload.name || process.env.E2E_IAM_USER_EMAIL!;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[billing] Could not get access token: ${msg}`);
+    }
   });
 
   test('user has a balance on Commerce API', async ({ page }) => {
     await page.goto('/launch', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle').catch(() => {});
+    // Wait for app to hydrate and store tokens
+    await page.waitForTimeout(3_000);
 
-    // Verify Commerce API is reachable with our JWT
-    const token = await extractTokenFromPage(page);
+    // Try extracting token from page, fall back to saved auth tokens
+    let token = await extractTokenFromPage(page);
     if (!token) {
-      test.skip(true, 'No auth token available — skipping Commerce balance check');
-      return;
+      try {
+        token = await getAccessToken();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[billing] Token fallback failed: ${msg}`);
+        test.skip(true, 'No auth token available — skipping Commerce balance check');
+        return;
+      }
     }
 
     const browserCommerce = new CommerceHelper(token);

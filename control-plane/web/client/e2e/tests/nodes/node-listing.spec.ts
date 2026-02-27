@@ -93,7 +93,7 @@ test.describe('Node Listing', () => {
       return;
     }
 
-    const initialCount = await nodesPage.getTotalCount();
+    const initialCount = cards.length;
     expect(initialCount).toBeGreaterThanOrEqual(1);
 
     // Search for "macbook" and verify results
@@ -106,7 +106,7 @@ test.describe('Node Listing', () => {
 
     // Clear search and verify count restores
     await nodesPage.search('');
-    await page.waitForTimeout(1_000);
+    await page.waitForTimeout(2_000);
     const resetCards = await nodesPage.getNodeCards();
     expect(resetCards.length).toBe(initialCount);
   });

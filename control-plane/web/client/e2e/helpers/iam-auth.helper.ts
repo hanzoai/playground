@@ -168,43 +168,44 @@ export async function performBrowserLogin(page: Page): Promise<void> {
 }
 
 /**
- * Get a JWT access token via the Casdoor password grant (for API calls).
- * Used by helpers that need to call Commerce API directly.
+ * Get a JWT access token for API calls.
+ * First tries reading from the saved auth state file (populated by auth.setup.ts).
+ * Falls back to the IAM client credentials endpoint.
  */
 export async function getAccessToken(): Promise<string> {
-  const cfg = getConfig();
+  // Try reading from saved auth tokens file (written by auth.setup.ts)
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const tokensPath = path.resolve(__dirname, '..', '.auth', 'iam-tokens.json');
+    if (fs.existsSync(tokensPath)) {
+      const tokens = JSON.parse(fs.readFileSync(tokensPath, 'utf-8'));
+      const token = tokens.hanzo_iam_access_token || tokens.accessToken;
+      if (token) {
+        return token;
+      }
+    }
+  } catch {
+    // File not available — continue to API fallback
+  }
 
+  // Fallback: try client_credentials grant
+  const cfg = getConfig();
   const tokenRes = await fetch(`${cfg.serverUrl}/api/login/oauth/access_token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      grant_type: 'password',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
       client_id: cfg.clientId,
-      username: `${cfg.organization}/${cfg.email}`,
-      password: cfg.password,
-    }),
+      client_secret: '',
+    }).toString(),
   });
 
   if (!tokenRes.ok) {
-    // Fallback: try with just username
-    const fallbackRes = await fetch(`${cfg.serverUrl}/api/login/oauth/access_token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        grant_type: 'password',
-        client_id: cfg.clientId,
-        username: cfg.email,
-        password: cfg.password,
-      }),
-    });
-
-    if (!fallbackRes.ok) {
-      const err = await fallbackRes.text();
-      throw new Error(`Failed to get access token: ${fallbackRes.status} ${err}`);
-    }
-
-    const data = await fallbackRes.json();
-    return data.access_token;
+    const err = await tokenRes.text();
+    throw new Error(`Failed to get access token: ${tokenRes.status} ${err}`);
   }
 
   const data = await tokenRes.json();
