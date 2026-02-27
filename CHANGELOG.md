@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.118] - 2026-02-27
+
+
+### Added
+
+- Feat(marketplace): add user-to-user AI capacity marketplace with reselling
+
+Full marketplace for buying, selling, and reselling AI capacity (Claude Code,
+API keys, GPU compute, inference). Sellers list capacity with custom pricing,
+buyers purchase compute time routed via secure proxy endpoints with S3 workload
+transfer. Buyers can resell purchased capacity at markup in smaller chunks.
+
+- Types: MarketplaceListing, Order, SellerDashboard, Stats, DTOs
+- API: 12 marketplace endpoints with realistic mock data (12 listings, 5 orders)
+- Store: 7 state fields + 11 actions in networkStore
+- Components: ListingCard, OrderCard, PurchaseDialog, CapacityTypeIcon, ResaleIndicator
+- Pages: MarketplacePage (browse/filter), ListingDetailPage, CreateListingPage, SellerDashboardPage
+- Wiring: navigation, App routes, NetworkPage marketplace card + 3 new FAQs
+- Icons: Storefront, ShoppingCart, HandCoins, Receipt, Coins (Phosphor) (c9f3397)
+
 ## [0.1.41-rc.117] - 2026-02-27
 
 
