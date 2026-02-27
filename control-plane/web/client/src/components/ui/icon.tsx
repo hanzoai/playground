@@ -26,6 +26,11 @@ import {
   ShareNetwork,
   CurrencyDollar,
   Wallet,
+  Storefront,
+  ShoppingCart,
+  HandCoins,
+  Receipt,
+  Coins,
 } from "@/components/ui/icon-bridge";
 import type { IconComponent, IconWeight } from "@/components/ui/icon-bridge";
 
@@ -56,6 +61,11 @@ const icons = {
   network: ShareNetwork,
   wallet: Wallet,
   'currency-dollar': CurrencyDollar,
+  storefront: Storefront,
+  'shopping-cart': ShoppingCart,
+  'hand-coins': HandCoins,
+  receipt: Receipt,
+  coins: Coins,
 } as const;
 
 export interface IconProps {

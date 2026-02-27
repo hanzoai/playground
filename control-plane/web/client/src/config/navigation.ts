@@ -74,6 +74,13 @@ export const navigationSections: NavigationSection[] = [
         description: 'AI capacity marketplace and earnings'
       },
       {
+        id: 'marketplace',
+        label: 'Marketplace',
+        href: '/marketplace',
+        icon: 'storefront',
+        description: 'Buy and sell AI capacity'
+      },
+      {
         id: 'metrics',
         label: 'Metrics',
         href: '/metrics',

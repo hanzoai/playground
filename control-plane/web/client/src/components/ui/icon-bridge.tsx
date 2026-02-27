@@ -117,6 +117,11 @@ import { CurrencyDollarIcon } from "@phosphor-icons/react/dist/csr/CurrencyDolla
 import { WalletIcon } from "@phosphor-icons/react/dist/csr/Wallet";
 import { ChartPieSliceIcon } from "@phosphor-icons/react/dist/csr/ChartPieSlice";
 import { SlidersHorizontalIcon } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { StorefrontIcon } from "@phosphor-icons/react/dist/csr/Storefront";
+import { ShoppingCartIcon } from "@phosphor-icons/react/dist/csr/ShoppingCart";
+import { HandCoinsIcon } from "@phosphor-icons/react/dist/csr/HandCoins";
+import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
+import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 
 const withDefaults = (Component: Icon, defaults?: Partial<IconProps>, displayName?: string) => {
   const Wrapped = forwardRef<SVGSVGElement, IconProps>((props, ref) => (
@@ -304,6 +309,11 @@ export const CurrencyDollar = CurrencyDollarIcon;
 export const Wallet = WalletIcon;
 export const ChartPieSlice = ChartPieSliceIcon;
 export const SlidersHorizontal = SlidersHorizontalIcon;
+export const Storefront = StorefrontIcon;
+export const ShoppingCart = ShoppingCartIcon;
+export const HandCoins = HandCoinsIcon;
+export const Receipt = ReceiptIcon;
+export const Coins = CoinsIcon;
 export type IconComponent = Icon;
 export type IconComponentProps = IconProps;
 export type IconWeight = PhosphorIconWeight;

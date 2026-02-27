@@ -77,6 +77,27 @@ and are never transmitted to the network.`,
 Settings → Network. AI coin is distributed on the Hanzo mainnet and can be bridged to other chains.
 Withdrawals process within 24 hours. There is no minimum withdrawal amount.`,
   },
+  {
+    q: 'How do I sell my Claude Code access?',
+    a: `Go to Marketplace → Sell Capacity. Choose "Claude Code" as the capacity type, set your hourly rate
+(e.g. $1.00/hr), and specify how many hours you want to offer. When a buyer purchases, the Hanzo
+network routes their requests through your account via a secure proxy — your API keys stay local and
+private. You earn USD revenue deposited directly to your balance.`,
+  },
+  {
+    q: 'Can I resell purchased capacity?',
+    a: `Yes — buy in bulk at lower rates and resell in smaller chunks at a markup. When you have an active
+order with remaining capacity, click "Resell Remaining" to create a new listing. The resale is tracked
+so buyers know the provenance. This creates arbitrage opportunities and helps distribute capacity
+efficiently across the network.`,
+  },
+  {
+    q: 'How does the proxy and S3 transfer work?',
+    a: `When you purchase capacity, you receive a proxy endpoint (e.g. https://proxy.hanzo.ai/v1/ord-xxx).
+Route your AI requests to this endpoint and they're forwarded through the seller's capacity privately.
+For file-heavy workloads like ML training, an S3 transfer bucket is provisioned per order — upload
+datasets and checkpoints, and the seller's VM processes them. All traffic is encrypted end-to-end.`,
+  },
 ];
 
 export function NetworkPage() {
@@ -88,12 +109,15 @@ export function NetworkPage() {
   const aiCoinPending = useNetworkStore((s) => s.aiCoinPending);
   const networkStats = useNetworkStore((s) => s.networkStats);
   const wallet = useNetworkStore((s) => s.wallet);
+  const marketplaceStats = useNetworkStore((s) => s.marketplaceStats);
   const setSharingEnabled = useNetworkStore((s) => s.setSharingEnabled);
   const syncFromBackend = useNetworkStore((s) => s.syncFromBackend);
+  const refreshMarketplace = useNetworkStore((s) => s.refreshMarketplace);
 
   useEffect(() => {
     syncFromBackend().catch(() => {});
-  }, [syncFromBackend]);
+    refreshMarketplace().catch(() => {});
+  }, [syncFromBackend, refreshMarketplace]);
 
   const stats = networkStats;
 
@@ -157,6 +181,26 @@ export function NetworkPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Marketplace quick-access */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">AI Capacity Marketplace</p>
+            <p className="text-xs text-muted-foreground">
+              Browse {marketplaceStats?.activeListings?.toLocaleString() ?? '—'} active listings or sell your own Claude Code, API keys, and GPU capacity.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
+              Browse
+            </Button>
+            <Button size="sm" onClick={() => navigate('/marketplace/create')}>
+              Sell Capacity
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Earnings chart */}
       <Card>

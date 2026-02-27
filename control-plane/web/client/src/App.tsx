@@ -33,6 +33,10 @@ import { GatewaySettings } from "./components/settings/GatewaySettings";
 import { PreferencesSettings } from "./components/settings/PreferencesSettings";
 import { NetworkSettings } from "./components/settings/NetworkSettings";
 import { NetworkPage } from "./pages/NetworkPage";
+import { MarketplacePage } from "./pages/MarketplacePage";
+import { ListingDetailPage } from "./pages/ListingDetailPage";
+import { CreateListingPage } from "./pages/CreateListingPage";
+import { SellerDashboardPage } from "./pages/SellerDashboardPage";
 import { GlobalCommandPalette } from "./components/GlobalCommandPalette";
 import { PreferencesOnboarding } from "./components/onboarding/PreferencesOnboarding";
 import { usePreferencesStore } from "./stores/preferencesStore";
@@ -105,6 +109,10 @@ function AppContent() {
               <Route path="/settings/preferences" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PreferencesSettings /></div>} />
               <Route path="/settings/network" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NetworkSettings /></div>} />
               <Route path="/network" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NetworkPage /></div>} />
+              <Route path="/marketplace" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><MarketplacePage /></div>} />
+              <Route path="/marketplace/listing/:listingId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ListingDetailPage /></div>} />
+              <Route path="/marketplace/create" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CreateListingPage /></div>} />
+              <Route path="/marketplace/seller" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SellerDashboardPage /></div>} />
               <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
