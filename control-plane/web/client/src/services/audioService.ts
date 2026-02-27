@@ -261,6 +261,7 @@ function genTap(ctx: OfflineAudioContext) {
 }
 
 const SOUND_GENERATORS: Record<SoundName, { gen: SoundGenerator; duration: number }> = {
+  none:    { gen: () => {},    duration: 0   },
   chime:   { gen: genChime,   duration: 1.0 },
   ding:    { gen: genDing,    duration: 0.5 },
   droplet: { gen: genDroplet, duration: 0.7 },
