@@ -27,6 +27,7 @@ import { ChevronDown } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantStore } from "@/stores/tenantStore";
+import { SidebarBalanceWidget } from "./SidebarBalanceWidget";
 
 // Read version from package.json at build time
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.1.x';
@@ -133,8 +134,9 @@ export function SidebarNew({ sections }: SidebarNewProps) {
         ))}
       </SidebarContent>
 
-      {/* Footer — user menu */}
+      {/* Footer — balance + user menu */}
       <SidebarFooter className="border-t border-border/40 pt-2">
+        <SidebarBalanceWidget />
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

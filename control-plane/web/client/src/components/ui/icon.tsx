@@ -23,6 +23,9 @@ import {
   Link,
   RadioTower,
   Launch,
+  ShareNetwork,
+  CurrencyDollar,
+  Wallet,
 } from "@/components/ui/icon-bridge";
 import type { IconComponent, IconWeight } from "@/components/ui/icon-bridge";
 
@@ -50,6 +53,9 @@ const icons = {
   link: Link,
   broadcast: RadioTower,
   rocket: Launch,
+  network: ShareNetwork,
+  wallet: Wallet,
+  'currency-dollar': CurrencyDollar,
 } as const;
 
 export interface IconProps {

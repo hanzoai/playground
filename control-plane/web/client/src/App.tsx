@@ -31,6 +31,8 @@ import { AuthGuard } from "./components/AuthGuard";
 import { AuthCallbackPage } from "./components/AuthCallbackPage";
 import { GatewaySettings } from "./components/settings/GatewaySettings";
 import { PreferencesSettings } from "./components/settings/PreferencesSettings";
+import { NetworkSettings } from "./components/settings/NetworkSettings";
+import { NetworkPage } from "./pages/NetworkPage";
 import { GlobalCommandPalette } from "./components/GlobalCommandPalette";
 import { PreferencesOnboarding } from "./components/onboarding/PreferencesOnboarding";
 import { usePreferencesStore } from "./stores/preferencesStore";
@@ -101,6 +103,8 @@ function AppContent() {
               <Route path="/packages" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PackagesPage /></div>} />
               <Route path="/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SettingsPage /></div>} />
               <Route path="/settings/preferences" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PreferencesSettings /></div>} />
+              <Route path="/settings/network" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NetworkSettings /></div>} />
+              <Route path="/network" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NetworkPage /></div>} />
               <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />

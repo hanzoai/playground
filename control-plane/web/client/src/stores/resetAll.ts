@@ -13,6 +13,7 @@ import { usePermissionModeStore } from './permissionModeStore';
 import { useTeamStore } from './teamStore';
 import { useTenantStore } from './tenantStore';
 import { useSpaceStore } from './spaceStore';
+import { useNetworkStore } from './networkStore';
 
 export function resetAllStores(): void {
   gateway.disconnect();
@@ -23,4 +24,5 @@ export function resetAllStores(): void {
   useTeamStore.getState().reset();
   useTenantStore.getState().reset();
   useSpaceStore.getState().reset();
+  useNetworkStore.getState().reset();
 }

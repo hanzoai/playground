@@ -67,6 +67,13 @@ export const navigationSections: NavigationSection[] = [
     title: '',
     items: [
       {
+        id: 'network',
+        label: 'Network',
+        href: '/network',
+        icon: 'network',
+        description: 'AI capacity marketplace and earnings'
+      },
+      {
         id: 'metrics',
         label: 'Metrics',
         href: '/metrics',
