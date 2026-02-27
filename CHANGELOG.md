@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.123] - 2026-02-27
+
+
+### Other
+
+- Handle gateway auth rejection by redirecting to login
+
+When the gateway WebSocket returns close code 1008 (unauthorized),
+stop retrying with a stale token and clear auth state to trigger
+IAM re-authentication. This prevents infinite reconnect loops after
+cert rotation invalidates existing JWTs. (c2a8df5)
+
 ## [0.1.41-rc.122] - 2026-02-27
 
 
