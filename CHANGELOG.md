@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.114] - 2026-02-27
+
+
+### Fixed
+
+- Fix(test): use canonical /v1/ prefix in workflow cleanup route test
+
+Routes were migrated from /api/v1 to /v1 but this test still used the
+old prefix. Gin's route matching precedes middleware, so the backward-
+compat URL rewrite doesn't apply in tests with direct ServeHTTP calls. (d78f199)
+
 ## [0.1.41-rc.113] - 2026-02-27
 
 
