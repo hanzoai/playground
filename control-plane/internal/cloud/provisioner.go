@@ -49,7 +49,8 @@ type ProvisionRequest struct {
 	// Multi-OS desktop support
 	OS           string `json:"os,omitempty"`            // "linux" (default), "macos", "windows"
 	Provider     string `json:"provider,omitempty"`      // Visor provider name for Mac/Windows VMs
-	InstanceType string `json:"instance_type,omitempty"` // Cloud instance type (e.g. "mac2.metal", "t3.medium")
+	InstanceType string   `json:"instance_type,omitempty"` // Cloud instance type (e.g. "mac2.metal", "t3.medium")
+	SSHKeyIDs    []string `json:"ssh_key_ids,omitempty"`    // Provider SSH key IDs to inject
 }
 
 // ProvisionResult describes the outcome of provisioning.
@@ -663,6 +664,7 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		Owner:        req.Owner,
 		Org:          org,
 		Tags:         tags,
+		SSHKeyIDs:    req.SSHKeyIDs,
 	}
 
 	created, err := p.visor.CreateMachine(ctx, vmReq)
@@ -860,10 +862,85 @@ func (p *Provisioner) GetLogs(ctx context.Context, nodeID string, tailLines int6
 	return p.k8s.GetPodLogs(ctx, node.Namespace, node.PodName, tailLines)
 }
 
-// Sync refreshes the in-memory node list from Kubernetes.
+// Sync refreshes the in-memory node list from Kubernetes and rehydrates
+// non-K8s nodes (DO droplets, VMs) from Visor.
 func (p *Provisioner) Sync(ctx context.Context) error {
 	_, err := p.ListNodes(ctx, "")
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Rehydrate DO droplets and VMs from Visor so they survive restarts.
+	if p.visor != nil {
+		if err := p.rehydrateFromVisor(ctx); err != nil {
+			logger.Logger.Warn().Err(err).Msg("failed to rehydrate nodes from visor")
+		}
+	}
+	return nil
+}
+
+// rehydrateFromVisor loads machines from Visor and adds any that are missing
+// from the in-memory node map. This recovers DO droplets after a restart.
+func (p *Provisioner) rehydrateFromVisor(ctx context.Context) error {
+	machines, err := p.visor.ListMachines(ctx, "hanzo")
+	if err != nil {
+		return err
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	added := 0
+	for _, m := range machines {
+		// Skip machines that are already tracked
+		found := false
+		for _, n := range p.nodes {
+			if n.PodName == m.Name {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		// Reconstruct node from Visor machine data
+		nodeID := m.Name
+		if strings.HasPrefix(m.Name, "do-") {
+			nodeID = m.Name
+		}
+
+		node := &CloudNode{
+			NodeID:         nodeID,
+			PodName:        m.Name,
+			Namespace:      "hanzo",
+			NodeType:       NodeTypeCloud,
+			Status:         m.State,
+			Image:          fmt.Sprintf("droplet:%s", m.Provider),
+			OS:             strings.ToLower(m.OS),
+			RemoteProtocol: strings.ToLower(m.RemoteProtocol),
+			Labels: map[string]string{
+				"playground.hanzo.ai/node-id":  nodeID,
+				"playground.hanzo.ai/type":     "droplet",
+				"playground.hanzo.ai/provider": strings.ToLower(m.Provider),
+			},
+			LastSeen: time.Now(),
+		}
+		if m.CreatedTime != "" {
+			if t, err := time.Parse("2006-01-02T15:04:05-07:00", m.CreatedTime); err == nil {
+				node.CreatedAt = t
+			} else if t, err := time.Parse("2006-01-02T15:04:05Z", m.CreatedTime); err == nil {
+				node.CreatedAt = t
+			}
+		}
+		p.nodes[nodeID] = node
+		added++
+	}
+
+	if added > 0 {
+		logger.Logger.Info().Int("count", added).Msg("rehydrated cloud nodes from visor")
+	}
+	return nil
 }
 
 // countByOrg returns the number of cloud nodes for an organization.

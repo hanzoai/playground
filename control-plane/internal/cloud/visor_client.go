@@ -76,6 +76,7 @@ type VMProvisionRequest struct {
 	Owner        string            `json:"owner,omitempty"`
 	Org          string            `json:"org,omitempty"`
 	Tags         map[string]string `json:"tags,omitempty"`           // env vars passed to cloud-init (prefix "env:")
+	SSHKeyIDs    []string          `json:"ssh_key_ids,omitempty"`    // Provider SSH key IDs
 }
 
 // VMProvisionResult describes the outcome of VM provisioning.
@@ -173,7 +174,7 @@ func (vc *VisorClient) UpdateMachineState(ctx context.Context, owner, name, stat
 		"state": state,
 	}
 
-	url := fmt.Sprintf("%s/api/update-machine%s", vc.config.Endpoint, vc.authQuery())
+	url := fmt.Sprintf("%s/api/update-machine%s", vc.config.Endpoint, vc.authQueryFirst())
 	_, err := vc.doPost(ctx, url, machine)
 	return err
 }
@@ -222,6 +223,9 @@ func (vc *VisorClient) CreateMachine(ctx context.Context, req *VMProvisionReques
 	if len(req.Tags) > 0 {
 		spec["tags"] = req.Tags
 	}
+	if len(req.SSHKeyIDs) > 0 {
+		spec["sshKeyIds"] = req.SSHKeyIDs
+	}
 
 	provider := req.Provider
 	if provider == "" {
@@ -257,7 +261,7 @@ func (vc *VisorClient) DeleteMachine(ctx context.Context, owner, name string) er
 		"name":  name,
 	}
 
-	deleteURL := fmt.Sprintf("%s/api/delete-machine%s", vc.config.Endpoint, vc.authQuery())
+	deleteURL := fmt.Sprintf("%s/api/delete-machine%s", vc.config.Endpoint, vc.authQueryFirst())
 	_, err := vc.doPost(ctx, deleteURL, machine)
 	if err != nil {
 		return fmt.Errorf("visor delete machine: %w", err)
@@ -301,11 +305,21 @@ func DefaultInstanceType(os DesktopOS, providerType string) string {
 }
 
 // authQuery returns the IAM auth query parameters for Visor API calls.
+// Returns "&clientId=...&clientSecret=..." — append to URLs that already have a "?".
 func (vc *VisorClient) authQuery() string {
 	if vc.config.ClientID == "" {
 		return ""
 	}
 	return fmt.Sprintf("&clientId=%s&clientSecret=%s", vc.config.ClientID, vc.config.ClientSecret)
+}
+
+// authQueryFirst returns auth as the first query parameter (starts with "?").
+// Use for URLs that have no existing query string.
+func (vc *VisorClient) authQueryFirst() string {
+	if vc.config.ClientID == "" {
+		return ""
+	}
+	return fmt.Sprintf("?clientId=%s&clientSecret=%s", vc.config.ClientID, vc.config.ClientSecret)
 }
 
 func (vc *VisorClient) doGet(ctx context.Context, url string) ([]byte, error) {
