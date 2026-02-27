@@ -32,6 +32,7 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub?:
 const CAPACITY_TYPES: { value: CapacityType | 'all'; label: string }[] = [
   { value: 'all', label: 'All Types' },
   { value: 'claude-code', label: 'Claude Code' },
+  { value: 'custom-agent', label: 'Custom Agent' },
   { value: 'api-key', label: 'API Key' },
   { value: 'gpu-compute', label: 'GPU Compute' },
   { value: 'inference', label: 'Inference' },
@@ -76,7 +77,7 @@ export function MarketplacePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">AI Capacity Marketplace</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Buy and sell AI compute — Claude Code, API keys, GPUs, and inference.
+            Buy and sell AI compute — Claude Code, custom agents, API keys, GPUs, and inference.
           </p>
         </div>
         <div className="flex items-center gap-2">

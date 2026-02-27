@@ -7,6 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import * as networkApi from '@/services/networkApi';
 import { PurchaseDialog } from '@/components/marketplace/PurchaseDialog';
 import { CapacityTypeIcon, capacityTypeLabel } from '@/components/marketplace/CapacityTypeIcon';
+import { ConfidentialBadge, ConfidentialDetailSection } from '@/components/marketplace/ConfidentialBadge';
 import { ResaleIndicator } from '@/components/marketplace/ResaleIndicator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -103,11 +104,83 @@ export function ListingDetailPage() {
             <span className="flex items-center gap-1">
               <Badge variant="outline" className="text-[10px]">{capacityTypeLabel(listing.capacityType)}</Badge>
             </span>
+            {listing.confidentialCompute && (
+              <ConfidentialBadge info={listing.confidentialCompute} />
+            )}
             <span>{listing.provider}</span>
             <span className="font-mono">{listing.model}</span>
           </div>
         </CardContent>
       </Card>
+
+      {/* Confidential Computing */}
+      {listing.confidentialCompute && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Confidential Computing</CardTitle>
+            <CardDescription>Hardware-based privacy guarantees for this listing.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ConfidentialDetailSection info={listing.confidentialCompute} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Agent Details */}
+      {listing.agentMeta && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Agent Details</CardTitle>
+            <CardDescription>DID-verified custom agent information.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Agent DID</p>
+                <p className="font-mono text-xs break-all">{listing.agentMeta.agentDid}</p>
+              </div>
+              {listing.agentMeta.botDid && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Bot DID</p>
+                  <p className="font-mono text-xs break-all">{listing.agentMeta.botDid}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-muted-foreground">Specialization</p>
+                <p className="font-medium">{listing.agentMeta.specialization}</p>
+              </div>
+              {listing.agentMeta.successRate !== null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Success Rate</p>
+                  <p className="font-medium tabular-nums">{(listing.agentMeta.successRate * 100).toFixed(1)}%</p>
+                </div>
+              )}
+              {listing.agentMeta.totalRuns !== null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Runs</p>
+                  <p className="font-medium tabular-nums">{listing.agentMeta.totalRuns.toLocaleString()}</p>
+                </div>
+              )}
+            </div>
+            {listing.agentMeta.capabilities.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Capabilities</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {listing.agentMeta.capabilities.map((cap) => (
+                    <Badge key={cap} variant="secondary" className="text-[10px]">{cap}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {listing.agentMeta.trainingDataDescription && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Training Data</p>
+                <p className="text-sm text-muted-foreground">{listing.agentMeta.trainingDataDescription}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pricing + Capacity */}
       <Card>

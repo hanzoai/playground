@@ -154,7 +154,7 @@ export interface NetworkStatsDTO {
 
 export type ListingStatus = 'active' | 'paused' | 'sold_out' | 'expired';
 
-export type CapacityType = 'claude-code' | 'api-key' | 'gpu-compute' | 'inference';
+export type CapacityType = 'claude-code' | 'api-key' | 'gpu-compute' | 'inference' | 'custom-agent';
 
 export type PricingUnit = 'hour' | 'request' | 'token_1k';
 
@@ -167,6 +167,32 @@ export interface ListingPricing {
   minUnits: number;
   /** Maximum purchase quantity (null = unlimited). */
   maxUnits: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Privacy & Confidential Computing
+// ---------------------------------------------------------------------------
+
+export type PrivacyLevel = 'standard' | 'private' | 'confidential';
+
+export type TeeProvider = 'nvidia-h100' | 'nvidia-blackwell' | 'intel-sgx' | 'amd-sev' | 'none';
+
+export interface ConfidentialComputeInfo {
+  teeProvider: TeeProvider;
+  attestationUrl: string | null;
+  privacyLevel: PrivacyLevel;
+  encryptedMemory: boolean;
+  secureEnclaveVerified: boolean;
+}
+
+export interface AgentListingMeta {
+  agentDid: string;
+  botDid: string | null;
+  capabilities: string[];
+  specialization: string;
+  trainingDataDescription: string;
+  successRate: number | null;
+  totalRuns: number | null;
 }
 
 export interface MarketplaceListing {
@@ -201,6 +227,10 @@ export interface MarketplaceListing {
   isResale: boolean;
   /** Parent listing ID if resale. */
   parentListingId: string | null;
+  /** Confidential computing / TEE information. */
+  confidentialCompute: ConfidentialComputeInfo | null;
+  /** Agent/bot metadata for custom-agent listings. */
+  agentMeta: AgentListingMeta | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -294,6 +324,10 @@ export interface CreateListingParams {
   expiresAt: string | null;
   /** For resale: the order ID providing the capacity. */
   sourceOrderId: string | null;
+  /** Confidential computing info. */
+  confidentialCompute?: Partial<ConfidentialComputeInfo>;
+  /** Agent metadata for custom-agent listings. */
+  agentMeta?: Partial<AgentListingMeta>;
 }
 
 export interface UpdateListingParams {
@@ -347,6 +381,22 @@ export interface MarketplaceListingDTO {
   expires_at: string | null;
   is_resale: boolean;
   parent_listing_id: string | null;
+  confidential_compute: {
+    tee_provider: TeeProvider;
+    attestation_url: string | null;
+    privacy_level: PrivacyLevel;
+    encrypted_memory: boolean;
+    secure_enclave_verified: boolean;
+  } | null;
+  agent_meta: {
+    agent_did: string;
+    bot_did: string | null;
+    capabilities: string[];
+    specialization: string;
+    training_data_description: string;
+    success_rate: number | null;
+    total_runs: number | null;
+  } | null;
 }
 
 export interface MarketplaceOrderDTO {

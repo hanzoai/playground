@@ -282,6 +282,22 @@ function fromListingDTO(d: MarketplaceListingDTO): MarketplaceListing {
     expiresAt: d.expires_at,
     isResale: d.is_resale,
     parentListingId: d.parent_listing_id,
+    confidentialCompute: d.confidential_compute ? {
+      teeProvider: d.confidential_compute.tee_provider,
+      attestationUrl: d.confidential_compute.attestation_url,
+      privacyLevel: d.confidential_compute.privacy_level,
+      encryptedMemory: d.confidential_compute.encrypted_memory,
+      secureEnclaveVerified: d.confidential_compute.secure_enclave_verified,
+    } : null,
+    agentMeta: d.agent_meta ? {
+      agentDid: d.agent_meta.agent_did,
+      botDid: d.agent_meta.bot_did,
+      capabilities: d.agent_meta.capabilities,
+      specialization: d.agent_meta.specialization,
+      trainingDataDescription: d.agent_meta.training_data_description,
+      successRate: d.agent_meta.success_rate,
+      totalRuns: d.agent_meta.total_runs,
+    } : null,
   };
 }
 
@@ -354,6 +370,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 720, remainingCapacity: 548, status: 'active',
     rating: 4.8, totalOrders: 47, createdAt: new Date(Date.now() - 30 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-002', sellerId: 'u-bob', sellerDisplayName: 'Bob M.',
@@ -364,6 +381,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 1440, remainingCapacity: 1120, status: 'active',
     rating: 4.5, totalOrders: 89, createdAt: new Date(Date.now() - 45 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-003', sellerId: 'u-carol', sellerDisplayName: 'Carol T.',
@@ -374,6 +392,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 360, remainingCapacity: 180, status: 'active',
     rating: 4.6, totalOrders: 63, createdAt: new Date(Date.now() - 20 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-004', sellerId: 'u-dave', sellerDisplayName: 'Dave R.',
@@ -384,6 +403,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 168, remainingCapacity: 92, status: 'active',
     rating: 4.9, totalOrders: 28, createdAt: new Date(Date.now() - 15 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-005', sellerId: 'u-eve', sellerDisplayName: 'Eve S.',
@@ -394,6 +414,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 2160, remainingCapacity: 1800, status: 'active',
     rating: 4.3, totalOrders: 112, createdAt: new Date(Date.now() - 60 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-006', sellerId: 'u-frank', sellerDisplayName: 'Frank W.',
@@ -404,6 +425,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 96, remainingCapacity: 48, status: 'active',
     rating: 4.7, totalOrders: 6, createdAt: new Date(Date.now() - 5 * 86_400_000).toISOString(),
     expiresAt: null, isResale: true, parentListingId: 'lst-001',
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-007', sellerId: 'u-grace', sellerDisplayName: 'Grace L.',
@@ -414,6 +436,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 720, remainingCapacity: 600, status: 'active',
     rating: 4.4, totalOrders: 34, createdAt: new Date(Date.now() - 25 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-008', sellerId: 'u-hank', sellerDisplayName: 'Hank P.',
@@ -424,6 +447,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 4320, remainingCapacity: 3800, status: 'active',
     rating: 4.1, totalOrders: 156, createdAt: new Date(Date.now() - 90 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-009', sellerId: 'u-iris', sellerDisplayName: 'Iris C.',
@@ -434,6 +458,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 2880, remainingCapacity: 2400, status: 'active',
     rating: 4.2, totalOrders: 203, createdAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-010', sellerId: 'u-jake', sellerDisplayName: 'Jake N.',
@@ -444,6 +469,11 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 96, remainingCapacity: 64, status: 'active',
     rating: 5.0, totalOrders: 12, createdAt: new Date(Date.now() - 10 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: {
+      teeProvider: 'nvidia-h100', attestationUrl: 'https://attestation.hanzo.ai/report/h100-jake-001',
+      privacyLevel: 'confidential', encryptedMemory: true, secureEnclaveVerified: true,
+    },
+    agentMeta: null,
   },
   {
     id: 'lst-011', sellerId: 'u-kate', sellerDisplayName: 'Kate V.',
@@ -454,6 +484,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 50000, remainingCapacity: 42000, status: 'active',
     rating: 4.3, totalOrders: 78, createdAt: new Date(Date.now() - 35 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
   },
   {
     id: 'lst-012', sellerId: 'u-leo', sellerDisplayName: 'Leo D.',
@@ -464,6 +495,82 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
     totalCapacity: 480, remainingCapacity: 480, status: 'paused',
     rating: 4.6, totalOrders: 52, createdAt: new Date(Date.now() - 50 * 86_400_000).toISOString(),
     expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: null, agentMeta: null,
+  },
+  {
+    id: 'lst-013', sellerId: 'u-maya', sellerDisplayName: 'Maya R.',
+    capacityType: 'custom-agent', title: 'CodeGuard — AI Security Auditor',
+    description: 'Custom-trained security audit agent. Detects OWASP top 10, supply chain risks, and credential leaks. Trained on 50K+ vulnerability reports.',
+    provider: 'Custom', model: 'codeguard-v2',
+    pricing: { centsPerUnit: 200, unit: 'hour', minUnits: 1, maxUnits: 8 },
+    totalCapacity: 240, remainingCapacity: 180, status: 'active',
+    rating: 4.9, totalOrders: 34, createdAt: new Date(Date.now() - 12 * 86_400_000).toISOString(),
+    expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: {
+      teeProvider: 'nvidia-blackwell', attestationUrl: 'https://attestation.hanzo.ai/report/blackwell-maya-001',
+      privacyLevel: 'confidential', encryptedMemory: true, secureEnclaveVerified: true,
+    },
+    agentMeta: {
+      agentDid: 'did:hanzo:agent:maya-codeguard-7f3a9b2c', botDid: 'did:hanzo:bot:maya-sec-01',
+      capabilities: ['security-audit', 'vulnerability-scan', 'code-review', 'dependency-check'],
+      specialization: 'Application security and vulnerability detection',
+      trainingDataDescription: 'Trained on 50K+ CVE reports, OWASP guidelines, and real-world pentest findings.',
+      successRate: 0.94, totalRuns: 12800,
+    },
+  },
+  {
+    id: 'lst-014', sellerId: 'u-noah', sellerDisplayName: 'Noah T.',
+    capacityType: 'custom-agent', title: 'DocBot — Technical Writer Agent',
+    description: 'Generates API docs, READMEs, changelogs, and architecture diagrams from source code. Supports TypeScript, Python, Go, Rust.',
+    provider: 'Custom', model: 'docbot-v3',
+    pricing: { centsPerUnit: 80, unit: 'hour', minUnits: 1, maxUnits: null },
+    totalCapacity: 720, remainingCapacity: 640, status: 'active',
+    rating: 4.5, totalOrders: 67, createdAt: new Date(Date.now() - 8 * 86_400_000).toISOString(),
+    expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: { teeProvider: 'none', attestationUrl: null, privacyLevel: 'private', encryptedMemory: false, secureEnclaveVerified: false },
+    agentMeta: {
+      agentDid: 'did:hanzo:agent:noah-docbot-e4d8c1a5', botDid: null,
+      capabilities: ['documentation', 'api-docs', 'changelogs', 'diagrams'],
+      specialization: 'Technical documentation generation from source code',
+      trainingDataDescription: 'Fine-tuned on high-quality open-source documentation and API references.',
+      successRate: 0.88, totalRuns: 5400,
+    },
+  },
+  {
+    id: 'lst-015', sellerId: 'u-suki', sellerDisplayName: 'Suki W.',
+    capacityType: 'custom-agent', title: 'TestPilot — Automated Test Generator',
+    description: 'Generates unit tests, integration tests, and E2E test suites. Supports Jest, Vitest, Playwright, pytest. Confidential compute on Blackwell.',
+    provider: 'Custom', model: 'testpilot-v1',
+    pricing: { centsPerUnit: 150, unit: 'hour', minUnits: 1, maxUnits: 12 },
+    totalCapacity: 360, remainingCapacity: 290, status: 'active',
+    rating: 4.7, totalOrders: 21, createdAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: {
+      teeProvider: 'nvidia-blackwell', attestationUrl: 'https://attestation.hanzo.ai/report/blackwell-suki-001',
+      privacyLevel: 'confidential', encryptedMemory: true, secureEnclaveVerified: true,
+    },
+    agentMeta: {
+      agentDid: 'did:hanzo:agent:suki-testpilot-2b6f4e8d', botDid: 'did:hanzo:bot:suki-test-01',
+      capabilities: ['test-generation', 'unit-tests', 'e2e-tests', 'coverage-analysis'],
+      specialization: 'Automated test suite generation and coverage optimization',
+      trainingDataDescription: 'Trained on 100K+ test files from top-rated open-source projects.',
+      successRate: 0.91, totalRuns: 3200,
+    },
+  },
+  {
+    id: 'lst-016', sellerId: 'u-omar', sellerDisplayName: 'Omar F.',
+    capacityType: 'gpu-compute', title: 'Blackwell B200 — Confidential ML Training',
+    description: 'NVIDIA Blackwell B200 GPU with full I/O TEE. Your training data and model weights are never exposed, even to the host operator. CUDA 13, NVLink 5.0.',
+    provider: 'NVIDIA', model: 'b200-80gb',
+    pricing: { centsPerUnit: 500, unit: 'hour', minUnits: 1, maxUnits: 4 },
+    totalCapacity: 48, remainingCapacity: 32, status: 'active',
+    rating: 5.0, totalOrders: 8, createdAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    expiresAt: null, isResale: false, parentListingId: null,
+    confidentialCompute: {
+      teeProvider: 'nvidia-blackwell', attestationUrl: 'https://attestation.hanzo.ai/report/blackwell-omar-001',
+      privacyLevel: 'confidential', encryptedMemory: true, secureEnclaveVerified: true,
+    },
+    agentMeta: null,
   },
 ];
 
@@ -608,6 +715,22 @@ export async function createListing(params: CreateListingParams): Promise<Market
       expiresAt: params.expiresAt,
       isResale: !!params.sourceOrderId,
       parentListingId: null,
+      confidentialCompute: params.confidentialCompute ? {
+        teeProvider: params.confidentialCompute.teeProvider ?? 'none',
+        attestationUrl: params.confidentialCompute.attestationUrl ?? null,
+        privacyLevel: params.confidentialCompute.privacyLevel ?? 'standard',
+        encryptedMemory: params.confidentialCompute.encryptedMemory ?? false,
+        secureEnclaveVerified: params.confidentialCompute.secureEnclaveVerified ?? false,
+      } : null,
+      agentMeta: params.agentMeta ? {
+        agentDid: params.agentMeta.agentDid ?? '',
+        botDid: params.agentMeta.botDid ?? null,
+        capabilities: params.agentMeta.capabilities ?? [],
+        specialization: params.agentMeta.specialization ?? '',
+        trainingDataDescription: params.agentMeta.trainingDataDescription ?? '',
+        successRate: params.agentMeta.successRate ?? null,
+        totalRuns: params.agentMeta.totalRuns ?? null,
+      } : null,
     };
     return listing;
   }

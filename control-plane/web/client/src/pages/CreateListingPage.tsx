@@ -15,9 +15,23 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import type { CapacityType, PricingUnit, CreateListingParams } from '@/types/network';
+import type { CapacityType, PricingUnit, PrivacyLevel, TeeProvider, CreateListingParams } from '@/types/network';
 
-const CAPACITY_TYPES: CapacityType[] = ['claude-code', 'api-key', 'gpu-compute', 'inference'];
+const CAPACITY_TYPES: CapacityType[] = ['claude-code', 'api-key', 'gpu-compute', 'inference', 'custom-agent'];
+
+const PRIVACY_LEVELS: { value: PrivacyLevel; label: string; desc: string }[] = [
+  { value: 'standard', label: 'Standard', desc: 'No special privacy guarantees' },
+  { value: 'private', label: 'Private', desc: 'Zero data retention, encrypted transit' },
+  { value: 'confidential', label: 'Confidential', desc: 'Hardware TEE, encrypted memory' },
+];
+
+const TEE_PROVIDERS: { value: TeeProvider; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'nvidia-blackwell', label: 'NVIDIA Blackwell TEE' },
+  { value: 'nvidia-h100', label: 'NVIDIA H100 Confidential' },
+  { value: 'intel-sgx', label: 'Intel SGX' },
+  { value: 'amd-sev', label: 'AMD SEV' },
+];
 const PRICING_UNITS: { value: PricingUnit; label: string }[] = [
   { value: 'hour', label: 'Per Hour' },
   { value: 'request', label: 'Per Request' },
@@ -45,6 +59,15 @@ export function CreateListingPage() {
   const [minUnits, setMinUnits] = useState(1);
   const [maxUnits, setMaxUnits] = useState(24);
   const [totalCapacity, setTotalCapacity] = useState(100);
+  // Agent fields
+  const [agentDid, setAgentDid] = useState('');
+  const [capabilities, setCapabilities] = useState('');
+  const [specialization, setSpecialization] = useState('');
+  const [trainingDescription, setTrainingDescription] = useState('');
+  // Privacy fields
+  const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>('standard');
+  const [teeProvider, setTeeProvider] = useState<TeeProvider>('none');
+  const [attestationUrl, setAttestationUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +76,10 @@ export function CreateListingPage() {
   const handleSubmit = async () => {
     if (!title.trim() || !provider.trim() || !model.trim()) {
       setError('Please fill in all required fields.');
+      return;
+    }
+    if (capacityType === 'custom-agent' && !agentDid.trim()) {
+      setError('Agent DID is required for custom agent listings.');
       return;
     }
     setSubmitting(true);
@@ -68,6 +95,19 @@ export function CreateListingPage() {
         totalCapacity,
         expiresAt: null,
         sourceOrderId,
+        confidentialCompute: privacyLevel !== 'standard' ? {
+          privacyLevel,
+          teeProvider: privacyLevel === 'confidential' ? teeProvider : 'none',
+          encryptedMemory: privacyLevel === 'confidential',
+          secureEnclaveVerified: false,
+          attestationUrl: attestationUrl.trim() || null,
+        } : undefined,
+        agentMeta: capacityType === 'custom-agent' ? {
+          agentDid: agentDid.trim(),
+          capabilities: capabilities.split(',').map((c) => c.trim()).filter(Boolean),
+          specialization: specialization.trim(),
+          trainingDataDescription: trainingDescription.trim(),
+        } : undefined,
       };
       if (isResale && sourceOrderId) {
         await createResale(sourceOrderId, params);
@@ -102,7 +142,7 @@ export function CreateListingPage() {
           <CardDescription>What kind of AI access are you offering?</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {CAPACITY_TYPES.map((ct) => (
               <button
                 key={ct}
@@ -113,6 +153,7 @@ export function CreateListingPage() {
                   setCapacityType(ct);
                   if (ct === 'claude-code') setProvider('Anthropic');
                   else if (ct === 'gpu-compute') setProvider('NVIDIA');
+                  else if (ct === 'custom-agent') setProvider('Custom');
                   else setProvider('');
                 }}
               >
@@ -171,6 +212,113 @@ export function CreateListingPage() {
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Agent Details (custom-agent only) */}
+      {capacityType === 'custom-agent' && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Agent Details</CardTitle>
+            <CardDescription>Provide your agent's DID and capabilities.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Agent DID *</label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
+                placeholder="did:hanzo:agent:abc123..."
+                value={agentDid}
+                onChange={(e) => setAgentDid(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Specialization</label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                placeholder="e.g. code review, security auditing, documentation"
+                value={specialization}
+                onChange={(e) => setSpecialization(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Capabilities (comma-separated)</label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                placeholder="e.g. code-review, security-audit, documentation, testing"
+                value={capabilities}
+                onChange={(e) => setCapabilities(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Training Data Description</label>
+              <textarea
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+                placeholder="Describe the data and methods used to train this agent..."
+                value={trainingDescription}
+                onChange={(e) => setTrainingDescription(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Privacy & Confidential Computing */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Privacy & Confidential Computing</CardTitle>
+          <CardDescription>Set privacy guarantees for buyers. Confidential computing uses hardware TEEs.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm text-muted-foreground block mb-1">Privacy Level</label>
+            <div className="grid grid-cols-3 gap-2">
+              {PRIVACY_LEVELS.map((pl) => (
+                <button
+                  key={pl.value}
+                  className={`rounded-lg border p-3 text-left transition-colors ${
+                    privacyLevel === pl.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                  }`}
+                  onClick={() => {
+                    setPrivacyLevel(pl.value);
+                    if (pl.value !== 'confidential') setTeeProvider('none');
+                  }}
+                >
+                  <p className="text-sm font-medium">{pl.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{pl.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+          {privacyLevel === 'confidential' && (
+            <>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">TEE Provider</label>
+                <select
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  value={teeProvider}
+                  onChange={(e) => setTeeProvider(e.target.value as TeeProvider)}
+                >
+                  {TEE_PROVIDERS.map((tp) => (
+                    <option key={tp.value} value={tp.value}>{tp.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Attestation URL (optional)</label>
+                <input
+                  type="url"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  placeholder="https://attestation.example.com/report/..."
+                  value={attestationUrl}
+                  onChange={(e) => setAttestationUrl(e.target.value)}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

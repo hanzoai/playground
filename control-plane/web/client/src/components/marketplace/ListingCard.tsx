@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CapacityTypeIcon, capacityTypeLabel } from './CapacityTypeIcon';
+import { ConfidentialBadge } from './ConfidentialBadge';
 import { ResaleIndicator } from './ResaleIndicator';
 import type { MarketplaceListing } from '@/types/network';
 
@@ -57,10 +58,27 @@ export function ListingCard({ listing }: Props) {
         {/* Title */}
         <h3 className="text-sm font-semibold leading-tight line-clamp-2">{listing.title}</h3>
 
+        {/* Confidential badge */}
+        {listing.confidentialCompute && (
+          <ConfidentialBadge info={listing.confidentialCompute} />
+        )}
+
         {/* Provider + Model */}
         <p className="text-xs text-muted-foreground">
           {listing.provider} · {listing.model}
         </p>
+
+        {/* Agent capabilities */}
+        {listing.agentMeta && listing.agentMeta.capabilities.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {listing.agentMeta.capabilities.slice(0, 3).map((cap) => (
+              <span key={cap} className="text-[10px] rounded bg-pink-500/10 text-pink-600 px-1.5 py-0.5">{cap}</span>
+            ))}
+            {listing.agentMeta.capabilities.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{listing.agentMeta.capabilities.length - 3}</span>
+            )}
+          </div>
+        )}
 
         {/* Price */}
         <p className="text-lg font-bold tabular-nums">
@@ -86,6 +104,13 @@ export function ListingCard({ listing }: Props) {
           <span className="text-amber-500">{ratingStars(listing.rating)} {listing.rating.toFixed(1)}</span>
           <span>{listing.totalOrders} orders</span>
         </div>
+
+        {/* Agent DID */}
+        {listing.agentMeta && (
+          <p className="text-[10px] text-muted-foreground font-mono truncate" title={listing.agentMeta.agentDid}>
+            {listing.agentMeta.agentDid}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

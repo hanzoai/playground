@@ -79,7 +79,6 @@ export const navigationSections: NavigationSection[] = [
         href: '/marketplace',
         icon: 'storefront',
         description: 'Buy and sell AI capacity',
-        adminOnly: true,
       },
       {
         id: 'metrics',
