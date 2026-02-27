@@ -24,6 +24,7 @@ const stateConfig: Record<GatewayConnectionState, {
   authenticating: { label: 'Authenticating...', color: 'bg-yellow-400', pulse: true },
   connected: { label: 'Connected', color: 'bg-green-500', pulse: false },
   reconnecting: { label: 'Reconnecting...', color: 'bg-orange-400', pulse: true },
+  unauthorized: { label: 'Session expired', color: 'bg-red-500', pulse: false },
   error: { label: 'Error', color: 'bg-red-500', pulse: false },
 };
 
