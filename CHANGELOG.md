@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.122] - 2026-02-27
+
+
+### Other
+
+- Change cloud node ID prefix from do- to hz-
+
+Provisioned nodes now use hz- prefix instead of do- for consistent
+Hanzo branding in the running agents UI. (152533e)
+
 ## [0.1.41-rc.121] - 2026-02-27
 
 
