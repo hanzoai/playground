@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.126] - 2026-02-28
+
+
+### Fixed
+
+- Fix: handle null organizations in IamOrgSelector to prevent crash
+
+The organizations array can be null when the IAM API returns 403
+(e.g., unauthenticated state). Add null check before accessing .length.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (1db958a)
+
 ## [0.1.41-rc.125] - 2026-02-27
 
 
