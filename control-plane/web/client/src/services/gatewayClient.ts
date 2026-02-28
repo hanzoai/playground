@@ -187,6 +187,9 @@ class GatewayClient {
 
     this.ws.onopen = () => {
       this.setState('authenticating');
+      // Gateway expects the client to send the connect frame immediately.
+      // Don't wait for connect.challenge — send hello right away.
+      this.sendHello();
     };
 
     this.ws.onmessage = (event) => {
