@@ -39,7 +39,7 @@ type Provider interface {
 
 // Config holds the configuration for the secret management subsystem.
 type Config struct {
-	// Provider selects the backend: "env" (default), "aws-kms", "gcp-kms", "vault".
+	// Provider selects the backend: "env" (default), "kms", "aws-kms", "gcp-kms", "vault".
 	Provider ProviderType `yaml:"provider" mapstructure:"provider"`
 
 	// KeyPrefix is prepended to all secret keys when reading from env vars.
@@ -54,6 +54,9 @@ type Config struct {
 
 	// Vault holds configuration specific to the vault provider.
 	Vault VaultConfig `yaml:"vault" mapstructure:"vault"`
+
+	// KMS holds configuration specific to the Hanzo KMS provider.
+	KMS KMSConfig `yaml:"kms" mapstructure:"kms"`
 }
 
 // AWSKMSConfig holds AWS KMS-specific settings.
@@ -86,13 +89,15 @@ func DefaultConfig() Config {
 }
 
 // NewProvider creates a Provider for the given configuration.
-// Currently the env provider is built-in; aws-kms, gcp-kms, and vault are
+// The env and kms providers are built-in; aws-kms, gcp-kms, and vault are
 // supported as extension points and will return an error until their SDK
 // adapters are registered.
 func NewProvider(cfg Config) (Provider, error) {
 	switch cfg.Provider {
 	case ProviderEnv, "":
 		return NewEnvProvider(cfg.KeyPrefix), nil
+	case ProviderKMS:
+		return NewKMSProvider(cfg.KMS)
 	case ProviderAWSKMS:
 		return nil, fmt.Errorf("aws-kms provider: not yet linked — register an AWSKMSProvider implementation")
 	case ProviderGCPKMS:
