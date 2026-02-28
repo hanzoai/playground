@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.128] - 2026-02-28
+
+
+### Added
+
+- Feat: add org management UI (create org, invite members, org settings page)
+
+- Enhance IamOrgSelector with "Create Organization" dropdown option
+- Add CreateOrgDialog for creating new IAM organizations via Casdoor API
+- Add InviteMemberDialog for inviting members with invite code display
+- Add OrgSettingsPage showing org details and member list
+- Add Organization nav item and /org/settings route
+- Register BuildingOffice and EnvelopeSimple icons
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (a5ac61c)
+
+- Feat: add Hanzo KMS secret provider for playground backend
+
+Adds a new KMSProvider that fetches secrets from Hanzo KMS
+(Infisical-compatible API) with universal machine-identity auth,
+token caching with expiry tracking, and per-secret in-memory cache
+with configurable TTL. Registered as the "kms" provider type in the
+secrets subsystem.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (c66323a)
+
+
+
+### Fixed
+
+- Fix: send WS hello frame immediately on open instead of waiting for challenge
+
+The gateway expects clients to send the connect request frame as soon as
+the WebSocket opens. The browser client was waiting for a connect.challenge
+event that the gateway never sends, causing a 10s handshake timeout. (ef68032)
+
 ## [0.1.41-rc.127] - 2026-02-28
 
 
