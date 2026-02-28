@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.129] - 2026-02-28
+
+
+### Other
+
+- [chore] bump Python requirement to 3.14+
+
+Update all python:3.11-slim Dockerfiles and K8s manifest image to
+python:3.14-slim, sdk/python/pyproject.toml requires-python to >=3.14,
+and sdk-python CI workflow matrix to 3.14 only. (319978d)
+
 ## [0.1.41-rc.128] - 2026-02-28
 
 
