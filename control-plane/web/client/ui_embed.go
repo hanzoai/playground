@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//go:embed dist/* dist/**
+//go:embed all:dist
 var UIFiles embed.FS
 
 // RegisterUIRoutes registers the UI routes with the Gin engine.

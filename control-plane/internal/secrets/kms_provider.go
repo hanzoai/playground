@@ -113,16 +113,6 @@ func NewKMSProvider(cfg KMSConfig) (*KMSProvider, error) {
 	}, nil
 }
 
-// newKMSProviderWithClient creates a KMSProvider with a custom HTTP client (for testing).
-func newKMSProviderWithClient(cfg KMSConfig, client *http.Client) (*KMSProvider, error) {
-	p, err := NewKMSProvider(cfg)
-	if err != nil {
-		return nil, err
-	}
-	p.httpClient = client
-	return p, nil
-}
-
 // Type returns ProviderKMS.
 func (p *KMSProvider) Type() ProviderType {
 	return ProviderKMS
