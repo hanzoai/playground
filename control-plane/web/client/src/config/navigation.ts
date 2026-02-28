@@ -88,6 +88,13 @@ export const navigationSections: NavigationSection[] = [
         description: 'System overview and operational metrics'
       },
       {
+        id: 'organization',
+        label: 'Organization',
+        href: '/org/settings',
+        icon: 'organization',
+        description: 'Organization settings and member management'
+      },
+      {
         id: 'settings',
         label: 'Settings',
         href: '/settings',

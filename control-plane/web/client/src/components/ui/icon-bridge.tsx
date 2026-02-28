@@ -122,6 +122,8 @@ import { ShoppingCartIcon } from "@phosphor-icons/react/dist/csr/ShoppingCart";
 import { HandCoinsIcon } from "@phosphor-icons/react/dist/csr/HandCoins";
 import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
+import { BuildingOfficeIcon } from "@phosphor-icons/react/dist/csr/BuildingOffice";
+import { EnvelopeSimpleIcon } from "@phosphor-icons/react/dist/csr/EnvelopeSimple";
 
 const withDefaults = (Component: Icon, defaults?: Partial<IconProps>, displayName?: string) => {
   const Wrapped = forwardRef<SVGSVGElement, IconProps>((props, ref) => (
@@ -314,6 +316,8 @@ export const ShoppingCart = ShoppingCartIcon;
 export const HandCoins = HandCoinsIcon;
 export const Receipt = ReceiptIcon;
 export const Coins = CoinsIcon;
+export const BuildingOffice = BuildingOfficeIcon;
+export const EnvelopeSimple = EnvelopeSimpleIcon;
 export type IconComponent = Icon;
 export type IconComponentProps = IconProps;
 export type IconWeight = PhosphorIconWeight;

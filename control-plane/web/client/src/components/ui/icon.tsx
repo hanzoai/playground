@@ -31,6 +31,7 @@ import {
   HandCoins,
   Receipt,
   Coins,
+  BuildingOffice,
 } from "@/components/ui/icon-bridge";
 import type { IconComponent, IconWeight } from "@/components/ui/icon-bridge";
 
@@ -66,6 +67,7 @@ const icons = {
   'hand-coins': HandCoins,
   receipt: Receipt,
   coins: Coins,
+  organization: BuildingOffice,
 } as const;
 
 export interface IconProps {

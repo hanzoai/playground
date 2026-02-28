@@ -41,6 +41,7 @@ import { GlobalCommandPalette } from "./components/GlobalCommandPalette";
 import { PreferencesOnboarding } from "./components/onboarding/PreferencesOnboarding";
 import { usePreferencesStore } from "./stores/preferencesStore";
 import { useNotificationSound } from "./hooks/useNotificationSound";
+import { OrgSettingsPage } from "./pages/OrgSettingsPage";
 
 function SettingsPage() {
   return <GatewaySettings />;
@@ -120,6 +121,7 @@ function AppContent() {
               <Route path="/playground" element={<div className="flex-1 min-h-0 relative"><CanvasPage /></div>} />
               <Route path="/spaces" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpacesPage /></div>} />
               <Route path="/spaces/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpaceSettingsPage /></div>} />
+              <Route path="/org/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><OrgSettingsPage /></div>} />
               <Route path="/teams" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><TeamPage /></div>} />
               <Route path="/test/deckgl" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowDeckGLTestPage /></div>} />
             </Routes>
