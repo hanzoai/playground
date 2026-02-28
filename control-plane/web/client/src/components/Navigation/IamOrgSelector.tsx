@@ -28,7 +28,7 @@ export function IamOrgSelector() {
   const currentLabel =
     orgState.currentOrg?.displayName || orgState.currentOrgId || "Select org";
 
-  if (orgState.organizations.length <= 1) {
+  if (!orgState.organizations || orgState.organizations.length <= 1) {
     return (
       <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium select-none">
         <span className="truncate max-w-[120px]">{currentLabel}</span>
