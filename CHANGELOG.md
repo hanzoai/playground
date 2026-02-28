@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.130] - 2026-02-28
+
+
+### Fixed
+
+- Fix: embed all dist files recursively and remove unused KMS helper
+
+Go embed `dist/* dist/**` only includes top-level files, not
+subdirectories like dist/assets/. Changed to `all:dist` to
+recursively embed the entire Vite build output including JS/CSS
+bundles. Also removed unused newKMSProviderWithClient function
+that triggered lint failure.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (467a0d1)
+
 ## [0.1.41-rc.129] - 2026-02-28
 
 
