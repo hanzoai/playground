@@ -23,7 +23,7 @@ spec:
               do echo "waiting for control plane"; sleep 2; done
       containers:
         - name: demo-python-bot
-          image: python:3.11-slim
+          image: python:3.14-slim
           command:
             - sh
             - -c

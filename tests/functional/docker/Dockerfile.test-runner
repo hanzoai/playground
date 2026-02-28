@@ -48,7 +48,7 @@ RUN cd tests/functional/go_bots && \
         fi; \
     done
 
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Prevent Python from writing pyc files and buffering stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1 \

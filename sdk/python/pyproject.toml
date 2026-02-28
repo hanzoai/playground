@@ -17,14 +17,10 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.115,<0.129",
     "uvicorn>=0.34,<0.42",
@@ -80,7 +76,7 @@ addopts = "-ra -q -m \"not mcp\" --strict-markers --strict-config --cov=playgrou
 asyncio_mode = "auto"
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py314"
 line-length = 120
 
 [tool.ruff.lint]
