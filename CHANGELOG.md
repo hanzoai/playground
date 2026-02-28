@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.127] - 2026-02-28
+
+
+### Fixed
+
+- Fix: send WS hello frame immediately on open instead of waiting for challenge (#48)
+
+The gateway expects clients to send the connect request frame as soon as
+the WebSocket opens. The browser client was waiting for a connect.challenge
+event that the gateway never sends, causing a 10s handshake timeout. (9bde1fa)
+
 ## [0.1.41-rc.126] - 2026-02-28
 
 
