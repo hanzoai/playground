@@ -468,6 +468,21 @@ function NodeDetailPageContent() {
     }
   };
 
+  const handleDeleteNode = async () => {
+    if (!nodeId) return;
+    setDeleting(true);
+    try {
+      await cloudDeprovision(nodeId);
+      showSuccess(`Bot ${nodeId} deleted`);
+      navigate('/nodes');
+    } catch (error: any) {
+      showError(error.message || `Failed to delete bot ${nodeId}`);
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     if (isFullscreen) {
       document.body.classList.add("overflow-hidden");
@@ -778,6 +793,40 @@ function NodeDetailPageContent() {
         />
       </div>
       {statusRefreshButton}
+      {isCloudNode && (
+        confirmDelete ? (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteNode}
+              disabled={deleting}
+              className="h-8 text-xs"
+            >
+              {deleting ? 'Deleting...' : 'Confirm'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+              className="h-8 text-xs"
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            title="Delete cloud bot"
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        )
+      )}
     </div>
   );
 
