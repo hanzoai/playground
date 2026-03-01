@@ -6,6 +6,7 @@ import { navigationSections } from "./config/navigation";
 import { ModeProvider } from "./contexts/ModeContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { useFocusManagement } from "./hooks/useFocusManagement";
+import { useGateway } from "./hooks/useGateway";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
 import { ControlPlanePage } from "./pages/ControlPlanePage";
 import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
@@ -69,6 +70,8 @@ function NotificationSoundProvider({ children }: { children: React.ReactNode }) 
 function AppContent() {
   // Use focus management hook to ensure trackpad navigation works
   useFocusManagement();
+  // Ensure gateway WebSocket is always connected app-wide
+  useGateway();
 
   return (
     <SidebarProvider defaultOpen={true}>
