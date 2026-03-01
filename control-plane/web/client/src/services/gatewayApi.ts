@@ -213,6 +213,19 @@ export async function cloudGetPresets(): Promise<{ presets: CloudPreset[] }> {
 }
 
 // ---------------------------------------------------------------------------
+// Node Invoke (forward commands to gateway-connected nodes)
+// ---------------------------------------------------------------------------
+
+export function nodeInvoke(nodeId: string, command: string, params?: unknown): Promise<unknown> {
+  return gateway.rpc<unknown>('node.invoke', {
+    nodeId,
+    command,
+    params,
+    idempotencyKey: `${nodeId}-${command}-${Date.now()}`,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------
 

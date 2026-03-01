@@ -1,5 +1,6 @@
 import type { ConfigurationSchema, BotConfiguration, BotPackage, BotLifecycleInfo } from '../types/playground';
 import { getGlobalApiKey } from './api';
+import { nodeInvoke } from './gatewayApi';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
 
@@ -177,11 +178,21 @@ export const startAgent = async (agentId: string): Promise<BotLifecycleInfo> => 
 };
 
 export const stopAgent = async (agentId: string): Promise<void> => {
-  const response = await fetchWithTimeout(`${API_BASE}/agents/${agentId}/stop`, {
-    method: 'POST',
-    timeout: 5000 // 5 second timeout for stop operations
-  });
-  await handleResponse(response);
+  try {
+    const response = await fetchWithTimeout(`${API_BASE}/agents/${agentId}/stop`, {
+      method: 'POST',
+      timeout: 5000,
+    });
+    await handleResponse(response);
+  } catch (err: any) {
+    // For gateway-connected nodes the backend returns "not installed".
+    // Fall back to sending a shutdown command through the gateway.
+    if (err?.message?.includes('not installed') || err?.message?.includes('not found') || err?.status === 404) {
+      await nodeInvoke(agentId, 'shutdown', { graceful: true });
+      return;
+    }
+    throw err;
+  }
 };
 
 export const reconcileAgent = async (agentId: string): Promise<any> => {
