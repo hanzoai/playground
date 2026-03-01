@@ -300,6 +300,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	// Cloud pods connect as nodes to the central bot-gateway so all nodes
 	// (local Macs, cloud terminals, desktop agents) appear in one unified
 	// gateway at gw.hanzo.bot.
+	env["BOT_CLOUD_NODE"] = "true"
 	if p.config.Kubernetes.GatewayURL != "" {
 		env["BOT_NODE_GATEWAY_URL"] = p.config.Kubernetes.GatewayURL
 	}
