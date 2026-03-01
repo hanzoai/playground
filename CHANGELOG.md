@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.141] - 2026-03-01
+
+
+### Fixed
+
+- Fix(cloud): set BOT_CLOUD_NODE env on provisioned pods
+
+Cloud bot pods declare cloud capability so the gateway auto-approves
+their pairing instead of requiring manual approval. (76bb4d3)
+
+- Fix: add openai/ provider prefix to zen4-mini model name
+
+The playground SDK requires a provider prefix in the model spec
+(e.g. 'openai/zen4-mini' not just 'zen4-mini'). (9b5c5e7)
+
+- Fix: use zen4-mini model for functional tests (available on api.hanzo.ai)
+
+The openai/google/gemini-2.5-flash-lite model doesn't exist on
+api.hanzo.ai. Changed default AI model to zen4-mini which is available
+and cost-effective for testing. (2e5cc07)
+
+- Fix: use api_base instead of base_url in AIConfig (field name mismatch)
+
+AIConfig uses api_base for custom API base URL, but the test fixtures
+and quick_start bot passed base_url which was silently ignored by
+Pydantic V2. This caused litellm to send the Hanzo API key to the
+default OpenAI endpoint instead of api.hanzo.ai, resulting in
+"authentication token is not from a valid issuer" errors. (20898c1)
+
+- Fix: update workflow-runs test path from /api/ui/v2/ to /api/v1/
+
+The workflow runs endpoint was moved from /api/ui/v2/workflow-runs/ to
+/api/v1/workflow-runs/ but the Go SDK CLI tests still used the old path,
+causing 404 responses and 30s timeouts. (80bd262)
+
 ## [0.1.41-rc.140] - 2026-03-01
 
 
