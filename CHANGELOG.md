@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.132] - 2026-03-01
+
+
+### Fixed
+
+- Fix: guard against null bots array in space store
+
+The API can return {"bots": null} when no bots exist. The store must
+coalesce to empty array to prevent "Cannot read properties of null
+(reading 'length')" crash in CanvasPage.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (68cf5f0)
+
 ## [0.1.41-rc.131] - 2026-03-01
 
 
