@@ -119,6 +119,7 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
   const fitAddonRef = useRef<import('@xterm/addon-fit').FitAddon | null>(null);
   const unsubRef = useRef<(() => void) | undefined>(undefined);
   const gwUnsubRef = useRef<(() => void) | undefined>(undefined);
+  const gwTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lineBufferRef = useRef('');
   const busyRef = useRef(false);
   const initRef = useRef(false);
@@ -207,11 +208,32 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
       if (!gateway.isConnected) {
         terminal.writeln('\x1b[90mWaiting for gateway connection…\x1b[0m');
         setConnState('waiting');
+
+        // Timeout after 15 seconds if gateway never connects
+        gwTimeoutRef.current = setTimeout(() => {
+          if (!disposed) {
+            gwUnsubRef.current?.();
+            gwUnsubRef.current = undefined;
+            setConnState('unreachable');
+            terminal.writeln('\x1b[31mGateway connection timed out. Check Settings \u2192 Gateway.\x1b[0m');
+          }
+        }, 15000);
+
         gwUnsubRef.current = gateway.onStateChange((state) => {
-          if (state === 'connected' && !disposed) {
+          if (disposed) return;
+          if (state === 'connected') {
+            clearTimeout(gwTimeoutRef.current!);
+            gwTimeoutRef.current = undefined;
             gwUnsubRef.current?.();
             gwUnsubRef.current = undefined;
             connectToNode(terminal);
+          } else if (state === 'error' || state === 'unauthorized') {
+            clearTimeout(gwTimeoutRef.current!);
+            gwTimeoutRef.current = undefined;
+            gwUnsubRef.current?.();
+            gwUnsubRef.current = undefined;
+            setConnState('unreachable');
+            terminal.writeln(`\x1b[31mGateway ${state}. Check Settings \u2192 Gateway.\x1b[0m`);
           }
         });
       } else {
@@ -328,6 +350,10 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
       resizeObserver.disconnect();
       unsubRef.current?.();
       gwUnsubRef.current?.();
+      if (gwTimeoutRef.current) {
+        clearTimeout(gwTimeoutRef.current);
+        gwTimeoutRef.current = undefined;
+      }
       termRef.current?.dispose();
       termRef.current = null;
       fitAddonRef.current = null;
