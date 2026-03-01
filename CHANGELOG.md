@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.149] - 2026-03-01
+
+
+### Fixed
+
+- Fix(ui): org switcher in sidebar, remove balance bar, state-aware terminal
+
+- Replace static "Hanzo Bot" + v0.0.0 with org selector dropdown in sidebar
+- Remove SidebarBalanceWidget from sidebar footer
+- Remove UserBalanceBar overlay from canvas
+- TerminalPanel now accepts nodeStatus prop — shows loading/provisioning
+  overlay instead of "node not connected" when bot isn't ready
+- NodeDetailPage passes lifecycle status to terminal
+- Simplify nav: rename to "My Bots", remove marketplace/network/teams/workflows (8db717e)
+
 ## [0.1.41-rc.148] - 2026-03-01
 
 
