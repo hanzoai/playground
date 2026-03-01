@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.162] - 2026-03-01
+
+
+### Fixed
+
+- Fix(ui): final terminology fixes, remove 25 orphaned files, drop test route
+
+- DIDInfoModal: Agent → Node for DID-related labels
+- BotsSkillsTable: Agent Identity → Node Identity
+- ListingDetailPage: Agent Details → Bot Details
+- Remove /test/deckgl route and WorkflowDeckGLTestPage
+- Remove AgentControlButton (replaced by BotControlButton)
+- Remove 23 other orphaned components, services, types, hooks
+- Net removal: 4,161 lines of dead code (0ffe467)
+
 ## [0.1.41-rc.161] - 2026-03-01
 
 
