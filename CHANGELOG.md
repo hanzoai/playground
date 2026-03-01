@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.146] - 2026-03-01
+
+
+### Fixed
+
+- Fix(dashboard): use persisted node status instead of local process check
+
+Dashboard was calling botService.GetBotStatus() which only checks if a
+bot process is running locally on the control plane. Gateway-connected
+nodes (the majority) would always show as offline since they're not
+local processes. Now uses the node's persisted lifecycle_status from
+the database, matching the same approach the nodes page uses. (ef291a9)
+
 ## [0.1.41-rc.145] - 2026-03-01
 
 
