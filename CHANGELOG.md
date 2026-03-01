@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.147] - 2026-03-01
+
+
+### Fixed
+
+- Fix(terminal): send command as argv array, not string
+
+The gateway's system.run handler expects command as an argv array
+(e.g. ["sh", "-c", "ls"]), not a plain string. The node rejects
+non-array commands with "command required". (ba15141)
+
 ## [0.1.41-rc.146] - 2026-03-01
 
 
