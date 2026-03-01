@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.133] - 2026-03-01
+
+
+### Fixed
+
+- Fix: null-guard store arrays to prevent crash on empty API responses
+
+spaceStore.fetchNodes() and fetchMembers() could set store state to
+null when API returns null arrays, causing TypeError on .length access.
+fetchSpaces() had the same issue with result.spaces.
+
+Guard all API destructuring with ?? [] and add defensive ?. access in
+CanvasPage and SpaceSettingsPage render paths. (0301309)
+
 ## [0.1.41-rc.132] - 2026-03-01
 
 
