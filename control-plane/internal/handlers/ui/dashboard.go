@@ -645,21 +645,14 @@ func (h *DashboardHandler) buildEnhancedOverviewForRange(agents []*types.Node, e
 		overview.TotalBots += len(agent.Bots)
 		overview.TotalSkills += len(agent.Skills)
 
-		isDegraded := agent.LifecycleStatus == types.BotStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
-		if isDegraded {
+		// Use persisted lifecycle status instead of botService.GetBotStatus
+		// which only checks local processes and misses gateway-connected nodes.
+		switch {
+		case agent.LifecycleStatus == types.BotStatusDegraded:
 			overview.DegradedAgents++
-			continue
-		}
-
-		status, err := h.botService.GetBotStatus(agent.ID)
-		if err != nil {
-			overview.OfflineAgents++
-			continue
-		}
-
-		if status != nil && status.IsRunning {
+		case agent.LifecycleStatus == types.BotStatusReady || agent.LifecycleStatus == types.BotStatusStarting:
 			overview.ActiveAgents++
-		} else {
+		default:
 			overview.OfflineAgents++
 		}
 	}
@@ -975,21 +968,14 @@ func (h *DashboardHandler) buildEnhancedOverview(now time.Time, agents []*types.
 		overview.TotalBots += len(agent.Bots)
 		overview.TotalSkills += len(agent.Skills)
 
-		isDegraded := agent.LifecycleStatus == types.BotStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
-		if isDegraded {
+		// Use persisted lifecycle status instead of botService.GetBotStatus
+		// which only checks local processes and misses gateway-connected nodes.
+		switch {
+		case agent.LifecycleStatus == types.BotStatusDegraded:
 			overview.DegradedAgents++
-			continue
-		}
-
-		status, err := h.botService.GetBotStatus(agent.ID)
-		if err != nil {
-			overview.OfflineAgents++
-			continue
-		}
-
-		if status != nil && status.IsRunning {
+		case agent.LifecycleStatus == types.BotStatusReady || agent.LifecycleStatus == types.BotStatusStarting:
 			overview.ActiveAgents++
-		} else {
+		default:
 			overview.OfflineAgents++
 		}
 	}
@@ -1121,32 +1107,16 @@ func (h *DashboardHandler) buildAgentHealthSummary(ctx context.Context, agents [
 			Skills:        len(agent.Skills),
 		}
 
-		isDegraded := agent.LifecycleStatus == types.BotStatusDegraded || agent.HealthStatus == types.HealthStatusInactive
-		if isDegraded {
+		// Use persisted lifecycle status instead of botService.GetBotStatus
+		// which only checks local processes and misses gateway-connected nodes.
+		switch {
+		case agent.LifecycleStatus == types.BotStatusDegraded:
 			summary.Degraded++
 			item.Status = "degraded"
-			items = append(items, item)
-			continue
-		}
-
-		status, err := h.botService.GetBotStatus(agent.ID)
-		if err != nil {
-			summary.Offline++
-			item.Status = "offline"
-			items = append(items, item)
-			continue
-		}
-
-		if status != nil {
-			item.Uptime = status.Uptime
-			if status.IsRunning {
-				summary.Active++
-				item.Status = "running"
-			} else {
-				summary.Offline++
-				item.Status = "offline"
-			}
-		} else {
+		case agent.LifecycleStatus == types.BotStatusReady || agent.LifecycleStatus == types.BotStatusStarting:
+			summary.Active++
+			item.Status = "running"
+		default:
 			summary.Offline++
 			item.Status = "offline"
 		}
@@ -1361,9 +1331,10 @@ func (h *DashboardHandler) getAgentsSummary(ctx context.Context) (AgentsSummary,
 	total := len(agents)
 	running := 0
 
-	// Count running agents using the agent service
+	// Count running agents using persisted lifecycle status (not botService
+	// which only checks local processes and misses gateway-connected nodes).
 	for _, agent := range agents {
-		if status, err := h.botService.GetBotStatus(agent.ID); err == nil && status.IsRunning {
+		if agent.LifecycleStatus == types.BotStatusReady || agent.LifecycleStatus == types.BotStatusStarting {
 			running++
 		}
 	}
