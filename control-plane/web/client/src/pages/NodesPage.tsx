@@ -68,17 +68,18 @@ interface GatewayNode {
   commands?: string[];
 }
 
-/** Merge backend nodes with gateway-connected nodes. Gateway "connected" flag wins for online status. */
+/** Merge backend nodes with gateway-connected nodes. Only show nodes actually connected to the gateway. */
 function mergeGatewayNodes(backendNodes: NodeSummary[], gatewayNodes: GatewayNode[]): NodeSummary[] {
   const gwMap = new Map(gatewayNodes.map(n => [n.nodeId, n]));
   const seen = new Set<string>();
+  const merged: NodeSummary[] = [];
 
-  // Update backend nodes with gateway online status
-  const merged = backendNodes.map(node => {
+  // Only include backend nodes that are connected to the gateway
+  for (const node of backendNodes) {
     const gw = gwMap.get(node.id);
     seen.add(node.id);
     if (gw?.connected) {
-      return {
+      merged.push({
         ...node,
         health_status: 'active' as HealthStatus,
         lifecycle_status: 'ready' as LifecycleStatus,
@@ -86,10 +87,10 @@ function mergeGatewayNodes(backendNodes: NodeSummary[], gatewayNodes: GatewayNod
         last_heartbeat: gw.connectedAtMs
           ? new Date(gw.connectedAtMs).toISOString()
           : node.last_heartbeat,
-      };
+      });
     }
-    return node;
-  });
+    // Skip backend-only nodes not connected to gateway — they are stale
+  }
 
   // Add gateway-only nodes (not tracked by backend)
   for (const gw of gatewayNodes) {
@@ -177,15 +178,24 @@ export function NodesPage() {
     []
   );
 
-  /** Fetch gateway-connected nodes and merge with backend nodes */
+  /** Fetch gateway-connected nodes and merge with backend nodes.
+   *  When gateway is available, only connected nodes are shown (stale ones filtered out).
+   *  When gateway is unavailable, filter backend nodes to exclude clearly stale entries. */
   const fetchGatewayNodes = useCallback(async (backendNodes: NodeSummary[]) => {
-    if (!gateway.isConnected) return backendNodes;
+    if (!gateway.isConnected) {
+      // Without gateway, filter out nodes that have never had a heartbeat or are very stale
+      const staleThresholdMs = 10 * 60 * 1000; // 10 minutes
+      const now = Date.now();
+      return backendNodes.filter(node => {
+        if (!node.last_heartbeat) return false;
+        const heartbeatAge = now - new Date(node.last_heartbeat).getTime();
+        return !isNaN(heartbeatAge) && heartbeatAge < staleThresholdMs;
+      });
+    }
     try {
-      const resp = await gateway.rpc<{ nodes?: GatewayNode[] }>('node.list', {});
+      const resp = await gateway.rpc<{ nodes?: GatewayNode[] }>('node.list', { connectedOnly: true });
       const gwNodes = resp.nodes ?? [];
-      if (gwNodes.length > 0) {
-        return mergeGatewayNodes(backendNodes, gwNodes);
-      }
+      return mergeGatewayNodes(backendNodes, gwNodes);
     } catch (err) {
       console.warn('[NodesPage] Gateway node.list failed:', err);
     }
