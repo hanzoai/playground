@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.144] - 2026-03-01
+
+
+### Fixed
+
+- Fix(terminal): use actual nodeId instead of hardcoded 'main'
+
+NodeDetailPage terminal was always connecting to agentId='main' regardless
+of which node was being viewed. Now uses the route parameter nodeId. (ad9260f)
+
 ## [0.1.41-rc.143] - 2026-03-01
 
 
