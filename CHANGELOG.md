@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.131] - 2026-03-01
+
+
+### Fixed
+
+- Fix: return empty array instead of null for bots list endpoint
+
+ListBots returns nil slice when no bots exist, which Go serializes
+as JSON null. The frontend crashes with "Cannot read properties of
+null (reading 'length')". Ensure empty array is returned instead.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (724246e)
+
 ## [0.1.41-rc.130] - 2026-02-28
 
 
