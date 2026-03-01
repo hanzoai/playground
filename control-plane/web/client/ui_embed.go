@@ -63,7 +63,7 @@ func RegisterUIRoutes(router *gin.Engine) {
 		path := c.Request.URL.Path
 
 		// Don't intercept API routes
-		if strings.HasPrefix(path, "/api/") {
+		if strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/v1/") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
 			return
 		}

@@ -142,7 +142,21 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
   // Wait for redirect back to app (login form submits and OIDC redirects)
-  await page.waitForURL(`${baseURL}/**`, { timeout: 60_000 });
+  // Race between successful redirect and error message appearing on the login form.
+  const redirectPromise = page.waitForURL(`${baseURL}/**`, { timeout: 60_000 }).then(() => 'ok' as const);
+  const errorPromise = page.locator('.login-panel .alert, .login-form .error, [class*="error-msg"], [class*="errorMessage"]')
+    .first()
+    .waitFor({ state: 'visible', timeout: 55_000 })
+    .then(async () => {
+      const errText = await page.locator('.login-panel .alert, .login-form .error, [class*="error-msg"], [class*="errorMessage"]').first().textContent();
+      return `error: ${errText}` as const;
+    })
+    .catch(() => null);
+
+  const result = await Promise.race([redirectPromise, errorPromise].filter(Boolean));
+  if (result && typeof result === 'string' && result.startsWith('error:')) {
+    throw new Error(`[e2e] Login failed on hanzo.id: ${result}`);
+  }
 
   console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
 

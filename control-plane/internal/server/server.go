@@ -616,12 +616,13 @@ func (s *PlaygroundServer) checkCacheHealth(ctx context.Context) gin.H {
 }
 
 func (s *PlaygroundServer) setupRoutes() {
-	// Backward-compat: rewrite /api/v1/* → /v1/* so old URLs keep working.
-	s.Router.Use(func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/") {
-			c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/api")
-		}
-		c.Next()
+	// Backward-compat: /api/v1/* → /v1/* using Gin's HandleContext re-dispatch.
+	// Middleware-based URL rewriting does NOT work in Gin because route matching
+	// happens before middleware runs, so the old approach silently fell through to
+	// NoRoute and returned HTML instead of JSON.
+	s.Router.Any("/api/v1/*path", func(c *gin.Context) {
+		c.Request.URL.Path = "/v1" + c.Param("path")
+		s.Router.HandleContext(c)
 	})
 
 	// Configure CORS from configuration
