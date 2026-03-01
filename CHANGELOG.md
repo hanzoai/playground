@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.159] - 2026-03-01
+
+
+### Fixed
+
+- Fix(terminal): add timeout and error handling for gateway connection wait
+
+TerminalPanel waits for the gateway WebSocket to connect before
+enabling the terminal. If the connection never succeeds (error,
+unauthorized, or simply takes too long), the terminal shows
+"Connecting to gateway" indefinitely.
+
+Add a 15-second timeout that surfaces a clear error message directing
+the user to Settings -> Gateway. Also handle 'error' and
+'unauthorized' gateway states immediately instead of waiting forever.
+Clean up the timeout in the useEffect dispose function to prevent
+leaks on unmount.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (4ae33a6)
+
 ## [0.1.41-rc.158] - 2026-03-01
 
 
