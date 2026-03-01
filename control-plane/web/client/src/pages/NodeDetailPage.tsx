@@ -52,7 +52,8 @@ import {
   startAgent,
   stopAgent,
 } from "@/services/configurationApi";
-import { AlertCircle, Flash } from "@/components/ui/icon-bridge";
+import { AlertCircle, Flash, Trash } from "@/components/ui/icon-bridge";
+import { cloudDeprovision } from "@/services/gatewayApi";
 
 import {
   useErrorNotification,
@@ -106,6 +107,10 @@ function NodeDetailPageContent() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showRestartBanner, setShowRestartBanner] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const isCloudNode = nodeId?.startsWith('cloud-') ?? false;
 
   // DID-related state
   const { didInfo } = useDIDInfo(nodeId || "");
