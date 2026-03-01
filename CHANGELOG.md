@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.167] - 2026-03-01
+
+
+### Other
+
+- Fix cloud bot stuck at Provisioning status on canvas
+
+CanvasPage now subscribes to node SSE events (node_registered, node_online,
+node_offline, node_status_updated) and transitions canvas bot status from
+'provisioning' to 'idle' when the cloud node comes online. Also re-syncs
+gateway agents to pick up session/identity info after registration. (3d714a5)
+
 ## [0.1.41-rc.166] - 2026-03-01
 
 
