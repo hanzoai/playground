@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
@@ -23,6 +24,7 @@ func NewBudgetHandler(s storage.StorageProvider) *BudgetHandler {
 // GET /api/v1/budgets
 func (h *BudgetHandler) ListBudgets(c *gin.Context) {
 	ctx := c.Request.Context()
+	_ = middleware.GetOrganization(c) // org context for future budget isolation
 
 	budgets, err := h.storage.ListBotBudgets(ctx)
 	if err != nil {

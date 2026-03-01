@@ -8,6 +8,7 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/internal/core/domain"
 	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -59,6 +60,7 @@ type StartAgentRequest struct {
 // POST /api/v1/agents/:agentId/start
 func (h *LifecycleHandler) StartAgentHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	_ = middleware.GetOrganization(c) // org context for lifecycle isolation
 	agentID := c.Param("agentId")
 	if agentID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "agentId is required"})

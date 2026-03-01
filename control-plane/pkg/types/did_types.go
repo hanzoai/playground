@@ -234,6 +234,7 @@ type DIDFilters struct {
 
 // VCFilters holds filters for querying VCs.
 type VCFilters struct {
+	OrgID         *string    `json:"org_id,omitempty"`
 	ExecutionID   *string    `json:"execution_id,omitempty"`
 	WorkflowID    *string    `json:"workflow_id,omitempty"`
 	SessionID     *string    `json:"session_id,omitempty"`

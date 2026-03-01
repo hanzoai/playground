@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
@@ -46,6 +47,12 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 		agent, err := storageProvider.GetNode(ctx, nodeID)
 		if err != nil || agent == nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+			return
+		}
+
+		// Verify node belongs to requesting org
+		if org := middleware.GetOrganization(c); org != "" && agent.OrgID != "" && agent.OrgID != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			return
 		}
 
@@ -129,8 +136,15 @@ func NodeActionAckHandler(storageProvider storage.StorageProvider, presenceManag
 			return
 		}
 
-		if _, err := storageProvider.GetNode(ctx, nodeID); err != nil {
+		node, err := storageProvider.GetNode(ctx, nodeID)
+		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+			return
+		}
+
+		// Verify node belongs to requesting org
+		if org := middleware.GetOrganization(c); org != "" && node.OrgID != "" && node.OrgID != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			return
 		}
 
@@ -186,8 +200,15 @@ func ClaimActionsHandler(storageProvider storage.StorageProvider, presenceManage
 			payload.MaxItems = 1
 		}
 
-		if _, err := storageProvider.GetNode(ctx, payload.NodeID); err != nil {
+		node, err := storageProvider.GetNode(ctx, payload.NodeID)
+		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+			return
+		}
+
+		// Verify node belongs to requesting org
+		if org := middleware.GetOrganization(c); org != "" && node.OrgID != "" && node.OrgID != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			return
 		}
 
@@ -223,8 +244,15 @@ func NodeShutdownHandler(storageProvider storage.StorageProvider, statusManager 
 			return
 		}
 
-		if _, err := storageProvider.GetNode(ctx, nodeID); err != nil {
+		node, err := storageProvider.GetNode(ctx, nodeID)
+		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+			return
+		}
+
+		// Verify node belongs to requesting org
+		if org := middleware.GetOrganization(c); org != "" && node.OrgID != "" && node.OrgID != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			return
 		}
 

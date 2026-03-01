@@ -11,6 +11,7 @@ import (
 	"time" // Added for time.Now()
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/internal/utils" // Added for ID generation
 	"github.com/hanzoai/playground/control-plane/pkg/types"      // Added for new types
@@ -46,6 +47,7 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		startTime := time.Now()
+		org, _ := middleware.RequireOrg(c)
 
 		// Generate Agents Request ID
 		agentsRequestID := utils.GenerateAgentsRequestID()
@@ -112,6 +114,12 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 			return
 		}
 
+		// Verify node belongs to org
+		if targetNode.OrgID != "" && targetNode.OrgID != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
+
 		// Check if bot exists on the node
 		botExists := false
 		for _, r := range targetNode.Bots {
@@ -135,6 +143,7 @@ func ExecuteBotHandler(storageProvider storage.StorageProvider) gin.HandlerFunc 
 			AgentsRequestID: agentsRequestID,
 			NodeID:         nodeID,
 			BotID:     botName,
+			OrgID:              org,
 			Status:              "running",
 			StartedAt:           startTime,
 			CreatedAt:           startTime,
@@ -394,6 +403,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		startTime := time.Now()
+		org, _ := middleware.RequireOrg(c)
 
 		// Generate Agents Request ID
 		agentsRequestID := utils.GenerateAgentsRequestID()
@@ -460,6 +470,12 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 			return
 		}
 
+		// Verify node belongs to org
+		if targetNode.OrgID != "" && targetNode.OrgID != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
+
 		// Check if skill exists on the node
 		skillExists := false
 		for _, skill := range targetNode.Skills {
@@ -483,6 +499,7 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 			AgentsRequestID: agentsRequestID,
 			NodeID:         nodeID,
 			BotID:     skillName,
+			OrgID:              org,
 			Status:              "running",
 			StartedAt:           startTime,
 			CreatedAt:           startTime,

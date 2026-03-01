@@ -88,6 +88,8 @@ func (c *RecentActivityCache) Set(data *RecentActivityResponse) {
 // GET /api/v1/executions/recent
 func (h *RecentActivityHandler) GetRecentActivityHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org, _ := orgFromContext(c)
+	_ = org // TODO: pass org to getRecentExecutions for org-scoped cache
 
 	// Check cache first
 	if cachedData, found := h.cache.Get(); found {

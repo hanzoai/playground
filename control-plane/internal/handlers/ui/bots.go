@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -89,8 +90,15 @@ func (h *BotsHandler) GetAllBotsHandler(c *gin.Context) {
 		}
 	}
 
+	// Org scoping
+	org, ok := middleware.RequireOrg(c)
+	if !ok {
+		return
+	}
+
 	// Get all nodes based on status filter
 	var filters types.BotFilters
+	filters.OrgID = &org
 	if statusFilter == "online" {
 		activeStatus := types.HealthStatusActive
 		filters.HealthStatus = &activeStatus
@@ -215,6 +223,11 @@ func (h *BotsHandler) GetAllBotsHandler(c *gin.Context) {
 
 // GetBotDetailsHandler handles requests for detailed information about a specific bot.
 func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
+	org, ok := middleware.RequireOrg(c)
+	if !ok {
+		return
+	}
+
 	botID := c.Param("botId")
 	if botID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
@@ -234,6 +247,11 @@ func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
 	// Get the node
 	ctx := c.Request.Context()
 	node, err := h.storage.GetNode(ctx, nodeID)
+	if err == nil && node.OrgID != "" && node.OrgID != org {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+	_ = org
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 		return

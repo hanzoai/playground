@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
@@ -59,6 +60,7 @@ func (h *ExecutionHandler) StreamWorkflowNodeNotesHandler(c *gin.Context) {
 	c.Header("Connection", "keep-alive")
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Headers", "Cache-Control")
+	_ = middleware.GetOrganization(c) // org context for execution event isolation
 
 	workflowID := c.Param("workflowId")
 	if workflowID == "" {

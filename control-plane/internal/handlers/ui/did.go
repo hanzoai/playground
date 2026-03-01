@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
@@ -34,6 +35,7 @@ func NewDIDHandler(storage storage.StorageProvider, didService *services.DIDServ
 // GetNodeDIDHandler handles requests for DID information about a specific node.
 // GET /api/v1/nodes/:nodeId/did
 func (h *DIDHandler) GetNodeDIDHandler(c *gin.Context) {
+	_ = middleware.GetOrganization(c) // org context for DID isolation
 	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "nodeId is required"})

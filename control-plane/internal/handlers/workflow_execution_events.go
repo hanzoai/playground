@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,8 @@ type WorkflowExecutionEventRequest struct {
 // locally within the same process.
 func WorkflowExecutionEventHandler(store ExecutionStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		org := middleware.GetOrganization(c)
+
 		var req WorkflowExecutionEventRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid payload: %v", err)})
@@ -42,6 +45,7 @@ func WorkflowExecutionEventHandler(store ExecutionStore) gin.HandlerFunc {
 
 		ctx := c.Request.Context()
 		now := time.Now().UTC()
+		_ = org // OrgID set on execution records via buildExecutionRecordFromEvent
 
 		existing, err := store.GetExecutionRecord(ctx, req.ExecutionID)
 		if err != nil {

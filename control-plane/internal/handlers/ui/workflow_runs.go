@@ -10,6 +10,7 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/internal/handlers"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -91,6 +92,7 @@ type apiWorkflowExecution struct {
 
 func (h *WorkflowRunHandler) ListWorkflowRunsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
 
 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
 	pageSize := parsePositiveIntWithin(c.DefaultQuery("page_size", "20"), 20, 1, 200)
@@ -102,6 +104,9 @@ func (h *WorkflowRunHandler) ListWorkflowRunsHandler(c *gin.Context) {
 		Offset:         offset,
 		SortBy:         sanitizeRunSortField(c.DefaultQuery("sort_by", "updated_at")),
 		SortDescending: strings.ToLower(c.DefaultQuery("sort_order", "desc")) != "asc",
+	}
+	if org != "" {
+		filter.OrgID = &org
 	}
 
 	if runID := strings.TrimSpace(c.Query("run_id")); runID != "" {
@@ -242,6 +247,8 @@ func deriveStatusFromCounts(statusCounts map[string]int, activeExecutions int) s
 
 func (h *WorkflowRunHandler) GetWorkflowRunDetailHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
+
 	runID := strings.TrimSpace(c.Param("run_id"))
 	if runID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "run_id is required"})
@@ -253,6 +260,9 @@ func (h *WorkflowRunHandler) GetWorkflowRunDetailHandler(c *gin.Context) {
 		SortBy:         "started_at",
 		SortDescending: false,
 		Limit:          10000,
+	}
+	if org != "" {
+		filter.OrgID = &org
 	}
 
 	executions, err := h.storage.QueryExecutionRecords(ctx, filter)

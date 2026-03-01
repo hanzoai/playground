@@ -116,10 +116,21 @@ func (h *SpaceHandler) GetSpace(c *gin.Context) {
 
 // UpdateSpace updates a space's name, slug, or description.
 func (h *SpaceHandler) UpdateSpace(c *gin.Context) {
+	orgID := middleware.GetOrganization(c)
+	if orgID == "" {
+		orgID = "local"
+	}
+
 	id := c.Param("id")
 	space, err := h.store.GetSpace(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verify org access
+	if orgID != "local" && space.OrgID != orgID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 
@@ -145,7 +156,24 @@ func (h *SpaceHandler) UpdateSpace(c *gin.Context) {
 
 // DeleteSpace removes a space and all its associated data.
 func (h *SpaceHandler) DeleteSpace(c *gin.Context) {
+	orgID := middleware.GetOrganization(c)
+	if orgID == "" {
+		orgID = "local"
+	}
+
 	id := c.Param("id")
+
+	// Verify org access before deleting
+	space, err := h.store.GetSpace(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if orgID != "local" && space.OrgID != orgID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
 	if err := h.store.DeleteSpace(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
