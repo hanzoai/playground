@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.136] - 2026-03-01
+
+
+### Fixed
+
+- Fix: replace broken middleware URL rewrite with Gin HandleContext re-dispatch
+
+The middleware-based /api/v1/ → /v1/ rewrite didn't work because Gin
+matches routes in its radix trie BEFORE middleware runs. Requests to
+/api/v1/* fell through to NoRoute which returned HTML instead of JSON,
+causing all 26 functional tests to fail with json.decoder.JSONDecodeError.
+
+Fix uses Gin's HandleContext to properly re-dispatch /api/v1/* requests
+to the /v1/* route tree. Also fixes the embedded UI NoRoute handler to
+exclude /v1/ paths from SPA fallback, and adds error detection to E2E
+auth helper so login failures are diagnosed instead of timing out. (084c921)
+
 ## [0.1.41-rc.135] - 2026-03-01
 
 
