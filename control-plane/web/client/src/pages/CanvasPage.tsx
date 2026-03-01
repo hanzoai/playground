@@ -48,7 +48,7 @@ export function CanvasPage() {
   }, [activeSpace, fetchBots]);
 
   // Show onboarding when space has no bots and canvas has no nodes
-  const showOnboarding = activeSpace && spaceBots.length === 0 && nodes.length === 0 && initialized;
+  const showOnboarding = activeSpace && (spaceBots?.length ?? 0) === 0 && (nodes?.length ?? 0) === 0 && initialized;
 
   return (
     <ReactFlowProvider>

@@ -88,7 +88,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
 
     try {
       const result = await spaceApi.list();
-      spaces = result.spaces;
+      spaces = result.spaces ?? [];
     } catch {
       apiAvailable = false;
     }
@@ -170,7 +170,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     if (!activeSpaceId) return;
     try {
       const { nodes } = await spaceApi.listNodes(activeSpaceId);
-      set({ nodes });
+      set({ nodes: nodes ?? [] });
     } catch { /* ignore */ }
   },
 
@@ -218,7 +218,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     if (!activeSpaceId) return;
     try {
       const { members } = await spaceApi.listMembers(activeSpaceId);
-      set({ members });
+      set({ members: members ?? [] });
     } catch { /* ignore */ }
   },
 

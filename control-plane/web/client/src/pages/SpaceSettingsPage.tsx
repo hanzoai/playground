@@ -34,14 +34,14 @@ export function SpaceSettingsPage() {
 
       {/* Nodes */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">Nodes ({nodes.length})</h2>
-        {nodes.length === 0 ? (
+        <h2 className="text-lg font-semibold mb-3">Nodes ({nodes?.length ?? 0})</h2>
+        {(nodes?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">
             No nodes registered. Connect a local node or deploy to cloud.
           </p>
         ) : (
           <div className="space-y-2">
-            {nodes.map(node => (
+            {(nodes ?? []).map(node => (
               <div key={node.node_id} className="border rounded-lg p-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <span className="font-medium text-sm truncate block">{node.name || node.node_id}</span>
@@ -61,14 +61,14 @@ export function SpaceSettingsPage() {
 
       {/* Bots */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">Bots ({bots.length})</h2>
-        {bots.length === 0 ? (
+        <h2 className="text-lg font-semibold mb-3">Bots ({bots?.length ?? 0})</h2>
+        {(bots?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">
             No bots deployed. Go to the canvas to deploy your first bot.
           </p>
         ) : (
           <div className="space-y-2">
-            {bots.map(bot => (
+            {(bots ?? []).map(bot => (
               <div key={bot.bot_id} className="border rounded-lg p-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <span className="font-medium text-sm truncate block">{bot.name}</span>
