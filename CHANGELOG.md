@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.153] - 2026-03-01
+
+
+### Fixed
+
+- Fix(ui): remaining agent→bot user-facing string renames across 11 files
+
+Catches all remaining user-visible "Agent" text in LaunchPage,
+ControlPlanePage, RestartRequiredBanner, ServerlessRegistrationModal,
+PreferencesSettings, ConfigurationWizard, ExecutionsList, VoiceSettings,
+NetworkPage, CreateListingPage, and EnhancedDashboardPage. (7cfc6dc)
+
 ## [0.1.41-rc.152] - 2026-03-01
 
 
