@@ -18,7 +18,6 @@ import { NodesPage } from "./pages/NodesPage";
 import { PackagesPage } from "./pages/PackagesPage";
 import { BotDetailPage } from "./pages/BotDetailPage.tsx";
 import { WorkflowsPage } from "./pages/WorkflowsPage.tsx";
-import { WorkflowDeckGLTestPage } from "./pages/WorkflowDeckGLTestPage";
 import { DIDExplorerPage } from "./pages/DIDExplorerPage";
 import { CredentialsPage } from "./pages/CredentialsPage";
 import { ObservabilityWebhookSettingsPage } from "./pages/ObservabilityWebhookSettingsPage";
@@ -126,7 +125,6 @@ function AppContent() {
               <Route path="/spaces/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SpaceSettingsPage /></div>} />
               <Route path="/org/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><OrgSettingsPage /></div>} />
               <Route path="/teams" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><TeamPage /></div>} />
-              <Route path="/test/deckgl" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowDeckGLTestPage /></div>} />
             </Routes>
           </main>
         </SidebarInset>

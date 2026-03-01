@@ -208,14 +208,14 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted border border-border">
                       <Bot size={16} className="text-muted-foreground" />
                     </div>
-                    Agent DID
+                    Node DID
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <DIDIdentityBadge
                     did={didInfo.did}
                     maxLength={50}
-                    onCopy={(did) => handleCopyDID(did, "Agent")}
+                    onCopy={(did) => handleCopyDID(did, "Node")}
                   />
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
@@ -326,7 +326,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                   No Bots
                 </h3>
                 <p className="text-muted-foreground">
-                  This agent has no bots with DID identities.
+                  This node has no bots with DID identities.
                 </p>
               </div>
             )}
@@ -356,7 +356,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                   No Skills
                 </h3>
                 <p className="text-muted-foreground">
-                  This agent has no skills with DID identities.
+                  This node has no skills with DID identities.
                 </p>
               </div>
             )}
@@ -377,7 +377,7 @@ export function DIDInfoModal({ nodeId, isOpen, onClose }: DIDInfoModalProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-semibold mb-3 text-foreground">
-                      Agent Public Key (JWK)
+                      Node Public Key (JWK)
                     </h4>
                     <pre className="text-xs bg-muted p-4 rounded-lg border border-border overflow-auto max-h-40 font-mono text-foreground">
                       {JSON.stringify(didInfo.public_key_jwk, null, 2)}

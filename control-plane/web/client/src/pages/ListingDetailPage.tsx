@@ -130,13 +130,13 @@ export function ListingDetailPage() {
       {listing.agentMeta && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Agent Details</CardTitle>
-            <CardDescription>DID-verified custom agent information.</CardDescription>
+            <CardTitle className="text-base">Bot Details</CardTitle>
+            <CardDescription>DID-verified custom bot information.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs text-muted-foreground">Agent DID</p>
+                <p className="text-xs text-muted-foreground">Bot DID</p>
                 <p className="font-mono text-xs break-all">{listing.agentMeta.agentDid}</p>
               </div>
               {listing.agentMeta.botDid && (

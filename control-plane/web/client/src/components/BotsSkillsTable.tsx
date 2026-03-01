@@ -75,7 +75,7 @@ export function BotsSkillsTable({
     // Add agent DID as first row if available
     ...(agentDID ? [{
       id: "agent",
-      name: "Agent Identity",
+      name: "Node Identity",
       type: "agent" as const,
       did: agentDID,
       status: componentStatus,
