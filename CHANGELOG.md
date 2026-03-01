@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.145] - 2026-03-01
+
+
+### Fixed
+
+- Fix(terminal): handle optional nodeId type from useParams
+
+nodeId from useParams is string | undefined, provide 'main' fallback
+to satisfy TerminalPanel's required agentId prop. (c9ff344)
+
 ## [0.1.41-rc.144] - 2026-03-01
 
 
