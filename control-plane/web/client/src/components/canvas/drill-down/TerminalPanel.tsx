@@ -16,7 +16,7 @@ interface TerminalPanelProps {
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
 
-export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelProps) {
+export function TerminalPanel({ agentId, sessionKey: _sessionKey, className }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<import('@xterm/xterm').Terminal | null>(null);
   const fitAddonRef = useRef<import('@xterm/addon-fit').FitAddon | null>(null);

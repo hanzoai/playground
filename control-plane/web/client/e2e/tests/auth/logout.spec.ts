@@ -26,11 +26,14 @@ test.describe('Logout Flow', () => {
     //  a) redirects to hanzo.id login page, OR
     //  b) shows "Redirecting to sign in..." auth guard text
     const iamPage = page.waitForURL(/hanzo\.id/, { timeout: 20_000 }).then(() => 'iam' as const);
-    const authGuard = page.getByText(/redirecting to sign in|sign in/i)
+    const authGuard = page.getByText(/redirecting to sign in/i).first()
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .then(() => 'guard' as const);
+    const signInButton = page.getByRole('button', { name: /sign in/i })
       .waitFor({ state: 'visible', timeout: 20_000 })
       .then(() => 'guard' as const);
 
-    const landed = await Promise.race([iamPage, authGuard]);
+    const landed = await Promise.race([iamPage, authGuard, signInButton]);
     expect(['iam', 'guard']).toContain(landed);
 
     // Token should be cleared from localStorage (evaluate on current page)
@@ -53,10 +56,13 @@ test.describe('Logout Flow', () => {
 
     // Wait for redirect away from app
     const iamPage = page.waitForURL(/hanzo\.id/, { timeout: 20_000 }).then(() => 'iam' as const);
-    const authGuard = page.getByText(/redirecting to sign in|sign in/i)
+    const authGuard = page.getByText(/redirecting to sign in/i).first()
       .waitFor({ state: 'visible', timeout: 20_000 })
       .then(() => 'guard' as const);
-    const landed = await Promise.race([iamPage, authGuard]);
+    const signInButton = page.getByRole('button', { name: /sign in/i })
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .then(() => 'guard' as const);
+    const landed = await Promise.race([iamPage, authGuard, signInButton]);
 
     // Verify we actually left the authenticated app page
     expect(['iam', 'guard']).toContain(landed);

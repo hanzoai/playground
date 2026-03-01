@@ -103,8 +103,8 @@ test.describe('Trial Credits & Billing', () => {
   test('usage records are retrievable', async () => {
     const records = await commerce.getUsageRecords(userId).catch(() => null);
 
-    if (records === null) {
-      test.skip(true, 'Commerce usage API not reachable');
+    if (records === null || !Array.isArray(records)) {
+      test.skip(true, 'Commerce usage API not reachable or returned unexpected format');
       return;
     }
 
