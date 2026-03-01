@@ -14,6 +14,7 @@ from .go_bot_runner import (
     run_go_bot,
     run_go_agent,
 )
+from .mock_ai import ai_with_fallback, is_mock_ai_enabled
 
 __all__ = [
     "FunctionalTestLogger",
@@ -31,4 +32,6 @@ __all__ = [
     "run_bot_server",
     "sanitize_node_id",
     "unique_node_id",
+    "ai_with_fallback",
+    "is_mock_ai_enabled",
 ]

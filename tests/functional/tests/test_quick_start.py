@@ -3,8 +3,12 @@ Functional tests covering the README and docs Quick Start flows.
 
 These tests make sure both public entry points stay accurate by:
 1. Spinning up the router-based `demo_echo` bot that ships with `playground init`
-2. Running the OpenRouter-powered summarization bot from the README
+2. Running the AI-powered summarization bot from the README (via api.hanzo.ai)
 3. Driving both bots entirely through the control plane APIs (`/execute`, `/bots`)
+
+AI calls route through the Hanzo unified API gateway (api.hanzo.ai) using
+HANZO_API_KEY. When no key is available, deterministic mock fallback responses
+are used so the pipeline is still validated.
 """
 
 import os
