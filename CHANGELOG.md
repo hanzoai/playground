@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.154] - 2026-03-01
+
+
+### Chores
+
+- Chore: remove orphaned UserBalanceBar and SidebarBalanceWidget components
+
+These components are no longer imported anywhere after the balance
+display was removed from the canvas and sidebar. (1ab6772)
+
 ## [0.1.41-rc.153] - 2026-03-01
 
 
