@@ -29,7 +29,7 @@ async def _wait_for_workflow_run(client, run_id: str, *, expected_bots: set[str]
     deadline = time.time() + timeout
     last_body = None
     while time.time() < deadline:
-        resp = await client.get(f"/api/ui/v2/workflow-runs/{run_id}")
+        resp = await client.get(f"/api/v1/workflow-runs/{run_id}")
         if resp.status_code == 200:
             body = resp.json()
             last_body = body
@@ -58,7 +58,7 @@ async def _wait_for_workflow_run_completed(
             return timeline
 
         await asyncio.sleep(1)
-        resp = await client.get(f"/api/ui/v2/workflow-runs/{run_id}")
+        resp = await client.get(f"/api/v1/workflow-runs/{run_id}")
         if resp.status_code == 200:
             body = resp.json()
             last_body = body
