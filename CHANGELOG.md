@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.155] - 2026-03-01
+
+
+### Fixed
+
+- Fix: resolve CORS panic when wildcard origin used with credentials
+
+The gin-contrib/cors middleware panics when AllowOrigins contains "*"
+alongside AllowCredentials: true, which violates the CORS spec. When
+the K8s ConfigMap sets allowed_origins: ["*"], the server crashes on
+startup with "Network error: Load failed".
+
+Use AllowOriginFunc to dynamically allow all origins (echoing back the
+request Origin header) instead of setting literal "*" in AllowOrigins.
+This satisfies the CORS spec while preserving credential support.
+
+Also adds https://playground.hanzo.bot to the explicit origins list.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d50405e)
+
 ## [0.1.41-rc.154] - 2026-03-01
 
 
