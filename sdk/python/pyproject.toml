@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hanzo-playground"
-version = "0.1.41-rc.151"
+version = "0.1.41-rc.152"
 description = "Python SDK for the Playground control plane"
 readme = "README.md"
 license = {text = "Apache-2.0"}

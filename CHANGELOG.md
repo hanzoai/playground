@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.152] - 2026-03-01
+
+
+### Added
+
+- Feat(terminal): state-aware terminal with gateway probe and connection overlay
+
+Terminal now probes the gateway via node.describe RPC before enabling
+input. Shows status overlays for provisioning, starting, offline, and
+disconnected states with retry support. Properly handles gateway
+reconnection and differentiates NOT_CONNECTED from WS disconnection. (99c3c9e)
+
 ## [0.1.41-rc.151] - 2026-03-01
 
 
