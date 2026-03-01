@@ -169,7 +169,7 @@ const PackagesPageContent: React.FC = () => {
       <Dialog open={isConfigDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[80vh] sm:max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Configure Agent Package</DialogTitle>
+            <DialogTitle>Configure Bot Package</DialogTitle>
             <DialogDescription>
               {selectedPackage &&
                 `Configure ${selectedPackage.name} to customize its behavior and settings.`}

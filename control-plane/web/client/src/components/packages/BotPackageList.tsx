@@ -174,9 +174,9 @@ export const BotPackageList: React.FC<BotPackageListProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-display">Agent Packages</h1>
+          <h1 className="text-display">Bot Packages</h1>
           <p className="text-secondary">
-            Manage your installed agent packages and configurations
+            Manage your installed bot packages and configurations
           </p>
         </div>
         <Button onClick={handleRefresh} variant="outline" disabled={isLoading}>

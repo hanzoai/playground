@@ -97,7 +97,7 @@ export function AgentLegend({
       >
         <div className="flex items-center gap-2 mb-3">
           <Filter size={14} className="text-muted-foreground" />
-          <span className="text-sm font-medium">Agents</span>
+          <span className="text-sm font-medium">Nodes</span>
           <span className="text-body-small">
             ({agentColors.length})
           </span>
@@ -160,7 +160,7 @@ export function AgentLegend({
       <div className="flex items-center justify-between p-3 border-b">
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-muted-foreground" />
-          <span className="text-sm font-medium">Agents</span>
+          <span className="text-sm font-medium">Nodes</span>
           <span className="text-body-small">
             ({agentColors.length})
           </span>
@@ -305,7 +305,7 @@ export function AgentLegendMini({
         className
       )}
     >
-      <span className="text-body-small mr-1">Agents:</span>
+      <span className="text-body-small mr-1">Nodes:</span>
       {agentColors.slice(0, 8).map((agent) => (
         <button
           key={agent.name}

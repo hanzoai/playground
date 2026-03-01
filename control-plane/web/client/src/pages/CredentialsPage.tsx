@@ -596,7 +596,7 @@ export function CredentialsPage() {
                             <p className="mt-1 text-body text-muted-foreground">
                                 {selectedCredential
                                     ? `Viewing credential for execution ${selectedCredential.execution_id}`
-                                    : `Verifiable credentials for agent executions • ${total > 0 ? `Showing ${visibleCredentials.length} of ${total.toLocaleString()}` : "No credentials"} • ${timeRangeLabel}`}
+                                    : `Verifiable credentials for bot executions • ${total > 0 ? `Showing ${visibleCredentials.length} of ${total.toLocaleString()}` : "No credentials"} • ${timeRangeLabel}`}
                             </p>
                         </div>
 

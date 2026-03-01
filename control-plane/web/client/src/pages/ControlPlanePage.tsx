@@ -183,10 +183,10 @@ export function ControlPlanePage() {
             case 'heartbeat':
               break;
             case 'bot_online':
-              addActivity('agent', `Bot came online: ${event.data?.bot_id ?? 'unknown'}`, 'success');
+              addActivity('bot', `Bot came online: ${event.data?.bot_id ?? 'unknown'}`, 'success');
               break;
             case 'bot_offline':
-              addActivity('agent', `Bot went offline: ${event.data?.bot_id ?? 'unknown'}`, 'warn');
+              addActivity('bot', `Bot went offline: ${event.data?.bot_id ?? 'unknown'}`, 'warn');
               break;
             case 'bot_status_changed':
             case 'node_status_changed':

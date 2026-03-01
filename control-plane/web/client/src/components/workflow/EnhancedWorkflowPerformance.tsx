@@ -258,9 +258,9 @@ export function EnhancedWorkflowPerformance({
                 <div className="space-y-4 pt-4 border-t border-border/50">
                   <div className="flex items-center justify-between">
                     <h3 className="text-heading-3 flex items-center gap-2">
-                       <Activity className="w-4 h-4" /> Agent Health Map
+                       <Activity className="w-4 h-4" /> Node Health Map
                     </h3>
-                    <span className="text-body-small">Failure patterns by agent</span>
+                    <span className="text-body-small">Failure patterns by node</span>
                   </div>
                   <BotHealthHeatmap timedNodes={timedNodes} />
                 </div>
