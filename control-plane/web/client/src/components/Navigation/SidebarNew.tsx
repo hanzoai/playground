@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { NavLink } from "react-router-dom";
 
 import type { NavigationSection } from "./types";
@@ -27,10 +28,10 @@ import { ChevronDown } from "@/components/ui/icon-bridge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantStore } from "@/stores/tenantStore";
-import { SidebarBalanceWidget } from "./SidebarBalanceWidget";
 
-// Read version from package.json at build time
-const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.1.x';
+const IamOrgSelectorLazy = React.lazy(() =>
+  import("@/components/Navigation/IamOrgSelector").then((m) => ({ default: m.IamOrgSelector }))
+);
 
 // Hanzo "H" logo mark — geometric H from official brand assets.
 function HanzoLogo({ className }: { className?: string }) {
@@ -52,13 +53,13 @@ interface SidebarNewProps {
 export function SidebarNew({ sections }: SidebarNewProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { isAuthenticated, authRequired, clearAuth, iamUser } = useAuth();
+  const { isAuthenticated, authRequired, authMode, clearAuth, iamUser } = useAuth();
   const orgId = useTenantStore((s) => s.orgId);
   const isAdmin = iamUser?.isAdmin || iamUser?.isGlobalAdmin || false;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
-      {/* Header — Hanzo logo */}
+      {/* Header — Hanzo logo + org selector */}
       <SidebarHeader className="pb-2 border-b border-border/40">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -68,12 +69,22 @@ export function SidebarNew({ sections }: SidebarNewProps) {
                   <HanzoLogo className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold tracking-tight">Hanzo Bot</span>
-                  <span className="truncate text-[10px] text-muted-foreground font-mono">v{APP_VERSION}</span>
+                  <span className="truncate font-semibold tracking-tight">Hanzo</span>
                 </div>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {!isCollapsed && authMode === "iam" && (
+            <SidebarMenuItem>
+              <Suspense fallback={
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-muted-foreground select-none">
+                  <span className="truncate max-w-[120px]">{orgId || "Hanzo"}</span>
+                </div>
+              }>
+                <IamOrgSelectorLazy />
+              </Suspense>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarHeader>
 
@@ -139,9 +150,8 @@ export function SidebarNew({ sections }: SidebarNewProps) {
         })}
       </SidebarContent>
 
-      {/* Footer — balance + user menu */}
+      {/* Footer — user menu */}
       <SidebarFooter className="border-t border-border/40 pt-2">
-        <SidebarBalanceWidget />
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

@@ -29,7 +29,6 @@ import { nodeTypes } from './nodes/registry';
 import { CanvasControls } from './CanvasControls';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { BotContextMenu, type BotContextMenuState } from './BotContextMenu';
-import { UserBalanceBar } from './UserBalanceBar';
 import { spaceApi } from '@/services/spaceApi';
 import type { Bot } from '@/types/canvas';
 
@@ -273,7 +272,6 @@ export function CanvasFlow({ className }: { className?: string }) {
         onClose={() => setBotContextMenu(null)}
       />
 
-      <UserBalanceBar />
     </div>
   );
 }

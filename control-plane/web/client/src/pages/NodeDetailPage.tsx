@@ -72,7 +72,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { EnhancedNodeDetailHeader } from "@/components/nodes";
 import { getNodeStatusPresentation } from "@/utils/node-status";
 import { OperativePanel } from "@/components/canvas/drill-down/OperativePanel";
-import { TerminalPanel } from "@/components/canvas/drill-down/TerminalPanel";
+import { TerminalPanel, type NodeReadiness } from "@/components/canvas/drill-down/TerminalPanel";
 import { gateway } from "@/services/gatewayClient";
 
 /**
@@ -695,6 +695,18 @@ function NodeDetailPageContent() {
     effectiveHealthStatus
   );
 
+  // Map lifecycle status to terminal readiness
+  const terminalReadiness: NodeReadiness = (() => {
+    switch (effectiveLifecycleStatus) {
+      case 'ready': return 'ready';
+      case 'starting': return 'starting';
+      case 'stopping': return 'stopping';
+      case 'offline': case 'stopped': return 'offline';
+      case 'provisioning': return 'provisioning';
+      default: return 'unknown';
+    }
+  })();
+
   const headerMetadata: Array<{ label: string; value: string }> = [
     { label: "Bots", value: String(botCount) },
     { label: "Skills", value: String(skillCount) },
@@ -992,7 +1004,7 @@ function NodeDetailPageContent() {
             className="flex-1 overflow-hidden"
           >
             <div className="h-full px-6 pb-6">
-              <TerminalPanel agentId={nodeId ?? 'main'} sessionKey={`agent:${nodeId ?? 'main'}:main`} className="h-full rounded-lg border border-border" />
+              <TerminalPanel agentId={nodeId ?? 'main'} sessionKey={`agent:${nodeId ?? 'main'}:main`} nodeStatus={terminalReadiness} className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
 
