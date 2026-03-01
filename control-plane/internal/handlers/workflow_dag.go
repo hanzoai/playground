@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -95,6 +96,12 @@ func GetWorkflowDAGHandler(storageProvider storage.StorageProvider) gin.HandlerF
 
 func (s *executionGraphService) handleGetWorkflowDAG(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
+	var orgPtr *string
+	if org != "" {
+		orgPtr = &org
+	}
+
 	runID := strings.TrimSpace(c.Param("workflowId"))
 	if runID == "" {
 		runID = strings.TrimSpace(c.Param("workflow_id"))
@@ -104,7 +111,7 @@ func (s *executionGraphService) handleGetWorkflowDAG(c *gin.Context) {
 		return
 	}
 
-	executions, err := s.loadRunExecutions(ctx, runID)
+	executions, err := s.loadRunExecutions(ctx, runID, orgPtr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to load workflow: %v", err)})
 		return
@@ -157,6 +164,12 @@ func GetWorkflowChildrenHandler(storageProvider storage.StorageProvider) gin.Han
 
 func (s *executionGraphService) handleGetWorkflowChildren(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
+	var orgPtr *string
+	if org != "" {
+		orgPtr = &org
+	}
+
 	parent := strings.TrimSpace(c.Param("workflow_id"))
 	if parent == "" {
 		parent = strings.TrimSpace(c.Param("execution_id"))
@@ -168,6 +181,7 @@ func (s *executionGraphService) handleGetWorkflowChildren(c *gin.Context) {
 
 	filter := types.ExecutionFilter{
 		ParentExecutionID: &parent,
+		OrgID:             orgPtr,
 		SortBy:            "started_at",
 		SortDescending:    false,
 	}
@@ -198,6 +212,12 @@ func GetSessionWorkflowsHandler(storageProvider storage.StorageProvider) gin.Han
 
 func (s *executionGraphService) handleGetSessionWorkflows(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
+	var orgPtr *string
+	if org != "" {
+		orgPtr = &org
+	}
+
 	sessionID := strings.TrimSpace(c.Param("session_id"))
 	if sessionID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id is required"})
@@ -206,6 +226,7 @@ func (s *executionGraphService) handleGetSessionWorkflows(c *gin.Context) {
 
 	filter := types.ExecutionFilter{
 		SessionID:      &sessionID,
+		OrgID:          orgPtr,
 		SortBy:         "started_at",
 		SortDescending: false,
 	}
@@ -256,9 +277,10 @@ func (s *executionGraphService) handleGetSessionWorkflows(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (s *executionGraphService) loadRunExecutions(ctx context.Context, runID string) ([]*types.Execution, error) {
+func (s *executionGraphService) loadRunExecutions(ctx context.Context, runID string, orgID *string) ([]*types.Execution, error) {
 	filter := types.ExecutionFilter{
 		RunID:          &runID,
+		OrgID:          orgID,
 		SortBy:         "started_at",
 		SortDescending: false,
 	}

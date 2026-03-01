@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -116,10 +117,15 @@ func (h *PackageHandler) ListPackagesHandler(c *gin.Context) {
 	// Get query parameters for filtering
 	status := c.Query("status")
 	search := c.Query("search")
+	org := middleware.GetOrganization(c)
 
 	// Get all agent packages from storage
 	ctx := c.Request.Context()
-	packages, err := h.storage.QueryBotPackages(ctx, types.PackageFilters{})
+	filters := types.PackageFilters{}
+	if org != "" {
+		filters.OrgID = &org
+	}
+	packages, err := h.storage.QueryBotPackages(ctx, filters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to list packages"})
 		return

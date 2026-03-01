@@ -87,6 +87,7 @@ type ConfigurationMetadata struct {
 
 // ConfigurationFilters holds filters for querying agent configurations
 type ConfigurationFilters struct {
+	OrgID     *string              `json:"org_id,omitempty"`
 	AgentID   *string              `json:"agent_id,omitempty"`
 	PackageID *string              `json:"package_id,omitempty"`
 	Status    *ConfigurationStatus `json:"status,omitempty"`
@@ -99,6 +100,7 @@ type ConfigurationFilters struct {
 
 // PackageFilters holds filters for querying agent packages
 type PackageFilters struct {
+	OrgID               *string              `json:"org_id,omitempty"`
 	Status              *PackageStatus       `json:"status,omitempty"`
 	ConfigurationStatus *ConfigurationStatus `json:"configuration_status,omitempty"`
 	Name                *string              `json:"name,omitempty"`

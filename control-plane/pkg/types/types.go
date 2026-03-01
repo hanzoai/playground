@@ -8,6 +8,7 @@ import (
 // BotExecution represents a single execution of a bot or skill.
 type BotExecution struct {
 	ID          int64   `json:"id" db:"id"`
+	OrgID       string  `json:"org_id" db:"org_id"`
 	WorkflowID  string  `json:"workflow_id" db:"workflow_id"`
 	SessionID   *string `json:"session_id,omitempty" db:"session_id"`
 	NodeID string  `json:"node_id" db:"node_id"`
@@ -156,6 +157,7 @@ type AccessControlMetadata struct {
 // Node represents a registered agent service.
 type Node struct {
 	ID      string `json:"id" db:"id"`
+	OrgID   string `json:"org_id" db:"org_id"`
 	TeamID  string `json:"team_id" db:"team_id"`
 	BaseURL string `json:"base_url" db:"base_url"`
 	Version string `json:"version" db:"version"`
@@ -548,6 +550,7 @@ type BotPerformanceMetadata struct {
 
 // ExecutionFilters holds filters for querying agent executions.
 type ExecutionFilters struct {
+	OrgID       *string    `json:"org_id,omitempty"`
 	WorkflowID  *string    `json:"workflow_id,omitempty"`
 	SessionID   *string    `json:"session_id,omitempty"`
 	NodeID *string    `json:"node_id,omitempty"`
@@ -563,6 +566,7 @@ type ExecutionFilters struct {
 
 // BotFilters holds filters for querying agent nodes.
 type BotFilters struct {
+	OrgID        *string       `json:"org_id,omitempty"`
 	TeamID       *string       `json:"team_id,omitempty"`
 	HealthStatus *HealthStatus `json:"health_status,omitempty"`
 	Features     []string      `json:"features,omitempty"`
@@ -622,6 +626,9 @@ type LockEvent struct {
 // WorkflowExecution represents the new comprehensive execution tracking
 type WorkflowExecution struct {
 	ID int64 `json:"id" db:"id"`
+
+	// Organization scoping
+	OrgID string `json:"org_id" db:"org_id"`
 
 	// Core IDs
 	WorkflowID          string  `json:"workflow_id" db:"workflow_id"`
@@ -800,6 +807,7 @@ type ExecutionNote struct {
 // Workflow represents aggregated workflow information
 type Workflow struct {
 	WorkflowID   string   `json:"workflow_id" db:"workflow_id"`
+	OrgID        string   `json:"org_id" db:"org_id"`
 	WorkflowName *string  `json:"workflow_name,omitempty" db:"workflow_name"`
 	WorkflowTags []string `json:"workflow_tags" db:"workflow_tags"`
 	SessionID    *string  `json:"session_id,omitempty" db:"session_id"`
@@ -829,6 +837,7 @@ type Workflow struct {
 // Session represents session-level aggregation
 type Session struct {
 	SessionID   string  `json:"session_id" db:"session_id"`
+	OrgID       string  `json:"org_id" db:"org_id"`
 	ActorID     *string `json:"actor_id,omitempty" db:"actor_id"`
 	SessionName *string `json:"session_name,omitempty" db:"session_name"`
 
@@ -850,6 +859,7 @@ type Session struct {
 
 // WorkflowExecutionFilters holds filters for querying workflow executions
 type WorkflowExecutionFilters struct {
+	OrgID             *string    `json:"org_id,omitempty"`
 	WorkflowID        *string    `json:"workflow_id,omitempty"`
 	ParentExecutionID *string    `json:"parent_execution_id,omitempty"`
 	SessionID         *string    `json:"session_id,omitempty"`
@@ -867,6 +877,7 @@ type WorkflowExecutionFilters struct {
 
 // WorkflowRunFilters holds filters for querying workflow runs
 type WorkflowRunFilters struct {
+	OrgID      *string    `json:"org_id,omitempty"`
 	RunID      *string    `json:"run_id,omitempty"`
 	RunIDs     []string   `json:"run_ids,omitempty"`
 	WorkflowID *string    `json:"workflow_id,omitempty"`
@@ -884,6 +895,7 @@ type WorkflowRunFilters struct {
 
 // WorkflowFilters holds filters for querying workflows
 type WorkflowFilters struct {
+	OrgID       *string    `json:"org_id,omitempty"`
 	SessionID   *string    `json:"session_id,omitempty"`
 	ActorID     *string    `json:"actor_id,omitempty"`
 	NodeID *string    `json:"node_id,omitempty"`
@@ -898,6 +910,7 @@ type WorkflowFilters struct {
 
 // SessionFilters holds filters for querying sessions
 type SessionFilters struct {
+	OrgID     *string    `json:"org_id,omitempty"`
 	ActorID   *string    `json:"actor_id,omitempty"`
 	StartTime *time.Time `json:"start_time,omitempty"`
 	EndTime   *time.Time `json:"end_time,omitempty"`

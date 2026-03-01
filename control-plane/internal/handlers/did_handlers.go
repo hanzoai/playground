@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 )
 
@@ -297,9 +298,13 @@ func (h *DIDHandlers) CreateExecutionVC(c *gin.Context) {
 // ExportVCs handles VC export requests for external verification.
 // GET /api/v1/did/export/vcs
 func (h *DIDHandlers) ExportVCs(c *gin.Context) {
+	org := middleware.GetOrganization(c)
 
 	// Parse query parameters for filtering
 	var filters types.VCFilters
+	if org != "" {
+		filters.OrgID = &org
+	}
 
 	if workflowID := c.Query("workflow_id"); workflowID != "" {
 		filters.WorkflowID = &workflowID

@@ -1809,6 +1809,9 @@ func (ls *LocalStorage) QueryExecutions(ctx context.Context, filters types.Execu
 
 	query := gormDB.Model(&BotExecutionModel{})
 
+	if filters.OrgID != nil {
+		query = query.Where("org_id = ?", *filters.OrgID)
+	}
 	if filters.WorkflowID != nil {
 		query = query.Where("workflow_id = ?", *filters.WorkflowID)
 	}
@@ -2437,6 +2440,10 @@ func (ls *LocalStorage) QueryWorkflowExecutions(ctx context.Context, filters typ
 	query := baseQuery + ftsJoin
 
 	// Add filters
+	if filters.OrgID != nil {
+		conditions = append(conditions, "workflow_executions.org_id = ?")
+		args = append(args, *filters.OrgID)
+	}
 	if filters.WorkflowID != nil {
 		conditions = append(conditions, "workflow_executions.workflow_id = ?")
 		args = append(args, *filters.WorkflowID)
@@ -3551,6 +3558,10 @@ func (ls *LocalStorage) QueryWorkflows(ctx context.Context, filters types.Workfl
 	var args []interface{}
 
 	// Add filters
+	if filters.OrgID != nil {
+		conditions = append(conditions, "org_id = ?")
+		args = append(args, *filters.OrgID)
+	}
 	if filters.SessionID != nil {
 		conditions = append(conditions, "session_id = ?")
 		args = append(args, *filters.SessionID)
@@ -3742,6 +3753,10 @@ func (ls *LocalStorage) QuerySessions(ctx context.Context, filters types.Session
 	var args []interface{}
 
 	// Add filters
+	if filters.OrgID != nil {
+		conditions = append(conditions, "org_id = ?")
+		args = append(args, *filters.OrgID)
+	}
 	if filters.ActorID != nil {
 		conditions = append(conditions, "actor_id = ?")
 		args = append(args, *filters.ActorID)
@@ -4304,11 +4319,12 @@ func (ls *LocalStorage) RegisterNode(ctx context.Context, agent *types.Node) err
 func (ls *LocalStorage) executeRegisterNode(ctx context.Context, q DBTX, agent *types.Node) error {
 	query := `
 		INSERT INTO nodes (
-			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
+			id, org_id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
+			org_id = excluded.org_id,
 			team_id = excluded.team_id,
 			base_url = excluded.base_url,
 			version = excluded.version,
@@ -4345,7 +4361,7 @@ func (ls *LocalStorage) executeRegisterNode(ctx context.Context, q DBTX, agent *
 	}
 
 	_, err = q.ExecContext(ctx, query,
-		agent.ID, agent.TeamID, agent.BaseURL, agent.Version, agent.DeploymentType, agent.InvocationURL,
+		agent.ID, agent.OrgID, agent.TeamID, agent.BaseURL, agent.Version, agent.DeploymentType, agent.InvocationURL,
 		botsJSON, skillsJSON, commConfigJSON, agent.HealthStatus, agent.LifecycleStatus,
 		agent.LastHeartbeat, agent.RegisteredAt, featuresJSON, metadataJSON,
 	)
@@ -4366,7 +4382,7 @@ func (ls *LocalStorage) GetNode(ctx context.Context, id string) (*types.Node, er
 
 	query := `
 		SELECT
-			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
+			id, org_id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
 		FROM nodes WHERE id = ?`
@@ -4379,7 +4395,7 @@ func (ls *LocalStorage) GetNode(ctx context.Context, id string) (*types.Node, er
 	var invocationURL sql.NullString
 
 	err := row.Scan(
-		&agent.ID, &agent.TeamID, &agent.BaseURL, &agent.Version, &agent.DeploymentType, &invocationURL,
+		&agent.ID, &agent.OrgID, &agent.TeamID, &agent.BaseURL, &agent.Version, &agent.DeploymentType, &invocationURL,
 		&botsJSON, &skillsJSON, &commConfigJSON, &healthStatusStr, &lifecycleStatusStr,
 		&agent.LastHeartbeat, &agent.RegisteredAt, &featuresJSON, &metadataJSON,
 	)
@@ -4454,13 +4470,19 @@ func (ls *LocalStorage) ListNodes(ctx context.Context, filters types.BotFilters)
 	// Build query with filters
 	query := `
 		SELECT
-			id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
+			id, org_id, team_id, base_url, version, deployment_type, invocation_url, bots, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata
 		FROM nodes`
 
 	var conditions []string
 	var args []interface{}
+
+	// Add org ID filter
+	if filters.OrgID != nil {
+		conditions = append(conditions, "org_id = ?")
+		args = append(args, *filters.OrgID)
+	}
 
 	// Add health status filter
 	if filters.HealthStatus != nil {
@@ -4503,7 +4525,7 @@ func (ls *LocalStorage) ListNodes(ctx context.Context, filters types.BotFilters)
 		var invocationURL sql.NullString
 
 		err := rows.Scan(
-			&agent.ID, &agent.TeamID, &agent.BaseURL, &agent.Version, &agent.DeploymentType, &invocationURL,
+			&agent.ID, &agent.OrgID, &agent.TeamID, &agent.BaseURL, &agent.Version, &agent.DeploymentType, &invocationURL,
 			&botsJSON, &skillsJSON, &commConfigJSON, &healthStatusStr, &lifecycleStatusStr,
 			&agent.LastHeartbeat, &agent.RegisteredAt, &featuresJSON, &metadataJSON,
 		)
@@ -4943,6 +4965,9 @@ func (ls *LocalStorage) QueryBotConfigurations(ctx context.Context, filters type
 
 	query := gormDB.Model(&BotConfigurationModel{})
 
+	if filters.OrgID != nil {
+		query = query.Where("org_id = ?", *filters.OrgID)
+	}
 	if filters.AgentID != nil {
 		query = query.Where("agent_id = ?", *filters.AgentID)
 	}
@@ -5197,6 +5222,10 @@ func (ls *LocalStorage) QueryBotPackages(ctx context.Context, filters types.Pack
 	var args []interface{}
 
 	// Add filters
+	if filters.OrgID != nil {
+		conditions = append(conditions, "org_id = ?")
+		args = append(args, *filters.OrgID)
+	}
 	if filters.Status != nil {
 		conditions = append(conditions, "status = ?")
 		args = append(args, *filters.Status)

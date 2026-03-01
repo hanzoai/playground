@@ -222,6 +222,10 @@ func (ls *LocalStorage) QueryExecutionRecords(ctx context.Context, filter types.
 		args  []interface{}
 	)
 
+	if filter.OrgID != nil {
+		where = append(where, "org_id = ?")
+		args = append(args, *filter.OrgID)
+	}
 	if filter.ExecutionID != nil {
 		where = append(where, "execution_id = ?")
 		args = append(args, *filter.ExecutionID)
@@ -345,6 +349,10 @@ func (ls *LocalStorage) QueryRunSummaries(ctx context.Context, filter types.Exec
 	)
 
 	// Build WHERE clause from filter (excluding execution-specific filters)
+	if filter.OrgID != nil {
+		where = append(where, "org_id = ?")
+		args = append(args, *filter.OrgID)
+	}
 	if filter.RunID != nil {
 		where = append(where, "run_id = ?")
 		args = append(args, *filter.RunID)

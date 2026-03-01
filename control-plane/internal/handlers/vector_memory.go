@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/gin-gonic/gin"
 )
@@ -39,6 +40,7 @@ type VectorSearchRequest struct {
 // SetVectorHandler stores or updates a vector embedding.
 func SetVectorHandler(storage MemoryStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		_ = middleware.GetOrganization(c) // org context available for future vector isolation
 		var req SetVectorRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{

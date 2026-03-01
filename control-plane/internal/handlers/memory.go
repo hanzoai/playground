@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,7 @@ type ErrorResponse struct {
 func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
+		_ = middleware.GetOrganization(c) // org context available for future memory isolation
 		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: SetMemoryHandler called")
 
 		var req SetMemoryRequest

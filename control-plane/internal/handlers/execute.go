@@ -18,6 +18,7 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/internal/events"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/hanzoai/playground/control-plane/internal/utils"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
@@ -807,6 +808,10 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 	if agent == nil {
 		return nil, fmt.Errorf("agent '%s' not found", target.NodeID)
 	}
+	// Verify node belongs to requesting org
+	if org := middleware.GetOrganization(ginCtx); org != "" && agent.OrgID != "" && agent.OrgID != org {
+		return nil, fmt.Errorf("access denied")
+	}
 	if agent.DeploymentType == "" && agent.Metadata.Custom != nil {
 		if v, ok := agent.Metadata.Custom["serverless"]; ok && fmt.Sprint(v) == "true" {
 			agent.DeploymentType = "serverless"
@@ -846,12 +851,14 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 		return nil, fmt.Errorf("encode execution payload: %w", err)
 	}
 
+	org := middleware.GetOrganization(ginCtx)
 	exec := &types.Execution{
 		ExecutionID:       executionID,
 		RunID:             runID,
 		ParentExecutionID: headers.parentExecutionID,
 		NodeID:     agent.ID,
 		BotID: target.TargetName,
+		OrgID:            org,
 		Status:            types.ExecutionStatusRunning,
 		InputPayload:      json.RawMessage(storedPayload),
 		StartedAt:         now,

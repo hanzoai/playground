@@ -8,10 +8,16 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/internal/events"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
+
+// orgFromContext extracts org from gin context for org-scoped queries.
+func orgFromContext(c *gin.Context) (string, bool) {
+	return middleware.RequireOrg(c)
+}
 
 // NodesHandler provides handlers for UI-related node operations.
 type NodesHandler struct {

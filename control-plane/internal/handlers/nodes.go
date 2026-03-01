@@ -13,7 +13,8 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
-	"github.com/hanzoai/playground/control-plane/internal/services" // Import services package
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
+	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -505,6 +506,11 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 			newNode.Metadata.Custom = map[string]interface{}{}
 		}
 		newNode.Metadata.Custom["callback_discovery"] = newNode.CallbackDiscovery
+
+		// Set org from IAM context
+		if org := middleware.GetOrganization(c); org != "" {
+			newNode.OrgID = org
+		}
 
 		// Store the new node
 		if err := storageProvider.RegisterNode(ctx, &newNode); err != nil {
@@ -1280,6 +1286,11 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 					"discovery_url": discoveryURL,
 				},
 			},
+		}
+
+		// Set org from IAM context
+		if org := middleware.GetOrganization(c); org != "" {
+			newNode.OrgID = org
 		}
 
 		// Check if node already exists

@@ -8,6 +8,9 @@ import (
 // Execution captures a single agent invocation. A workflow run is represented by a
 // shared RunID across multiple executions. ParentExecutionID creates the DAG edges.
 type Execution struct {
+	// Organization scoping
+	OrgID string `json:"org_id" db:"org_id"`
+
 	// Primary identifiers
 	ExecutionID       string  `json:"execution_id" db:"execution_id"`
 	RunID             string  `json:"run_id" db:"run_id"`
@@ -47,6 +50,7 @@ type Execution struct {
 
 // ExecutionFilter describes supported filters when querying executions.
 type ExecutionFilter struct {
+	OrgID             *string
 	RunID             *string
 	ExecutionID       *string
 	ParentExecutionID *string

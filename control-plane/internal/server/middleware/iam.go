@@ -227,3 +227,37 @@ func GetOrganization(c *gin.Context) string {
 	}
 	return ""
 }
+
+// RequireOrg extracts the org from the gin context and aborts with 403 if missing.
+// Falls back to "local" for non-IAM auth (API key). Returns empty string on abort.
+func RequireOrg(c *gin.Context) (string, bool) {
+	org := GetOrganization(c)
+	if org != "" {
+		return org, true
+	}
+	// For non-IAM auth (API key, internal), fall back to "local"
+	// This preserves backward compatibility while ensuring org is always set
+	return "local", true
+}
+
+// RequireIAMOrg extracts the org from IAM context and aborts with 403 if no IAM user.
+// Use this for endpoints that strictly require IAM auth with org context.
+func RequireIAMOrg(c *gin.Context) (string, bool) {
+	user := GetIAMUser(c)
+	if user == nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error":   "org_required",
+			"message": "IAM authentication with organization context is required",
+		})
+		return "", false
+	}
+	org := user.Organization
+	if org == "" {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error":   "org_required",
+			"message": "user is not associated with an organization",
+		})
+		return "", false
+	}
+	return org, true
+}

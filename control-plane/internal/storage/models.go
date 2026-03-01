@@ -4,6 +4,7 @@ import "time"
 
 type ExecutionRecordModel struct {
 	ID                int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	OrgID             string     `gorm:"column:org_id;not null;default:'';index"`
 	ExecutionID       string     `gorm:"column:execution_id;not null;uniqueIndex"`
 	RunID             string     `gorm:"column:run_id;not null;index"`
 	ParentExecutionID *string    `gorm:"column:parent_execution_id;index"`
@@ -29,6 +30,7 @@ func (ExecutionRecordModel) TableName() string { return "executions" }
 
 type BotExecutionModel struct {
 	ID           int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	OrgID        string    `gorm:"column:org_id;not null;default:'';index"`
 	WorkflowID   string    `gorm:"column:workflow_id;not null;index"`
 	SessionID    *string   `gorm:"column:session_id;index"`
 	NodeID  string    `gorm:"column:node_id;not null;index"`
@@ -50,6 +52,7 @@ func (BotExecutionModel) TableName() string { return "agent_executions" }
 
 type NodeModel struct {
 	ID                  string     `gorm:"column:id;primaryKey"`
+	OrgID               string     `gorm:"column:org_id;not null;default:'';index"`
 	TeamID              string     `gorm:"column:team_id;not null;index"`
 	BaseURL             string     `gorm:"column:base_url;not null"`
 	Version             string     `gorm:"column:version;not null"`
@@ -70,6 +73,7 @@ func (NodeModel) TableName() string { return "nodes" }
 
 type BotConfigurationModel struct {
 	ID              int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	OrgID           string    `gorm:"column:org_id;not null;default:'';index"`
 	AgentID         string    `gorm:"column:agent_id;not null;index:idx_bot_config_bot_package,priority:1"`
 	PackageID       string    `gorm:"column:package_id;not null;index:idx_bot_config_bot_package,priority:2"`
 	Configuration   []byte    `gorm:"column:configuration;not null"`
@@ -86,6 +90,7 @@ func (BotConfigurationModel) TableName() string { return "agent_configurations" 
 
 type BotPackageModel struct {
 	ID                  string    `gorm:"column:id;primaryKey"`
+	OrgID               string    `gorm:"column:org_id;not null;default:'';index"`
 	Name                string    `gorm:"column:name;not null"`
 	Version             string    `gorm:"column:version;not null"`
 	Description         *string   `gorm:"column:description"`
@@ -104,6 +109,7 @@ func (BotPackageModel) TableName() string { return "agent_packages" }
 
 type WorkflowExecutionModel struct {
 	ID                    int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	OrgID                 string     `gorm:"column:org_id;not null;default:'';index"`
 	WorkflowID            string     `gorm:"column:workflow_id;not null;index;index:idx_workflow_executions_workflow_status,priority:1"`
 	ExecutionID           string     `gorm:"column:execution_id;not null;uniqueIndex"`
 	AgentsRequestID   string     `gorm:"column:agents_request_id;not null;index"`
@@ -178,6 +184,7 @@ func (WorkflowRunEventModel) TableName() string { return "workflow_run_events" }
 
 type WorkflowRunModel struct {
 	RunID             string     `gorm:"column:run_id;primaryKey"`
+	OrgID             string     `gorm:"column:org_id;not null;default:'';index"`
 	RootWorkflowID    string     `gorm:"column:root_workflow_id;not null;index"`
 	RootExecutionID   *string    `gorm:"column:root_execution_id"`
 	Status            string     `gorm:"column:status;not null;default:'pending';index"`
@@ -221,6 +228,7 @@ func (WorkflowStepModel) TableName() string { return "workflow_steps" }
 
 type WorkflowModel struct {
 	WorkflowID           string     `gorm:"column:workflow_id;primaryKey"`
+	OrgID                string     `gorm:"column:org_id;not null;default:'';index"`
 	WorkflowName         *string    `gorm:"column:workflow_name"`
 	WorkflowTags         string     `gorm:"column:workflow_tags"`
 	SessionID            *string    `gorm:"column:session_id;index"`
@@ -244,6 +252,7 @@ func (WorkflowModel) TableName() string { return "workflows" }
 
 type SessionModel struct {
 	SessionID       string    `gorm:"column:session_id;primaryKey"`
+	OrgID           string    `gorm:"column:org_id;not null;default:'';index"`
 	ActorID         *string   `gorm:"column:actor_id;index"`
 	SessionName     *string   `gorm:"column:session_name"`
 	ParentSessionID *string   `gorm:"column:parent_session_id"`
@@ -386,6 +395,7 @@ func (ExecutionWebhookModel) TableName() string { return "execution_webhooks" }
 // This is a singleton table with only one row (id='global').
 type ObservabilityWebhookModel struct {
 	ID        string    `gorm:"column:id;primaryKey;default:'global'"`
+	OrgID     string    `gorm:"column:org_id;not null;default:'';index"`
 	URL       string    `gorm:"column:url;not null"`
 	Secret    *string   `gorm:"column:secret"`
 	Headers   string    `gorm:"column:headers;default:'{}'"`
@@ -429,6 +439,7 @@ func (UserPreferencesModel) TableName() string { return "user_preferences" }
 // BotBudgetModel stores per-bot spending budget configuration.
 type BotBudgetModel struct {
 	BotID           string    `gorm:"column:bot_id;primaryKey"`
+	OrgID           string    `gorm:"column:org_id;not null;default:'';index"`
 	MonthlyLimitUSD float64   `gorm:"column:monthly_limit_usd;not null;default:0"`
 	DailyLimitUSD   float64   `gorm:"column:daily_limit_usd;not null;default:0"`
 	AlertThreshold  float64   `gorm:"column:alert_threshold;not null;default:0.8"`
@@ -445,6 +456,7 @@ func (BotBudgetModel) TableName() string { return "bot_budgets" }
 // BotSpendRecordModel tracks individual spend events per bot.
 type BotSpendRecordModel struct {
 	ID          int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	OrgID       string    `gorm:"column:org_id;not null;default:'';index"`
 	BotID       string    `gorm:"column:bot_id;not null;index"`
 	ExecutionID string    `gorm:"column:execution_id;not null;index"`
 	AmountUSD   float64   `gorm:"column:amount_usd;not null"`

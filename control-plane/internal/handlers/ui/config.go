@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -29,6 +30,7 @@ type ErrorResponse struct {
 // GET /api/v1/agents/:agentId/config/schema
 func (h *ConfigHandler) GetConfigSchemaHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	_ = middleware.GetOrganization(c) // org context for config isolation
 	agentID := c.Param("agentId")
 	if agentID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "agentId is required"})

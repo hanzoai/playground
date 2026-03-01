@@ -70,12 +70,28 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 // CloudDeprovisionHandler removes a cloud agent from the cluster.
 func CloudDeprovisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		org, ok := middleware.RequireOrg(c)
+		if !ok {
+			return
+		}
+
 		nodeID := c.Param("node_id")
 		if nodeID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error":   "invalid_request",
 				"message": "node_id is required",
 			})
+			return
+		}
+
+		// Verify node belongs to org
+		node, err := provisioner.GetNode(c.Request.Context(), nodeID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "node not found"})
+			return
+		}
+		if node.Org != "" && node.Org != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "node does not belong to your organization"})
 			return
 		}
 
@@ -124,6 +140,11 @@ func CloudListNodesHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 // CloudGetNodeHandler returns info about a specific cloud node.
 func CloudGetNodeHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		org, ok := middleware.RequireOrg(c)
+		if !ok {
+			return
+		}
+
 		nodeID := c.Param("node_id")
 		if nodeID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -142,6 +163,12 @@ func CloudGetNodeHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
+		// Verify node belongs to org
+		if node.Org != "" && node.Org != org {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "node does not belong to your organization"})
+			return
+		}
+
 		c.JSON(http.StatusOK, node)
 	}
 }
@@ -149,6 +176,11 @@ func CloudGetNodeHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 // CloudGetLogsHandler returns recent logs for a cloud agent.
 func CloudGetLogsHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		org, ok := middleware.RequireOrg(c)
+		if !ok {
+			return
+		}
+
 		nodeID := c.Param("node_id")
 		if nodeID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -156,6 +188,14 @@ func CloudGetLogsHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 				"message": "node_id is required",
 			})
 			return
+		}
+
+		// Verify node belongs to org
+		if node, err := provisioner.GetNode(c.Request.Context(), nodeID); err == nil {
+			if node.Org != "" && node.Org != org {
+				c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "node does not belong to your organization"})
+				return
+			}
 		}
 
 		tailLines := int64(100)
