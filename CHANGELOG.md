@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.151] - 2026-03-01
+
+
+### Fixed
+
+- Fix(types): remove invalid LifecycleStatus cases from terminal readiness switch
+
+LifecycleStatus doesn't include 'stopping' or 'provisioning' — use only
+valid enum values to fix TS2678 build error in CI. (8a94a94)
+
 ## [0.1.41-rc.150] - 2026-03-01
 
 
