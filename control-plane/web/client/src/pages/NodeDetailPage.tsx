@@ -391,24 +391,24 @@ function NodeDetailPageContent() {
 
     try {
       await startAgent(nodeId);
-      showSuccess(`🚀 Agent ${nodeId} launch sequence completed!`);
+      showSuccess(`Bot ${nodeId} started successfully`);
       // Refresh data to get updated status
       fetchData(false);
     } catch (error: any) {
-      let errorMessage = `Failed to start agent ${nodeId}`;
+      let errorMessage = `Failed to start bot ${nodeId}`;
 
-      // Handle specific error cases with clever messaging
+      // Handle specific error cases
       if (error.message?.includes("already running")) {
-        showInfo(`⚡ Agent ${nodeId} is already active and ready!`);
+        showInfo(`Bot ${nodeId} is already active and ready`);
       } else if (error.message?.includes("not installed")) {
-        showError(`📦 Agent ${nodeId} needs to be installed first`);
+        showError(`Bot ${nodeId} needs to be installed first`);
       } else if (error.message?.includes("port")) {
         showError(`🔌 Port conflict detected - please try again`);
       } else {
         showError(error.message || errorMessage);
       }
 
-      console.error(`Failed to start agent ${nodeId}:`, error);
+      console.error(`Failed to start bot ${nodeId}:`, error);
     } finally {
       setActionLoading(null);
     }
@@ -421,22 +421,22 @@ function NodeDetailPageContent() {
 
     try {
       await stopAgent(nodeId);
-      showSuccess(`🛑 Agent ${nodeId} shutdown completed successfully!`);
+      showSuccess(`Bot ${nodeId} stopped successfully`);
       // Refresh data to get updated status
       fetchData(false);
     } catch (error: any) {
-      let errorMessage = `Failed to stop agent ${nodeId}`;
+      let errorMessage = `Failed to stop bot ${nodeId}`;
 
-      // Handle specific error cases with clever messaging
+      // Handle specific error cases
       if (error.message?.includes("not running")) {
-        showInfo(`💤 Agent ${nodeId} is already in standby mode`);
+        showInfo(`Bot ${nodeId} is already in standby mode`);
       } else if (error.message?.includes("not installed")) {
-        showError(`📦 Agent ${nodeId} is not installed`);
+        showError(`Bot ${nodeId} is not installed`);
       } else {
         showError(error.message || errorMessage);
       }
 
-      console.error(`Failed to stop agent ${nodeId}:`, error);
+      console.error(`Failed to stop bot ${nodeId}:`, error);
     } finally {
       setActionLoading(null);
     }
@@ -445,24 +445,24 @@ function NodeDetailPageContent() {
   const handleReconcileAgent = async () => {
     if (!nodeId) return;
     setActionLoading("reconcile");
-    showInfo(`🔄 Reconciling agent ${nodeId} state...`);
+    showInfo(`Reconciling bot ${nodeId} state...`);
 
     try {
       const result = await reconcileAgent(nodeId);
-      showSuccess(`✅ Agent ${nodeId} state reconciled successfully!`);
+      showSuccess(`Bot ${nodeId} state reconciled successfully`);
       console.log("Reconciliation result:", result);
       // Refresh data to get updated status
       fetchData(false);
     } catch (error: any) {
-      let errorMessage = `Failed to reconcile agent ${nodeId}`;
+      let errorMessage = `Failed to reconcile bot ${nodeId}`;
 
       if (error.message?.includes("not installed")) {
-        showError(`📦 Agent ${nodeId} is not installed`);
+        showError(`Bot ${nodeId} is not installed`);
       } else {
         showError(error.message || errorMessage);
       }
 
-      console.error(`Failed to reconcile agent ${nodeId}:`, error);
+      console.error(`Failed to reconcile bot ${nodeId}:`, error);
     } finally {
       setActionLoading(null);
     }
@@ -1122,7 +1122,7 @@ function NodeDetailPageContent() {
                         setShowRestartBanner(false);
                       }, 2000);
                     } catch (error) {
-                      showError("Failed to restart agent");
+                      showError("Failed to restart bot");
                     }
                   }}
                   onDismiss={() => setShowRestartBanner(false)}
@@ -1143,7 +1143,7 @@ function NodeDetailPageContent() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    No package information available for this agent. Configuration
+                    No package information available for this bot. Configuration
                     cannot be managed.
                   </AlertDescription>
                 </Alert>

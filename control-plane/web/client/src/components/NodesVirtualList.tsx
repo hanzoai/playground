@@ -167,11 +167,11 @@ export function NodesVirtualList({ nodes, searchQuery, isLoading, density = 'com
           <EmptyMedia variant="icon">
             <CloudOffline className="h-8 w-8" />
           </EmptyMedia>
-          <EmptyTitle>No hanzo nodes</EmptyTitle>
+          <EmptyTitle>No bots found</EmptyTitle>
           <EmptyDescription>
             {searchQuery
-              ? `No nodes found matching "${searchQuery}". Adjust the query or reset your filters.`
-              : "Register an hanzo node to begin monitoring its status and workloads."
+              ? `No bots found matching "${searchQuery}". Adjust the query or reset your filters.`
+              : "Connect a local bot or deploy one to the cloud to get started."
             }
           </EmptyDescription>
         </EmptyHeader>

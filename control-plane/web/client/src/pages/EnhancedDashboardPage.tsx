@@ -265,7 +265,7 @@ export function EnhancedDashboardPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Dashboard"
-        description="Monitor agent health, workflow performance, and system throughput across your distributed cluster."
+        description="Monitor bot health, workflow performance, and system throughput across your distributed cluster."
         aside={
           <div className="flex flex-wrap items-center gap-3">
             <TimeRangeSelector
@@ -392,7 +392,7 @@ function OverviewStrip({ overview, trends, trendPoints, comparison }: OverviewSt
 
   return (
     <ResponsiveGrid variant="dashboard">
-      {/* Agents Online */}
+      {/* Bots Online */}
       <TrendMetricCard
         label="Bots online"
         value={`${overview.active_agents}/${overview.total_agents}`}
@@ -862,7 +862,7 @@ function BotActivityPanel({
         </CardTitle>
         <div className="grid grid-cols-3 gap-2 text-center text-body-small uppercase tracking-wide text-text-tertiary">
           <StatusCounter
-            label="Active agents"
+            label="Active bots"
             value={agentSummary.active}
             tone="success"
           />

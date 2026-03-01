@@ -654,7 +654,7 @@ export function CredentialsPage() {
                                 <SearchBar
                                     value={searchQuery}
                                     onChange={setSearchQuery}
-                                    placeholder="Search by execution ID, agent, workflow, or DID..."
+                                    placeholder="Search by execution ID, bot, workflow, or DID..."
                                     wrapperClassName="w-full"
                                 />
                             </div>

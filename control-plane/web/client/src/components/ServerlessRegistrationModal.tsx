@@ -122,7 +122,7 @@ export function ServerlessRegistrationModal({
                 className="font-mono text-sm"
               />
               <p className="text-body-small">
-                The URL where your remote agent is deployed
+                The URL where your remote bot is deployed
               </p>
             </div>
 
@@ -139,7 +139,7 @@ export function ServerlessRegistrationModal({
                 <AlertDescription className="text-green-800 dark:text-green-200">
                   <div className="font-semibold mb-1">Successfully registered!</div>
                   <div className="text-sm space-y-1">
-                    <div>Agent ID: <span className="font-mono">{success.nodeId}</span></div>
+                    <div>Bot ID: <span className="font-mono">{success.nodeId}</span></div>
                     <div>Version: {success.version}</div>
                     <div>Bots: {success.botsCount} | Skills: {success.skillsCount}</div>
                   </div>
