@@ -13,11 +13,16 @@ export interface BalanceResult {
   holds?: number;
 }
 
-/** Extract user identifier (sub or email) from a JWT token. */
+/** Extract user identifier from a JWT token in owner/name format for Commerce. */
 function getUserFromToken(token: string): string | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub || payload.email || payload.name || null;
+    // Commerce stores balances under owner/name format (e.g. "hanzo/a"),
+    // not UUID. IAM JWTs include both owner and name claims.
+    if (payload.owner && payload.name) {
+      return `${payload.owner}/${payload.name}`;
+    }
+    return payload.sub || payload.email || null;
   } catch {
     return null;
   }
