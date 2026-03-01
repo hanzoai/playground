@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.165] - 2026-03-01
+
+
+### Other
+
+- Fix unused nodeId parameter causing TS6133 build error (ed26ded)
+
 ## [0.1.41-rc.164] - 2026-03-01
 
 
