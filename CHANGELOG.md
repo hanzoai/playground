@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.160] - 2026-03-01
+
+
+### Fixed
+
+- Fix: add missing imports and state for cloud bot delete button
+
+Cherry-pick lost Trash icon import, cloudDeprovision import, and
+useState declarations for confirmDelete/deleting/isCloudNode. (40cf803)
+
 ## [0.1.41-rc.159] - 2026-03-01
 
 
