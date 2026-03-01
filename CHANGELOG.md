@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.138] - 2026-03-01
+
+
+### Fixed
+
+- Fix: register API routes under both /v1 and /api/v1 prefixes
+
+HandleContext approach caused double response writes. Instead, register
+routes under both groups directly — clean, correct, no hacks. (c836097)
+
 ## [0.1.41-rc.137] - 2026-03-01
 
 
