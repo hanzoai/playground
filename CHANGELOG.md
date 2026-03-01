@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.143] - 2026-03-01
+
+
+### Fixed
+
+- Fix: resolve E2E test failures and TS build error
+
+- Prefix unused sessionKey with _ to fix TS6133 build error
+- Handle non-array Commerce API responses in usage records test
+- Fix Playwright strict mode violation in logout test (locator matched 2 elements)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (e35a69f)
+
 ## [0.1.41-rc.142] - 2026-03-01
 
 
