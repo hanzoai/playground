@@ -5,7 +5,16 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantStore, DEFAULT_ENVIRONMENT } from "@/stores/tenantStore";
+import { useTenantStore } from "@/stores/tenantStore";
+import { ChevronDown, Check } from "@/components/ui/icon-bridge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ---------------------------------------------------------------------------
 // Org selector — uses IAM hook when available, otherwise tenantStore
@@ -48,15 +57,47 @@ function LocalOrgFallback() {
 // Environment selector — wired to tenantStore
 // ---------------------------------------------------------------------------
 
+const ENVIRONMENTS = [
+  { id: "production", name: "Production" },
+  { id: "staging", name: "Staging" },
+  { id: "development", name: "Development" },
+] as const;
+
 function EnvironmentSelector() {
   const environment = useTenantStore((s) => s.environment);
-  const label =
-    environment === DEFAULT_ENVIRONMENT.id ? DEFAULT_ENVIRONMENT.name : environment;
+  const setEnvironment = useTenantStore((s) => s.setEnvironment);
+  const current = ENVIRONMENTS.find((e) => e.id === environment);
+  const label = current?.name ?? environment;
 
   return (
-    <span className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground select-none">
-      <span className="truncate">{label}</span>
-    </span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors select-none">
+          <span className="truncate">{label}</span>
+          <ChevronDown size={10} className="shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-40">
+        <DropdownMenuLabel>Environment</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {ENVIRONMENTS.map((env) => (
+          <DropdownMenuItem
+            key={env.id}
+            onClick={() => setEnvironment(env.id)}
+            className={cn(env.id === environment && "bg-accent")}
+          >
+            <Check
+              size={12}
+              className={cn(
+                "mr-1.5 shrink-0",
+                env.id === environment ? "opacity-100" : "opacity-0",
+              )}
+            />
+            {env.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
