@@ -698,11 +698,10 @@ function NodeDetailPageContent() {
   // Map lifecycle status to terminal readiness
   const terminalReadiness: NodeReadiness = (() => {
     switch (effectiveLifecycleStatus) {
-      case 'ready': return 'ready';
+      case 'ready': case 'running': return 'ready';
       case 'starting': return 'starting';
-      case 'stopping': return 'stopping';
       case 'offline': case 'stopped': return 'offline';
-      case 'provisioning': return 'provisioning';
+      case 'degraded': case 'error': return 'ready';
       default: return 'unknown';
     }
   })();
