@@ -234,7 +234,7 @@ def openrouter_config(hanzo_api_key: str, ai_model: str) -> AIConfig:
     return AIConfig(
         model=ai_model,
         api_key=hanzo_api_key,
-        base_url=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
+        api_base=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
         temperature=0.7,
         max_tokens=500,
         timeout=60.0,

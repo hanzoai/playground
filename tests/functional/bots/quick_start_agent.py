@@ -101,7 +101,7 @@ def create_bot_from_env() -> Bot:
     ai_config = AIConfig(
         model=model,
         api_key=api_key,
-        base_url=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
+        api_base=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
         temperature=0.7,
         max_tokens=500,
         timeout=60.0,
