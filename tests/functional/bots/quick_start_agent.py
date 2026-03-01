@@ -4,6 +4,9 @@ Bot definition that mirrors the README Quick Start example.
 Tests can import `BOT_SPEC` + `create_bot` to obtain a fully configured Bot
 without replicating the bot definition inline. Each test can override the
 node_id to ensure distinct Playground registrations when multiple nodes run.
+
+AI calls go through api.hanzo.ai using HANZO_API_KEY. When no key is
+available, a deterministic mock fallback is used.
 """
 
 from __future__ import annotations
@@ -60,7 +63,7 @@ def create_bot(
     @bot.bot(name="summarize")
     async def summarize(url: str) -> Dict[str, str]:
         """
-        Fetch a URL, summarize it via OpenRouter, and return metadata.
+        Fetch a URL, summarize it via api.hanzo.ai, and return metadata.
         """
         content = fetch_url(url)
         truncated = content[:2000]
@@ -100,7 +103,7 @@ def create_bot_from_env() -> Bot:
     api_key = os.environ.get("HANZO_API_KEY", os.environ.get("OPENROUTER_API_KEY", ""))
     if not api_key:
         raise ValueError("HANZO_API_KEY environment variable is required")
-    model = os.environ.get("AI_MODEL", os.environ.get("OPENROUTER_MODEL", "openai/zen4-mini"))
+    model = os.environ.get("AI_MODEL", os.environ.get("OPENROUTER_MODEL", "openai/llama-3.1-8b"))
     node_id = os.environ.get("HANZO_NODE_ID", os.environ.get("AGENT_NODE_ID"))
 
     ai_config = AIConfig(

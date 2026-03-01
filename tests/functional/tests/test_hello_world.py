@@ -1,12 +1,16 @@
 """
-Functional test: Hello World with OpenRouter integration
+Functional test: Hello World with AI integration via api.hanzo.ai
 
 This test validates the end-to-end flow:
-1. Create a Python bot with AI capabilities using OpenRouter
+1. Create a Python bot with AI capabilities via Hanzo API gateway
 2. Bot auto-registers with the control plane
 3. Execute a bot through the control plane API
 4. Validate that the LLM-generated response is correct
 5. Check execution metadata (workflow ID, execution ID, timing)
+
+AI calls go through api.hanzo.ai using HANZO_API_KEY. When no key is
+available, a deterministic mock fallback is used so the registration and
+execution pipeline is still validated.
 """
 
 from typing import Dict
@@ -25,13 +29,15 @@ async def test_hello_world_with_openrouter(
     async_http_client,
 ):
     """
-    Test basic bot execution with real OpenRouter LLM calls.
+    Test basic bot execution with real LLM calls via api.hanzo.ai.
 
-    This test creates a bot with a simple bot that uses OpenRouter
-    to answer a basic math question, then validates the entire execution flow.
+    Creates a bot with a simple bot that calls an LLM through the Hanzo
+    API gateway to answer a basic math question, then validates the entire
+    execution flow. Falls back to a deterministic mock when no API key is
+    available.
     """
     # ========================================================================
-    # Step 1: Create bot with OpenRouter configuration
+    # Step 1: Create bot with Hanzo AI configuration
     # ========================================================================
     bot = make_test_bot(
         node_id=unique_node_id("hello-world-bot"),
@@ -39,7 +45,7 @@ async def test_hello_world_with_openrouter(
     )
 
     # ========================================================================
-    # Step 2: Define a simple bot that uses AI
+    # Step 2: Define a simple bot that uses AI via api.hanzo.ai
     # ========================================================================
     @bot.bot()
     async def ask_math_question(question: str) -> Dict[str, str]:
@@ -141,8 +147,8 @@ async def test_hello_world_with_openrouter(
         # Validate timing
         assert result_data["duration_ms"] >= 0, "Duration should be non-negative"
 
-        # For OpenRouter calls, we expect some non-trivial execution time
-        assert result_data["duration_ms"] > 0, "Duration should be greater than 0 for real API calls"
+        # For real or mock AI calls, we expect some non-trivial execution time
+        assert result_data["duration_ms"] > 0, "Duration should be greater than 0 for API calls"
 
         print("Metadata validation passed")
         print(f"  Duration: {result_data['duration_ms']}ms")

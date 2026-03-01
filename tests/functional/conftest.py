@@ -90,19 +90,13 @@ def control_plane_url() -> str:
 
 @pytest.fixture(scope="session")
 def hanzo_api_key() -> str:
-    """
-    Get the Hanzo API key from environment.
+    """Get the Hanzo API key from environment.
 
-    When the key is not set, a placeholder is returned and PLAYGROUND_MOCK_AI
-    is activated so that bot functions fall back to deterministic responses
-    instead of hitting a real LLM endpoint.  This allows the full
-    registration-execution pipeline to be validated in CI without a live API key.
+    Returns an empty string when unset so tests can fall back to mock AI
+    rather than skipping entirely. Tests that require a real API key should
+    check ``is_mock_ai_enabled()`` and adjust expectations accordingly.
     """
-    key = os.environ.get("HANZO_API_KEY", "")
-    if not key:
-        os.environ["PLAYGROUND_MOCK_AI"] = "1"
-        return "mock-api-key-for-testing"
-    return key
+    return os.environ.get("HANZO_API_KEY", "")
 
 
 @pytest.fixture(scope="session")
@@ -111,10 +105,10 @@ def ai_model() -> str:
     Get the AI model to use for tests from environment.
 
     IMPORTANT: All tests MUST use this fixture and NOT hardcode model names.
-    This allows us to use cost-effective models for testing.
+    Default is ``openai/llama-3.1-8b`` -- the cheapest model on api.hanzo.ai,
+    keeping CI costs minimal.
     """
-    model = os.environ.get("AI_MODEL", "openai/zen4-mini")
-    return model
+    return os.environ.get("AI_MODEL", "openai/llama-3.1-8b")
 
 
 # Legacy aliases for backward compatibility
@@ -233,15 +227,19 @@ async def async_http_client(
 @pytest.fixture
 def openrouter_config(hanzo_api_key: str, ai_model: str) -> AIConfig:
     """
-    Provide an AIConfig configured for Hanzo AI.
+    Provide an AIConfig configured for Hanzo AI via api.hanzo.ai.
 
-    Uses HANZO_API_KEY and AI_MODEL environment variables.
-    Default model is cost-effective for testing (gemini-2.5-flash-lite).
-    DO NOT hardcode model names in tests - always use this fixture.
+    All AI calls route through the Hanzo unified API gateway. Uses
+    HANZO_API_KEY for auth and a cheap model (llama-3.1-8b by default)
+    to keep CI costs minimal.
+
+    When no API key is available the config is still returned so bot
+    construction succeeds; the ``ai_with_fallback`` helper in the test
+    bots will short-circuit to a deterministic mock response.
     """
     return AIConfig(
         model=ai_model,
-        api_key=hanzo_api_key,
+        api_key=hanzo_api_key or None,
         api_base=os.environ.get("HANZO_AI_BASE_URL", "https://api.hanzo.ai/v1"),
         temperature=0.7,
         max_tokens=500,
