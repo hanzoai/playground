@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.148] - 2026-03-01
+
+
+### Added
+
+- Feat(nav): convert environment selector to interactive dropdown
+
+Replaces static text with a DropdownMenu supporting Production,
+Staging, and Development environments. Selection persists via
+tenantStore/localStorage. (30d9335)
+
 ## [0.1.41-rc.147] - 2026-03-01
 
 
