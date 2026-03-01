@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.168] - 2026-03-01
+
+
+### Other
+
+- Add org-scoping to all Go API handlers for multi-tenant isolation (#54)
+
+Thread OrgID from IAM JWT through middleware, handlers, storage, and
+types so every API query is scoped to the authenticated organization.
+Covers REST handlers, UI handlers, cloud provisioning, workflows,
+memory, DID, MCP, execution notes, and discovery.
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (9f15f71)
+
 ## [0.1.41-rc.167] - 2026-03-01
 
 
