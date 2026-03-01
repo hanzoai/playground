@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.166] - 2026-03-01
+
+
+### Other
+
+- Fix remaining agent→bot/node labels in legends, packages, credentials, performance
+
+Renames user-facing "Agent" text in: AgentLegend/BotLegend (Nodes),
+BotPackageList (Bot Packages), PackagesPage dialog, CredentialsPage description,
+EnhancedWorkflowPerformance (Node Health Map), ControlPlanePage activity categories. (c35d322)
+
 ## [0.1.41-rc.165] - 2026-03-01
 
 
