@@ -36,17 +36,12 @@ export function GlobalCommandPalette() {
 
     // Navigation commands
     const nav = [
-      { id: 'nav-dashboard',     label: 'Dashboard',      icon: '📊', href: '/dashboard',     desc: 'System overview' },
-      { id: 'nav-control-plane', label: 'Control Plane',  icon: '🎛️', href: '/bots/all',      desc: 'Agent orchestration' },
+      { id: 'nav-bots',          label: 'My Bots',        icon: '🖥️', href: '/nodes',          desc: 'Running bots and connected nodes' },
       { id: 'nav-playground',    label: 'Playground',     icon: '🤖', href: '/playground',     desc: 'Visual canvas' },
-      { id: 'nav-nodes',         label: 'Nodes',          icon: '🖥️', href: '/nodes',          desc: 'Node infrastructure' },
-      { id: 'nav-spaces',        label: 'Spaces',         icon: '📁', href: '/spaces',         desc: 'Workspaces' },
-      { id: 'nav-teams',         label: 'Teams',          icon: '👥', href: '/teams',          desc: 'Agent teams' },
+      { id: 'nav-control-plane', label: 'Control Plane',  icon: '🎛️', href: '/bots/all',      desc: 'Bot orchestration' },
       { id: 'nav-executions',    label: 'Executions',     icon: '▶️', href: '/executions',     desc: 'Execution history' },
-      { id: 'nav-workflows',     label: 'Workflows',      icon: '🔄', href: '/workflows',      desc: 'Workflow processes' },
-      { id: 'nav-dids',          label: 'DID Explorer',   icon: '🆔', href: '/identity/dids',  desc: 'Decentralized identifiers' },
-      { id: 'nav-credentials',   label: 'Credentials',    icon: '🛡️', href: '/identity/credentials', desc: 'Verification' },
-      { id: 'nav-gateway',       label: 'Gateway Settings', icon: '🔗', href: '/settings',     desc: 'Connection config' },
+      { id: 'nav-metrics',       label: 'Metrics',        icon: '📊', href: '/metrics',        desc: 'System overview' },
+      { id: 'nav-settings',      label: 'Settings',       icon: '⚙️', href: '/settings',       desc: 'Connection config' },
     ];
 
     for (const item of nav) {
@@ -61,14 +56,14 @@ export function GlobalCommandPalette() {
       });
     }
 
-    // Agent commands
+    // Bot commands
     for (const [id, agent] of agents) {
       cmds.push({
-        id: `agent-${id}`,
+        id: `bot-${id}`,
         label: agent.name,
-        description: `${agent.status} agent`,
+        description: `${agent.status} bot`,
         icon: agent.emoji ?? '🤖',
-        section: 'Agents',
+        section: 'Bots',
         action: () => navigate('/playground'),
         keywords: [agent.name.toLowerCase(), id.toLowerCase()],
       });
@@ -77,32 +72,22 @@ export function GlobalCommandPalette() {
     // Infrastructure actions
     cmds.push({
       id: 'action-register',
-      label: 'Register Local Agent',
-      description: 'Connect a local machine as an agent node',
+      label: 'Register Local Bot',
+      description: 'Connect a local machine as a bot node',
       icon: '+',
       section: 'Actions',
       action: () => navigate('/nodes'),
-      keywords: ['register', 'local', 'agent', 'connect', 'add'],
+      keywords: ['register', 'local', 'bot', 'connect', 'add'],
     });
 
     cmds.push({
       id: 'action-deploy-cloud',
-      label: 'Deploy Cloud Agent',
-      description: 'Provision a cloud agent on DOKS',
+      label: 'Deploy Cloud Bot',
+      description: 'Provision a cloud bot',
       icon: '☁️',
       section: 'Actions',
       action: () => navigate('/nodes'),
       keywords: ['deploy', 'cloud', 'provision', 'launch'],
-    });
-
-    cmds.push({
-      id: 'action-provision-team',
-      label: 'Provision Team',
-      description: 'Deploy a team of agents from a preset',
-      icon: '👥',
-      section: 'Actions',
-      action: () => navigate('/teams'),
-      keywords: ['team', 'provision', 'deploy', 'preset'],
     });
 
     return cmds;

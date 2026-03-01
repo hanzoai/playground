@@ -183,10 +183,10 @@ export function ControlPlanePage() {
             case 'heartbeat':
               break;
             case 'bot_online':
-              addActivity('agent', `Agent came online: ${event.data?.bot_id ?? 'unknown'}`, 'success');
+              addActivity('agent', `Bot came online: ${event.data?.bot_id ?? 'unknown'}`, 'success');
               break;
             case 'bot_offline':
-              addActivity('agent', `Agent went offline: ${event.data?.bot_id ?? 'unknown'}`, 'warn');
+              addActivity('agent', `Bot went offline: ${event.data?.bot_id ?? 'unknown'}`, 'warn');
               break;
             case 'bot_status_changed':
             case 'node_status_changed':
@@ -301,7 +301,7 @@ export function ControlPlanePage() {
 
       {/* ─── Metrics Strip ─── */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 py-2 px-0 mb-4 border-y border-border/30 text-xs font-mono text-muted-foreground">
-        <MetricCell label="Agents" value={agents.length} />
+        <MetricCell label="Bots" value={agents.length} />
         <Sep />
         <MetricCell label="Cloud" value={cloudCount} />
         <Sep />

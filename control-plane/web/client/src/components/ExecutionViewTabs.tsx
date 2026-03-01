@@ -64,8 +64,8 @@ const VIEW_MODES: ViewMode[] = [
   },
   {
     id: 'agents',
-    label: 'Agents',
-    description: 'Grouped by hanzo nodes',
+    label: 'Bots',
+    description: 'Grouped by bot nodes',
     icon: 'tree',
   },
 ];
@@ -74,7 +74,7 @@ const SORT_OPTIONS = [
   { value: 'when', label: 'When', field: 'started_at' },
   { value: 'status', label: 'Status', field: 'status' },
   { value: 'duration', label: 'Duration', field: 'duration_ms' },
-  { value: 'agent', label: 'Agent', field: 'node_id' },
+  { value: 'bot', label: 'Bot', field: 'node_id' },
 ];
 
 const WORKFLOW_SORT_OPTIONS = [

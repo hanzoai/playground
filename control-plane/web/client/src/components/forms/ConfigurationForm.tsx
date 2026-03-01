@@ -25,7 +25,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
   onSubmit,
   loading = false,
   title = "Configuration",
-  description = "Configure the agent settings below"
+  description = "Configure the bot settings below"
 }) => {
   const fields = schema.fields ?? [];
   const [values, setValues] = useState<BotConfiguration>(initialValues);

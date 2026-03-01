@@ -115,7 +115,7 @@ export function ServerlessRegistrationModal({
               <Input
                 id="invocation-url"
                 type="url"
-                placeholder="https://your-agent-url.com"
+                placeholder="https://your-bot-url.com"
                 value={invocationUrl}
                 onChange={(e) => setInvocationUrl(e.target.value)}
                 disabled={isLoading || !!success}

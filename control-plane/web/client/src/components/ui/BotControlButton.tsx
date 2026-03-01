@@ -28,7 +28,7 @@ const stateConfig = {
     icon: Play,
     action: 'start' as const,
     label: 'Start',
-    description: 'Start agent',
+    description: 'Start bot',
     variant: 'ghost' as const,
     iconColor: 'text-text-secondary hover:text-status-success'
   },
@@ -36,7 +36,7 @@ const stateConfig = {
     icon: InProgress,
     action: null,
     label: 'Starting...',
-    description: 'Agent is starting',
+    description: 'Bot is starting',
     variant: 'ghost' as const,
     iconColor: 'text-status-running'
   },
@@ -44,7 +44,7 @@ const stateConfig = {
     icon: Stop,
     action: 'stop' as const,
     label: 'Stop',
-    description: 'Stop agent',
+    description: 'Stop bot',
     variant: 'ghost' as const,
     iconColor: 'text-text-secondary hover:text-status-failed'
   },
@@ -52,7 +52,7 @@ const stateConfig = {
     icon: InProgress,
     action: null,
     label: 'Stopping...',
-    description: 'Agent is stopping',
+    description: 'Bot is stopping',
     variant: 'ghost' as const,
     iconColor: 'text-status-pending'
   },
@@ -60,7 +60,7 @@ const stateConfig = {
     icon: WarningFilled,
     action: 'reconcile' as const,
     label: 'Reconcile',
-    description: 'Reconcile agent state',
+    description: 'Reconcile bot state',
     variant: 'ghost' as const,
     iconColor: 'text-status-pending hover:text-text-primary'
   },
@@ -68,7 +68,7 @@ const stateConfig = {
     icon: Restart,
     action: null,
     label: 'Reconciling...',
-    description: 'Reconciling agent state',
+    description: 'Reconciling bot state',
     variant: 'ghost' as const,
     iconColor: 'text-text-secondary'
   }

@@ -567,7 +567,7 @@ export function CompactWorkflowsTable({
       {/* Search */}
       <FastTableSearch
         onSearch={handleSearch}
-        placeholder="Search workflows by name, agent, bot, status..."
+        placeholder="Search workflows by name, bot, status..."
         resultCount={filteredWorkflows.length}
         totalCount={workflows.length}
         disabled={loading}

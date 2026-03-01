@@ -187,7 +187,7 @@ export function AgentLegend({
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                 />
                 <Input
-                  placeholder="Search agents..."
+                  placeholder="Search bots..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9 h-8 text-sm"
@@ -237,7 +237,7 @@ export function AgentLegend({
 
             {filteredAgents.length === 0 && searchTerm && (
               <div className="text-center py-4 text-body-small">
-                No agents found matching "{searchTerm}"
+                No bots found matching "{searchTerm}"
               </div>
             )}
           </div>

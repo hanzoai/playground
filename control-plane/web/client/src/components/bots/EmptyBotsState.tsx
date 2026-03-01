@@ -65,13 +65,13 @@ export function EmptyBotsState({
         return {
           icon: <Grid className="h-10 w-10" />,
           title: "No Bots Available",
-          description: "There are no bots registered in the system yet. Connect some agent nodes to see bots here.",
+          description: "There are no bots registered in the system yet. Connect some bot nodes to see them here.",
           primaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
           secondaryAction: null,
           tip: {
             icon: <Terminal className="h-5 w-5 text-muted-foreground" />,
             title: "Getting started",
-            body: "Launch an agent node to register bots with Hanzo Bot. They will appear here as soon as they are online.",
+            body: "Launch a bot node to register bots with Hanzo. They will appear here as soon as they are online.",
           },
         };
 
@@ -79,13 +79,13 @@ export function EmptyBotsState({
         return {
           icon: <Wifi className="h-10 w-10" />,
           title: "No Online Bots",
-          description: "All bots are currently offline. Check your agent node connections or try viewing all bots.",
+          description: "All bots are currently offline. Check your bot node connections or try viewing all bots.",
           primaryAction: { label: "Show All Bots", action: onShowAll, icon: <Grid className="h-4 w-4" /> },
           secondaryAction: { label: "Refresh", action: onRefresh, icon: <Renew className={cn("h-4 w-4", loading && "animate-spin")} /> },
           tip: {
             icon: <CloudOffline className="h-5 w-5 text-muted-foreground" />,
             title: "Connection check",
-            body: "Verify that your agent nodes are connected and healthy. Offline bots usually indicate network or configuration issues.",
+            body: "Verify that your bot nodes are connected and healthy. Offline bots usually indicate network or configuration issues.",
           },
         };
 

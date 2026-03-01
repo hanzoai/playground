@@ -109,7 +109,7 @@ export function CanvasControls({ onFitView, onAddBot, onAddStarter, onLaunchClou
                 <MenuItem
                   icon="🤖"
                   label="Launch Cloud Bot"
-                  description="Full agent runtime (512Mi+)"
+                  description="Full bot runtime (512Mi+)"
                   onClick={() => { onLaunchCloud('linux'); setMenuOpen(false); }}
                 />
                 <div className="mx-2 my-1 h-px bg-border/40" />

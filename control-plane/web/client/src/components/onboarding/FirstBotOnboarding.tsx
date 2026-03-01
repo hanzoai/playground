@@ -8,7 +8,7 @@ type Method = 'local' | 'cli' | 'cloud' | 'connect';
 
 const methods: { key: Method; label: string; desc: string }[] = [
   { key: 'local', label: 'Run locally', desc: 'Desktop app or CLI on your machine' },
-  { key: 'cli', label: 'Use CLI', desc: 'Headless terminal agent' },
+  { key: 'cli', label: 'Use CLI', desc: 'Headless terminal bot' },
   { key: 'cloud', label: 'Deploy to cloud', desc: 'Provision into org DOKS cluster' },
   { key: 'connect', label: 'Connect existing', desc: 'Register a running node endpoint' },
 ];

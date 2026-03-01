@@ -186,7 +186,7 @@ export function CompactExecutionsTable({
       {/* Search */}
       <FastTableSearch
         onSearch={handleSearch}
-        placeholder={isMobile ? "Search executions..." : "Search executions by bot, agent, ID, status..."}
+        placeholder={isMobile ? "Search executions..." : "Search executions by bot, ID, status..."}
         resultCount={filteredExecutions.length}
         totalCount={executions.length}
         disabled={loading}

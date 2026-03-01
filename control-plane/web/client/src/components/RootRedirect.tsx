@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
 
 export function RootRedirect() {
-  return <Navigate to="/launch" replace />;
+  return <Navigate to="/nodes" replace />;
 }

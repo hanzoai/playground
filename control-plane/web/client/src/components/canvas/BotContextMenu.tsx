@@ -49,7 +49,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'chat',     label: 'Open Chat',        icon: '💬' },
   { key: 'desktop',  label: 'Open Desktop',     icon: '🖥️' },
   { key: 'sep2',     label: '',                 icon: '', separator: true },
-  { key: 'copyId',   label: 'Copy Agent ID',    icon: '📋' },
+  { key: 'copyId',   label: 'Copy Bot ID',      icon: '📋' },
   { key: 'sep3',     label: '',                 icon: '', separator: true },
   { key: 'remove',   label: 'Remove from Canvas', icon: '✕' },
   { key: 'delete',   label: 'Delete Bot',       icon: '🗑️', danger: true },

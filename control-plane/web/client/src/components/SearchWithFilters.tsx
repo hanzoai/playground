@@ -17,7 +17,7 @@ interface SearchWithFiltersProps {
 export function SearchWithFilters({
   tags,
   onTagsChange,
-  placeholder = "Search executions or add filters like status:running, agent:support...",
+  placeholder = "Search executions or add filters like status:running, bot:support...",
   className,
 }: SearchWithFiltersProps) {
   const [open, setOpen] = useState(false);

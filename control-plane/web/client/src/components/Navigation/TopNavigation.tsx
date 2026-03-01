@@ -108,17 +108,11 @@ function EnvironmentSelector() {
 const ROUTE_TITLES: Record<string, string> = {
   dashboard: "Dashboard",
   "bots/all": "Control Plane",
-  nodes: "Nodes",
+  nodes: "My Bots",
   playground: "Playground",
-  spaces: "Spaces",
-  teams: "Teams",
   executions: "Executions",
-  workflows: "Workflows",
-  packages: "Packages",
+  metrics: "Metrics",
   settings: "Settings",
-  agents: "My Bots",
-  "identity/dids": "DID Explorer",
-  "identity/credentials": "Credentials",
 };
 
 function usePageTitle(): string | null {

@@ -29,12 +29,12 @@ export const ConfigurationWizard: React.FC<ConfigurationWizardProps> = ({
   const steps = [
     {
       title: 'Package Overview',
-      description: 'Review the agent package details',
+      description: 'Review the bot package details',
       icon: Package
     },
     {
       title: 'Configuration',
-      description: 'Set up the agent configuration',
+      description: 'Set up the bot configuration',
       icon: Settings
     },
     {
