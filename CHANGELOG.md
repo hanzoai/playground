@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.135] - 2026-03-01
+
+
+### Fixed
+
+- Fix(billing): use owner/name format for Commerce balance queries
+
+Commerce stores balances under owner/name format (e.g. "hanzo/a") but
+getUserFromToken() was extracting the JWT sub claim (UUID). This caused
+the balance to always show $0.00 in the playground UI.
+
+Extract owner and name claims from IAM JWT to construct the correct
+user identifier for Commerce API queries. (ae2a35c)
+
 ## [0.1.41-rc.134] - 2026-03-01
 
 
