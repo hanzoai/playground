@@ -94,6 +94,9 @@ func (h *SpaceBotHandler) ListBots(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if bots == nil {
+		bots = make([]*spaces.SpaceBot, 0)
+	}
 	c.JSON(http.StatusOK, gin.H{"bots": bots})
 }
 
