@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.139] - 2026-03-01
+
+
+### Fixed
+
+- Fix(nodes): route stop command through gateway for remote nodes
+
+When the backend returns "not installed" for a stop request, fall back
+to gateway node.invoke with the shutdown command. Fixes stop button
+failing for gateway-connected nodes like MacBook-Air. (00ee154)
+
 ## [0.1.41-rc.138] - 2026-03-01
 
 
