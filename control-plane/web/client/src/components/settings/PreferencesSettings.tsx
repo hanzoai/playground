@@ -61,7 +61,7 @@ export function PreferencesSettings() {
         <CardHeader>
           <CardTitle className="text-sm">Notification Sound</CardTitle>
           <CardDescription>
-            Plays when a task completes or when agent needs your approval.
+            Plays when a task completes or when a bot needs your approval.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

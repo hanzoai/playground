@@ -89,7 +89,7 @@ export function PreferencesOnboarding({ onComplete }: PreferencesOnboardingProps
               <span className="text-xs text-muted-foreground">🔊</span>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Plays when tasks complete and when agent needs your approval.
+              Plays when tasks complete and when a bot needs your approval.
             </p>
           </div>
 

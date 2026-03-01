@@ -168,7 +168,7 @@ function WorkflowHoverCard({
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <span className="text-muted-foreground">Agent:</span>
+              <span className="text-muted-foreground">Node:</span>
               <div className="font-medium">{agentLabel}</div>
             </div>
             <div>

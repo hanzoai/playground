@@ -138,7 +138,7 @@ function mockTransactions(botId: string): WalletTransaction[] {
     { type: 'purchase', desc: 'Auto-purchased GPU compute (lst-004)', src: 'user_ai_coin' },
     { type: 'fund', desc: 'Funded from USD balance', src: 'user_usd' },
     { type: 'earning', desc: 'Earned from shared inference capacity', src: 'external_transfer' },
-    { type: 'purchase', desc: 'Purchased custom agent (lst-013)', src: 'user_ai_coin' },
+    { type: 'purchase', desc: 'Purchased custom bot (lst-013)', src: 'user_ai_coin' },
     { type: 'fund', desc: 'Funded from AI coin', src: 'user_ai_coin' },
   ];
 

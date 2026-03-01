@@ -192,7 +192,7 @@ export function NetworkPage() {
           <div>
             <p className="text-sm font-medium">AI Capacity Marketplace</p>
             <p className="text-xs text-muted-foreground">
-              Browse {marketplaceStats?.activeListings?.toLocaleString() ?? '—'} active listings — sell Claude Code, custom agents, API keys, and GPU capacity.
+              Browse {marketplaceStats?.activeListings?.toLocaleString() ?? '—'} active listings — sell Claude Code, custom bots, API keys, and GPU capacity.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">

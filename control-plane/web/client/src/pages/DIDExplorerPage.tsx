@@ -476,7 +476,7 @@ export function DIDExplorerPage() {
                                 emptyState={{
                                     title: "No bots found",
                                     description:
-                                        "This agent doesn't have any bots yet.",
+                                        "This node doesn't have any bots yet.",
                                     icon: (
                                         <Function className="h-6 w-6 text-muted-foreground" />
                                     ),

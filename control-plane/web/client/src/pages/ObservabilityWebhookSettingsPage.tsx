@@ -315,7 +315,7 @@ export function ObservabilityWebhookSettingsPage() {
           <CardHeader>
             <CardTitle>Webhook Configuration</CardTitle>
             <CardDescription>
-              Configure where to forward execution events, agent lifecycle events, and node status
+              Configure where to forward execution events, bot lifecycle events, and node status
               updates
             </CardDescription>
           </CardHeader>

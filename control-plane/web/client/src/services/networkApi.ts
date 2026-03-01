@@ -500,7 +500,7 @@ const MOCK_LISTINGS: MarketplaceListing[] = [
   {
     id: 'lst-013', sellerId: 'u-maya', sellerDisplayName: 'Maya R.',
     capacityType: 'custom-agent', title: 'CodeGuard — AI Security Auditor',
-    description: 'Custom-trained security audit agent. Detects OWASP top 10, supply chain risks, and credential leaks. Trained on 50K+ vulnerability reports.',
+    description: 'Custom-trained security audit bot. Detects OWASP top 10, supply chain risks, and credential leaks. Trained on 50K+ vulnerability reports.',
     provider: 'Custom', model: 'codeguard-v2',
     pricing: { centsPerUnit: 200, unit: 'hour', minUnits: 1, maxUnits: 8 },
     totalCapacity: 240, remainingCapacity: 180, status: 'active',

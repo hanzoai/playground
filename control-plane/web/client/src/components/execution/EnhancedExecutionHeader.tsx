@@ -283,7 +283,7 @@ export function EnhancedExecutionHeader({
           {/* Key Information Row */}
           <div className="flex flex-wrap items-center gap-4 text-body">
             <div className="flex items-center gap-2 group">
-              <span>Agent:</span>
+              <span>Node:</span>
               <code className="font-mono text-body-small text-foreground bg-muted/30 px-1.5 py-0.5 rounded">
                 {execution.node_id}
               </code>

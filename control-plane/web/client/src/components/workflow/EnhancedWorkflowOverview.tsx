@@ -230,7 +230,7 @@ export function EnhancedWorkflowOverview({
                   key={agent.name}
                   onClick={() => handleAgentFocus(agent.name)}
                   className="w-full rounded-lg border border-border/60 bg-muted/10 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
-                  title="Select this agent's recent executions"
+                  title="Select this node's recent executions"
                 >
                   <div className="flex items-center justify-between text-sm font-medium text-foreground">
                     <span>{agent.name}</span>

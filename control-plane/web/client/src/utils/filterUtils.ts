@@ -30,7 +30,7 @@ export function formatFilterLabel(type: FilterType, value: string): string {
     case "status":
       return `Status: ${capitalizeFirst(value)}`;
     case "agent":
-      return `Agent: ${value}`;
+      return `Node: ${value}`;
     case "workflow":
       return `Workflow: ${value}`;
     case "session":

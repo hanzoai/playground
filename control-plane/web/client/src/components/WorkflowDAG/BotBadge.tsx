@@ -44,7 +44,7 @@ export function BotBadge({
         boxShadow: `0 0 0 1px color-mix(in srgb, ${agentColor.primary} 35%, transparent), 0 2px 8px -2px color-mix(in srgb, var(--foreground) 14%, transparent)`,
         borderColor: `color-mix(in srgb, ${agentColor.primary} 25%, var(--border))`,
       }}
-      title={showTooltip ? `Agent: ${agentName}` : undefined}
+      title={showTooltip ? `Node: ${agentName}` : undefined}
     >
       {/* Badge content */}
       <span className="select-none leading-none">{initials}</span>
@@ -84,7 +84,7 @@ export function AgentColorDot({
         borderColor: `color-mix(in srgb, ${agentColor.primary} 25%, var(--border))`,
         boxShadow: `0 0 0 1px color-mix(in srgb, ${agentColor.primary} 35%, transparent)`,
       }}
-      title={`Agent: ${agentName}`}
+      title={`Node: ${agentName}`}
     />
   );
 }

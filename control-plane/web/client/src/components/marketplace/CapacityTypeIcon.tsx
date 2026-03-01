@@ -11,7 +11,7 @@ const MAP: Record<CapacityType, { icon: Icon; color: string; label: string }> = 
   'api-key':       { icon: Tag,  color: 'text-blue-500',   label: 'API Key' },
   'gpu-compute':   { icon: Cpu,  color: 'text-orange-500', label: 'GPU' },
   'inference':     { icon: Flash, color: 'text-green-500',  label: 'Inference' },
-  'custom-agent':  { icon: Bot,  color: 'text-pink-500',   label: 'Custom Agent' },
+  'custom-agent':  { icon: Bot,  color: 'text-pink-500',   label: 'Custom Bot' },
 };
 
 interface Props {

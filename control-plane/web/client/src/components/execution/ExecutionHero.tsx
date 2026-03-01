@@ -143,7 +143,7 @@ export function ExecutionHero({
               {/* Clean Identity Row - No Confusing "Verified" Labels */}
               <div className="flex items-center gap-4 text-body">
                 <div className="flex items-center gap-2">
-                  <span>Agent:</span>
+                  <span>Node:</span>
                   <code className="font-mono bg-muted/50 px-2 py-0.5 rounded text-body-small">
                     {execution.node_id}
                   </code>

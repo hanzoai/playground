@@ -111,7 +111,7 @@ export const ConfigurationWizard: React.FC<ConfigurationWizardProps> = ({
                 <div>
                   <h4 className="text-sm font-medium text-blue-900">Configuration Required</h4>
                   <p className="text-sm text-blue-700 mt-1">
-                    This agent requires {fields.length} configuration field{fields.length !== 1 ? 's' : ''} to be set up before it can run.
+                    This bot requires {fields.length} configuration field{fields.length !== 1 ? 's' : ''} to be set up before it can run.
                   </p>
                 </div>
               </div>

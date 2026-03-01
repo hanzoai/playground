@@ -28,7 +28,7 @@ const CAPACITY_TYPES: { value: CapacityType; label: string }[] = [
   { value: 'api-key', label: 'API Key' },
   { value: 'gpu-compute', label: 'GPU Compute' },
   { value: 'inference', label: 'Inference' },
-  { value: 'custom-agent', label: 'Custom Agent' },
+  { value: 'custom-agent', label: 'Custom Bot' },
 ];
 
 export function AutoPurchaseRuleDialog({

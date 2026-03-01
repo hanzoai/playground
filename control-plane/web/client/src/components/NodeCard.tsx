@@ -45,9 +45,6 @@ const NodeCard = memo(
     const [isHovered, setIsHovered] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    // Console log to verify we're using the updated build and check node data
-    console.log('🎯 NodeCard: Rendering node with defensive checks - Node ID:', nodeSummary?.id, 'MCP Summary:', nodeSummary?.mcp_summary);
-
     // Get DID status for this node
     const { status: didStatus } = useDIDStatus(nodeSummary.id);
 

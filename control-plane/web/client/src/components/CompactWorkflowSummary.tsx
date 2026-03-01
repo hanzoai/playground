@@ -310,7 +310,7 @@ export function CompactWorkflowSummary({
         <span>•</span>
         <span className="font-mono">{formatDuration(workflow.duration_ms)}</span>
         <span>•</span>
-        <span>Agent: <span className="font-medium text-foreground">{workflow.agent_name}</span></span>
+        <span>Node: <span className="font-medium text-foreground">{workflow.agent_name}</span></span>
 
         {/* Mobile Live Update Status */}
         {isLiveUpdating && (

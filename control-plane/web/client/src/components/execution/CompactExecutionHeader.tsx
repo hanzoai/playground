@@ -111,9 +111,9 @@ export function CompactExecutionHeader({
 
         {/* Center Section: Key Information */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-small overflow-hidden flex-1 min-w-0">
-          {/* Agent */}
+          {/* Node */}
           <div className="hidden lg:flex items-center gap-1.5 group flex-shrink-0 min-w-0">
-            <span>Agent:</span>
+            <span>Node:</span>
             <code className="font-mono text-foreground bg-muted/30 px-1 py-0.5 rounded whitespace-nowrap max-w-[180px] truncate">
               {execution.node_id}
             </code>

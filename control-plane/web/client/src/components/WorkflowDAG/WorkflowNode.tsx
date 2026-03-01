@@ -540,7 +540,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
             <div className="flex items-center justify-between gap-6">
               <span className="flex items-center gap-1 text-muted-foreground">
                 <User size={12} />
-                Agent:
+                Node:
               </span>
               <span className="font-medium text-foreground">
                 {humanizeText(data.agent_name || data.node_id)}
