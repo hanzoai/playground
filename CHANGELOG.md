@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.163] - 2026-03-01
+
+
+### Other
+
+- Remove debug console.log statements with emoji prefixes from production code
+
+Stripped 87 lines of debug logging (emoji-prefixed console.log/warn/error) across
+NodesPage, useSSE, botsApi, elkLayout, WorkflowDAG, and useNodeDetails. Kept only
+essential error handling. Fixed last "Serverless agent" reference to "bot". (3140b84)
+
 ## [0.1.41-rc.162] - 2026-03-01
 
 
