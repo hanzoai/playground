@@ -105,7 +105,7 @@ def ai_model() -> str:
     IMPORTANT: All tests MUST use this fixture and NOT hardcode model names.
     This allows us to use cost-effective models for testing.
     """
-    model = os.environ.get("AI_MODEL", "zen4-mini")
+    model = os.environ.get("AI_MODEL", "openai/zen4-mini")
     return model
 
 

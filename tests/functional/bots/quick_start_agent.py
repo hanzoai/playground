@@ -95,7 +95,7 @@ def create_bot_from_env() -> Bot:
     api_key = os.environ.get("HANZO_API_KEY", os.environ.get("OPENROUTER_API_KEY", ""))
     if not api_key:
         raise ValueError("HANZO_API_KEY environment variable is required")
-    model = os.environ.get("AI_MODEL", os.environ.get("OPENROUTER_MODEL", "zen4-mini"))
+    model = os.environ.get("AI_MODEL", os.environ.get("OPENROUTER_MODEL", "openai/zen4-mini"))
     node_id = os.environ.get("HANZO_NODE_ID", os.environ.get("AGENT_NODE_ID"))
 
     ai_config = AIConfig(
