@@ -992,7 +992,7 @@ function NodeDetailPageContent() {
             className="flex-1 overflow-hidden"
           >
             <div className="h-full px-6 pb-6">
-              <TerminalPanel agentId={nodeId} sessionKey={`agent:${nodeId}:main`} className="h-full rounded-lg border border-border" />
+              <TerminalPanel agentId={nodeId ?? 'main'} sessionKey={`agent:${nodeId ?? 'main'}:main`} className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
 
