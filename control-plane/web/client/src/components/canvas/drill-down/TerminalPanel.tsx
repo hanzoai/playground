@@ -107,7 +107,7 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className }: T
               {
                 nodeId: agentId,
                 command: 'system.run',
-                params: { command: cmd, shell: true },
+                params: { command: ['sh', '-c', cmd] },
                 timeoutMs: 30000,
                 idempotencyKey: `term-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
               },
