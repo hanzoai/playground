@@ -105,7 +105,7 @@ export function LaunchPage() {
     setError(null);
     try {
       const params: CloudProvisionParams = {
-        display_name: `${preset.name} Agent`,
+        display_name: `${preset.name} Bot`,
         model: "claude-sonnet-4-20250514",
         provider: "digitalocean",
         instance_type: preset.slug,
@@ -124,8 +124,8 @@ export function LaunchPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Launch an Agent"
-        description="Deploy an AI agent to the cloud in seconds. Pick a spec, hit launch."
+        title="Launch a Bot"
+        description="Deploy a bot to the cloud in seconds. Pick a spec, hit launch."
       />
 
       {error && (

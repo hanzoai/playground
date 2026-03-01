@@ -99,10 +99,10 @@ export function ServerlessRegistrationModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Server className="h-5 w-5" />
-            Register Remote Agent
+            Register Remote Bot
           </DialogTitle>
           <DialogDescription>
-            Enter the URL where your agent is deployed. The system will automatically discover its capabilities.
+            Enter the URL where your bot is deployed. The system will automatically discover its capabilities.
           </DialogDescription>
         </DialogHeader>
 
@@ -152,7 +152,7 @@ export function ServerlessRegistrationModal({
                 <Server className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <div className="text-body-small">
                   <div className="font-semibold mb-1">Automatic Discovery</div>
-                  <div>The system will call your agent's <code className="bg-muted-foreground/10 px-1 rounded">/discover</code> endpoint to automatically detect all bots and skills.</div>
+                  <div>The system will call your bot's <code className="bg-muted-foreground/10 px-1 rounded">/discover</code> endpoint to automatically detect all bots and skills.</div>
                 </div>
               </div>
             </div>

@@ -22,7 +22,7 @@ export const RestartRequiredBanner: React.FC<RestartRequiredBannerProps> = ({
         <div className="flex-1">
           <span className="font-medium text-orange-800">Restart Required</span>
           <p className="text-sm text-orange-700 mt-1">
-            Configuration changes have been saved. Restart the agent to apply the new environment variables.
+            Configuration changes have been saved. Restart the bot to apply the new environment variables.
           </p>
         </div>
         <div className="flex items-center space-x-2 ml-4">
@@ -34,7 +34,7 @@ export const RestartRequiredBanner: React.FC<RestartRequiredBannerProps> = ({
               className="border-orange-300 text-orange-700 hover:bg-orange-100"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Restart Agent
+              Restart Bot
             </Button>
           )}
           {onDismiss && (

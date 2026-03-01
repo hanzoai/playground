@@ -61,7 +61,7 @@ export function ExecutionsList({
   showStats = true,
   showFilters = true,
   title = "Execution Monitor",
-  description = "Track and monitor all workflow executions across your agents"
+  description = "Track and monitor all workflow executions across your bots"
 }: ExecutionsListProps) {
   const [executions, setExecutions] = useState<ExecutionSummary[]>([]);
   const [stats, setStats] = useState<ExecutionStats | null>(null);

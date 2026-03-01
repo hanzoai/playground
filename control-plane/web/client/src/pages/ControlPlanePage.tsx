@@ -287,14 +287,14 @@ export function ControlPlanePage() {
             </svg>
           </button>
 
-          {/* Register Agent */}
+          {/* Register Bot */}
           <button
             type="button"
             onClick={() => navigate('/nodes')}
             className="h-7 px-3 flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
           >
             <span>+</span>
-            <span>Register Agent</span>
+            <span>Register Bot</span>
           </button>
         </div>
       </div>
@@ -321,16 +321,16 @@ export function ControlPlanePage() {
 
       {/* ─── Main 60/40 Split ─── */}
       <div className="flex flex-col lg:flex-row gap-4 min-h-[400px]">
-        {/* LEFT: Agent Network State (60%) */}
+        {/* LEFT: Bot Network State (60%) */}
         <div className="flex-[3] min-w-0">
           <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-            Agent Network
+            Bot Network
           </div>
 
           {loading && !data ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground py-8">
               <span className="h-3 w-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
-              Connecting to agent network...
+              Connecting to bot network...
             </div>
           ) : agents.length === 0 ? (
             <EmptyNetwork onRegisterLocal={() => navigate('/nodes')} onDeployCloud={() => navigate('/nodes')} />
@@ -381,7 +381,7 @@ function Sep() {
 function EmptyNetwork({ onRegisterLocal, onDeployCloud }: { onRegisterLocal: () => void; onDeployCloud: () => void }) {
   return (
     <div className="py-12">
-      <p className="text-sm text-muted-foreground mb-6">No agents connected.</p>
+      <p className="text-sm text-muted-foreground mb-6">No bots connected.</p>
       <div className="flex gap-3">
         <button
           type="button"
@@ -389,7 +389,7 @@ function EmptyNetwork({ onRegisterLocal, onDeployCloud }: { onRegisterLocal: () 
           className="h-8 px-4 flex items-center gap-2 rounded-md border border-border/50 text-xs font-medium text-foreground hover:bg-accent transition-colors"
         >
           <span className="text-green-400">+</span>
-          Register Local Agent
+          Register Local Bot
         </button>
         <button
           type="button"
@@ -397,7 +397,7 @@ function EmptyNetwork({ onRegisterLocal, onDeployCloud }: { onRegisterLocal: () 
           className="h-8 px-4 flex items-center gap-2 rounded-md border border-border/50 text-xs font-medium text-foreground hover:bg-accent transition-colors"
         >
           <span className="text-blue-400">+</span>
-          Deploy Cloud Agent
+          Deploy Cloud Bot
         </button>
       </div>
     </div>

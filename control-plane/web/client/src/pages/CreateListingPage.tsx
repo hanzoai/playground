@@ -79,7 +79,7 @@ export function CreateListingPage() {
       return;
     }
     if (capacityType === 'custom-agent' && !agentDid.trim()) {
-      setError('Agent DID is required for custom agent listings.');
+      setError('Bot DID is required for custom bot listings.');
       return;
     }
     setSubmitting(true);
@@ -215,20 +215,20 @@ export function CreateListingPage() {
         </CardContent>
       </Card>
 
-      {/* Agent Details (custom-agent only) */}
+      {/* Bot Details (custom-agent only) */}
       {capacityType === 'custom-agent' && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Agent Details</CardTitle>
-            <CardDescription>Provide your agent's DID and capabilities.</CardDescription>
+            <CardTitle className="text-base">Bot Details</CardTitle>
+            <CardDescription>Provide your bot's DID and capabilities.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm text-muted-foreground block mb-1">Agent DID *</label>
+              <label className="text-sm text-muted-foreground block mb-1">Bot DID *</label>
               <input
                 type="text"
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
-                placeholder="did:hanzo:agent:abc123..."
+                placeholder="did:hanzo:bot:abc123..."
                 value={agentDid}
                 onChange={(e) => setAgentDid(e.target.value)}
               />
@@ -257,7 +257,7 @@ export function CreateListingPage() {
               <label className="text-sm text-muted-foreground block mb-1">Training Data Description</label>
               <textarea
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
-                placeholder="Describe the data and methods used to train this agent..."
+                placeholder="Describe the data and methods used to train this bot..."
                 value={trainingDescription}
                 onChange={(e) => setTrainingDescription(e.target.value)}
               />

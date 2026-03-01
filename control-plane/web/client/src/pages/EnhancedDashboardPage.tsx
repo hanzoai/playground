@@ -199,7 +199,7 @@ export function EnhancedDashboardPage() {
       <div className="space-y-8">
         <PageHeader
           title="Enhanced Dashboard"
-          description="Real-time observability for distributed agent networks."
+          description="Real-time observability for distributed bot networks."
           aside={
             <div className="flex gap-4">
               <Skeleton className="h-10 w-36" />
@@ -235,7 +235,7 @@ export function EnhancedDashboardPage() {
       <div className="space-y-8">
         <PageHeader
           title="Enhanced Dashboard"
-          description="Real-time observability for distributed agent networks."
+          description="Real-time observability for distributed bot networks."
           aside={
             <Link to="/dashboard">
               <Button variant="ghost">Switch to classic view</Button>

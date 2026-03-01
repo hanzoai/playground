@@ -139,7 +139,7 @@ export const ConfigurationWizard: React.FC<ConfigurationWizardProps> = ({
                 <div>
                   <h4 className="text-sm font-medium text-green-900">Configuration Complete</h4>
                   <p className="text-sm text-green-700 mt-1">
-                    Your agent is configured and ready to start.
+                    Your bot is configured and ready to start.
                   </p>
                 </div>
               </div>

@@ -38,7 +38,7 @@ export function VoiceSettings({
               Voice input
             </Label>
             <p className="text-[10px] text-muted-foreground">
-              {STT_SUPPORTED ? 'Speak to your agent' : 'Not supported in this browser'}
+              {STT_SUPPORTED ? 'Speak to your bot' : 'Not supported in this browser'}
             </p>
           </div>
         </div>

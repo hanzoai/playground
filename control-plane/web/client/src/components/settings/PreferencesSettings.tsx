@@ -124,7 +124,7 @@ export function PreferencesSettings() {
         <CardHeader>
           <CardTitle className="text-sm">Voice</CardTitle>
           <CardDescription>
-            Speak to your agent and have responses read aloud.
+            Speak to your bot and have responses read aloud.
           </CardDescription>
         </CardHeader>
         <CardContent>

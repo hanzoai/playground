@@ -86,11 +86,11 @@ network routes their requests through your account via a secure proxy — your A
 private. You earn USD revenue deposited directly to your balance.`,
   },
   {
-    q: 'Can I list my custom-trained agent?',
-    a: `Yes — go to Marketplace → Sell Capacity and choose "Custom Agent". Enter your agent's DID
+    q: 'Can I list my custom-trained bot?',
+    a: `Yes — go to Marketplace → Sell Capacity and choose "Custom Bot". Enter your bot's DID
 (Decentralized Identifier), describe its capabilities and specialization, and set your hourly rate.
-Buyers rent your agent and requests are routed through your infrastructure via a secure proxy.
-Your agent's DID serves as a verifiable, tamper-proof identity on the Hanzo network.`,
+Buyers rent your bot and requests are routed through your infrastructure via a secure proxy.
+Your bot's DID serves as a verifiable, tamper-proof identity on the Hanzo network.`,
   },
   {
     q: 'Can I resell purchased capacity?',
