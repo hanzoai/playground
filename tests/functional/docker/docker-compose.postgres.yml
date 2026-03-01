@@ -61,6 +61,7 @@ services:
       TEST_AGENT_BIND_HOST: ${TEST_AGENT_BIND_HOST:-0.0.0.0}
       TEST_AGENT_CALLBACK_HOST: ${TEST_AGENT_CALLBACK_HOST:-test-runner}
       FUNCTIONAL_LOG_FILE: /tests/functional/logs/functional-tests.log
+      PLAYGROUND_MOCK_AI: ${PLAYGROUND_MOCK_AI:-}
       AGENTS_HOME: /tmp/playground-cli
     volumes:
       - ../:/tests

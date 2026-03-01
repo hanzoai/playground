@@ -90,10 +90,18 @@ def control_plane_url() -> str:
 
 @pytest.fixture(scope="session")
 def hanzo_api_key() -> str:
-    """Get the Hanzo API key from environment."""
+    """
+    Get the Hanzo API key from environment.
+
+    When the key is not set, a placeholder is returned and PLAYGROUND_MOCK_AI
+    is activated so that bot functions fall back to deterministic responses
+    instead of hitting a real LLM endpoint.  This allows the full
+    registration-execution pipeline to be validated in CI without a live API key.
+    """
     key = os.environ.get("HANZO_API_KEY", "")
     if not key:
-        pytest.skip("HANZO_API_KEY environment variable not set")
+        os.environ["PLAYGROUND_MOCK_AI"] = "1"
+        return "mock-api-key-for-testing"
     return key
 
 
