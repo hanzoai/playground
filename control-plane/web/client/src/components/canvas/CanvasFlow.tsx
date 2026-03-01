@@ -167,7 +167,7 @@ export function CanvasFlow({ className }: { className?: string }) {
     async (type: 'linux' | 'terminal' | 'desktop') => {
       const displayName = `bot-${Date.now().toString(36)}`;
       const os = type === 'desktop' ? 'linux' : type;
-      console.info(`[cloud] Provisioning ${type} agent (os=${os})...`);
+      console.info(`[cloud] Provisioning ${type} bot (os=${os})...`);
       try {
         const result = await spaceApi.provisionCloudNode({
           display_name: displayName,

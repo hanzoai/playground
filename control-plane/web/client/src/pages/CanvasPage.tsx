@@ -15,14 +15,18 @@ import { ActionPill } from '@/components/canvas/ActionPill/ActionPill';
 import { CommandPalette } from '@/components/canvas/CommandPalette';
 import { FirstBotOnboarding } from '@/components/onboarding/FirstBotOnboarding';
 import { useGateway } from '@/hooks/useGateway';
+import { useNodeEventsSSE } from '@/hooks/useSSE';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useBotStore } from '@/stores/botStore';
 import { useSpaceStore } from '@/stores/spaceStore';
+import type { Bot } from '@/types/canvas';
+import { NODE_TYPES } from '@/types/canvas';
 
 export function CanvasPage() {
-  const { connectionState, isConnected, reconnect } = useGateway();
+  const { connectionState, isConnected, reconnect, syncAgents } = useGateway();
   const restore = useCanvasStore((s) => s.restore);
   const nodes = useCanvasStore((s) => s.nodes);
+  const setBotStatus = useCanvasStore((s) => s.setBotStatus);
   const initialized = useBotStore((s) => s.initialized);
   const agentCount = useBotStore((s) => s.agents.size);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,8 +38,55 @@ export function CanvasPage() {
   const spaceLoading = useSpaceStore((s) => s.loading);
   const spaceBootstrapped = useSpaceStore((s) => s.bootstrapped);
 
+  // Subscribe to node SSE events to track cloud bot status transitions
+  const { latestEvent } = useNodeEventsSSE();
+
   // Restore persisted canvas on mount
   useEffect(() => { restore(); }, [restore]);
+
+  // Update canvas bot status when node events arrive (provisioning → idle)
+  useEffect(() => {
+    if (!latestEvent) return;
+    const eventData = latestEvent.data;
+    if (!eventData || typeof eventData !== 'object') return;
+
+    const nodeId = (eventData as any).node_id ?? (eventData as any).data?.node_id;
+    if (!nodeId) return;
+
+    // Find matching canvas bot
+    const canvasBot = nodes.find(
+      (n) => n.type === NODE_TYPES.bot && (n.data as unknown as Bot).agentId === nodeId
+    );
+    if (!canvasBot) return;
+    const botData = canvasBot.data as unknown as Bot;
+
+    switch (latestEvent.type) {
+      case 'node_registered':
+      case 'node_online':
+        // Bot came online — transition from provisioning to idle
+        if (botData.status === 'provisioning' || botData.status === 'offline') {
+          setBotStatus(nodeId, 'idle');
+          // Re-sync from gateway to pick up agent identity/session info
+          syncAgents();
+        }
+        break;
+      case 'node_offline':
+        setBotStatus(nodeId, 'offline');
+        break;
+      case 'node_status_updated':
+      case 'node_unified_status_changed': {
+        const health = (eventData as any).new_status?.health_status
+          ?? (eventData as any).status?.health_status
+          ?? (eventData as any).health_status;
+        if (health === 'active') {
+          setBotStatus(nodeId, 'idle');
+        } else if (health === 'inactive' || health === 'unreachable') {
+          setBotStatus(nodeId, 'offline');
+        }
+        break;
+      }
+    }
+  }, [latestEvent, nodes, setBotStatus, syncAgents]);
 
   // Bootstrap spaces on direct navigation (e.g. /playground)
   useEffect(() => {
