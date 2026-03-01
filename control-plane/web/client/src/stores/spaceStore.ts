@@ -194,7 +194,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     if (!activeSpaceId) return;
     try {
       const { bots } = await spaceApi.listBots(activeSpaceId);
-      set({ bots });
+      set({ bots: bots ?? [] });
     } catch { /* ignore */ }
   },
 
