@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.158] - 2026-03-01
+
+
+### Fixed
+
+- Fix: ensure gateway WebSocket connected app-wide via useGateway hook
+
+Adds useGateway() to AppContent so the gateway WS connection is
+established on app load rather than only when specific pages mount.
+Terminal, chat, and node status all depend on this connection. (0bb733d)
+
 ## [0.1.41-rc.157] - 2026-03-01
 
 
