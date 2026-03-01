@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.164] - 2026-03-01
+
+
+### Other
+
+- Complete agent→bot/node terminology sweep and remove last debug log
+
+Renames all remaining user-facing "Agent" labels to "Bot" or "Node" across
+23 files: execution headers, workflow tables, marketplace capacity types,
+filter labels, tooltips, descriptions, and mock data. Removes last emoji
+debug console.log from NodeCard. (d21d322)
+
 ## [0.1.41-rc.163] - 2026-03-01
 
 
