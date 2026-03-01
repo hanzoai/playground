@@ -22,7 +22,7 @@ on:
       ai_model:
         description: 'AI model to use for tests'
         required: false
-        default: 'openai/google/gemini-2.5-flash-lite'
+        default: 'zen4-mini'
         type: string
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
       # Hanzo API key for AI-dependent tests
       HANZO_API_KEY: ${{ ((github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) && secrets.HANZO_API_KEY) || '' }}
       HANZO_AI_BASE_URL: https://api.hanzo.ai/v1
-      AI_MODEL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.ai_model) || 'openai/google/gemini-2.5-flash-lite' }}
+      AI_MODEL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.ai_model) || 'zen4-mini' }}
       # For fork PRs, skip AI-dependent tests
       PYTEST_MARK_EXPR: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true && 'not openrouter') || '' }}
       PYTEST_ARGS: -v
