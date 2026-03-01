@@ -1,8 +1,8 @@
 /**
  * TerminalPanel
  *
- * xterm.js terminal connected to a bot session via gateway WebSocket.
- * Streams terminal output in real-time.
+ * xterm.js terminal that executes commands on a connected node via
+ * gateway node.invoke → system.run. Line-buffered input with shell prompt.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -21,20 +21,12 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
   const termRef = useRef<import('@xterm/xterm').Terminal | null>(null);
   const fitAddonRef = useRef<import('@xterm/addon-fit').FitAddon | null>(null);
   const unsubRef = useRef<(() => void) | undefined>(undefined);
-  const sessionKeyRef = useRef(sessionKey);
+  const lineBufferRef = useRef('');
+  const busyRef = useRef(false);
   const [connState, setConnState] = useState<ConnectionState>('connecting');
 
-  // Keep sessionKey ref current without re-initializing terminal
-  useEffect(() => {
-    sessionKeyRef.current = sessionKey;
-    if (sessionKey) {
-      setConnState('connected');
-    } else {
-      setConnState('disconnected');
-    }
-  }, [sessionKey]);
+  const PROMPT = '\x1b[36m$\x1b[0m ';
 
-  // Initialize terminal once per agentId — never re-init on sessionKey change
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -65,12 +57,11 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
       const fitAddon = new FitAddon();
       terminal.loadAddon(fitAddon);
 
-      // Try WebGL addon for performance
       try {
         const { WebglAddon } = await import('@xterm/addon-webgl');
         terminal.loadAddon(new WebglAddon());
       } catch {
-        // WebGL not supported, falls back to canvas
+        // WebGL not supported
       }
 
       if (disposed) return;
@@ -80,47 +71,91 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
       termRef.current = terminal;
       fitAddonRef.current = fitAddon;
 
-      if (sessionKeyRef.current) {
-        terminal.writeln(`\x1b[36m● Connected to ${agentId}\x1b[0m`);
-        terminal.writeln('');
-        setConnState('connected');
-      } else {
-        terminal.writeln(`\x1b[33m● Waiting for session with ${agentId}...\x1b[0m`);
-        terminal.writeln('\x1b[90mNo active session. Start the agent to connect.\x1b[0m');
-        terminal.writeln('');
-        setConnState('disconnected');
-      }
+      terminal.writeln(`\x1b[36m● Connected to ${agentId}\x1b[0m`);
+      terminal.writeln('\x1b[90mType commands to execute on the remote node via system.run\x1b[0m');
+      terminal.writeln('');
+      terminal.write(PROMPT);
+      setConnState('connected');
 
-      // Subscribe to agent stream events — filter by agentId, not sessionKey
+      // Subscribe to agent stream events for background output
       unsubRef.current = gateway.on('agent', (payload) => {
         const event = payload as { data?: { agentId?: string; output?: string } };
         if (event.data?.agentId === agentId && event.data?.output) {
           terminal.write(event.data.output);
-          setConnState('connected');
         }
       });
 
-      // Handle user input → send to bot
+      // Line-buffered input: accumulate chars, execute on Enter
       terminal.onData((data: string) => {
-        const key = sessionKeyRef.current;
-        if (!key) {
-          terminal.write('\x1b[31mNo active session. Start the agent first.\x1b[0m\r\n');
-          return;
+        if (busyRef.current) return;
+
+        for (const ch of data) {
+          if (ch === '\r' || ch === '\n') {
+            // Enter pressed — execute command
+            terminal.write('\r\n');
+            const cmd = lineBufferRef.current.trim();
+            lineBufferRef.current = '';
+
+            if (!cmd) {
+              terminal.write(PROMPT);
+              continue;
+            }
+
+            busyRef.current = true;
+            gateway.rpc<{ ok?: boolean; payloadJSON?: string; error?: { code?: string; message?: string } }>(
+              'node.invoke',
+              {
+                nodeId: agentId,
+                command: 'system.run',
+                params: { command: cmd, shell: true },
+                timeoutMs: 30000,
+                idempotencyKey: `term-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              },
+            ).then((result) => {
+              if (result.payloadJSON) {
+                try {
+                  const payload = JSON.parse(result.payloadJSON);
+                  if (payload.stdout) terminal.write(payload.stdout.replace(/\n/g, '\r\n'));
+                  if (payload.stderr) terminal.write(`\x1b[31m${payload.stderr.replace(/\n/g, '\r\n')}\x1b[0m`);
+                  if (payload.exitCode !== undefined && payload.exitCode !== 0) {
+                    terminal.write(`\x1b[90m[exit ${payload.exitCode}]\x1b[0m\r\n`);
+                  }
+                } catch {
+                  terminal.write(result.payloadJSON + '\r\n');
+                }
+              } else if (result.error) {
+                terminal.write(`\x1b[31m${result.error.message || 'command failed'}\x1b[0m\r\n`);
+              }
+            }).catch((err: Error) => {
+              terminal.write(`\x1b[31mError: ${err.message}\x1b[0m\r\n`);
+              setConnState('error');
+            }).finally(() => {
+              busyRef.current = false;
+              terminal.write(PROMPT);
+            });
+
+          } else if (ch === '\x7f' || ch === '\b') {
+            // Backspace
+            if (lineBufferRef.current.length > 0) {
+              lineBufferRef.current = lineBufferRef.current.slice(0, -1);
+              terminal.write('\b \b');
+            }
+          } else if (ch === '\x03') {
+            // Ctrl+C
+            lineBufferRef.current = '';
+            terminal.write('^C\r\n');
+            terminal.write(PROMPT);
+          } else if (ch >= ' ') {
+            // Printable character
+            lineBufferRef.current += ch;
+            terminal.write(ch);
+          }
         }
-        gateway.rpc('chat.send', {
-          sessionKey: key,
-          message: data,
-          idempotencyKey: `input-${Date.now()}`,
-        }).catch((err: Error) => {
-          terminal.write(`\x1b[31mSend error: ${err.message}\x1b[0m\r\n`);
-          setConnState('error');
-        });
       });
     };
 
     init();
 
-    // Handle resize
     const resizeObserver = new ResizeObserver(() => {
       fitAddonRef.current?.fit();
     });
@@ -138,7 +173,6 @@ export function TerminalPanel({ agentId, sessionKey, className }: TerminalPanelP
 
   return (
     <div className={`relative h-full w-full ${className ?? ''}`}>
-      {/* Connection status indicator */}
       <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 text-[10px]">
         <span className={`inline-block w-1.5 h-1.5 rounded-full ${
           connState === 'connected' ? 'bg-green-400' :
