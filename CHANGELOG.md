@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.169] - 2026-03-01
+
+
+### Fixed
+
+- Fix: filter stale/disconnected bots from nodes list
+
+- Pass connectedOnly: true to gateway node.list RPC to exclude
+  paired-but-disconnected nodes
+- mergeGatewayNodes now only includes nodes actually connected
+  to the gateway, filtering out stale backend entries
+- When gateway is unavailable, filter nodes with no heartbeat
+  or heartbeat older than 10 minutes
+- Eliminates "fake" bot cards showing as Not Connected/Provisioning
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (af7579a)
+
 ## [0.1.41-rc.168] - 2026-03-01
 
 
