@@ -11,11 +11,8 @@ import {
 } from "@/components/ui/icon-bridge";
 import {
   cloudProvision,
-  cloudListNodes,
   cloudGetPresets,
-  cloudDeprovision,
   type CloudPreset,
-  type CloudNode,
   type CloudProvisionParams,
 } from "../services/gatewayApi";
 
@@ -72,22 +69,9 @@ function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  if (diffMs < 0) return "just now";
-  const s = Math.floor(diffMs / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
 export function LaunchPage() {
   const navigate = useNavigate();
   const [presets, setPresets] = useState<PresetCard[]>(DEFAULT_PRESETS);
-  const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [launching, setLaunching] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,19 +96,9 @@ export function LaunchPage() {
     }
   }, []);
 
-  const loadNodes = useCallback(async () => {
-    try {
-      const result = await cloudListNodes();
-      setNodes(result.nodes ?? []);
-    } catch {
-      // Ignore — may not have cloud provisioning enabled
-    }
-  }, []);
-
   useEffect(() => {
     loadPresets();
-    loadNodes();
-  }, [loadPresets, loadNodes]);
+  }, [loadPresets]);
 
   const handleLaunch = async (preset: PresetCard) => {
     setLaunching(preset.id);
@@ -139,20 +113,11 @@ export function LaunchPage() {
         memory: `${preset.memoryGB * 1024}Mi`,
       };
       await cloudProvision(params);
-      await loadNodes();
+      navigate("/nodes");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Launch failed");
     } finally {
       setLaunching(null);
-    }
-  };
-
-  const handleTerminate = async (nodeId: string) => {
-    try {
-      await cloudDeprovision(nodeId);
-      await loadNodes();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Terminate failed");
     }
   };
 
@@ -239,72 +204,6 @@ export function LaunchPage() {
         </div>
       </div>
 
-      {/* Running Agents */}
-      {nodes.length > 0 && (
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Running Agents</h2>
-            <Button variant="ghost" size="sm" onClick={loadNodes}>
-              Refresh
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {nodes.map((node) => (
-              <div
-                key={node.node_id}
-                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border bg-card px-3 sm:px-4 py-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`h-2 w-2 rounded-full shrink-0 ${
-                      node.status === "Running"
-                        ? "bg-green-500"
-                        : node.status === "Pending"
-                          ? "bg-yellow-500 animate-pulse"
-                          : "bg-muted-foreground"
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <span className="font-medium text-sm truncate block">{node.node_id}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {node.image} · {node.os}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 pl-5 sm:pl-0">
-                  <Badge
-                    variant={
-                      node.status === "Running" ? "default" : "secondary"
-                    }
-                  >
-                    {node.status}
-                  </Badge>
-                  <span className="hidden sm:inline text-xs text-muted-foreground">
-                    {formatRelativeTime(node.created_at)}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/nodes/${node.node_id}`)}
-                  >
-                    <Monitor size={14} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleTerminate(node.node_id)}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

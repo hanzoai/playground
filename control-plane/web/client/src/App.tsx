@@ -114,7 +114,7 @@ function AppContent() {
               <Route path="/marketplace/listing/:listingId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ListingDetailPage /></div>} />
               <Route path="/marketplace/create" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CreateListingPage /></div>} />
               <Route path="/marketplace/seller" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SellerDashboardPage /></div>} />
-              <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
+              <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
               <Route path="/settings/observability-webhook" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ObservabilityWebhookSettingsPage /></div>} />
