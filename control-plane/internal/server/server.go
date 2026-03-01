@@ -619,22 +619,49 @@ func (s *PlaygroundServer) setupRoutes() {
 	// NOTE: Routes are registered under BOTH /v1 and /api/v1 for backward
 	// compatibility. See registerAPIRoutes() below.
 
-	// Configure CORS from configuration
+	// Configure CORS from configuration.
+	// When wildcard ("*") is present in AllowedOrigins, we must use
+	// AllowOriginFunc instead of AllowOrigins to avoid the gin-contrib/cors
+	// panic that occurs when AllowOrigins contains "*" alongside
+	// AllowCredentials: true (forbidden by the CORS specification).
 	corsConfig := cors.Config{
-		AllowOrigins:     s.config.API.CORS.AllowedOrigins,
 		AllowMethods:     s.config.API.CORS.AllowedMethods,
 		AllowHeaders:     s.config.API.CORS.AllowedHeaders,
 		ExposeHeaders:    s.config.API.CORS.ExposedHeaders,
 		AllowCredentials: s.config.API.CORS.AllowCredentials,
 	}
 
-	// Fallback to defaults if not configured
-	if len(corsConfig.AllowOrigins) == 0 {
+	hasWildcard := false
+	for _, o := range s.config.API.CORS.AllowedOrigins {
+		if o == "*" {
+			hasWildcard = true
+			break
+		}
+	}
+
+	if hasWildcard {
+		// AllowOriginFunc dynamically allows every origin while still
+		// permitting credentials — gin-contrib/cors echoes back the
+		// request's Origin header instead of literal "*".
+		corsConfig.AllowOriginFunc = func(origin string) bool {
+			return true
+		}
+	} else if len(s.config.API.CORS.AllowedOrigins) > 0 {
+		corsConfig.AllowOrigins = s.config.API.CORS.AllowedOrigins
+	} else {
 		corsConfig.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173"}
 	}
-	// Ensure api.hanzo.bot and app.hanzo.bot are always allowed for cross-origin API calls
-	corsConfig.AllowOrigins = append(corsConfig.AllowOrigins, "https://api.hanzo.bot", "https://app.hanzo.bot")
-	corsConfig.AllowCredentials = true
+
+	// Ensure production origins are always explicitly listed when not using
+	// the wildcard func (which already allows everything).
+	if !hasWildcard {
+		corsConfig.AllowOrigins = append(corsConfig.AllowOrigins,
+			"https://api.hanzo.bot",
+			"https://app.hanzo.bot",
+			"https://playground.hanzo.bot",
+		)
+	}
+
 	if len(corsConfig.AllowMethods) == 0 {
 		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	}
