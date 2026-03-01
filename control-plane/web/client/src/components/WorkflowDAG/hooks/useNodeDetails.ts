@@ -55,8 +55,6 @@ export function useNodeDetails(executionId?: string): UseNodeDetailsReturn {
     setError(null);
 
     try {
-      // Fetch execution details from the API (using same endpoint as ExecutionDetailPage)
-      console.log(`🔍 SIDEBAR DEBUG: Fetching execution details for ${executionId}`);
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
       const headers: HeadersInit = {};
       const apiKey = getGlobalApiKey();
@@ -66,12 +64,10 @@ export function useNodeDetails(executionId?: string): UseNodeDetailsReturn {
       const response = await fetch(`${API_BASE_URL}/executions/${executionId}/details`, { headers });
 
       if (!response.ok) {
-        console.error(`🔍 SIDEBAR DEBUG: API response not ok: ${response.status} ${response.statusText}`);
         throw new Error(`Failed to fetch execution details: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log(`🔍 SIDEBAR DEBUG: Raw API response:`, data);
 
       // Transform the API response to match our NodeDetails interface
       // The API returns input_data/output_data, not input/output
@@ -87,17 +83,12 @@ export function useNodeDetails(executionId?: string): UseNodeDetailsReturn {
         } : undefined
       };
 
-      console.log(`🔍 SIDEBAR DEBUG: Transformed details:`, details);
-      console.log(`🔍 SIDEBAR DEBUG: Input available:`, !!details.input);
-      console.log(`🔍 SIDEBAR DEBUG: Output available:`, !!details.output);
-
       setNodeDetails(details);
       NODE_DETAILS_CACHE.set(executionId, {
         data: details,
         timestamp: Date.now(),
       });
     } catch (err) {
-      console.error('🔍 SIDEBAR DEBUG: Error fetching node details:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch execution details');
       setNodeDetails(undefined);
     } finally {

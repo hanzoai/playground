@@ -228,41 +228,24 @@ export function NodesPage() {
 
     // Enhanced defensive checks to prevent Object.entries() errors
     if (!eventData || typeof eventData !== "object" || eventData === null) {
-      console.warn("🚨 Frontend: Invalid event data received:", eventData);
       return;
     }
 
     const nodeData = eventData?.data || eventData; // Extract node data from the nested structure
 
-    console.log("🔍 Frontend: Event data:", eventData);
-    console.log("🔍 Frontend: Event type:", latestEvent.type);
-    console.log("🔍 Frontend: Node data:", nodeData);
-    console.log("🔍 Frontend: Event structure check:", {
-      hasEventData: !!eventData,
-      hasNestedData: !!eventData?.data,
-      eventDataType: eventData?.type,
-      nodeId: eventData?.node_id,
-    });
-
     switch (latestEvent.type) {
       case "node_registered":
-        console.log("🆕 Frontend: Processing node_registered event");
         if (nodeData) {
           setNodes((prevNodes) => {
             const newNode = nodeData as NodeSummary;
-            console.log("🆕 Frontend: New node data:", newNode);
             const existingIndex = prevNodes.findIndex(
               (node) => node.id === newNode.id
             );
             if (existingIndex > -1) {
-              // Update existing node
               const updatedNodes = [...prevNodes];
               updatedNodes[existingIndex] = newNode;
-              console.log("🔄 Frontend: Updated existing node:", newNode.id);
               return updatedNodes;
             }
-            // Add new node
-            console.log("➕ Frontend: Added new node:", newNode.id);
             return [...prevNodes, newNode];
           });
         }
@@ -273,21 +256,12 @@ export function NodesPage() {
       case "node_status_updated":
       case "node_status_changed":
       case "node_health_changed":
-        console.log(`🔄 Frontend: Processing ${latestEvent.type} event`);
         if (nodeData) {
           setNodes((prevNodes) => {
             const updatedNode = nodeData as NodeSummary;
-            console.log("🔄 Frontend: Updated node data:", {
-              id: updatedNode.id,
-              health_status: updatedNode.health_status,
-              lifecycle_status: updatedNode.lifecycle_status,
-              last_heartbeat: updatedNode.last_heartbeat,
-            });
-            const newNodes = prevNodes.map((node) =>
+            return prevNodes.map((node) =>
               node.id === updatedNode.id ? updatedNode : node
             );
-            console.log("🔄 Frontend: Node state updated for:", updatedNode.id);
-            return newNodes;
           });
         }
         break;
@@ -358,7 +332,6 @@ export function NodesPage() {
         break;
 
       case "node_state_transition":
-        console.log("🔄 Frontend: Processing node_state_transition event");
         if (
           eventData &&
           typeof eventData === "object" &&
@@ -387,7 +360,6 @@ export function NodesPage() {
         break;
 
       case "node_status_refreshed":
-        console.log("🔄 Frontend: Processing node_status_refreshed event");
         if (
           eventData &&
           typeof eventData === "object" &&
@@ -421,7 +393,6 @@ export function NodesPage() {
         break;
 
       case "bulk_status_update":
-        console.log("🔄 Frontend: Processing bulk_status_update event");
         // Trigger a full refresh after bulk updates
         fetchNodes();
         break;
@@ -430,14 +401,10 @@ export function NodesPage() {
       case "heartbeat":
       case "node_heartbeat":
         // Handle connection and heartbeat events - no action needed
-        console.log(
-          "🔗 Frontend: Connection event received:",
-          latestEvent.type
-        );
         break;
 
       default:
-        console.log("Unhandled event type:", latestEvent.type);
+        break;
     }
   }, [latestEvent, normalizeHealthStatus, normalizeLifecycleStatus]);
 
@@ -783,7 +750,7 @@ export function NodesPage() {
         isOpen={showServerlessModal}
         onClose={() => setShowServerlessModal(false)}
         onSuccess={(nodeId) => {
-          console.log("✅ Serverless agent registered:", nodeId);
+          // Serverless bot registered — refresh nodes list
           fetchNodes();
         }}
       />

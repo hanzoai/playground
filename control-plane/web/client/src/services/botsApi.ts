@@ -391,29 +391,23 @@ export const botsApi = {
     const url = apiKey
       ? `${API_BASE_URL}/bots/events?api_key=${encodeURIComponent(apiKey)}`
       : `${API_BASE_URL}/bots/events`;
-    console.log('🔄 Attempting to create SSE connection to:', url);
     const eventSource = new EventSource(url);
 
     eventSource.onopen = () => {
-      console.log('✅ Bot SSE connection opened successfully');
       onConnect?.();
     };
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('📡 Received bot event:', data);
         onEvent(data);
       } catch (error) {
-        console.error('❌ Failed to parse SSE event data:', error, 'Raw data:', event.data);
+        console.error('Failed to parse SSE event data:', error);
         onError?.(new Error('Failed to parse event data'));
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('❌ Bot SSE connection error:', error);
-      console.error('❌ EventSource readyState:', eventSource.readyState);
-      console.error('❌ EventSource url:', eventSource.url);
+    eventSource.onerror = () => {
       onError?.(new Error(`SSE connection error - readyState: ${eventSource.readyState}`));
     };
 
@@ -426,7 +420,6 @@ export const botsApi = {
   closeEventStream: (eventSource: EventSource): void => {
     if (eventSource) {
       eventSource.close();
-      console.log('🔌 Bot SSE connection closed');
     }
   }
 };
