@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.134] - 2026-03-01
+
+
+### Fixed
+
+- Fix: return empty arrays instead of null for nodes, members, and spaces list endpoints
+
+Go nil slices serialize to JSON null, causing frontend crashes when
+accessing .length on null values. Same fix as space_bots.go (previous commit). (73bff82)
+
 ## [0.1.41-rc.133] - 2026-03-01
 
 
