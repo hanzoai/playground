@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.157] - 2026-03-01
+
+
+### Added
+
+- Feat(nodes): add delete button for cloud-provisioned bots
+
+Cloud bots (id starting with cloud-*) now show a trash icon in the
+node detail header. Click shows Confirm/Cancel inline buttons that
+call cloudDeprovision API and navigate back to My Bots on success. (1ddeff9)
+
 ## [0.1.41-rc.156] - 2026-03-01
 
 
