@@ -176,6 +176,9 @@ class GatewayClient {
   private doConnect(): void {
     if (this.disposed) return;
     this.closeSocket();
+    // Reset per-connection state so the first connect request always gets id="1".
+    this.requestId = 0;
+    this.helloRequestId = null;
     this.setState('connecting');
 
     try {
@@ -235,9 +238,11 @@ class GatewayClient {
   }
 
   private handleEvent(frame: EventFrame): void {
-    // Handle connect challenge
+    // connect.challenge is handled implicitly — we send the connect frame
+    // immediately on WebSocket open (see doConnect / onopen), so a subsequent
+    // challenge must NOT trigger a second connect which the gateway rejects
+    // with "connect is only valid as the first request".
     if (frame.event === 'connect.challenge') {
-      this.sendHello();
       return;
     }
 
