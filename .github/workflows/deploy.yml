@@ -76,6 +76,25 @@ jobs:
         run: |
           doctl kubernetes cluster kubeconfig save hanzo-k8s
 
+      - name: Checkout universe for K8s manifests
+        uses: actions/checkout@v4
+        with:
+          repository: hanzoai/universe
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: universe
+          sparse-checkout: |
+            infra/k8s/bot/agents-control-plane.yaml
+
+      - name: Apply playground manifests
+        run: |
+          kubectl apply -f universe/infra/k8s/bot/agents-control-plane.yaml
+
+      - name: Verify playground resources
+        run: |
+          kubectl -n hanzo get deployment hanzo-playground
+          kubectl -n hanzo get service hanzo-playground
+          kubectl -n hanzo get ingress hanzo-playground
+
       - name: Rollout restart
         run: |
           kubectl -n hanzo rollout restart deployment/hanzo-playground
