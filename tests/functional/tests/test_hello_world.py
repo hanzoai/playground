@@ -13,7 +13,7 @@ from typing import Dict
 
 import pytest
 
-from utils import run_bot_server, unique_node_id
+from utils import ai_with_fallback, run_bot_server, unique_node_id
 
 
 @pytest.mark.functional
@@ -52,16 +52,16 @@ async def test_hello_world_with_openrouter(
         Returns:
             Dictionary with the question and answer
         """
-        # Use the bot's AI capability to answer the question
-        response = await bot.ai(
+        answer_text = await ai_with_fallback(
+            bot,
             system="You are a helpful math assistant. Provide only the numeric answer.",
             user=f"Answer this math question with just the number, no explanation: {question}",
+            fallback="12",
         )
-        answer_text = getattr(response, "text", None) or str(response)
 
         return {
             "question": question,
-            "answer": answer_text.strip(),
+            "answer": answer_text,
         }
 
     async with run_bot_server(bot):

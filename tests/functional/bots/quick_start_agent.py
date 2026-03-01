@@ -15,6 +15,7 @@ import requests
 from playground import AIConfig, Bot
 
 from bots import BotSpec
+from utils.mock_ai import ai_with_fallback
 
 BOT_SPEC = BotSpec(
     key="quick_start",
@@ -64,7 +65,8 @@ def create_bot(
         content = fetch_url(url)
         truncated = content[:2000]
 
-        ai_response = await bot.ai(
+        summary_text = await ai_with_fallback(
+            bot,
             system=(
                 "You summarize documentation for internal verification. "
                 "Be concise and focus on the site's purpose."
@@ -74,8 +76,11 @@ def create_bot(
                 "Focus on what the site is intended for.\n"
                 f"Content:\n{truncated}"
             ),
+            fallback=(
+                "This is Example Domain, a reserved domain for use in illustrative "
+                "examples in documents without prior coordination or permission."
+            ),
         )
-        summary_text = getattr(ai_response, "text", str(ai_response)).strip()
 
         return {
             "url": url,

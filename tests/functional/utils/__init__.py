@@ -4,6 +4,7 @@ Utilities shared across functional tests (e.g., bot runners, helpers).
 
 from .bot_server import RunningBot, RunningAgent, run_bot_server
 from .logging import FunctionalTestLogger, InstrumentedAsyncClient
+from .mock_ai import ai_with_fallback, is_mock_ai_enabled
 from .naming import sanitize_node_id, unique_node_id
 from .go_bot_runner import (
     GoBotProcess,
@@ -19,8 +20,10 @@ __all__ = [
     "InstrumentedAsyncClient",
     "GoBotProcess",
     "GoAgentProcess",
+    "ai_with_fallback",
     "get_go_bot_binary",
     "get_go_agent_binary",
+    "is_mock_ai_enabled",
     "run_go_bot",
     "run_go_agent",
     "RunningBot",
