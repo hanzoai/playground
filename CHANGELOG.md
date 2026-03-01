@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.140] - 2026-03-01
+
+
+### Fixed
+
+- Fix: allow starting→stopping state transition and add litellm test dep
+
+- Allow bots to transition directly from "starting" to "stopping" state
+  (previously required going through "active" first, causing test failures)
+- Add litellm to functional test requirements (SDK bot_ai module needs it) (818e8db)
+
 ## [0.1.41-rc.139] - 2026-03-01
 
 
