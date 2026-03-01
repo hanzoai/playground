@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.156] - 2026-03-01
+
+
+### Fixed
+
+- Fix(ui): final agent→bot renames in toasts, empty states, and search placeholders
+
+NodeDetailPage toast messages, NodesVirtualList empty state,
+ServerlessRegistrationModal labels, ExecutionsPage description,
+EnhancedDashboardPage metrics, CredentialsPage search placeholder. (d83c348)
+
+
+
+### Other
+
+- Apply playground manifests from universe before rollout restart
+
+The deploy workflow previously only did a rollout restart, which assumes
+the Deployment, Service, and Ingress already exist in the cluster. If
+those resources were never applied (e.g. because the universe repo's
+kustomization was missing), the restart succeeds on the Deployment but
+the playground remains unreachable due to missing Ingress/Service.
+
+Now the deploy job:
+1. Checks out agents-control-plane.yaml from hanzoai/universe (sparse)
+2. Applies it with kubectl (creates or updates all playground resources)
+3. Verifies Deployment, Service, and Ingress exist
+4. Then performs the rollout restart
+
+Note: GITHUB_TOKEN cross-repo checkout requires the hanzoai org to grant
+Actions read access to internal repositories. If this fails, a PAT with
+repo scope must be configured as a repository secret.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (3311825)
+
 ## [0.1.41-rc.155] - 2026-03-01
 
 
