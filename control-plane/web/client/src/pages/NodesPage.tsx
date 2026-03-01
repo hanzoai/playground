@@ -749,8 +749,7 @@ export function NodesPage() {
       <ServerlessRegistrationModal
         isOpen={showServerlessModal}
         onClose={() => setShowServerlessModal(false)}
-        onSuccess={(nodeId) => {
-          // Serverless bot registered — refresh nodes list
+        onSuccess={() => {
           fetchNodes();
         }}
       />
