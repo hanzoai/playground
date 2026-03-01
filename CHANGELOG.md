@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.161] - 2026-03-01
+
+
+### Fixed
+
+- Fix: prevent double connect frame causing gateway rejection (#53)
+
+The gateway client was sending the connect request twice: once
+immediately on WebSocket open, and again when receiving a
+connect.challenge event. The gateway rejects the second connect
+with "connect is only valid as the first request" (id=2).
+
+Remove the redundant connect.challenge handler and reset requestId
+on each new connection so connect always starts at id=1. (13b61b4)
+
+- Fix(ci): remove cross-repo checkout from deploy workflow
+
+GITHUB_TOKEN cannot access private hanzoai/universe repo, causing
+deploy to fail. Replace with verification-only step that warns when
+K8s resources are missing. Manifests are managed from universe repo.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (9297296)
+
 ## [0.1.41-rc.160] - 2026-03-01
 
 
