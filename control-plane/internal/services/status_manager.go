@@ -466,7 +466,7 @@ func (sm *StatusManager) handleStateTransition(nodeID string, status *types.BotS
 func (sm *StatusManager) isValidTransition(from, to types.BotState) bool {
 	validTransitions := map[types.BotState][]types.BotState{
 		types.BotStateInactive: {types.BotStateStarting, types.BotStateActive},
-		types.BotStateStarting: {types.BotStateActive, types.BotStateInactive},
+		types.BotStateStarting: {types.BotStateActive, types.BotStateInactive, types.BotStateStopping},
 		types.BotStateActive:   {types.BotStateInactive, types.BotStateStopping},
 		types.BotStateStopping: {types.BotStateInactive},
 	}
