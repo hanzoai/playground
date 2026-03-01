@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.150] - 2026-03-01
+
+
+### Fixed
+
+- Fix(ui): full audit — rename agent→bot, fix dead links, clean nav
+
+Audit sweep across 23 files:
+- RootRedirect: /launch → /nodes (launch page removed)
+- ROUTE_TITLES: stripped removed pages (spaces, teams, packages, etc.)
+- Command palette: removed teams/spaces/DIDs, renamed agent→bot
+- All user-facing "Agent/Agents" → "Bot/Bots" in labels, descriptions,
+  tooltips, placeholders, search hints, empty states, onboarding
+- BotControlButton: all 6 state descriptions
+- ExecutionViewTabs: tab label + sort option
+- BotContextMenu: "Copy Agent ID" → "Copy Bot ID"
+- ConfigurationWizard/Form: step descriptions
+- EmptyBotsState: all 3 message variants
+- ControlPlanePage: activity log + metrics label
+- Navigation.tsx: all description strings
+- Search placeholders: 6 files cleaned of redundant "agent" mentions
+- CanvasControls: cloud bot description
+- FirstBotOnboarding: CLI method description (101fb12)
+
 ## [0.1.41-rc.149] - 2026-03-01
 
 
