@@ -75,6 +75,9 @@ func (h *SpaceNodeHandler) ListNodes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if nodes == nil {
+		nodes = make([]*spaces.SpaceNode, 0)
+	}
 	c.JSON(http.StatusOK, gin.H{"nodes": nodes})
 }
 

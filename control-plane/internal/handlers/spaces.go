@@ -88,6 +88,9 @@ func (h *SpaceHandler) ListSpaces(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if result == nil {
+		result = make([]*spaces.Space, 0)
+	}
 
 	c.JSON(http.StatusOK, gin.H{"spaces": result})
 }
@@ -200,6 +203,9 @@ func (h *SpaceHandler) ListMembers(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	if members == nil {
+		members = make([]*spaces.SpaceMember, 0)
 	}
 	c.JSON(http.StatusOK, gin.H{"members": members})
 }
