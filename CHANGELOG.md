@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.142] - 2026-03-01
+
+
+### Fixed
+
+- Fix(terminal): use node.invoke system.run instead of chat.send
+
+Replace chat.send (LLM chat) with node.invoke system.run for actual
+command execution on remote nodes. Line-buffered input with shell prompt.
+Fixes "message or attachment required" errors from empty escape sequences. (0036b7e)
+
+
+
+### Other
+
+- Resolve screenshot conflict (bc0b4a6)
+
 ## [0.1.41-rc.141] - 2026-03-01
 
 
