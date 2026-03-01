@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.137] - 2026-03-01
+
+
+### Changed
+
+- Refactor: remove duplicate Running Agents from Launch page
+
+Launch page is for launching — agent management belongs in My Agents
+(/nodes). Remove the Running Agents list from LaunchPage and redirect
+/agents to NodesPage. After launching, navigate to /nodes to see the
+new agent. One canonical place for each concern. (4fc73bc)
+
 ## [0.1.41-rc.136] - 2026-03-01
 
 
