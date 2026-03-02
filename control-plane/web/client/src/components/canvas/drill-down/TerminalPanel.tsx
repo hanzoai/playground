@@ -409,7 +409,7 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
   return (
     <div className={`relative h-full w-full ${className ?? ''}`}>
       {/* Status badge */}
-      <div className="absolute top-2 right-2 z-30 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 text-[10px]">
+      <div className="absolute top-1 right-1 sm:top-2 sm:right-2 z-30 flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded bg-black/60 text-[9px] sm:text-[10px]">
         <span className={`inline-block w-1.5 h-1.5 rounded-full ${badgeColor}`} />
         <span className="text-zinc-400">{badgeLabel}</span>
       </div>

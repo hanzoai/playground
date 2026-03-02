@@ -16,14 +16,14 @@ export function TerminalTabBar() {
   const closeTab = useTerminalManagerStore((s) => s.closeTab);
 
   return (
-    <div className="flex items-center h-8 bg-[#161b22] border-b border-[#30363d] overflow-x-auto scrollbar-none select-none">
+    <div className="flex items-center h-9 sm:h-8 bg-[#161b22] border-b border-[#30363d] overflow-x-auto scrollbar-none select-none">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         return (
           <button
             key={tab.id}
             className={cn(
-              'group relative flex items-center gap-1.5 px-3 h-full text-[11px] font-medium whitespace-nowrap transition-colors',
+              'group relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 h-full text-[11px] font-medium whitespace-nowrap transition-colors',
               isActive
                 ? 'bg-[#0d1117] text-zinc-200 border-b border-cyan-500'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-[#1c2128]',
@@ -54,7 +54,7 @@ export function TerminalTabBar() {
 
       {/* Add tab button */}
       <button
-        className="flex items-center justify-center w-7 h-full text-zinc-500 hover:text-zinc-300 hover:bg-[#1c2128] transition-colors text-sm"
+        className="flex items-center justify-center w-8 sm:w-7 h-full text-zinc-500 hover:text-zinc-300 hover:bg-[#1c2128] transition-colors text-sm"
         onClick={addTab}
         title="New terminal tab (Cmd+T)"
       >

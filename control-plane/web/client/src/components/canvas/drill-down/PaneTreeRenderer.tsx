@@ -42,6 +42,7 @@ export function PaneTreeRenderer({ node, agentId, nodeStatus }: PaneTreeRenderer
           isFocused ? 'ring-1 ring-cyan-500/60' : 'ring-1 ring-transparent',
         )}
         onMouseDown={() => setFocusedPane(node.id)}
+        onTouchStart={() => setFocusedPane(node.id)}
       >
         <TerminalPanel
           agentId={agentId}

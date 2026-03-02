@@ -73,6 +73,7 @@ export function OperativePanel({ agentId, nodeId, vncPassword, className }: Oper
       src={desktopUrl}
       title={`Desktop - ${agentId}`}
       className={`h-full w-full border-0 rounded-b-lg ${className ?? ''}`}
+      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       allow="clipboard-read; clipboard-write"
     />
   );

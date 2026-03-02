@@ -919,27 +919,27 @@ function NodeDetailPageContent() {
           onValueChange={handleTabChange}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
-          <div className="flex items-center justify-between px-6 pt-4 pb-2">
-            <AnimatedTabsList className="h-11 gap-1 rounded-lg bg-muted/40 p-1 flex-1">
-              <AnimatedTabsTrigger value="overview" className="gap-2 px-4">
+          <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 pb-2">
+            <AnimatedTabsList className="h-9 sm:h-11 gap-0.5 sm:gap-1 rounded-lg bg-muted/40 p-0.5 sm:p-1 flex-1 overflow-x-auto">
+              <AnimatedTabsTrigger value="overview" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               Overview
             </AnimatedTabsTrigger>
-            <AnimatedTabsTrigger value="terminal" className="gap-2 px-4">
+            <AnimatedTabsTrigger value="terminal" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               Terminal
             </AnimatedTabsTrigger>
-            <AnimatedTabsTrigger value="desktop" className="gap-2 px-4">
+            <AnimatedTabsTrigger value="desktop" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               Desktop
             </AnimatedTabsTrigger>
-            <AnimatedTabsTrigger value="mcp-servers" className="gap-2 px-4">
+            <AnimatedTabsTrigger value="mcp-servers" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               MCP Servers
             </AnimatedTabsTrigger>
-            <AnimatedTabsTrigger value="tools" className="gap-2 px-4">
+            <AnimatedTabsTrigger value="tools" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               Tools
             </AnimatedTabsTrigger>
-            <AnimatedTabsTrigger value="performance" className="gap-2 px-4">
+            <AnimatedTabsTrigger value="performance" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               Performance
             </AnimatedTabsTrigger>
-            <AnimatedTabsTrigger value="configuration" className="gap-2 px-4">
+            <AnimatedTabsTrigger value="configuration" className="gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm">
               Configuration
             </AnimatedTabsTrigger>
           </AnimatedTabsList>
@@ -950,7 +950,7 @@ function NodeDetailPageContent() {
             value="overview"
             className="flex-1 overflow-y-auto"
           >
-            <div className="flex flex-col gap-6 px-6 pb-6">
+            <div className="flex flex-col gap-4 sm:gap-6 px-3 sm:px-4 md:px-6 pb-4 sm:pb-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Node Information</CardTitle>
@@ -1057,7 +1057,7 @@ function NodeDetailPageContent() {
             value="terminal"
             className="flex-1 overflow-hidden"
           >
-            <div className="h-full px-6 pb-6">
+            <div className="h-full px-2 sm:px-4 md:px-6 pb-3 sm:pb-6">
               <TerminalWindowManager agentId={nodeId ?? 'main'} nodeStatus={terminalReadiness} active={activeTab === 'terminal'} className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
@@ -1066,7 +1066,7 @@ function NodeDetailPageContent() {
             value="desktop"
             className="flex-1 overflow-hidden"
           >
-            <div className="h-full px-6 pb-6">
+            <div className="h-full px-2 sm:px-4 md:px-6 pb-3 sm:pb-6">
               <OperativePanel agentId="main" nodeId={nodeId} className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
@@ -1075,7 +1075,7 @@ function NodeDetailPageContent() {
             value="mcp-servers"
             className="flex-1 overflow-y-auto"
           >
-            <div className="flex flex-col gap-6 px-6 pb-6">
+            <div className="flex flex-col gap-4 sm:gap-6 px-3 sm:px-4 md:px-6 pb-4 sm:pb-6">
               <ResponsiveGrid columns={{ base: 1, xl: 12 }} gap="md" align="start">
                 <div className="xl:col-span-8">
                   <MCPServerList

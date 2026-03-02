@@ -72,6 +72,29 @@ export function ResizableSplitPane({
     [isResizing, isHorizontal, minSizePercent, maxSizePercent, onSizeChange]
   );
 
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isResizing || !containerRef.current) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+
+      const container = containerRef.current;
+      const containerRect = container.getBoundingClientRect();
+
+      let newSize: number;
+      if (isHorizontal) {
+        newSize = ((touch.clientX - containerRect.left) / containerRect.width) * 100;
+      } else {
+        newSize = ((touch.clientY - containerRect.top) / containerRect.height) * 100;
+      }
+
+      newSize = Math.max(minSizePercent, Math.min(maxSizePercent, newSize));
+      setLeftSize(newSize);
+      onSizeChange?.(newSize);
+    },
+    [isResizing, isHorizontal, minSizePercent, maxSizePercent, onSizeChange]
+  );
+
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
   }, []);
@@ -80,17 +103,21 @@ export function ResizableSplitPane({
     if (isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleMouseUp);
       document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
       document.body.style.userSelect = 'none';
 
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleMouseUp);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
       };
     }
-  }, [isResizing, handleMouseMove, handleMouseUp, isHorizontal]);
+  }, [isResizing, handleMouseMove, handleMouseUp, handleTouchMove, isHorizontal]);
 
   const toggleCollapse = useCallback(() => {
     setIsCollapsed(prev => !prev);
@@ -141,6 +168,7 @@ export function ResizableSplitPane({
         aria-valuemin={minSizePercent}
         aria-valuemax={maxSizePercent}
         onMouseDown={handleMouseDown}
+        onTouchStart={(e) => { e.preventDefault(); setIsResizing(true); }}
       >
         <span
           className={cn(

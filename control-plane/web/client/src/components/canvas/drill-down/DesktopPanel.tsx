@@ -82,6 +82,7 @@ export function DesktopPanel({ nodeEndpoint, os, vncPort = 6080, className }: De
         src={desktopUrl}
         title={`${os === 'linux' ? 'VNC' : os === 'windows' ? 'RDP' : 'Screen Sharing'} Desktop`}
         className="w-full h-full border-0 rounded-b-lg"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         allow="clipboard-read; clipboard-write"
       />
     </div>
