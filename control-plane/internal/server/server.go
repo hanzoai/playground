@@ -68,6 +68,9 @@ type PlaygroundServer struct {
 	observabilityForwarder   services.ObservabilityForwarder
 	cloudProvisioner         *cloud.Provisioner
 	spaceStore               spaces.Store
+	// HTTPServer is the underlying net/http server, exposed so callers
+	// can call Shutdown() for graceful drain of in-flight requests.
+	HTTPServer *http.Server
 }
 
 // NewPlaygroundServer creates a new instance of the PlaygroundServer.
@@ -419,8 +422,17 @@ func (s *PlaygroundServer) Start() error {
 	// Register REST admin endpoints on the main router
 	registerAdminRESTRoutes(s.Router, s.storage)
 
-	// Start HTTP server
-	return s.Router.Run(":" + strconv.Itoa(s.config.Agents.Port))
+	// Start HTTP server via net/http.Server so callers can call
+	// Shutdown() for graceful drain of in-flight requests.
+	addr := ":" + strconv.Itoa(s.config.Agents.Port)
+	s.HTTPServer = &http.Server{
+		Addr:    addr,
+		Handler: s.Router,
+	}
+	if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 // Stop gracefully shuts down the PlaygroundServer.

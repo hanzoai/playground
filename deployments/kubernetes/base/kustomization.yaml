@@ -5,6 +5,7 @@ resources:
   - control-plane-pvc.yaml
   - control-plane-deployment.yaml
   - control-plane-service.yaml
+  - control-plane-pdb.yaml
 
 labels:
   - pairs:

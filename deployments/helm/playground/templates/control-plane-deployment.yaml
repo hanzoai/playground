@@ -10,6 +10,11 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.controlPlane.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       {{- include "playground.selectorLabels" . | nindent 6 }}
@@ -24,6 +29,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
+      terminationGracePeriodSeconds: 45
       {{- with .Values.controlPlane.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
