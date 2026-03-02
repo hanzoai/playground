@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.181] - 2026-03-02
+
+
+### Fixed
+
+- Fix: add .env.local.example and update .env.e2e.example with all keys
+
+The .env.local and .env.e2e files are already gitignored and were never
+committed. Add .env.local.example so developers know which gateway keys
+to set for local development, and add the missing E2E_API_BASE_URL key
+to .env.e2e.example. (4542365)
+
 ## [0.1.41-rc.180] - 2026-03-02
 
 
