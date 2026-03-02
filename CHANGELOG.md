@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.185] - 2026-03-02
+
+
+### Fixed
+
+- Fix: normalize billing user ID to lowercase before Commerce API calls
+
+Defense-in-depth: ensure user IDs sent to Commerce are always lowercase
+regardless of Casdoor claim casing. Matches Commerce-side normalization.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f7bcfae)
+
 ## [0.1.41-rc.184] - 2026-03-02
 
 
