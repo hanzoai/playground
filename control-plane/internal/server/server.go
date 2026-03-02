@@ -685,6 +685,9 @@ func (s *PlaygroundServer) setupRoutes() {
 
 	s.Router.Use(cors.New(corsConfig))
 
+	// Security headers on every response
+	s.Router.Use(middleware.SecurityHeaders())
+
 	// Add request logging middleware
 	s.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
@@ -1156,6 +1159,7 @@ func (s *PlaygroundServer) registerCloudRoutes(cloudAPI *gin.RouterGroup) {
 	cloudAPI.POST("/teams/provision", handlers.TeamProvisionHandler(s.cloudProvisioner))
 	cloudAPI.GET("/pricing", handlers.CloudPricingHandler(s.config.Cloud.PricingServiceURL))
 	cloudAPI.GET("/presets", handlers.CloudPresetsHandler(s.config.Cloud.PricingServiceURL))
+	cloudAPI.GET("/billing/balance", handlers.CloudBillingBalanceHandler())
 }
 
 // registerSpaceRoutes registers the Space API endpoints on the given router group.

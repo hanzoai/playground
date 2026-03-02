@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hanzoai/playground/control-plane/internal/billing"
 	"github.com/hanzoai/playground/control-plane/internal/cloud"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
@@ -16,8 +17,18 @@ import (
 var pricingHTTPClient = &http.Client{Timeout: 5 * time.Second}
 
 // CloudProvisionHandler creates a new cloud agent in the DOKS cluster.
+// Requires IAM authentication with org context and sufficient billing balance.
 func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
+	billingClient := billing.NewClient()
+
 	return func(c *gin.Context) {
+		// Require IAM authentication with org context
+		orgID, ok := middleware.RequireIAMOrg(c)
+		if !ok {
+			return
+		}
+		user := middleware.GetIAMUser(c)
+
 		var req cloud.ProvisionRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -27,25 +38,52 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
-		// Inject IAM user info if available
-		if user := middleware.GetIAMUser(c); user != nil {
-			req.Owner = user.Sub
-			if req.Org == "" {
-				req.Org = user.Organization
+		req.Owner = user.Sub
+		req.Org = orgID
+
+		// Determine compute tier for billing check
+		tierSlug := req.InstanceType
+		if tierSlug == "" {
+			tierSlug = "s-2vcpu-4gb" // default K8s tier
+		}
+		costPerHour := billing.CentsPerHour(tierSlug)
+
+		// Extract bearer token for billing API call
+		bearerToken := ""
+		if auth := c.GetHeader("Authorization"); auth != "" {
+			if t := strings.TrimPrefix(auth, "Bearer "); t != auth {
+				bearerToken = t
 			}
 		}
-		if org := middleware.GetOrganization(c); org != "" && req.Org == "" {
-			req.Org = org
+
+		// Check billing: require at least 1 hour of compute balance
+		allowance, err := billing.CheckProvisionAllowance(
+			c.Request.Context(), billingClient,
+			user.Email, user.Sub, bearerToken, costPerHour,
+		)
+		if err != nil {
+			logger.Logger.Error().Err(err).Msg("billing check failed")
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error":   "billing_unavailable",
+				"message": "Billing service is temporarily unavailable. Please try again.",
+			})
+			return
+		}
+		if !allowance.Allowed {
+			c.JSON(http.StatusPaymentRequired, gin.H{
+				"error":          allowance.Reason,
+				"balance_cents":  allowance.BalanceCents,
+				"required_cents": allowance.RequiredCents,
+				"hours_afford":   allowance.HoursAfford,
+			})
+			return
 		}
 
 		// Pass the user's bearer token for per-user billing.
 		// Cloud bots will use this as HANZO_API_KEY so LLM usage
 		// is tracked and billed to the launching user's account.
-		if auth := c.GetHeader("Authorization"); auth != "" {
-			token := strings.TrimPrefix(auth, "Bearer ")
-			if token != auth { // had Bearer prefix
-				req.UserAPIKey = token
-			}
+		if bearerToken != "" {
+			req.UserAPIKey = bearerToken
 		}
 		if req.UserAPIKey == "" {
 			if key := c.GetHeader("X-API-Key"); key != "" {
@@ -68,9 +106,10 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 }
 
 // CloudDeprovisionHandler removes a cloud agent from the cluster.
+// Requires IAM authentication with org context.
 func CloudDeprovisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		org, ok := middleware.RequireOrg(c)
+		org, ok := middleware.RequireIAMOrg(c)
 		if !ok {
 			return
 		}
@@ -354,8 +393,18 @@ func CloudPresetsHandler(pricingURL string) gin.HandlerFunc {
 }
 
 // TeamProvisionHandler provisions an entire team of cloud agents.
+// Requires IAM authentication with org context and sufficient billing balance.
 func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
+	billingClient := billing.NewClient()
+
 	return func(c *gin.Context) {
+		// Require IAM authentication with org context
+		orgID, ok := middleware.RequireIAMOrg(c)
+		if !ok {
+			return
+		}
+		user := middleware.GetIAMUser(c)
+
 		var req struct {
 			TeamName  string                  `json:"team_name"`
 			Workspace string                  `json:"workspace,omitempty"`
@@ -369,24 +418,53 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
-		// Inject IAM context
-		owner := ""
-		org := ""
-		if user := middleware.GetIAMUser(c); user != nil {
-			owner = user.Sub
-			org = user.Organization
+		// Calculate total hourly cost for the entire team
+		totalCentsPerHour := 0
+		for _, agentReq := range req.Agents {
+			slug := agentReq.InstanceType
+			if slug == "" {
+				slug = "s-2vcpu-4gb"
+			}
+			totalCentsPerHour += billing.CentsPerHour(slug)
+		}
+
+		// Extract bearer token for billing API call
+		bearerToken := ""
+		if auth := c.GetHeader("Authorization"); auth != "" {
+			if t := strings.TrimPrefix(auth, "Bearer "); t != auth {
+				bearerToken = t
+			}
+		}
+
+		// Check billing: require at least 1 hour of total team compute
+		allowance, err := billing.CheckProvisionAllowance(
+			c.Request.Context(), billingClient,
+			user.Email, user.Sub, bearerToken, totalCentsPerHour,
+		)
+		if err != nil {
+			logger.Logger.Error().Err(err).Msg("billing check failed for team provision")
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error":   "billing_unavailable",
+				"message": "Billing service is temporarily unavailable. Please try again.",
+			})
+			return
+		}
+		if !allowance.Allowed {
+			c.JSON(http.StatusPaymentRequired, gin.H{
+				"error":          allowance.Reason,
+				"balance_cents":  allowance.BalanceCents,
+				"required_cents": allowance.RequiredCents,
+				"hours_afford":   allowance.HoursAfford,
+			})
+			return
 		}
 
 		var results []*cloud.ProvisionResult
 		var errors []string
 
 		for _, agentReq := range req.Agents {
-			if agentReq.Owner == "" {
-				agentReq.Owner = owner
-			}
-			if agentReq.Org == "" {
-				agentReq.Org = org
-			}
+			agentReq.Owner = user.Sub
+			agentReq.Org = orgID
 			if agentReq.Workspace == "" {
 				agentReq.Workspace = req.Workspace
 			}
@@ -408,6 +486,62 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			"agents":    results,
 			"errors":    errors,
 			"count":     len(results),
+		})
+	}
+}
+
+// CloudBillingBalanceHandler returns the user's billing balance and
+// affordability for each preset tier. Used by frontend to show pricing context.
+func CloudBillingBalanceHandler() gin.HandlerFunc {
+	billingClient := billing.NewClient()
+
+	type presetAffordability struct {
+		Name         string `json:"name"`
+		CentsPerHour int    `json:"cents_per_hour"`
+		HoursAfford  int    `json:"hours_afford"`
+	}
+
+	return func(c *gin.Context) {
+		_, ok := middleware.RequireIAMOrg(c)
+		if !ok {
+			return
+		}
+		user := middleware.GetIAMUser(c)
+
+		bearerToken := ""
+		if auth := c.GetHeader("Authorization"); auth != "" {
+			if t := strings.TrimPrefix(auth, "Bearer "); t != auth {
+				bearerToken = t
+			}
+		}
+
+		balance, err := billingClient.GetBalance(c.Request.Context(), user.Sub, bearerToken)
+		if err != nil {
+			logger.Logger.Error().Err(err).Msg("billing balance check failed")
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error":   "billing_unavailable",
+				"message": "Billing service is temporarily unavailable.",
+			})
+			return
+		}
+
+		availableCents := int(balance.Available)
+		presets := []presetAffordability{
+			{Name: "starter", CentsPerHour: billing.CentsPerHour("starter")},
+			{Name: "pro", CentsPerHour: billing.CentsPerHour("pro")},
+			{Name: "power", CentsPerHour: billing.CentsPerHour("power")},
+			{Name: "gpu", CentsPerHour: billing.CentsPerHour("gpu")},
+		}
+		for i := range presets {
+			if presets[i].CentsPerHour > 0 {
+				presets[i].HoursAfford = availableCents / presets[i].CentsPerHour
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"balance_cents": availableCents,
+			"currency":      "usd",
+			"presets":        presets,
 		})
 	}
 }

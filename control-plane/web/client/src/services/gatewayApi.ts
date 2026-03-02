@@ -6,7 +6,7 @@
  */
 
 import { gateway } from './gatewayClient';
-import { API_BASE_URL } from './api';
+import { API_BASE_URL, getGlobalIamToken, getGlobalApiKey } from './api';
 import type {
   AgentsCreateParams,
   AgentsCreateResult,
@@ -119,20 +119,77 @@ export interface CloudNode {
   last_seen: string;
 }
 
+/** Error thrown when billing check fails (HTTP 402). */
+export class InsufficientFundsError extends Error {
+  balanceCents: number;
+  requiredCents: number;
+  hoursAfford: number;
+
+  constructor(data: { error: string; balance_cents: number; required_cents: number; hours_afford: number }) {
+    super(data.error);
+    this.name = 'InsufficientFundsError';
+    this.balanceCents = data.balance_cents;
+    this.requiredCents = data.required_cents;
+    this.hoursAfford = data.hours_afford;
+  }
+}
+
+/** Build auth headers for cloud API calls. */
+function cloudAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = getGlobalIamToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    const apiKey = getGlobalApiKey();
+    if (apiKey) headers['X-API-Key'] = apiKey;
+  }
+  return headers;
+}
+
 /** Provision a full cloud hanzo node on DOKS. */
 export async function cloudProvision(params: CloudProvisionParams): Promise<CloudProvisionResult> {
   const resp = await fetch(`${API_BASE_URL}/cloud/nodes/provision`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: cloudAuthHeaders(),
     body: JSON.stringify(params),
   });
-  if (!resp.ok) throw new Error(`cloud provision failed: ${resp.status}`);
+  if (resp.status === 402) {
+    const data = await resp.json();
+    throw new InsufficientFundsError(data);
+  }
+  if (resp.status === 403) {
+    throw new Error('Authentication required. Please sign in to launch bots.');
+  }
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({ message: `cloud provision failed: ${resp.status}` }));
+    throw new Error(data.message || data.error || `cloud provision failed: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+/** Billing balance for cloud provisioning presets. */
+export interface CloudBillingBalance {
+  balance_cents: number;
+  currency: string;
+  presets: Array<{ name: string; cents_per_hour: number; hours_afford: number }>;
+}
+
+/** Get the user's billing balance and affordability per preset. */
+export async function cloudGetBillingBalance(): Promise<CloudBillingBalance> {
+  const resp = await fetch(`${API_BASE_URL}/cloud/billing/balance`, {
+    headers: cloudAuthHeaders(),
+  });
+  if (!resp.ok) return { balance_cents: 0, currency: 'usd', presets: [] };
   return resp.json();
 }
 
 /** Deprovision a cloud hanzo node. */
 export async function cloudDeprovision(nodeId: string): Promise<void> {
-  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}`, { method: 'DELETE' });
+  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}`, {
+    method: 'DELETE',
+    headers: cloudAuthHeaders(),
+  });
   if (!resp.ok) throw new Error(`cloud deprovision failed: ${resp.status}`);
 }
 
