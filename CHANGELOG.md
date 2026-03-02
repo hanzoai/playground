@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.178] - 2026-03-02
+
+
+### Fixed
+
+- Fix: responsive design + iframe security hardening
+
+- Add sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+  to VNC/Desktop iframes (OperativePanel, DesktopPanel)
+- Make all tab content responsive for mobile/tablet/laptop breakpoints
+- Reduce padding on small screens (px-2 sm:px-4 md:px-6)
+- Make tab triggers smaller on mobile with proper touch targets
+- Add touch support to ResizableSplitPane (touchmove/touchend)
+- Add onTouchStart for pane focus in PaneTreeRenderer
+- Taller terminal tab bar on mobile for touch accessibility
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (90d4d24)
+
 ## [0.1.41-rc.177] - 2026-03-02
 
 
