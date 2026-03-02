@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.177] - 2026-03-02
+
+
+### Fixed
+
+- Fix(e2e): update stale selectors for My Bots rename (#60)
+
+* fix(e2e): update all stale selectors for My Bots rename and dynamic node discovery
+
+- nodes.page.ts: heading 'Nodes' -> 'My Bots', badge 'Live updates' -> 'Live',
+  total badge pattern matches MetricCell 'N Nodes' format, remove hardcoded
+  antje-macbook from getNodeId locator
+- credits.spec.ts: route /bots/all -> /nodes, heading 'Control Plane' -> 'My Bots'
+- bot-listing.spec.ts: metrics strip 'Bots' -> 'Healthy' (matches ControlPlanePage)
+- node-listing.spec.ts: heading text=Nodes -> heading My Bots, replace hardcoded
+  MacBook node lookups with dynamic first-available card discovery
+- node-detail.spec.ts: remove hardcoded antje-macbook-2 fallback, dynamically
+  discover first available node from gateway when no env override is set
+
+* feat: iTerm-style terminal window manager + VNC password auto-fill
+
+- Add tabbed terminal manager with split panes (Cmd+T/D/W shortcuts)
+- Add PaneTreeRenderer for recursive split layout with ResizableSplitPane
+- Add Zustand store with localStorage persistence per node
+- Add overflowMode prop to ResizableSplitPane for xterm.js compatibility
+- Pass VNC password via URL query param to skip password prompt dialog
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix: remove unused vars caught by tsc in terminal manager
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (7605971)
+
 ## [0.1.41-rc.176] - 2026-03-02
 
 
