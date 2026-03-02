@@ -46,7 +46,7 @@ test.describe('Org & Project Switcher', () => {
   test('sidebar navigation links are functional', async ({ page }) => {
     // Test that major nav links work
     await nav.goToBots();
-    await expect(page).toHaveURL(/\/bots\/all/);
+    await expect(page).toHaveURL(/\/nodes/);
 
     await nav.goToDashboard();
     await expect(page).toHaveURL(/\/dashboard/);
@@ -56,9 +56,9 @@ test.describe('Org & Project Switcher', () => {
   });
 
   test('breadcrumb updates on navigation', async ({ page }) => {
-    await page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
+    await page.goto('/nodes', { waitUntil: 'domcontentloaded' });
     // Verify the page loaded by checking heading (breadcrumb may not exist on all pages)
-    await expect(page.getByRole('heading', { name: 'Control Plane' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'My Bots' })).toBeVisible({ timeout: 10_000 });
 
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     // Dashboard should load without errors

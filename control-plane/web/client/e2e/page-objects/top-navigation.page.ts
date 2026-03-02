@@ -45,12 +45,12 @@ export class TopNavigationPage {
     // Sidebar
     this.sidebarTrigger = page.locator('[class*="SidebarTrigger"]')
       .or(page.getByRole('button', { name: /toggle sidebar|menu/i }));
-    this.sidebarLogo = page.getByText(/hanzo bot/i).first();
+    this.sidebarLogo = page.getByText(/playground/i).first();
     this.sidebarVersion = page.getByText(/v\d+\.\d+\.\d+/);
 
     // Sidebar nav links — use href to avoid matching breadcrumb/heading duplicates
     this.dashboardLink = page.locator('a[href="/dashboard"]').first();
-    this.botsLink = page.locator('a[href="/bots/all"]').first();
+    this.botsLink = page.locator('a[href="/nodes"]').first();
     this.nodesLink = page.locator('a[href="/nodes"]').first();
     this.executionsLink = page.locator('a[href="/executions"]').first();
     this.workflowsLink = page.locator('a[href="/workflows"]').first();
@@ -79,7 +79,7 @@ export class TopNavigationPage {
   }
 
   async goToBots() {
-    await this.navigateTo(this.botsLink, /\/bots\/all/);
+    await this.navigateTo(this.botsLink, /\/nodes/);
   }
 
   async goToNodes() {
