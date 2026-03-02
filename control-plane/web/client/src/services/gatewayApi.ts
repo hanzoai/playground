@@ -226,6 +226,26 @@ export function nodeInvoke(nodeId: string, command: string, params?: unknown): P
 }
 
 // ---------------------------------------------------------------------------
+// Node List (gateway-connected nodes)
+// ---------------------------------------------------------------------------
+
+export interface GatewayNode {
+  nodeId: string;
+  displayName?: string;
+  platform?: string;
+  version?: string;
+  connected: boolean;
+  connectedAtMs?: number;
+  caps?: string[];
+  commands?: string[];
+}
+
+/** List nodes currently connected to the gateway. */
+export function nodeList(connectedOnly = true): Promise<{ nodes?: GatewayNode[] }> {
+  return gateway.rpc<{ nodes?: GatewayNode[] }>('node.list', { connectedOnly });
+}
+
+// ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------
 

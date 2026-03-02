@@ -16,6 +16,7 @@ import { CommandPalette } from '@/components/canvas/CommandPalette';
 import { FirstBotOnboarding } from '@/components/onboarding/FirstBotOnboarding';
 import { useGateway } from '@/hooks/useGateway';
 import { useNodeEventsSSE } from '@/hooks/useSSE';
+import { nodeList } from '@/services/gatewayApi';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useBotStore } from '@/stores/botStore';
 import { useSpaceStore } from '@/stores/spaceStore';
@@ -87,6 +88,49 @@ export function CanvasPage() {
       }
     }
   }, [latestEvent, nodes, setBotStatus, syncAgents]);
+
+  // Poll gateway node.list to transition provisioning bots to idle.
+  // Cloud nodes connect to the gateway (not the Playground backend), so
+  // SSE events from the backend never fire for them.  This effect bridges
+  // the gap by checking the gateway's connected-node list periodically.
+  useEffect(() => {
+    if (!isConnected) return;
+
+    async function reconcileProvisioningBots() {
+      try {
+        const resp = await nodeList(true);
+        const gwNodes = (resp.nodes ?? []).filter((n) => n.connected);
+        if (gwNodes.length === 0) return;
+
+        for (const node of nodes) {
+          if (node.type !== NODE_TYPES.bot) continue;
+          const bot = node.data as unknown as Bot;
+          if (bot.status !== 'provisioning') continue;
+
+          // Match by nodeId, or by displayName containing the canvas agentId.
+          // Cloud nodes have displayName like "agent-cloud-3f7d7054" while
+          // the canvas tracks them as "cloud-3f7d7054".
+          const match = gwNodes.some(
+            (gw) =>
+              gw.nodeId === bot.agentId ||
+              gw.displayName === bot.agentId ||
+              gw.displayName === `agent-${bot.agentId}` ||
+              (gw.displayName && bot.agentId && gw.displayName.includes(bot.agentId))
+          );
+          if (match) {
+            setBotStatus(bot.agentId, 'idle');
+          }
+        }
+      } catch {
+        // Gateway RPC failed — skip this cycle
+      }
+    }
+
+    // Run immediately, then every 10s
+    reconcileProvisioningBots();
+    const timer = setInterval(reconcileProvisioningBots, 10_000);
+    return () => clearInterval(timer);
+  }, [isConnected, nodes, setBotStatus]);
 
   // Bootstrap spaces on direct navigation (e.g. /playground)
   useEffect(() => {

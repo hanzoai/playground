@@ -3,7 +3,12 @@ kind: Deployment
 metadata:
   name: playground-control-plane
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/component: control-plane
@@ -12,6 +17,7 @@ spec:
       labels:
         app.kubernetes.io/component: control-plane
     spec:
+      terminationGracePeriodSeconds: 45
       containers:
         - name: control-plane
           # Pin to a specific SHA or semver tag for production deployments.
@@ -49,6 +55,13 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
       volumes:
         - name: data
           persistentVolumeClaim:

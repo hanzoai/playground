@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/cli"
@@ -17,7 +20,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/utils"
 	"github.com/hanzoai/playground/control-plane/web/client"
 
-	"github.com/spf13/cobra" // Import cobra
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -35,7 +38,7 @@ var (
 	buildUIFunc               = buildUI
 	openBrowserFunc           = openBrowser
 	sleepFunc                 = time.Sleep
-	waitForShutdownFunc       = func() { select {} }
+	waitForShutdownFunc       = defaultWaitForShutdown
 	commandRunner             = defaultCommandRunner
 	browserLauncher           = defaultBrowserLauncher
 	startPlaygroundServerFunc = defaultStartPlaygroundServer
@@ -237,10 +240,27 @@ func runServer(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("Playground server running. Press Ctrl+C to exit.\n")
-	// Keep main goroutine alive
+
+	// Wait for shutdown signal (overridable in tests).
 	waitForShutdownFunc()
 
-	// TODO: Implement graceful shutdown
+	// Graceful shutdown: drain in-flight requests, then stop background services.
+	fmt.Println("Shutting down gracefully (30s drain)...")
+
+	drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer drainCancel()
+
+	// Drain in-flight HTTP requests via the server's HTTPServer.
+	if agentsServer.HTTPServer != nil {
+		if err := agentsServer.HTTPServer.Shutdown(drainCtx); err != nil {
+			log.Printf("HTTP drain error: %v", err)
+		}
+	}
+
+	if err := agentsServer.Stop(); err != nil {
+		log.Printf("Error during shutdown: %v", err)
+	}
+	fmt.Println("Server stopped.")
 }
 
 // loadConfig loads configuration from file and environment variables.
@@ -486,6 +506,14 @@ func defaultBrowserLauncher(name string, args ...string) error {
 
 func defaultStartPlaygroundServer(s *server.PlaygroundServer) error {
 	return s.Start()
+}
+
+// defaultWaitForShutdown blocks until SIGTERM or SIGINT is received.
+// Tests override waitForShutdownFunc to return immediately.
+func defaultWaitForShutdown() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 }
 
 func openBrowser(url string) {

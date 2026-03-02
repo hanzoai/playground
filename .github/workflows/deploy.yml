@@ -16,7 +16,52 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build control plane UI
+        working-directory: control-plane/web/client
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Build control plane
+        working-directory: control-plane
+        run: GOFLAGS=-buildvcs=false go build ./...
+
+      - name: Run tests
+        working-directory: control-plane
+        run: go test ./...
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -66,6 +111,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
@@ -79,11 +125,34 @@ jobs:
       - name: Verify playground resources
         run: |
           echo "Checking playground K8s resources..."
-          kubectl -n hanzo get deployment hanzo-playground || echo "WARNING: deployment missing"
+          kubectl -n hanzo get deployment hanzo-playground || { echo "FATAL: deployment missing"; exit 1; }
           kubectl -n hanzo get service hanzo-playground || echo "WARNING: service missing"
-          kubectl -n hanzo get ingress hanzo-playground || echo "WARNING: ingress missing — apply agents-control-plane.yaml from universe repo"
 
-      - name: Rollout restart
+      - name: Set image to SHA-pinned tag
         run: |
-          kubectl -n hanzo rollout restart deployment/hanzo-playground
-          kubectl -n hanzo rollout status deployment/hanzo-playground --timeout=180s
+          IMAGE="ghcr.io/${{ github.repository_owner }}/playground:${{ needs.build-and-push.outputs.image_tag }}"
+          echo "Deploying image: ${IMAGE}"
+          kubectl -n hanzo set image deployment/hanzo-playground \
+            hanzo-playground="${IMAGE}"
+
+      - name: Wait for rollout
+        id: rollout
+        run: |
+          if ! kubectl -n hanzo rollout status deployment/hanzo-playground --timeout=180s; then
+            echo "rollout_failed=true" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Rollback on failure
+        if: failure() && steps.rollout.outputs.rollout_failed == 'true'
+        run: |
+          echo "Rolling back deployment..."
+          kubectl -n hanzo rollout undo deployment/hanzo-playground
+          kubectl -n hanzo rollout status deployment/hanzo-playground --timeout=120s
+          echo "::error::Deployment rolled back due to failed rollout"
+
+      - name: Verify health
+        run: |
+          # Get the service endpoint and verify health
+          POD=$(kubectl -n hanzo get pod -l app=hanzo-playground --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')
+          kubectl -n hanzo exec "$POD" -- wget -qO- http://localhost:8080/api/v1/health || echo "WARNING: health check failed"

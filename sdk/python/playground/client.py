@@ -546,7 +546,7 @@ class PlaygroundClient:
                     "websocket_endpoint": "",
                     "heartbeat_interval": "5s",
                 },
-                "health_status": "healthy",
+                "health_status": "active",
                 "last_heartbeat": datetime.datetime.now().isoformat() + "Z",
                 "registered_at": datetime.datetime.now().isoformat() + "Z",
                 "features": {
@@ -1041,7 +1041,7 @@ class PlaygroundClient:
                     "websocket_endpoint": "",
                     "heartbeat_interval": "2s",
                 },
-                "health_status": "healthy",
+                "health_status": "active",
                 "last_heartbeat": datetime.datetime.now().isoformat() + "Z",
                 "registered_at": datetime.datetime.now().isoformat() + "Z",
                 "features": {
