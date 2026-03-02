@@ -14,6 +14,8 @@ interface OperativePanelProps {
   agentId: string;
   /** Node ID to tunnel VNC through the gateway to a remote node. */
   nodeId?: string;
+  /** VNC password to auto-fill (skips the prompt dialog). */
+  vncPassword?: string;
   className?: string;
 }
 
@@ -22,7 +24,7 @@ interface OperativePanelProps {
  * When nodeId is provided, the gateway tunnels VNC data through the node's
  * WebSocket connection to reach the node's local VNC server.
  */
-function resolveDesktopUrl(agentId: string, nodeId?: string): string | null {
+function resolveDesktopUrl(agentId: string, nodeId?: string, vncPassword?: string): string | null {
   const helloOk = gateway.serverInfo;
   const token = gateway.authToken;
 
@@ -35,6 +37,7 @@ function resolveDesktopUrl(agentId: string, nodeId?: string): string | null {
       const params = new URLSearchParams();
       if (token) params.set('token', token);
       if (nodeId) params.set('nodeId', nodeId);
+      if (vncPassword) params.set('vncpw', vncPassword);
       const qs = params.toString();
       return `${httpProto}//${parsed.host}/vnc-viewer${qs ? `?${qs}` : ''}`;
     } catch {
@@ -50,8 +53,8 @@ function resolveDesktopUrl(agentId: string, nodeId?: string): string | null {
   return null;
 }
 
-export function OperativePanel({ agentId, nodeId, className }: OperativePanelProps) {
-  const desktopUrl = useMemo(() => resolveDesktopUrl(agentId, nodeId), [agentId, nodeId]);
+export function OperativePanel({ agentId, nodeId, vncPassword, className }: OperativePanelProps) {
+  const desktopUrl = useMemo(() => resolveDesktopUrl(agentId, nodeId, vncPassword), [agentId, nodeId, vncPassword]);
 
   if (!desktopUrl) {
     return (
