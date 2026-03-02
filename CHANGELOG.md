@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.183] - 2026-03-02
+
+
+### Fixed
+
+- Fix: use Commerce org/name user ID format in billing gate
+
+Commerce stores billing balances under "org/name" format (e.g.,
+"hanzo/z"), not UUID (user.Sub). The billing client now also prefers
+COMMERCE_SERVICE_TOKEN for inter-service calls with X-Hanzo-Org header.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5faf396)
+
 ## [0.1.41-rc.182] - 2026-03-02
 
 
