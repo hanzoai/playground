@@ -451,7 +451,9 @@ func (s *PlaygroundServer) Stop() error {
 	}
 
 	// Stop health monitor service
-	s.healthMonitor.Stop()
+	if s.healthMonitor != nil {
+		s.healthMonitor.Stop()
+	}
 
 	// Stop execution cleanup service
 	if s.cleanupService != nil {
