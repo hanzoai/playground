@@ -58,7 +58,7 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 
 		// Check billing: require at least 1 hour of compute balance.
 		// Commerce stores balances under "org/name" format, not UUID.
-		billingUserID := user.Organization + "/" + user.Name
+		billingUserID := user.Organization + "/" + user.LoginName
 		allowance, err := billing.CheckProvisionAllowance(
 			c.Request.Context(), billingClient,
 			billingUserID, bearerToken, costPerHour,
@@ -440,7 +440,7 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 
 		// Check billing: require at least 1 hour of total team compute.
 		// Commerce stores balances under "org/name" format, not UUID.
-		billingUserID := user.Organization + "/" + user.Name
+		billingUserID := user.Organization + "/" + user.LoginName
 		allowance, err := billing.CheckProvisionAllowance(
 			c.Request.Context(), billingClient,
 			billingUserID, bearerToken, totalCentsPerHour,
@@ -519,7 +519,7 @@ func CloudBillingBalanceHandler() gin.HandlerFunc {
 			}
 		}
 
-		billingUserID := user.Organization + "/" + user.Name
+		billingUserID := user.Organization + "/" + user.LoginName
 		balance, err := billingClient.GetBalance(c.Request.Context(), billingUserID, bearerToken)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("billing balance check failed")

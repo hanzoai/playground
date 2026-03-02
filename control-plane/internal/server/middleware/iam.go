@@ -30,6 +30,7 @@ type IAMConfig struct {
 type IAMUserInfo struct {
 	Sub          string `json:"sub"`
 	Name         string `json:"name"`
+	LoginName    string `json:"preferred_username"` // Casdoor login name (e.g. "z"), distinct from display Name
 	Email        string `json:"email"`
 	Organization string `json:"organization"`
 	IsAdmin      bool   `json:"isAdmin"`
@@ -199,6 +200,9 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 				}
 				if user.Name == "" {
 					user.Name = jwtClaims.Name
+				}
+				if user.LoginName == "" {
+					user.LoginName = jwtClaims.Name
 				}
 			}
 		}
