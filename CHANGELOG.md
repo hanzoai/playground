@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.179] - 2026-03-02
+
+
+### Added
+
+- Feat: billing gate + IAM auth hardening for cloud provisioning
+
+- Require IAM authentication with org context on all provision/deprovision endpoints (403 if unauthenticated)
+- Check Commerce API balance before provisioning: minimum 1 hour of compute at selected tier
+- Return HTTP 402 with balance details when funds are insufficient
+- Super admin bypass for a@hanzo.ai, z@hanzo.ai, z@zeekay.io
+- Add GET /v1/cloud/billing/balance endpoint (returns balance + hours affordable per preset)
+- Add security headers middleware (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- Frontend: show user balance on launch page, grey out unaffordable presets, handle 402 with "Add Funds" link
+- Fix cloud API calls to include auth headers (IAM token or API key)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d0e776b)
+
 ## [0.1.41-rc.178] - 2026-03-02
 
 
