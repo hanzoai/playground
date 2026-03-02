@@ -156,7 +156,7 @@ type AccessControlMetadata struct {
 
 // Node represents a registered agent service.
 type Node struct {
-	ID      string `json:"id" db:"id"`
+	ID      string `json:"id" db:"id" binding:"required"`
 	OrgID   string `json:"org_id" db:"org_id"`
 	TeamID  string `json:"team_id" db:"team_id"`
 	BaseURL string `json:"base_url" db:"base_url"`

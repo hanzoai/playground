@@ -479,9 +479,19 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 			isReRegistration = true
 		}
 
-		// Set initial health status to UNKNOWN for new registrations
-		// The health monitor will determine the actual status based on heartbeats
-		newNode.HealthStatus = types.HealthStatusUnknown
+		// Respect client-provided health status; normalize and default as needed.
+		// The SDK sends "healthy" which we map to "active" for compatibility.
+		switch newNode.HealthStatus {
+		case types.HealthStatusActive, types.HealthStatusInactive, types.HealthStatusDegraded:
+			// Valid status provided by client — keep it.
+		case "healthy":
+			// SDK backward-compat: "healthy" → "active"
+			newNode.HealthStatus = types.HealthStatusActive
+		default:
+			// Empty or unrecognised — default to unknown; the health monitor
+			// will promote to active once heartbeats are received.
+			newNode.HealthStatus = types.HealthStatusUnknown
+		}
 
 		// Handle lifecycle status for re-registrations vs new registrations
 		if isReRegistration {
@@ -596,24 +606,16 @@ func ListNodesHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 		// Parse query parameters for filtering
 		filters := types.BotFilters{}
 
-		// Check for health_status filter parameter
+		// Filter by health_status when explicitly requested; show all by default
+		// so newly registered nodes are visible immediately.
 		if healthStatusParam := c.Query("health_status"); healthStatusParam != "" {
 			healthStatus := types.HealthStatus(healthStatusParam)
 			filters.HealthStatus = &healthStatus
-		} else {
-			// Default to showing only active nodes unless explicitly requested otherwise
-			activeStatus := types.HealthStatusActive
-			filters.HealthStatus = &activeStatus
 		}
 
 		// Check for team_id filter parameter
 		if teamID := c.Query("team_id"); teamID != "" {
 			filters.TeamID = &teamID
-		}
-
-		// Check for show_all parameter to override default active filter
-		if showAll := c.Query("show_all"); showAll == "true" {
-			filters.HealthStatus = nil // Remove health status filter to show all nodes
 		}
 
 		// Get filtered nodes from storage
