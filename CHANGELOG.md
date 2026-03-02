@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.176] - 2026-03-02
+
+
+### Fixed
+
+- Fix: improve terminal error handling for exec denied and timeouts
+
+- Show specific message when system.run is disabled (security=deny)
+- Show guidance to set tools.exec.security in bot config
+- Handle companion app unavailable error
+- Don't set connState to 'error' on command failures — terminal
+  should stay connected and usable after a failed command
+- Handle timeout errors separately (4411c97)
+
 ## [0.1.41-rc.175] - 2026-03-02
 
 
