@@ -28,13 +28,10 @@ export function PaneTreeRenderer({ node, agentId, nodeStatus }: PaneTreeRenderer
   const handleSizeChange = useCallback(
     (splitId: string) => (ratio: number) => {
       updateRatio(splitId, ratio);
+      persist();
     },
-    [updateRatio],
+    [updateRatio, persist],
   );
-
-  const handleSizeChangeEnd = useCallback(() => {
-    persist();
-  }, [persist]);
 
   if (node.type === 'terminal') {
     const isFocused = focusedPaneId === node.id;

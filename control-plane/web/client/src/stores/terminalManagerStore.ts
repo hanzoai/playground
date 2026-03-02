@@ -202,7 +202,7 @@ export const useTerminalManagerStore = create<TerminalManagerStore>((set, get) =
   },
 
   closePane: (targetId) => {
-    const { tabs, activeTabId, agentId } = get();
+    const { tabs, activeTabId } = get();
     const tabIdx = tabs.findIndex((t) => t.id === activeTabId);
     if (tabIdx < 0) return;
     const tab = tabs[tabIdx];
