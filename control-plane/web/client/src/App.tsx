@@ -1,4 +1,4 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { SidebarNew } from "./components/Navigation/SidebarNew";
 import { TopNavigation } from "./components/Navigation/TopNavigation";
 import { RootRedirect } from "./components/RootRedirect";
@@ -90,9 +90,9 @@ function AppContent() {
               <Route path="/launch" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
               <Route path="/metrics" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/dashboard" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
-              <Route path="/nodes" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
+              <Route path="/nodes" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ControlPlanePage /></div>} />
               <Route path="/nodes/:nodeId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodeDetailPage /></div>} />
-              <Route path="/bots/all" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ControlPlanePage /></div>} />
+              <Route path="/bots/all" element={<Navigate to="/nodes" replace />} />
               <Route
                 path="/bots/:fullBotId"
                 element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BotDetailPage /></div>}

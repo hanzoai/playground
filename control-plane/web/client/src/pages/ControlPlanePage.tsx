@@ -254,9 +254,9 @@ export function ControlPlanePage() {
       {/* ─── Top Bar ─── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Control Plane</h1>
+          <h1 className="text-lg font-semibold tracking-tight">My Bots</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Orchestrate local and cloud agents from a unified control surface.
+            Manage and monitor your local and cloud bots.
           </p>
         </div>
         <div className="flex items-center gap-3">

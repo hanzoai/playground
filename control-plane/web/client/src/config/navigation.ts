@@ -9,8 +9,8 @@ export const navigationSections: NavigationSection[] = [
         id: 'nodes',
         label: 'My Bots',
         href: '/nodes',
-        icon: 'function',
-        description: 'Running bots and connected nodes'
+        icon: 'data-center',
+        description: 'Manage local and cloud bots'
       },
       {
         id: 'playground',
@@ -25,13 +25,6 @@ export const navigationSections: NavigationSection[] = [
     id: 'work',
     title: '',
     items: [
-      {
-        id: 'control-plane',
-        label: 'Control Plane',
-        href: '/bots/all',
-        icon: 'data-center',
-        description: 'Orchestrate distributed bots'
-      },
       {
         id: 'executions',
         label: 'Executions',
