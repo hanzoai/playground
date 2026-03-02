@@ -295,6 +295,11 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
                 if (result.error.code === 'NOT_CONNECTED') {
                   terminal.write('\x1b[33mBot is not connected to the gateway.\x1b[0m\r\n');
                   setConnState('unreachable');
+                } else if (result.error.message?.includes('SYSTEM_RUN_DISABLED') || result.error.message?.includes('SYSTEM_RUN_DENIED')) {
+                  terminal.write('\x1b[33mCommand execution is disabled on this bot.\x1b[0m\r\n');
+                  terminal.write('\x1b[90mSet tools.exec.security to "full" or "allowlist" in the bot config.\x1b[0m\r\n');
+                } else if (result.error.message?.includes('COMPANION_APP_UNAVAILABLE')) {
+                  terminal.write('\x1b[33mMac companion app not running — falling back.\x1b[0m\r\n');
                 } else {
                   terminal.write(`\x1b[31m${result.error.message || 'command failed'}\x1b[0m\r\n`);
                 }
@@ -304,9 +309,10 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
               if (msg.includes('not connected') || msg.includes('NOT_CONNECTED')) {
                 terminal.write('\x1b[33mGateway connection lost.\x1b[0m\r\n');
                 setConnState('disconnected');
+              } else if (msg.includes('timed out') || msg.includes('timeout')) {
+                terminal.write(`\x1b[33mCommand timed out.\x1b[0m\r\n`);
               } else {
                 terminal.write(`\x1b[31mError: ${msg}\x1b[0m\r\n`);
-                setConnState('error');
               }
             }).finally(() => {
               busyRef.current = false;
