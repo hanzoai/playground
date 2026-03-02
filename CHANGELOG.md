@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.172] - 2026-03-02
+
+
+### Fixed
+
+- Fix: correct container name in deploy workflow (playground, not control-plane) (3d30d03)
+
+
+
+### Other
+
+- UI: unify My Bots and Control Plane into single nav item
+
+- Remove Control Plane from sidebar, keep My Bots as sole bot view
+- Route /nodes now renders ControlPlanePage (infrastructure-style UI)
+- /bots/all redirects to /nodes for backwards compat
+- Update heading to "My Bots" and use data-center icon (3f504b7)
+
 ## [0.1.41-rc.171] - 2026-03-02
 
 
