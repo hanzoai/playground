@@ -73,7 +73,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { EnhancedNodeDetailHeader } from "@/components/nodes";
 import { getNodeStatusPresentation } from "@/utils/node-status";
 import { OperativePanel } from "@/components/canvas/drill-down/OperativePanel";
-import { TerminalPanel, type NodeReadiness } from "@/components/canvas/drill-down/TerminalPanel";
+import { TerminalWindowManager } from "@/components/canvas/drill-down/TerminalWindowManager";
+import type { NodeReadiness } from "@/components/canvas/drill-down/TerminalPanel";
 import { gateway } from "@/services/gatewayClient";
 
 /**
@@ -1057,7 +1058,7 @@ function NodeDetailPageContent() {
             className="flex-1 overflow-hidden"
           >
             <div className="h-full px-6 pb-6">
-              <TerminalPanel agentId={nodeId ?? 'main'} sessionKey={`agent:${nodeId ?? 'main'}:main`} nodeStatus={terminalReadiness} className="h-full rounded-lg border border-border" />
+              <TerminalWindowManager agentId={nodeId ?? 'main'} nodeStatus={terminalReadiness} active={activeTab === 'terminal'} className="h-full rounded-lg border border-border" />
             </div>
           </AnimatedTabsContent>
 

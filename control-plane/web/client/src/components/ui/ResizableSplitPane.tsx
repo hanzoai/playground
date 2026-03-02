@@ -15,6 +15,8 @@ interface ResizableSplitPaneProps {
   collapsible?: boolean;
   collapsedSize?: number;
   onSizeChange?: (sizePercent: number) => void;
+  /** xterm.js manages its own scrollback — use 'hidden' to prevent double scrollbars. */
+  overflowMode?: 'auto' | 'hidden';
 }
 
 export function ResizableSplitPane({
@@ -30,6 +32,7 @@ export function ResizableSplitPane({
   collapsible = false,
   collapsedSize = 48,
   onSizeChange,
+  overflowMode = 'auto',
 }: ResizableSplitPaneProps) {
   const [leftSize, setLeftSize] = useState(defaultSizePercent);
   const [isResizing, setIsResizing] = useState(false);
@@ -115,7 +118,12 @@ export function ResizableSplitPane({
           [isHorizontal ? 'minWidth' : 'minHeight']: isCollapsed ? `${collapsedSize}px` : `${minSizePercent}%`,
         }}
       >
-        <div className="h-full w-full min-h-0 overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
+        <div className={cn(
+          'h-full w-full min-h-0',
+          overflowMode === 'hidden'
+            ? 'overflow-hidden'
+            : 'overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border',
+        )}>
           {children[0]}
         </div>
       </div>
@@ -182,7 +190,12 @@ export function ResizableSplitPane({
           [isHorizontal ? 'minWidth' : 'minHeight']: `${100 - maxSizePercent}%`,
         }}
       >
-        <div className="h-full w-full min-h-0 overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
+        <div className={cn(
+          'h-full w-full min-h-0',
+          overflowMode === 'hidden'
+            ? 'overflow-hidden'
+            : 'overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border',
+        )}>
           {children[1]}
         </div>
       </div>

@@ -94,10 +94,10 @@ test.describe('My Bots', () => {
     expect(page.url()).toMatch(/\/bots\/.+/);
   });
 
-  test('metrics strip shows node and bot counts', async () => {
-    // The metrics strip should show Nodes, Cloud, Local, Bots, Healthy
+  test('metrics strip shows node and status counts', async () => {
+    // The metrics strip should show Nodes, Cloud, Local, Healthy
     await expect(botsPage.page.getByText('Nodes', { exact: true })).toBeVisible({ timeout: 10_000 });
-    await expect(botsPage.page.getByText('Bots', { exact: true })).toBeVisible({ timeout: 5_000 });
+    await expect(botsPage.page.getByText('Healthy', { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test('add bot button is visible', async () => {
