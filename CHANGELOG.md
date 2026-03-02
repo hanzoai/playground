@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.175] - 2026-03-02
+
+
+### Fixed
+
+- Fix: terminal overlay error state and use login shell for commands
+
+- Add missing 'error' entry to StatusOverlay configs (was falling through
+  to 'unknown' showing misleading "Waiting / Checking bot status...")
+- Change shell from ['sh', '-c', cmd] to ['bash', '-lc', cmd] so
+  terminal commands inherit the user's PATH and environment
+- Enable retry button on error state (a5c36a8)
+
 ## [0.1.41-rc.174] - 2026-03-02
 
 
