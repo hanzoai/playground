@@ -2,14 +2,14 @@ import { test, expect } from '../../fixtures';
 import { AllBotsPage } from '../../page-objects/all-bots.page';
 
 /**
- * Control Plane E2E tests.
+ * My Bots E2E tests.
  *
- * Verifies the control plane page loads, SSE connection works,
- * agent cards display, and bot navigation functions.
+ * Verifies the nodes page loads, SSE connection works,
+ * node cards display, and bot navigation functions.
  * All tests run authenticated via cached auth state.
  */
 
-test.describe('Control Plane', () => {
+test.describe('My Bots', () => {
   let botsPage: AllBotsPage;
 
   test.beforeEach(async ({ page }) => {
@@ -18,12 +18,12 @@ test.describe('Control Plane', () => {
     await botsPage.expectPageLoaded();
   });
 
-  test('control plane page loads and shows header', async () => {
+  test('my bots page loads and shows header', async () => {
     await expect(botsPage.pageTitle).toBeVisible();
   });
 
-  test('agent network displays agents or empty state', async ({ page }) => {
-    // Wait for either agent cards or empty state to appear (SSE may take time)
+  test('node list displays nodes or empty state', async ({ page }) => {
+    // Wait for either node cards or empty state to appear (SSE may take time)
     const agentCard = botsPage.agentCards.first();
     const emptyState = botsPage.emptyState;
 
@@ -64,20 +64,20 @@ test.describe('Control Plane', () => {
     await botsPage.expectPageLoaded();
   });
 
-  test('agent card expands to show bots', async () => {
+  test('node card expands to show capabilities', async () => {
     const hasAgents = await botsPage.hasAgents();
     if (!hasAgents) {
-      test.skip(true, 'No agents available for expansion test');
+      test.skip(true, 'No nodes available for expansion test');
       return;
     }
 
-    // Expand first agent
+    // Expand first node card
     await botsPage.expandAgent(0);
 
-    // After expanding, the bot list should be visible inside the agent card
-    const firstAgent = botsPage.agentCards.first();
-    const botList = firstAgent.locator('.border-t');
-    await expect(botList).toBeVisible({ timeout: 5_000 });
+    // After expanding, the detail section should be visible inside the node card
+    const firstCard = botsPage.agentCards.first();
+    const detailSection = firstCard.locator('.border-t');
+    await expect(detailSection).toBeVisible({ timeout: 5_000 });
   });
 
   test('clicking a bot navigates to bot detail page', async ({ page }) => {
@@ -94,13 +94,13 @@ test.describe('Control Plane', () => {
     expect(page.url()).toMatch(/\/bots\/.+/);
   });
 
-  test('metrics strip shows agent and bot counts', async () => {
-    // The metrics strip should show Agents, Cloud, Local, Bots, Healthy
-    await expect(botsPage.page.getByText('Agents', { exact: true })).toBeVisible({ timeout: 10_000 });
+  test('metrics strip shows node and bot counts', async () => {
+    // The metrics strip should show Nodes, Cloud, Local, Bots, Healthy
+    await expect(botsPage.page.getByText('Nodes', { exact: true })).toBeVisible({ timeout: 10_000 });
     await expect(botsPage.page.getByText('Bots', { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
-  test('register agent button is visible', async () => {
+  test('add bot button is visible', async () => {
     await expect(botsPage.registerAgentButton).toBeVisible({ timeout: 5_000 });
   });
 });

@@ -1,8 +1,8 @@
 import { type Page, type Locator, expect } from '@playwright/test';
 
 /**
- * Page object for the Control Plane page (/bots/all).
- * Agent network view, live status, agent cards with nested bots, activity stream.
+ * Page object for the My Bots page (/nodes).
+ * Node network view, live status, node cards, activity stream.
  */
 export class AllBotsPage {
   readonly page: Page;
@@ -33,27 +33,27 @@ export class AllBotsPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.pageTitle = page.getByRole('heading', { name: 'Control Plane' });
-    this.pageDescription = page.getByText(/orchestrate local and cloud agents/i);
+    this.pageTitle = page.getByRole('heading', { name: 'My Bots' });
+    this.pageDescription = page.getByText(/manage and monitor your local and cloud bots/i);
 
     this.liveIndicator = page.locator('span.font-mono.text-green-400', { hasText: 'Live' });
     this.offlineIndicator = page.locator('span.font-mono.text-red-400', { hasText: 'Offline' });
     this.liveUpdatesBadge = this.liveIndicator.or(this.offlineIndicator);
 
     this.refreshButton = page.locator('button[title="Refresh"]');
-    this.registerAgentButton = page.getByText('Register Agent');
+    this.registerAgentButton = page.getByText('Add Bot');
 
     this.metricsStrip = page.locator('.flex.items-center.gap-4.py-2');
 
     this.agentCards = page.locator('.border.border-border\\/30.rounded-md');
-    this.emptyState = page.getByText(/no agents connected/i);
+    this.emptyState = page.getByText(/no bots connected/i);
 
     this.activityStream = page.getByText('Activity');
   }
 
   async goto() {
     // Use 'domcontentloaded' — the page has SSE connections that prevent 'networkidle'
-    await this.page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/nodes', { waitUntil: 'domcontentloaded' });
   }
 
   async expectPageLoaded() {
