@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -182,6 +183,26 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 			return
 		}
 
+		// Casdoor's /api/userinfo follows OIDC standard claims and may omit
+		// organization, isAdmin, etc.  Fall back to the JWT payload which
+		// always carries the full Casdoor claim set (owner, isAdmin, …).
+		if user.Organization == "" || !user.IsAdmin {
+			if jwtClaims := parseJWTPayload(token); jwtClaims != nil {
+				if user.Organization == "" {
+					user.Organization = jwtClaims.Owner
+				}
+				if !user.IsAdmin && jwtClaims.IsAdmin {
+					user.IsAdmin = true
+				}
+				if user.Email == "" {
+					user.Email = jwtClaims.Email
+				}
+				if user.Name == "" {
+					user.Name = jwtClaims.Name
+				}
+			}
+		}
+
 		// Enforce organization match if configured
 		if config.Organization != "" && user.Organization != "" && user.Organization != config.Organization {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
@@ -238,6 +259,37 @@ func RequireOrg(c *gin.Context) (string, bool) {
 	// For non-IAM auth (API key, internal), fall back to "local"
 	// This preserves backward compatibility while ensuring org is always set
 	return "local", true
+}
+
+// jwtPayload holds the Casdoor-specific JWT claims we need beyond OIDC standard.
+type jwtPayload struct {
+	Owner   string `json:"owner"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	IsAdmin bool   `json:"isAdmin"`
+}
+
+// parseJWTPayload extracts Casdoor claims from the JWT payload without
+// cryptographic verification (the token was already validated via userinfo).
+func parseJWTPayload(token string) *jwtPayload {
+	parts := strings.SplitN(token, ".", 3)
+	if len(parts) < 2 {
+		return nil
+	}
+	payload := parts[1]
+	// Pad base64url to standard base64
+	if m := len(payload) % 4; m != 0 {
+		payload += strings.Repeat("=", 4-m)
+	}
+	data, err := base64.URLEncoding.DecodeString(payload)
+	if err != nil {
+		return nil
+	}
+	var claims jwtPayload
+	if err := json.Unmarshal(data, &claims); err != nil {
+		return nil
+	}
+	return &claims
 }
 
 // RequireIAMOrg extracts the org from IAM context and aborts with 403 if no IAM user.
