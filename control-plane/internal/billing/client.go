@@ -44,6 +44,8 @@ func NewClient() *Client {
 
 // GetBalance returns the user's available balance in cents.
 func (c *Client) GetBalance(ctx context.Context, userID, token string) (*BalanceResult, error) {
+	// Normalize user ID to lowercase — Commerce stores all IDs lowercase.
+	userID = strings.ToLower(userID)
 	u := fmt.Sprintf("%s/api/v1/billing/balance?user=%s&currency=usd",
 		c.baseURL, url.QueryEscape(userID))
 
