@@ -3,7 +3,6 @@ package billing
 import (
 	"context"
 	"fmt"
-	"math"
 )
 
 // ProvisionAllowance is the result of a billing pre-check.
@@ -13,13 +12,6 @@ type ProvisionAllowance struct {
 	BalanceCents  int    `json:"balance_cents"`
 	RequiredCents int    `json:"required_cents"`
 	HoursAfford   int    `json:"hours_afford"`
-}
-
-// superAdmins bypass all billing checks (same list as bot gateway).
-var superAdmins = map[string]bool{
-	"a@hanzo.ai":  true,
-	"z@hanzo.ai":  true,
-	"z@zeekay.io": true,
 }
 
 // CentsPerHour returns the hourly cost in cents for a compute tier slug.
@@ -55,24 +47,14 @@ func CentsPerHour(slug string) int {
 }
 
 // CheckProvisionAllowance verifies the user has at least 1 hour of compute
-// funds at the given hourly rate. Super admins always pass.
+// funds at the given hourly rate. Everyone pays — add credit to launch.
 func CheckProvisionAllowance(
 	ctx context.Context,
 	client *Client,
-	userEmail string,
 	userID string,
 	token string,
 	centsPerHour int,
 ) (*ProvisionAllowance, error) {
-	// Super admin bypass
-	if superAdmins[userEmail] {
-		return &ProvisionAllowance{
-			Allowed:      true,
-			BalanceCents: math.MaxInt32,
-			HoursAfford:  math.MaxInt32,
-		}, nil
-	}
-
 	balance, err := client.GetBalance(ctx, userID, token)
 	if err != nil {
 		return nil, fmt.Errorf("billing gate: %w", err)

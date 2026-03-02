@@ -59,7 +59,7 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 		// Check billing: require at least 1 hour of compute balance
 		allowance, err := billing.CheckProvisionAllowance(
 			c.Request.Context(), billingClient,
-			user.Email, user.Sub, bearerToken, costPerHour,
+			user.Sub, bearerToken, costPerHour,
 		)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("billing check failed")
@@ -439,7 +439,7 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 		// Check billing: require at least 1 hour of total team compute
 		allowance, err := billing.CheckProvisionAllowance(
 			c.Request.Context(), billingClient,
-			user.Email, user.Sub, bearerToken, totalCentsPerHour,
+			user.Sub, bearerToken, totalCentsPerHour,
 		)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("billing check failed for team provision")
