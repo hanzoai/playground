@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.174] - 2026-03-02
+
+
+### Fixed
+
+- Fix(e2e): update test selectors for nav unification + My Bots rename (#59)
+
+Page objects and specs referenced old UI text (Control Plane, Register
+Agent, /bots/all, Hanzo Bot sidebar logo) that no longer exists after
+the navigation unification and gateway WS refactor.
+
+Updated selectors:
+- Heading: Control Plane -> My Bots
+- Description: orchestrate local and cloud agents -> manage and monitor
+  your local and cloud bots
+- Button: Register Agent -> Add Bot
+- Empty state: no agents connected -> no bots connected
+- Route: /bots/all -> /nodes
+- Sidebar logo: Hanzo Bot -> Playground
+- Metrics label: Agents -> Nodes (44607b8)
+
 ## [0.1.41-rc.173] - 2026-03-02
 
 
