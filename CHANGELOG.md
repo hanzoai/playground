@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.171] - 2026-03-02
+
+
+### Fixed
+
+- Fix: correct container name in deploy workflow (#58)
+
+The kubectl set image command referenced container name
+"hanzo-playground" but the actual container in the K8s
+deployment spec is named "control-plane" (defined in both
+the kustomize base manifest and the Helm chart template). (17c1128)
+
+
+
+### Other
+
+- UI: rename Add Serverless Bot to Add Bot, show only Production env by default
+
+- Change "Add Serverless Bot" → "Add Bot" in header and page actions
+- Default to Production environment only; add "Add Staging" option in dropdown
+- Remove Development environment from default list (2ff4b50)
+
 ## [0.1.41-rc.170] - 2026-03-02
 
 
