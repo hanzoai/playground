@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantStore } from "@/stores/tenantStore";
-import { ChevronDown, Check } from "@/components/ui/icon-bridge";
+import { ChevronDown, Check, Plus } from "@/components/ui/icon-bridge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,15 +59,23 @@ function LocalOrgFallback() {
 
 const ENVIRONMENTS = [
   { id: "production", name: "Production" },
+] as const;
+
+const ADDABLE_ENVIRONMENTS = [
   { id: "staging", name: "Staging" },
-  { id: "development", name: "Development" },
 ] as const;
 
 function EnvironmentSelector() {
   const environment = useTenantStore((s) => s.environment);
   const setEnvironment = useTenantStore((s) => s.setEnvironment);
-  const current = ENVIRONMENTS.find((e) => e.id === environment);
+  const [addedEnvs, setAddedEnvs] = React.useState<string[]>([]);
+  const allEnvs = [
+    ...ENVIRONMENTS,
+    ...ADDABLE_ENVIRONMENTS.filter((e) => addedEnvs.includes(e.id)),
+  ];
+  const current = allEnvs.find((e) => e.id === environment);
   const label = current?.name ?? environment;
+  const addableRemaining = ADDABLE_ENVIRONMENTS.filter((e) => !addedEnvs.includes(e.id));
 
   return (
     <DropdownMenu>
@@ -80,7 +88,7 @@ function EnvironmentSelector() {
       <DropdownMenuContent align="start" className="w-40">
         <DropdownMenuLabel>Environment</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {ENVIRONMENTS.map((env) => (
+        {allEnvs.map((env) => (
           <DropdownMenuItem
             key={env.id}
             onClick={() => setEnvironment(env.id)}
@@ -96,6 +104,24 @@ function EnvironmentSelector() {
             {env.name}
           </DropdownMenuItem>
         ))}
+        {addableRemaining.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            {addableRemaining.map((env) => (
+              <DropdownMenuItem
+                key={env.id}
+                onClick={() => {
+                  setAddedEnvs((prev) => [...prev, env.id]);
+                  setEnvironment(env.id);
+                }}
+                className="text-muted-foreground"
+              >
+                <Plus size={12} className="mr-1.5 shrink-0" />
+                Add {env.name}
+              </DropdownMenuItem>
+            ))}
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

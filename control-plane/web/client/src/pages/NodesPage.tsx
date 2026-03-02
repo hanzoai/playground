@@ -633,7 +633,7 @@ export function NodesPage() {
   }
 
   pageHeaderActions.push({
-    label: "Add Serverless Bot",
+    label: "Add Bot",
     onClick: () => setShowServerlessModal(true),
     icon: <Plus className="h-4 w-4" />,
     variant: "default",

@@ -144,7 +144,7 @@ export function EnhancedNodesHeader({
             onClick={onAddServerless}
           >
             <Plus className="w-4 h-4" />
-            Add Serverless Bot
+            Add Bot
           </Button>
         )}
       </div>
