@@ -79,6 +79,12 @@ function StatusOverlay({ state, nodeStatus, onRetry }: {
       pulse: false,
       retry: true,
     },
+    error: {
+      label: 'Error',
+      sub: 'A command execution error occurred.',
+      pulse: false,
+      retry: true,
+    },
     unknown: {
       label: 'Waiting',
       sub: 'Checking bot status…',
@@ -269,7 +275,7 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
               {
                 nodeId: agentId,
                 command: 'system.run',
-                params: { command: ['sh', '-c', cmd] },
+                params: { command: ['bash', '-lc', cmd] },
                 timeoutMs: 30000,
                 idempotencyKey: `term-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
               },
@@ -407,7 +413,7 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
         <StatusOverlay
           state={connState}
           nodeStatus={nodeStatus}
-          onRetry={connState === 'unreachable' || connState === 'disconnected' ? handleRetry : undefined}
+          onRetry={connState === 'unreachable' || connState === 'disconnected' || connState === 'error' ? handleRetry : undefined}
         />
       )}
 
