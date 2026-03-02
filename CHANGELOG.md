@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.180] - 2026-03-02
+
+
+### Fixed
+
+- Fix: remove super admin billing bypass — everyone pays
+
+All users must have credit to launch bots. No bypasses.
+Add funds at billing.hanzo.ai to keep bots running.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (40d0c48)
+
 ## [0.1.41-rc.179] - 2026-03-02
 
 
