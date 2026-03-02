@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.184] - 2026-03-02
+
+
+### Fixed
+
+- Fix: use OIDC preferred_username (login name) for billing user ID
+
+OIDC userinfo returns display name in "name" (e.g. "Z") but Commerce
+stores balances under the login name (e.g. "hanzo/z"). Use the OIDC
+preferred_username claim which contains the actual login name.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (86169b4)
+
 ## [0.1.41-rc.183] - 2026-03-02
 
 
