@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.182] - 2026-03-02
+
+
+### Fixed
+
+- Fix: extract org and isAdmin from JWT payload when missing from userinfo
+
+Casdoor's OIDC /api/userinfo endpoint returns standard claims only,
+omitting organization (owner) and isAdmin. Fall back to parsing the
+JWT payload (already validated via userinfo) to extract these
+Casdoor-specific claims.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6ee3f76)
+
+
+
+### Testing
+
+- Test: add E2E paid launch flow tests
+
+Covers preset display, balance visibility, insufficient funds UI,
+402 billing gate error handling, and successful provision redirect.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6c38886)
+
 ## [0.1.41-rc.181] - 2026-03-02
 
 
