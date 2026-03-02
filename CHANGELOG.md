@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.173] - 2026-03-02
+
+
+### Fixed
+
+- Fix: My Bots page uses gateway WS node.list for live node data
+
+Replace REST botsApi.getAllBots() (always returned empty) with gateway
+WebSocket nodeList() RPC for real-time connected node discovery.
+Nodes now show with platform, version, caps, and link to detail page. (505d7de)
+
 ## [0.1.41-rc.172] - 2026-03-02
 
 
