@@ -13,8 +13,9 @@ import (
 
 // Client talks to the Commerce API for balance lookups.
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
+	baseURL      string
+	serviceToken string
+	httpClient   *http.Client
 }
 
 // BalanceResult represents the response from the Commerce balance endpoint.
@@ -35,8 +36,9 @@ func NewClient() *Client {
 	}
 	base = strings.TrimRight(base, "/")
 	return &Client{
-		baseURL:    base,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		baseURL:      base,
+		serviceToken: os.Getenv("COMMERCE_SERVICE_TOKEN"),
+		httpClient:   &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -49,8 +51,19 @@ func (c *Client) GetBalance(ctx context.Context, userID, token string) (*Balance
 	if err != nil {
 		return nil, fmt.Errorf("billing: create request: %w", err)
 	}
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	// Prefer service token for inter-service calls; fall back to user token.
+	authToken := c.serviceToken
+	if authToken == "" {
+		authToken = token
+	}
+	if authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+authToken)
+	}
+	// Set org header for service-token auth (org derived from user ID "org/name").
+	if c.serviceToken != "" {
+		if parts := strings.SplitN(userID, "/", 2); len(parts) == 2 {
+			req.Header.Set("X-Hanzo-Org", parts[0])
+		}
 	}
 	req.Header.Set("Accept", "application/json")
 
