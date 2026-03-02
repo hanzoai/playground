@@ -19,12 +19,12 @@ const authDir = path.resolve(__dirname, '../../.auth');
  *   - Real production node, real WebSocket, no mocks
  */
 
-const TARGET_NODE = process.env.E2E_TARGET_NODE_ID || 'antje-macbook-2';
-const TARGET_NODE_SEARCH = process.env.E2E_TARGET_NODE_SEARCH || 'MacBook';
+const TARGET_NODE = process.env.E2E_TARGET_NODE_ID || '';
+const TARGET_NODE_SEARCH = process.env.E2E_TARGET_NODE_SEARCH || '';
 
 test.describe('Node Detail Page', () => {
   let detailPage: NodeDetailPage;
-  let resolvedNodeId: string;
+  let resolvedNodeId = '';
 
   let gatewayConnected = false;
 
@@ -59,20 +59,24 @@ test.describe('Node Detail Page', () => {
     gatewayConnected = !(await nodesPage.isGatewayDisconnected());
 
     if (gatewayConnected) {
-      const macNode = await nodesPage.findNode(TARGET_NODE_SEARCH) ??
-                      await nodesPage.findNode('macbook') ??
-                      await nodesPage.findNode('antje-macbook');
+      // If a specific node search term is provided via env, use it; otherwise discover first available
+      let targetNode = TARGET_NODE_SEARCH
+        ? await nodesPage.findNode(TARGET_NODE_SEARCH)
+        : null;
 
-      if (macNode) {
-        // Extract node ID from aria-label: "Navigate to details for node <id>..."
-        resolvedNodeId = await nodesPage.getNodeIdFromCard(macNode);
-        if (!resolvedNodeId) {
-          resolvedNodeId = TARGET_NODE;
-        }
-      } else {
+      if (!targetNode) {
+        const cards = await nodesPage.getNodeCards();
+        targetNode = cards.length > 0 ? cards[0] : null;
+      }
+
+      if (targetNode) {
+        resolvedNodeId = await nodesPage.getNodeIdFromCard(targetNode);
+      }
+
+      if (!resolvedNodeId && TARGET_NODE) {
         resolvedNodeId = TARGET_NODE;
       }
-    } else {
+    } else if (TARGET_NODE) {
       resolvedNodeId = TARGET_NODE;
     }
 

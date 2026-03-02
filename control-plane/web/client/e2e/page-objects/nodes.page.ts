@@ -20,17 +20,17 @@ export class NodesPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.heading = page.getByRole('heading', { name: 'Nodes' });
+    this.heading = page.getByRole('heading', { name: /my bots/i });
     this.searchBar = page.getByPlaceholder(/search nodes/i);
     this.nodeList = page.locator('[data-testid="nodes-list"]').or(
       page.locator('.nodes-virtual-list').or(
         page.locator('[class*="NodesVirtualList"]')
       )
     );
-    this.connectionBadge = page.locator('text=Live updates').or(
-      page.locator('text=Disconnected')
+    this.connectionBadge = page.locator('text=Live').or(
+      page.locator('text=Offline')
     );
-    this.totalBadge = page.locator('text=/\\d+ total/i');
+    this.totalBadge = page.locator('text=/\\d+ Nodes/i');
   }
 
   async goto() {
@@ -45,7 +45,7 @@ export class NodesPage {
     const nodeCard = this.page.locator('[role="button"][aria-label*="Navigate to details for node"]');
     const content = nodeCard
       .or(this.page.getByText('Gateway not connected'))
-      .or(this.page.getByRole('heading', { name: /nodes/i }));
+      .or(this.page.getByRole('heading', { name: /my bots/i }));
     await content.first().waitFor({ state: 'visible', timeout: 30_000 });
     // Give gateway WebSocket time to connect and populate node list
     await this.page.waitForTimeout(3_000);
@@ -135,13 +135,13 @@ export class NodesPage {
       return cards.length;
     }
     const text = await this.totalBadge.textContent();
-    const match = text?.match(/(\d+)\s*total/i);
+    const match = text?.match(/(\d+)\s*nodes?/i);
     return match ? parseInt(match[1], 10) : 0;
   }
 
-  /** Check if "Live updates" badge is visible (gateway connected) */
+  /** Check if "Live" badge is visible (gateway connected) */
   async isLiveUpdatesConnected(): Promise<boolean> {
-    return this.page.locator('text=Live updates').isVisible({ timeout: 5_000 }).catch(() => false);
+    return this.page.locator('span.font-mono.text-green-400', { hasText: 'Live' }).isVisible({ timeout: 5_000 }).catch(() => false);
   }
 }
 
@@ -196,7 +196,7 @@ export class NodeDetailPage {
   /** Get the node ID from the overview card */
   async getNodeId(): Promise<string> {
     // Node ID is displayed in the overview card under "Node ID"
-    const nodeIdEl = this.page.locator('dt:text("Node ID") + dd, dd:has-text("antje-macbook")');
+    const nodeIdEl = this.page.locator('dt:text("Node ID") + dd');
     const text = await nodeIdEl.first().textContent();
     return text?.trim() ?? '';
   }

@@ -114,10 +114,10 @@ test.describe('Trial Credits & Billing', () => {
   });
 
   test('bot execution button is enabled when user has credits', async ({ page }) => {
-    await page.goto('/bots/all', { waitUntil: 'domcontentloaded' });
+    await page.goto('/nodes', { waitUntil: 'domcontentloaded' });
 
-    // Wait for Control Plane page to load
-    await expect(page.getByRole('heading', { name: 'Control Plane' })).toBeVisible({ timeout: 15_000 });
+    // Wait for My Bots page to load
+    await expect(page.getByRole('heading', { name: 'My Bots' })).toBeVisible({ timeout: 15_000 });
 
     // Check if there are any agent cards with bots
     const agentCards = page.locator('.border.border-border\\/30.rounded-md');
