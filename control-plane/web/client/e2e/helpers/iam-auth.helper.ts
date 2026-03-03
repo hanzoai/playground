@@ -207,7 +207,7 @@ export async function getAccessToken(): Promise<string> {
 
   // Fallback: try client_credentials grant
   const cfg = getConfig();
-  const tokenRes = await fetch(`${cfg.serverUrl}/api/login/oauth/access_token`, {
+  const tokenRes = await fetch(`${cfg.serverUrl}/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
