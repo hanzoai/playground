@@ -291,12 +291,15 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		if err != nil {
 			logger.Logger.Warn().Err(err).Msg("K8s in-cluster client unavailable — cloud provisioning disabled")
 		} else {
-			cloudProvisioner = cloud.NewProvisioner(cfg.Cloud, k8sClient)
-			// Sync existing cloud agents from K8s
+			cloudProvisioner, err = cloud.NewProvisioner(cfg.Cloud, k8sClient, dirs.DataDir)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize cloud provisioner: %w", err)
+			}
+			// Sync existing cloud agents from K8s and Visor
 			go func() {
 				ctx := context.Background()
-				if err := cloudProvisioner.Sync(ctx); err != nil {
-					logger.Logger.Warn().Err(err).Msg("failed to sync cloud nodes from K8s")
+				if syncErr := cloudProvisioner.Sync(ctx); syncErr != nil {
+					logger.Logger.Warn().Err(syncErr).Msg("failed to sync cloud nodes from K8s")
 				}
 			}()
 		}
@@ -704,20 +707,8 @@ func (s *PlaygroundServer) setupRoutes() {
 	// Security headers on every response
 	s.Router.Use(middleware.SecurityHeaders())
 
-	// Add request logging middleware
-	s.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-			param.ClientIP,
-			param.TimeStamp.Format(time.RFC1123),
-			param.Method,
-			param.Path,
-			param.Request.Proto,
-			param.StatusCode,
-			param.Latency,
-			param.Request.UserAgent(),
-			param.ErrorMessage,
-		)
-	}))
+	// Structured request logging via zerolog (JSON output for log aggregation).
+	s.Router.Use(middleware.StructuredLogger())
 
 	// Add timeout middleware for all routes (1 hour for long-running executions)
 	s.Router.Use(func(c *gin.Context) {

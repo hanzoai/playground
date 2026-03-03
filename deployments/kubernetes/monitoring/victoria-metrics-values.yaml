@@ -1,0 +1,151 @@
+# VictoriaMetrics single-node helm values for Hanzo platform observability.
+#
+# Install:
+#   helm install vmsingle vm/victoria-metrics-single \
+#     -n hanzo -f victoria-metrics-values.yaml
+#
+# Upgrade:
+#   helm upgrade vmsingle vm/victoria-metrics-single \
+#     -n hanzo -f victoria-metrics-values.yaml
+#
+# VictoriaMetrics natively scrapes Prometheus-format /metrics endpoints,
+# so all services that expose promhttp are automatically compatible.
+
+server:
+  image:
+    tag: v1.137.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+    storageClass: do-block-storage
+  retentionPeriod: 30d
+  extraArgs:
+    envflag.enable: true
+    envflag.prefix: VM_
+    loggerFormat: json
+    httpListenAddr: ":8428"
+    selfScrapeInterval: 15s
+    # Suppress noisy errors for services that do not yet expose /metrics.
+    promscrape.suppressScrapeErrors: true
+
+  scrape:
+    enabled: true
+    config:
+      global:
+        scrape_interval: 15s
+        scrape_timeout: 10s
+
+      scrape_configs:
+        # VictoriaMetrics self-monitoring.
+        - job_name: victoriametrics
+          static_configs:
+            - targets:
+                - localhost:8428
+
+        # Playground control-plane: execution, discovery, cloud provisioning metrics.
+        # Exposed via promhttp.Handler() at /metrics (already working).
+        - job_name: playground
+          kubernetes_sd_configs:
+            - role: endpoints
+              namespaces:
+                names:
+                  - hanzo
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_name]
+              regex: agents
+              action: keep
+            - source_labels: [__meta_kubernetes_endpoint_port_name]
+              regex: http
+              action: keep
+            - target_label: __metrics_path__
+              replacement: /metrics
+
+        # Commerce API: billing, orders, subscriptions.
+        # NOTE: Commerce does not yet expose /metrics (returns 404).
+        # Enable this job after adding promhttp to commerce.
+        # - job_name: commerce
+        #   kubernetes_sd_configs:
+        #     - role: endpoints
+        #       namespaces:
+        #         names:
+        #           - hanzo
+        #   relabel_configs:
+        #     - source_labels: [__meta_kubernetes_service_name]
+        #       regex: commerce
+        #       action: keep
+        #     - target_label: __metrics_path__
+        #       replacement: /metrics
+
+        # Cloud API: model routing, chat completions.
+        # NOTE: cloud-api serves an SPA at /metrics (no Prometheus handler).
+        # Enable this job after adding a /metrics route to cloud-api.
+        # - job_name: cloud-api
+        #   kubernetes_sd_configs:
+        #     - role: endpoints
+        #       namespaces:
+        #         names:
+        #           - hanzo
+        #   relabel_configs:
+        #     - source_labels: [__meta_kubernetes_service_name]
+        #       regex: cloud-api
+        #       action: keep
+        #     - target_label: __metrics_path__
+        #       replacement: /metrics
+
+        # Bot gateway: WebSocket connections, message routing, marketplace.
+        # NOTE: bot-gateway returns 404 at /metrics.
+        # Enable this job after adding a /metrics endpoint to bot-gateway.
+        # - job_name: bot-gateway
+        #   kubernetes_sd_configs:
+        #     - role: endpoints
+        #       namespaces:
+        #         names:
+        #           - hanzo
+        #   relabel_configs:
+        #     - source_labels: [__meta_kubernetes_service_name]
+        #       regex: bot-gateway
+        #       action: keep
+        #     - source_labels: [__meta_kubernetes_endpoint_port_name]
+        #       regex: http
+        #       action: keep
+        #     - target_label: __metrics_path__
+        #       replacement: /metrics
+
+        # KrakenD API gateway: request rates, latency.
+        # NOTE: KrakenD metrics not exposed at /__stats/ (404).
+        # Enable after adding the metrics middleware to KrakenD config.
+        # - job_name: gateway
+        #   kubernetes_sd_configs:
+        #     - role: endpoints
+        #       namespaces:
+        #         names:
+        #           - hanzo
+        #   relabel_configs:
+        #     - source_labels: [__meta_kubernetes_service_name]
+        #       regex: gateway
+        #       action: keep
+        #     - target_label: __metrics_path__
+        #       replacement: /__stats/
+
+        # IAM (Casdoor): authentication metrics.
+        # NOTE: IAM requires auth for /api/metrics. Enable after
+        # adding an unauthenticated /metrics or /api/health/metrics route.
+        # - job_name: iam
+        #   kubernetes_sd_configs:
+        #     - role: endpoints
+        #       namespaces:
+        #         names:
+        #           - hanzo
+        #   relabel_configs:
+        #     - source_labels: [__meta_kubernetes_service_name]
+        #       regex: iam
+        #       action: keep
+        #     - target_label: __metrics_path__
+        #       replacement: /api/metrics
