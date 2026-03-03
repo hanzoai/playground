@@ -70,6 +70,9 @@ type PlaygroundServer struct {
 	cloudProvisioner         *cloud.Provisioner
 	meteringCancel           context.CancelFunc
 	spaceStore               spaces.Store
+	// LLM billing gate and async usage reporter
+	llmBillingGateCfg        billing.LLMGateConfig
+	usageReporter            *billing.UsageReporter
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -335,6 +338,13 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		spaceStore = sqliteStore
 	}
 
+	// Initialize LLM billing gate and usage reporter.
+	llmGateCfg := billing.NewLLMGateConfig()
+	usageReporter := billing.NewUsageReporter(
+		llmGateCfg.Client, llmGateCfg.Cache,
+		billing.DefaultUsageReporterConfig(),
+	)
+
 	return &PlaygroundServer{
 		storage:               storageProvider,
 		cache:                 cacheProvider,
@@ -360,6 +370,8 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		zapAdminPort:             adminPort,
 		cloudProvisioner:         cloudProvisioner,
 		spaceStore:               spaceStore,
+		llmBillingGateCfg:        llmGateCfg,
+		usageReporter:            usageReporter,
 	}, nil
 }
 
@@ -458,6 +470,11 @@ func (s *PlaygroundServer) Stop() error {
 	// Stop billing metering service
 	if s.meteringCancel != nil {
 		s.meteringCancel()
+	}
+
+	// Flush remaining LLM usage records to Commerce.
+	if s.usageReporter != nil {
+		s.usageReporter.Shutdown()
 	}
 
 	// Stop status manager service
@@ -1167,6 +1184,15 @@ func (s *PlaygroundServer) registerCloudRoutes(cloudAPI *gin.RouterGroup) {
 	cloudAPI.GET("/pricing", handlers.CloudPricingHandler(s.config.Cloud.PricingServiceURL))
 	cloudAPI.GET("/presets", handlers.CloudPresetsHandler(s.config.Cloud.PricingServiceURL))
 	cloudAPI.GET("/billing/balance", handlers.CloudBillingBalanceHandler())
+
+	// LLM completion endpoints with billing gate.
+	// The billing gate checks Commerce balance before allowing LLM requests.
+	// Usage is reported asynchronously after the response completes.
+	llm := cloudAPI.Group("/llm")
+	llm.Use(billing.LLMBillingGate(s.llmBillingGateCfg))
+	{
+		llm.POST("/chat/completions", handlers.LLMChatCompletionsHandler(s.usageReporter))
+	}
 }
 
 // registerSpaceRoutes registers the Space API endpoints on the given router group.
