@@ -153,25 +153,27 @@ func TestMeteringService_PrunesRemovedNodes(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go svc.Run(ctx)
 
-	// Wait for first metering cycle
-	time.Sleep(100 * time.Millisecond)
+	// Wait long enough for at least one metering cycle to complete.
+	time.Sleep(200 * time.Millisecond)
 
 	// Remove the node
 	lister.setNodes(nil)
 
-	// Wait for another cycle -- should not record anything new
+	// Wait for any in-flight cycle to finish, then snapshot.
+	time.Sleep(100 * time.Millisecond)
 	mu.Lock()
-	countAfterFirstCycle := len(usageRecords)
+	countAfterRemoval := len(usageRecords)
 	mu.Unlock()
 
-	time.Sleep(150 * time.Millisecond)
+	// Wait for several more cycles — count should not increase.
+	time.Sleep(200 * time.Millisecond)
 	cancel()
 
 	mu.Lock()
 	defer mu.Unlock()
 	// After removing nodes, the lastMetered map should be pruned
 	// and no new records should be generated (count should be same)
-	assert.Equal(t, countAfterFirstCycle, len(usageRecords),
+	assert.Equal(t, countAfterRemoval, len(usageRecords),
 		"no additional usage should be recorded after node removal")
 }
 

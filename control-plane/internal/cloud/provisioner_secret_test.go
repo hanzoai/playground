@@ -124,7 +124,8 @@ func TestProvisionCreatesSecretForAPIKeys(t *testing.T) {
 	// Secret should contain the sensitive keys
 	assert.Equal(t, "hk-user-api-key-abcdef1234567890", secretData["HANZO_API_KEY"])
 	assert.Equal(t, "hk-user-api-key-abcdef1234567890", secretData["OPENAI_API_KEY"])
-	assert.Equal(t, "hk-user-api-key-abcdef1234567890", secretData["BOT_GATEWAY_TOKEN"])
+	// BOT_GATEWAY_TOKEN uses config.Kubernetes.GatewayToken when set (not user API key)
+	assert.Equal(t, "gw-token-abc123def456", secretData["BOT_GATEWAY_TOKEN"])
 
 	// Secret labels should tag it to the node
 	labels := k8s.secretLabels[secretName]
