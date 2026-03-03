@@ -6,6 +6,83 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.189] - 2026-03-03
+
+
+### Added
+
+- Feat: LLM billing gate and async usage reporter (#63)
+
+- Pre-request balance check via Commerce API with TTL cache
+- Async batched usage reporter (50 records, 5s flush, 3x retry)
+- OpenAI-compatible POST /v1/chat/completions route
+- Anthropic-compatible POST /v1/messages route
+- BILLING_GATE_MODE: open/warn/enforce for gradual rollout (04403f0)
+
+- Feat: observability infrastructure (VictoriaMetrics + structured logging) (#62)
+
+* feat: billing holds, debit on deprovision, and usage metering
+
+Add fund reservation (holds) at provision time so users cannot launch
+unlimited compute after a single balance check. On deprovision, the
+hold is settled with the actual elapsed usage. A background metering
+service records incremental usage every 5 minutes for running nodes.
+
+- billing.Client: CreateHold, SettleHold, RecordUsage methods
+- billing.Hold struct for fund reservation responses
+- billing.MeteringService goroutine with NodeLister interface
+- CloudNode: HoldID, ProvisionedAt, CentsPerHour, BillingUserID fields
+- CloudProvisionHandler: creates hold after successful provision
+- CloudDeprovisionHandler: settles hold with actual usage before teardown
+- server.go: starts/stops metering service with provisioner adapter
+- cloud.Provisioner.RunningBillingNodes for metering enumeration
+- Comprehensive tests for holds, settle, usage, and metering lifecycle
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* feat: add structured logging middleware and VictoriaMetrics observability
+
+Replace gin.LoggerWithFormatter with a zerolog-based StructuredLogger middleware
+that emits JSON-structured request logs with method, path, status, latency,
+client_ip, user_agent, and IAM user context. This makes logs parseable by
+VictoriaMetrics/Loki and other log aggregation systems.
+
+Add VictoriaMetrics single-node helm values for the hanzo namespace with
+scrape configs for playground (active), and commented configs ready for
+commerce, cloud-api, bot-gateway, gateway, and IAM once they expose
+/metrics endpoints.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* feat: persist node registry to BoltDB for crash recovery
+
+Replace the in-memory map[string]*CloudNode with a BoltDB-backed
+NodeStore so provisioned agent state survives control-plane restarts.
+This prevents orphaned compute and billing leaks after pod recycling.
+
+- Remove `nodes` map field from Provisioner, use `store *NodeStore`
+- All CRUD operations (Provision, Deprovision, GetNode, ListNodes,
+  GetLogs, countByOrg, RunningBillingNodes) now read/write BoltDB
+- rehydrateFromVisor builds a lookup map from store.List() instead
+  of iterating p.nodes
+- Fix variable shadowing in time.Parse error paths
+- Update provisioner_secret_test.go to use temp BoltDB stores
+- Add comprehensive store_test.go (Put, Get, List, Delete,
+  Persistence, BillingFields, CreatesDirIfMissing)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix: stabilize flaky metering test and correct gateway token assertion
+
+- metering_test: increase sleep windows to prevent race between cycle
+  completion and node removal snapshot
+- provisioner_secret_test: BOT_GATEWAY_TOKEN uses config GatewayToken
+  (not user API key) when GatewayToken is set
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (e5eb912)
+
 ## [0.1.41-rc.188] - 2026-03-03
 
 
