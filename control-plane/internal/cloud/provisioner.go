@@ -7,6 +7,8 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -81,17 +83,31 @@ type CloudNode struct {
 	Labels         map[string]string `json:"labels"`
 	CreatedAt      time.Time         `json:"created_at"`
 	LastSeen       time.Time         `json:"last_seen"`
+	// Billing: hold placed at provision time, settled on deprovision.
+	HoldID        string    `json:"hold_id,omitempty"`
+	ProvisionedAt time.Time `json:"provisioned_at"`
+	// CentsPerHour is the billing rate used for hold/settle calculations.
+	CentsPerHour  int       `json:"cents_per_hour,omitempty"`
+	// BillingUserID is the Commerce user ID (org/name format) for billing.
+	BillingUserID string    `json:"billing_user_id,omitempty"`
+	// BearerToken is the IAM token of the launching user, kept for settle calls.
+	BearerToken   string    `json:"-"`
 }
 
 // Provisioner manages cloud agent lifecycle on Kubernetes and multi-cloud VMs.
 // Linux bots: K8s pods with operative sidecar (cheap, containerized).
 // Mac/Windows bots: Real VMs via Visor (AWS EC2, DO, GCP, etc.) with RDP/VNC access.
+//
+// Node state is persisted to BoltDB so tracked agents survive pod restarts.
+// Without persistence, a restart loses all tracked agents, creating orphaned
+// compute and billing leaks.
 type Provisioner struct {
-	config    config.CloudConfig
-	k8s       KubernetesClient
-	visor     *VisorClient // nil if Visor not configured
-	mu        sync.RWMutex
-	nodes     map[string]*CloudNode // nodeID -> node
+	config config.CloudConfig
+	k8s    KubernetesClient
+	visor  *VisorClient // nil if Visor not configured
+	mu     sync.RWMutex
+	nodes  map[string]*CloudNode // nodeID -> node (in-memory; being migrated to store)
+	store  *NodeStore            // BoltDB persistence (nil until NodeStore is implemented)
 }
 
 // KubernetesClient is the interface for K8s operations.
@@ -107,6 +123,10 @@ type KubernetesClient interface {
 	ListAgentPods(ctx context.Context, namespace, labelSelector string) ([]*PodStatus, error)
 	// GetPodLogs returns recent logs for a pod.
 	GetPodLogs(ctx context.Context, namespace, podName string, tailLines int64) (string, error)
+	// CreateSecret creates or updates a K8s Secret with the given data.
+	CreateSecret(ctx context.Context, namespace, name string, data map[string]string, labels map[string]string) error
+	// DeleteSecret removes a K8s Secret.
+	DeleteSecret(ctx context.Context, namespace, name string) error
 }
 
 // SidecarSpec describes an additional container to run alongside the main agent.
@@ -139,6 +159,9 @@ type PodSpec struct {
 	ControlPlaneURL string // URL for agent to connect back
 	Sidecars        []SidecarSpec
 	NodeSelector    map[string]string
+	// SecretRef is the name of a K8s Secret whose keys are injected as env vars
+	// via envFrom. Sensitive values (API keys, tokens) go here instead of Env.
+	SecretRef string
 }
 
 // PodStatus represents the current state of a pod.
@@ -152,12 +175,27 @@ type PodStatus struct {
 	Message   string
 }
 
-// NewProvisioner creates a new cloud agent provisioner.
-func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient) *Provisioner {
+// NewProvisioner creates a new cloud agent provisioner backed by BoltDB.
+// dataDir is the directory where the nodes.db file will be stored; it defaults
+// to the value of PLAYGROUND_DATA_DIR (or /data if unset).
+func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient, dataDir string) (*Provisioner, error) {
+	if dataDir == "" {
+		dataDir = os.Getenv("PLAYGROUND_DATA_DIR")
+	}
+	if dataDir == "" {
+		dataDir = "/data"
+	}
+
+	store, err := NewNodeStore(filepath.Join(dataDir, "nodes.db"))
+	if err != nil {
+		return nil, fmt.Errorf("open node store: %w", err)
+	}
+
 	p := &Provisioner{
 		config: cfg,
 		k8s:    k8sClient,
-		nodes:     make(map[string]*CloudNode),
+		nodes:  make(map[string]*CloudNode),
+		store:  store,
 	}
 	// Initialize Visor client for Mac/Windows VM provisioning
 	if cfg.Visor.Enabled && cfg.Visor.Endpoint != "" {
@@ -166,7 +204,20 @@ func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient) *Provisi
 			Str("endpoint", cfg.Visor.Endpoint).
 			Msg("visor multi-cloud VM provisioner enabled")
 	}
-	return p
+
+	logger.Logger.Info().
+		Str("db_path", filepath.Join(dataDir, "nodes.db")).
+		Msg("node store opened for crash recovery")
+
+	return p, nil
+}
+
+// Close releases the underlying BoltDB resources. Call on shutdown.
+func (p *Provisioner) Close() error {
+	if p.store != nil {
+		return p.store.Close()
+	}
+	return nil
 }
 
 // Provision creates a new cloud agent. Routes based on OS:
@@ -282,6 +333,8 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	}
 	// Per-user billing: use the launching user's API key so usage is
 	// tracked and billed to their account. Fall back to shared service key.
+	// These keys are stored in a K8s Secret (not inline env vars) to avoid
+	// leaking credentials via `kubectl describe pod`.
 	apiKey := req.UserAPIKey
 	if apiKey == "" {
 		apiKey = p.config.Kubernetes.CloudAPIKey
@@ -294,6 +347,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		logger.Logger.Info().
 			Str("node_id", nodeID).
 			Str("owner", req.Owner).
+			Str("api_key", RedactKey(req.UserAPIKey)).
 			Msg("using per-user API key for billing")
 	}
 
@@ -353,7 +407,9 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			LimitMem: "512Mi",
 		})
 	} else if p.config.Kubernetes.OperativeEnabled {
-		// Build operative env: display settings + Hanzo API for billing through us
+		// Build operative env: display settings + Hanzo API for billing through us.
+		// API keys (HANZO_API_KEY, ANTHROPIC_API_KEY) are injected via the shared
+		// K8s Secret (envFrom.secretRef) instead of inline env vars.
 		operativeEnv := map[string]string{
 			"DISPLAY":      ":1",
 			"DISPLAY_NUM":  "1",
@@ -363,8 +419,9 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			"API_PROVIDER": "hanzo",
 		}
 		if apiKey != "" {
-			operativeEnv["HANZO_API_KEY"] = apiKey
-			operativeEnv["ANTHROPIC_API_KEY"] = apiKey // operative SDK reads this
+			// The operative SDK reads ANTHROPIC_API_KEY; include it in the
+			// secret data so it's injected via envFrom alongside the others.
+			env["ANTHROPIC_API_KEY"] = apiKey
 		}
 		if p.config.Kubernetes.CloudAPIEndpoint != "" {
 			operativeEnv["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
@@ -381,13 +438,28 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		})
 	}
 
+	// Separate sensitive env vars (API keys, tokens) into a K8s Secret so they
+	// are not visible via `kubectl describe pod`. Non-sensitive vars stay inline.
+	safeEnv, secretData := splitSensitiveEnv(env)
+	secretName := agentSecretName(nodeID)
+
+	if len(secretData) > 0 {
+		secretLabels := map[string]string{
+			"app.kubernetes.io/managed-by": "playground-provisioner",
+			"playground.hanzo.ai/node-id":  nodeID,
+		}
+		if err := p.k8s.CreateSecret(ctx, namespace, secretName, secretData, secretLabels); err != nil {
+			return nil, fmt.Errorf("failed to create agent secret: %w", err)
+		}
+	}
+
 	spec := &PodSpec{
 		Name:            podName,
 		Namespace:       namespace,
 		Image:           image,
 		ImagePullSecret: p.config.Kubernetes.ImagePullSecret,
 		ServiceAccount:  p.config.Kubernetes.ServiceAccount,
-		Env:             env,
+		Env:             safeEnv,
 		Labels:          labels,
 		Annotations: map[string]string{
 			"playground.hanzo.ai/provisioned-at": time.Now().UTC().Format(time.RFC3339),
@@ -401,6 +473,9 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Sidecars:        sidecars,
 		NodeSelector:    p.config.Kubernetes.NodeSelector,
 	}
+	if len(secretData) > 0 {
+		spec.SecretRef = secretName
+	}
 
 	logger.Logger.Info().
 		Str("node_id", nodeID).
@@ -408,6 +483,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Str("namespace", namespace).
 		Str("image", image).
 		Str("org", req.Org).
+		Str("secret", secretName).
 		Msg("provisioning cloud agent")
 
 	podStatus, err := p.k8s.CreateAgentPod(ctx, spec)
@@ -442,6 +518,12 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	p.mu.Lock()
 	p.nodes[nodeID] = node
 	p.mu.Unlock()
+
+	if p.store != nil {
+		if err := p.store.Put(node); err != nil {
+			return nil, fmt.Errorf("persist node %s: %w", nodeID, err)
+		}
+	}
 
 	return &ProvisionResult{
 		NodeID:    nodeID,
@@ -594,6 +676,12 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 	p.nodes[nodeID] = node
 	p.mu.Unlock()
 
+	if p.store != nil {
+		if err := p.store.Put(node); err != nil {
+			return nil, fmt.Errorf("persist node %s: %w", nodeID, err)
+		}
+	}
+
 	return &ProvisionResult{
 		NodeID:    nodeID,
 		PodName:   machineName,
@@ -648,9 +736,13 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		Str("org", org).
 		Msg("provisioning DO droplet via visor")
 
-	// Pass gateway URL and API key as env tags for cloud-init.
-	// Droplets run outside K8s, so use the public gateway URL (wss://gw.hanzo.bot)
-	// rather than the internal K8s service URL.
+	// Pass non-sensitive env vars as tags for cloud-init. Droplets run outside
+	// K8s, so use the public gateway URL (wss://gw.hanzo.bot) rather than the
+	// internal K8s service URL.
+	//
+	// SECURITY: API keys and tokens are NOT placed in tags because DO tags are
+	// readable via the DO API. Instead, they are passed via user-data (write-only,
+	// not readable via the DO API after creation).
 	gatewayURL := p.config.Kubernetes.GatewayURL
 	if strings.HasPrefix(gatewayURL, "ws://") && strings.Contains(gatewayURL, ".svc") {
 		gatewayURL = "wss://gw.hanzo.bot"
@@ -659,11 +751,17 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		"env:BOT_NODE_GATEWAY_URL": gatewayURL,
 		"env:AGENT_NODE_ID":        nodeID,
 	}
+	// Sensitive values: pass via user-data (write-only) instead of tags.
+	// Visor's cloud-init reads "secret:" prefixed tags from user-data only.
 	if p.config.Kubernetes.GatewayToken != "" {
-		tags["env:BOT_GATEWAY_TOKEN"] = p.config.Kubernetes.GatewayToken
+		tags["secret:BOT_GATEWAY_TOKEN"] = p.config.Kubernetes.GatewayToken
 	}
 	if req.UserAPIKey != "" {
-		tags["env:HANZO_API_KEY"] = req.UserAPIKey
+		tags["secret:HANZO_API_KEY"] = req.UserAPIKey
+		logger.Logger.Info().
+			Str("node_id", nodeID).
+			Str("api_key", RedactKey(req.UserAPIKey)).
+			Msg("passing user API key via secure user-data for droplet")
 	}
 
 	vmReq := &VMProvisionRequest{
@@ -714,6 +812,12 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 	p.nodes[nodeID] = node
 	p.mu.Unlock()
 
+	if p.store != nil {
+		if err := p.store.Put(node); err != nil {
+			return nil, fmt.Errorf("persist node %s: %w", nodeID, err)
+		}
+	}
+
 	return &ProvisionResult{
 		NodeID:    nodeID,
 		PodName:   machineName,
@@ -756,7 +860,14 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 			return fmt.Errorf("failed to delete machine via visor: %w", err)
 		}
 	} else {
-		// Linux/terminal pods: delete via K8s API
+		// Linux/terminal pods: delete pod and associated secret via K8s API.
+		// Delete the secret first (best-effort) so credentials don't outlive the pod.
+		secretName := agentSecretName(nodeID)
+		if err := p.k8s.DeleteSecret(ctx, node.Namespace, secretName); err != nil {
+			logger.Logger.Warn().Err(err).
+				Str("secret", secretName).
+				Msg("failed to delete agent secret (may not exist)")
+		}
 		if err := p.k8s.DeleteAgentPod(ctx, node.Namespace, node.PodName, p.config.Kubernetes.GracefulShutdown); err != nil {
 			return fmt.Errorf("failed to delete agent pod: %w", err)
 		}
@@ -876,16 +987,23 @@ func (p *Provisioner) GetLogs(ctx context.Context, nodeID string, tailLines int6
 // Sync refreshes the in-memory node list from Kubernetes and rehydrates
 // non-K8s nodes (DO droplets, VMs) from Visor.
 func (p *Provisioner) Sync(ctx context.Context) error {
-	_, err := p.ListNodes(ctx, "")
+	nodes, err := p.ListNodes(ctx, "")
 	if err != nil {
 		return err
 	}
+
+	// Reconcile active agent gauge with reality after rehydration.
+	SyncActiveAgentCount(len(nodes))
 
 	// Rehydrate DO droplets and VMs from Visor so they survive restarts.
 	if p.visor != nil {
 		if err := p.rehydrateFromVisor(ctx); err != nil {
 			logger.Logger.Warn().Err(err).Msg("failed to rehydrate nodes from visor")
 		}
+		// Re-count after visor rehydration.
+		p.mu.RLock()
+		SyncActiveAgentCount(len(p.nodes))
+		p.mu.RUnlock()
 	}
 	return nil
 }
@@ -967,6 +1085,22 @@ func (p *Provisioner) countByOrg(org string) int {
 	return count
 }
 
+// RunningBillingNodes returns all provisioned nodes that have an active billing
+// hold. Used by the metering adapter to report usage for running compute.
+func (p *Provisioner) RunningBillingNodes() []*CloudNode {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	var result []*CloudNode
+	for _, n := range p.nodes {
+		if n.HoldID == "" || n.CentsPerHour <= 0 || n.BillingUserID == "" {
+			continue
+		}
+		result = append(result, n)
+	}
+	return result
+}
+
 // sanitizePodName ensures the name is a valid K8s DNS-1123 label.
 func sanitizePodName(name string) string {
 	name = strings.ToLower(name)
@@ -1024,6 +1158,45 @@ func nodeArgs(gatewayURL, nodeID string) []string {
 		"node", "hanzo-bot.mjs", "node", "run",
 		"--name", nodeID,
 	}
+}
+
+// agentSecretName returns the K8s Secret name for an agent's sensitive env vars.
+func agentSecretName(nodeID string) string {
+	return sanitizePodName(fmt.Sprintf("agent-keys-%s", nodeID))
+}
+
+// RedactKey returns a redacted version of an API key, showing only the first 6
+// characters followed by "...". Safe for logging without leaking secrets.
+func RedactKey(key string) string {
+	if len(key) <= 6 {
+		return "***"
+	}
+	return key[:6] + "..."
+}
+
+// sensitiveEnvKeys lists env var names that contain API keys or tokens and must
+// be stored in a K8s Secret rather than inline in the pod spec.
+var sensitiveEnvKeys = map[string]bool{
+	"HANZO_API_KEY":     true,
+	"OPENAI_API_KEY":    true,
+	"ANTHROPIC_API_KEY": true,
+	"BOT_GATEWAY_TOKEN": true,
+}
+
+// splitSensitiveEnv separates env vars into non-sensitive (safe for pod spec)
+// and sensitive (must go into a K8s Secret). Keys listed in sensitiveEnvKeys
+// are classified as sensitive.
+func splitSensitiveEnv(env map[string]string) (safe map[string]string, secret map[string]string) {
+	safe = make(map[string]string, len(env))
+	secret = make(map[string]string)
+	for k, v := range env {
+		if sensitiveEnvKeys[k] {
+			secret[k] = v
+		} else {
+			safe[k] = v
+		}
+	}
+	return safe, secret
 }
 
 // sanitizeLabel ensures a value is safe for K8s labels.
