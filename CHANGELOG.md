@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.186] - 2026-03-03
+
+
+### Testing
+
+- Test: add billing gate and client unit tests
+
+Tests cover:
+- CentsPerHour pricing lookup (slugs, presets, unknown fallback)
+- CheckProvisionAllowance (sufficient/insufficient/zero/exact funds, Commerce down)
+- Client case normalization (mixed case → lowercase)
+- Service token vs user token auth header preference
+- X-Hanzo-Org header from user ID
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (369a37d)
+
 ## [0.1.41-rc.185] - 2026-03-02
 
 
