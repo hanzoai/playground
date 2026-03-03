@@ -1167,6 +1167,23 @@ func (s *PlaygroundServer) setupRoutes() {
 			settings.GET("/observability-webhook/dlq", obsHandler.GetDeadLetterQueueHandler)
 			settings.DELETE("/observability-webhook/dlq", obsHandler.ClearDeadLetterQueueHandler)
 		}
+
+		// LLM proxy endpoints — standard OpenAI and Anthropic-compatible routes.
+		// Billing gate checks Commerce balance before allowing requests.
+		// Usage is reported asynchronously after the response completes.
+		if s.usageReporter != nil {
+			chat := agentAPI.Group("/chat")
+			chat.Use(billing.LLMBillingGate(s.llmBillingGateCfg))
+			{
+				chat.POST("/completions", handlers.LLMChatCompletionsHandler(s.usageReporter))
+			}
+
+			messages := agentAPI.Group("")
+			messages.Use(billing.LLMBillingGate(s.llmBillingGateCfg))
+			{
+				messages.POST("/messages", handlers.LLMMessagesHandler(s.usageReporter))
+			}
+		}
 	}
 
 
@@ -1184,15 +1201,6 @@ func (s *PlaygroundServer) registerCloudRoutes(cloudAPI *gin.RouterGroup) {
 	cloudAPI.GET("/pricing", handlers.CloudPricingHandler(s.config.Cloud.PricingServiceURL))
 	cloudAPI.GET("/presets", handlers.CloudPresetsHandler(s.config.Cloud.PricingServiceURL))
 	cloudAPI.GET("/billing/balance", handlers.CloudBillingBalanceHandler())
-
-	// LLM completion endpoints with billing gate.
-	// The billing gate checks Commerce balance before allowing LLM requests.
-	// Usage is reported asynchronously after the response completes.
-	llm := cloudAPI.Group("/llm")
-	llm.Use(billing.LLMBillingGate(s.llmBillingGateCfg))
-	{
-		llm.POST("/chat/completions", handlers.LLMChatCompletionsHandler(s.usageReporter))
-	}
 }
 
 // registerSpaceRoutes registers the Space API endpoints on the given router group.

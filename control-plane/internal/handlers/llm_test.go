@@ -192,3 +192,109 @@ func TestLLMChatCompletionsHandler_ForwardsAPIKey(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Bearer sk-test-key-123", capturedAuth)
 }
+
+func TestLLMMessagesHandler_MissingModel(t *testing.T) {
+	router := gin.New()
+	router.POST("/v1/messages", LLMMessagesHandler(nil))
+
+	w := httptest.NewRecorder()
+	body := `{"messages": [{"role": "user", "content": "hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/messages", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "model is required", resp["message"])
+}
+
+func TestLLMMessagesHandler_UpstreamSuccess(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/messages", r.URL.Path)
+		assert.NotEmpty(t, r.Header.Get("x-api-key"))
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"id":    "msg_123",
+			"type":  "message",
+			"model": "claude-sonnet-4",
+			"usage": map[string]int{
+				"input_tokens":  80,
+				"output_tokens": 40,
+			},
+			"content": []map[string]string{
+				{"type": "text", "text": "Hello!"},
+			},
+		})
+	}))
+	defer upstream.Close()
+
+	t.Setenv("LLM_API_URL", upstream.URL)
+	t.Setenv("LLM_API_KEY", "sk-ant-test")
+
+	router := gin.New()
+	router.POST("/v1/messages", LLMMessagesHandler(nil))
+
+	w := httptest.NewRecorder()
+	body := `{"model": "claude-sonnet-4", "max_tokens": 1024, "messages": [{"role": "user", "content": "hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/messages", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("anthropic-version", "2023-06-01")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "msg_123", resp["id"])
+
+	usage := resp["usage"].(map[string]interface{})
+	assert.Equal(t, float64(80), usage["input_tokens"])
+	assert.Equal(t, float64(40), usage["output_tokens"])
+}
+
+func TestLLMMessagesHandler_UpstreamDown(t *testing.T) {
+	t.Setenv("LLM_API_URL", "http://127.0.0.1:1")
+
+	router := gin.New()
+	router.POST("/v1/messages", LLMMessagesHandler(nil))
+
+	w := httptest.NewRecorder()
+	body := `{"model": "claude-sonnet-4", "max_tokens": 1024, "messages": [{"role": "user", "content": "hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/messages", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadGateway, w.Code)
+}
+
+func TestLLMMessagesHandler_ForwardsAnthropicVersion(t *testing.T) {
+	var capturedVersion string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedVersion = r.Header.Get("anthropic-version")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"id":    "msg_456",
+			"model": "claude-opus-4-6",
+		})
+	}))
+	defer upstream.Close()
+
+	t.Setenv("LLM_API_URL", upstream.URL)
+	t.Setenv("LLM_API_KEY", "sk-ant-test")
+
+	router := gin.New()
+	router.POST("/v1/messages", LLMMessagesHandler(nil))
+
+	w := httptest.NewRecorder()
+	body := `{"model": "claude-opus-4-6", "max_tokens": 1024, "messages": [{"role": "user", "content": "test"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/messages", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("anthropic-version", "2023-06-01")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "2023-06-01", capturedVersion)
+}
