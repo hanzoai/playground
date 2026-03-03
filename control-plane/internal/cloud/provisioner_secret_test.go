@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -85,17 +86,23 @@ func testConfig() config.CloudConfig {
 	return cfg
 }
 
-func newTestProvisioner(k8s *mockK8sClient) *Provisioner {
+// newTestProvisioner creates a Provisioner backed by a temp BoltDB store.
+func newTestProvisioner(t *testing.T, k8s *mockK8sClient) *Provisioner {
+	t.Helper()
+	dir := t.TempDir()
+	store, err := NewNodeStore(filepath.Join(dir, "nodes.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { store.Close() })
 	return &Provisioner{
 		config: testConfig(),
 		k8s:    k8s,
-		nodes:  make(map[string]*CloudNode),
+		store:  store,
 	}
 }
 
 func TestProvisionCreatesSecretForAPIKeys(t *testing.T) {
 	k8s := newMockK8s()
-	p := newTestProvisioner(k8s)
+	p := newTestProvisioner(t, k8s)
 
 	req := &ProvisionRequest{
 		NodeID:     "test-node-1",
@@ -127,7 +134,7 @@ func TestProvisionCreatesSecretForAPIKeys(t *testing.T) {
 
 func TestProvisionPodSpecDoesNotContainSecrets(t *testing.T) {
 	k8s := newMockK8s()
-	p := newTestProvisioner(k8s)
+	p := newTestProvisioner(t, k8s)
 
 	req := &ProvisionRequest{
 		NodeID:     "test-node-2",
@@ -137,9 +144,6 @@ func TestProvisionPodSpecDoesNotContainSecrets(t *testing.T) {
 	_, err := p.Provision(context.Background(), req)
 	require.NoError(t, err)
 
-	// The pod was created -- verify the env vars don't contain secrets.
-	// We can't directly inspect the PodSpec from the mock, but we can verify
-	// the provisioner properly splits env. Test splitSensitiveEnv directly.
 	env := map[string]string{
 		"AGENT_NODE_ID":     "test",
 		"HANZO_API_KEY":     "secret-key",
@@ -163,7 +167,7 @@ func TestProvisionPodSpecDoesNotContainSecrets(t *testing.T) {
 
 func TestDeprovisionDeletesSecret(t *testing.T) {
 	k8s := newMockK8s()
-	p := newTestProvisioner(k8s)
+	p := newTestProvisioner(t, k8s)
 
 	// Provision first
 	req := &ProvisionRequest{
@@ -193,19 +197,17 @@ func TestDeprovisionDeletesSecret(t *testing.T) {
 
 func TestDeprovisionDeletesSecretEvenWhenAbsent(t *testing.T) {
 	k8s := newMockK8s()
-	p := newTestProvisioner(k8s)
+	p := newTestProvisioner(t, k8s)
 
-	// Manually add a node (simulating a pre-existing node without a secret)
-	p.mu.Lock()
-	p.nodes["legacy-node"] = &CloudNode{
+	// Manually add a node to the store (simulating a pre-existing node without a secret)
+	require.NoError(t, p.store.Put(&CloudNode{
 		NodeID:    "legacy-node",
 		PodName:   "agent-legacy-node",
 		Namespace: "hanzo",
 		NodeType:  NodeTypeCloud,
 		Status:    "Running",
 		OS:        "linux",
-	}
-	p.mu.Unlock()
+	}))
 
 	err := p.Deprovision(context.Background(), "legacy-node")
 	require.NoError(t, err)
@@ -217,7 +219,7 @@ func TestDeprovisionDeletesSecretEvenWhenAbsent(t *testing.T) {
 
 func TestProvisionWithSharedKeyCreatesSecret(t *testing.T) {
 	k8s := newMockK8s()
-	p := newTestProvisioner(k8s)
+	p := newTestProvisioner(t, k8s)
 
 	// No UserAPIKey -- should fall back to the config's shared CloudAPIKey
 	req := &ProvisionRequest{
@@ -234,23 +236,19 @@ func TestProvisionWithSharedKeyCreatesSecret(t *testing.T) {
 }
 
 func TestDropletTagsDoNotContainAPIKeys(t *testing.T) {
-	// Test that the provisionDroplet path uses "secret:" prefix (user-data)
-	// instead of "env:" prefix (tags) for sensitive values.
 	tags := map[string]string{
-		"env:BOT_NODE_GATEWAY_URL":    "wss://gw.hanzo.bot",
-		"env:AGENT_NODE_ID":           "hz-12345678",
-		"secret:BOT_GATEWAY_TOKEN":    "gw-token-abc",
-		"secret:HANZO_API_KEY":        "hk-user-key-abc",
+		"env:BOT_NODE_GATEWAY_URL": "wss://gw.hanzo.bot",
+		"env:AGENT_NODE_ID":        "hz-12345678",
+		"secret:BOT_GATEWAY_TOKEN": "gw-token-abc",
+		"secret:HANZO_API_KEY":     "hk-user-key-abc",
 	}
 
-	// Verify none of the env: tags contain API keys
 	for k := range tags {
 		if k == "env:HANZO_API_KEY" || k == "env:OPENAI_API_KEY" || k == "env:ANTHROPIC_API_KEY" {
 			t.Errorf("tag %q should not be in env: tags (leaks via DO API)", k)
 		}
 	}
 
-	// Verify sensitive values use secret: prefix
 	assert.Contains(t, tags, "secret:BOT_GATEWAY_TOKEN")
 	assert.Contains(t, tags, "secret:HANZO_API_KEY")
 }
@@ -277,27 +275,25 @@ func TestRedactKey(t *testing.T) {
 
 func TestSplitSensitiveEnv(t *testing.T) {
 	env := map[string]string{
-		"AGENT_NODE_ID":         "cloud-abc",
-		"PLAYGROUND_SERVER":     "http://playground.hanzo.svc:8080",
-		"HANZO_API_KEY":         "hk-secret-key",
-		"OPENAI_API_KEY":        "hk-secret-key",
-		"ANTHROPIC_API_KEY":     "hk-secret-key",
-		"BOT_GATEWAY_TOKEN":     "gw-token",
-		"BOT_CLOUD_NODE":        "true",
-		"BOT_NODE_GATEWAY_URL":  "ws://gw.svc:18789",
-		"NODE_OPTIONS":          "--max-old-space-size=3968",
+		"AGENT_NODE_ID":        "cloud-abc",
+		"PLAYGROUND_SERVER":    "http://playground.hanzo.svc:8080",
+		"HANZO_API_KEY":        "hk-secret-key",
+		"OPENAI_API_KEY":       "hk-secret-key",
+		"ANTHROPIC_API_KEY":    "hk-secret-key",
+		"BOT_GATEWAY_TOKEN":    "gw-token",
+		"BOT_CLOUD_NODE":       "true",
+		"BOT_NODE_GATEWAY_URL": "ws://gw.svc:18789",
+		"NODE_OPTIONS":         "--max-old-space-size=3968",
 	}
 
 	safe, secret := splitSensitiveEnv(env)
 
-	// Sensitive keys in secret
 	assert.Equal(t, "hk-secret-key", secret["HANZO_API_KEY"])
 	assert.Equal(t, "hk-secret-key", secret["OPENAI_API_KEY"])
 	assert.Equal(t, "hk-secret-key", secret["ANTHROPIC_API_KEY"])
 	assert.Equal(t, "gw-token", secret["BOT_GATEWAY_TOKEN"])
 	assert.Len(t, secret, 4)
 
-	// Non-sensitive keys in safe
 	assert.Contains(t, safe, "AGENT_NODE_ID")
 	assert.Contains(t, safe, "PLAYGROUND_SERVER")
 	assert.Contains(t, safe, "BOT_CLOUD_NODE")
@@ -313,7 +309,6 @@ func TestAgentSecretName(t *testing.T) {
 	assert.Equal(t, "agent-keys-cloud-abc12345", agentSecretName("cloud-abc12345"))
 	assert.Equal(t, "agent-keys-test", agentSecretName("test"))
 
-	// Verify DNS-1123 compliance
 	name := agentSecretName("UPPER_CASE.weird!chars")
 	for _, r := range name {
 		assert.True(t, (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-',
@@ -350,7 +345,6 @@ func TestBuildPodManifestWithSecretRef(t *testing.T) {
 
 	manifest := buildPodManifest(spec)
 
-	// Verify main container has envFrom with secretRef
 	podSpec := manifest["spec"].(map[string]interface{})
 	containers := podSpec["containers"].([]interface{})
 	mainContainer := containers[0].(map[string]interface{})
@@ -362,7 +356,6 @@ func TestBuildPodManifestWithSecretRef(t *testing.T) {
 	secretRef := envFromList[0]["secretRef"].(map[string]string)
 	assert.Equal(t, "agent-keys-test", secretRef["name"])
 
-	// Verify sidecar also gets envFrom
 	require.Len(t, containers, 2)
 	sidecar := containers[1].(map[string]interface{})
 	scEnvFrom, ok := sidecar["envFrom"]
