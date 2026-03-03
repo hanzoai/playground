@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.187] - 2026-03-03
+
+
+### Added
+
+- Feat: multi-OS billing with Mac 24h prepaid + operative Hanzo API wiring
+
+- Add CentsPerHourVM() and MinimumHours() for VM instance pricing
+  (static fallbacks — canonical pricing lives in pricing.hanzo.ai)
+- Mac instances enforce 24-hour prepaid minimum (Apple macOS licensing
+  requirement, not a Hanzo limitation)
+- Update CheckProvisionAllowance() with minimumHours parameter
+- Provision handler routes VM requests (Mac/Windows) through CentsPerHourVM
+- Balance endpoint returns vm_presets array with Mac/Windows/Linux pricing
+- Inject API_PROVIDER=hanzo + HANZO_API_KEY into operative sidecar env
+  so cloud-launched operatives auto-route through api.hanzo.ai for
+  unified billing/tracking in console.hanzo.ai
+- 19 billing tests pass including Mac 24h deny/allow edge cases (01aa17c)
+
 ## [0.1.41-rc.186] - 2026-03-03
 
 
