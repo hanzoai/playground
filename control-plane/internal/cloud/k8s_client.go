@@ -212,6 +212,98 @@ func (c *InClusterK8sClient) GetPodLogs(ctx context.Context, namespace, podName 
 	return string(logBytes), nil
 }
 
+// CreateSecret creates an Opaque K8s Secret with the given string data.
+// If the secret already exists, it is replaced.
+func (c *InClusterK8sClient) CreateSecret(ctx context.Context, namespace, name string, data map[string]string, labels map[string]string) error {
+	secret := map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "Secret",
+		"type":       "Opaque",
+		"metadata": map[string]interface{}{
+			"name":      name,
+			"namespace": namespace,
+			"labels":    labels,
+		},
+		"stringData": data,
+	}
+
+	body, err := json.Marshal(secret)
+	if err != nil {
+		return fmt.Errorf("failed to marshal secret: %w", err)
+	}
+
+	createURL := fmt.Sprintf("%s/api/v1/namespaces/%s/secrets", c.apiServer, namespace)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, createURL, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("K8s create secret request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// If already exists (409 Conflict), update via PUT
+	if resp.StatusCode == http.StatusConflict {
+		putURL := fmt.Sprintf("%s/api/v1/namespaces/%s/secrets/%s", c.apiServer, namespace, name)
+		putReq, err := http.NewRequestWithContext(ctx, http.MethodPut, putURL, bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+		putReq.Header.Set("Authorization", "Bearer "+c.token)
+		putReq.Header.Set("Content-Type", "application/json")
+
+		putResp, err := c.client.Do(putReq)
+		if err != nil {
+			return fmt.Errorf("K8s update secret request failed: %w", err)
+		}
+		defer putResp.Body.Close()
+
+		if putResp.StatusCode < 200 || putResp.StatusCode >= 300 {
+			respBody, _ := io.ReadAll(io.LimitReader(putResp.Body, 2048))
+			return fmt.Errorf("K8s API returned %d on secret update: %s", putResp.StatusCode, string(respBody))
+		}
+		return nil
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return fmt.Errorf("K8s API returned %d on secret create: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
+
+// DeleteSecret removes a K8s Secret. Returns nil if the secret does not exist.
+func (c *InClusterK8sClient) DeleteSecret(ctx context.Context, namespace, name string) error {
+	deleteURL := fmt.Sprintf("%s/api/v1/namespaces/%s/secrets/%s", c.apiServer, namespace, name)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("K8s delete secret request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil // Already gone
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return fmt.Errorf("K8s API returned %d on secret delete: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
+
 // buildPodManifest creates a K8s Pod JSON manifest from a PodSpec.
 func buildPodManifest(spec *PodSpec) map[string]interface{} {
 	envVars := make([]map[string]string, 0, len(spec.Env))
@@ -255,6 +347,14 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		},
 	}
 
+	// Inject sensitive env vars from a K8s Secret via envFrom so they
+	// are not visible in `kubectl describe pod` output.
+	if spec.SecretRef != "" {
+		container["envFrom"] = []map[string]interface{}{
+			{"secretRef": map[string]string{"name": spec.SecretRef}},
+		}
+	}
+
 	if len(spec.Args) > 0 {
 		container["args"] = spec.Args
 	}
@@ -289,6 +389,13 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 					"memory": sc.LimitMem,
 				},
 			},
+		}
+		// Sidecars also get the secret envFrom so they can access API keys
+		// (e.g. operative needs ANTHROPIC_API_KEY from the same secret).
+		if spec.SecretRef != "" {
+			scContainer["envFrom"] = []map[string]interface{}{
+				{"secretRef": map[string]string{"name": spec.SecretRef}},
+			}
 		}
 		containers = append(containers, scContainer)
 	}

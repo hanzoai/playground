@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanzoai/playground/control-plane/internal/billing"
 	"github.com/hanzoai/playground/control-plane/internal/cloud"
 	"github.com/hanzoai/playground/control-plane/internal/config"
 	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
@@ -67,6 +68,7 @@ type PlaygroundServer struct {
 	webhookDispatcher        services.WebhookDispatcher
 	observabilityForwarder   services.ObservabilityForwarder
 	cloudProvisioner         *cloud.Provisioner
+	meteringCancel           context.CancelFunc
 	spaceStore               spaces.Store
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
@@ -289,12 +291,15 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		if err != nil {
 			logger.Logger.Warn().Err(err).Msg("K8s in-cluster client unavailable — cloud provisioning disabled")
 		} else {
-			cloudProvisioner = cloud.NewProvisioner(cfg.Cloud, k8sClient)
-			// Sync existing cloud agents from K8s
+			cloudProvisioner, err = cloud.NewProvisioner(cfg.Cloud, k8sClient, dirs.DataDir)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize cloud provisioner: %w", err)
+			}
+			// Sync existing cloud agents from K8s and Visor
 			go func() {
 				ctx := context.Background()
-				if err := cloudProvisioner.Sync(ctx); err != nil {
-					logger.Logger.Warn().Err(err).Msg("failed to sync cloud nodes from K8s")
+				if syncErr := cloudProvisioner.Sync(ctx); syncErr != nil {
+					logger.Logger.Warn().Err(syncErr).Msg("failed to sync cloud nodes from K8s")
 				}
 			}()
 		}
@@ -419,6 +424,15 @@ func (s *PlaygroundServer) Start() error {
 		s.zapAdmin = zapAdmin
 	}
 
+	// Start billing metering service for running cloud nodes.
+	if s.cloudProvisioner != nil {
+		meterCtx, meterCancel := context.WithCancel(context.Background())
+		s.meteringCancel = meterCancel
+		adapter := &provisionerNodeLister{provisioner: s.cloudProvisioner}
+		meterSvc := billing.NewMeteringService(billing.NewClient(), adapter, 5*time.Minute)
+		go meterSvc.Run(meterCtx)
+	}
+
 	// Register REST admin endpoints on the main router
 	registerAdminRESTRoutes(s.Router, s.storage)
 
@@ -439,6 +453,11 @@ func (s *PlaygroundServer) Start() error {
 func (s *PlaygroundServer) Stop() error {
 	if s.zapAdmin != nil {
 		s.zapAdmin.stop()
+	}
+
+	// Stop billing metering service
+	if s.meteringCancel != nil {
+		s.meteringCancel()
 	}
 
 	// Stop status manager service
@@ -688,20 +707,8 @@ func (s *PlaygroundServer) setupRoutes() {
 	// Security headers on every response
 	s.Router.Use(middleware.SecurityHeaders())
 
-	// Add request logging middleware
-	s.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-			param.ClientIP,
-			param.TimeStamp.Format(time.RFC1123),
-			param.Method,
-			param.Path,
-			param.Request.Proto,
-			param.StatusCode,
-			param.Latency,
-			param.Request.UserAgent(),
-			param.ErrorMessage,
-		)
-	}))
+	// Structured request logging via zerolog (JSON output for log aggregation).
+	s.Router.Use(middleware.StructuredLogger())
 
 	// Add timeout middleware for all routes (1 hour for long-running executions)
 	s.Router.Use(func(c *gin.Context) {
@@ -1245,4 +1252,24 @@ func generatePlaygroundServerID(playgroundHome string) string {
 	agentsServerID := hex.EncodeToString(hash[:])[:16]
 
 	return agentsServerID
+}
+
+// provisionerNodeLister adapts cloud.Provisioner to billing.NodeLister.
+type provisionerNodeLister struct {
+	provisioner *cloud.Provisioner
+}
+
+func (a *provisionerNodeLister) RunningNodes() []billing.NodeInfo {
+	nodes := a.provisioner.RunningBillingNodes()
+	result := make([]billing.NodeInfo, 0, len(nodes))
+	for _, n := range nodes {
+		result = append(result, billing.NodeInfo{
+			NodeID:        n.NodeID,
+			BillingUserID: n.BillingUserID,
+			BearerToken:   n.BearerToken,
+			CentsPerHour:  n.CentsPerHour,
+			ProvisionedAt: n.ProvisionedAt,
+		})
+	}
+	return result
 }

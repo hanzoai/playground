@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -82,6 +84,7 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 		if !allowance.Allowed {
+			cloud.RecordBillingCheck("denied")
 			resp := gin.H{
 				"error":          allowance.Reason,
 				"balance_cents":  allowance.BalanceCents,
@@ -95,6 +98,7 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			c.JSON(http.StatusPaymentRequired, resp)
 			return
 		}
+		cloud.RecordBillingCheck("allowed")
 
 		// Pass the user's bearer token for per-user billing.
 		// Cloud bots will use this as HANZO_API_KEY so LLM usage
@@ -108,8 +112,11 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			}
 		}
 
+		provisionStart := time.Now()
 		result, err := provisioner.Provision(c.Request.Context(), &req)
+		provisionDur := time.Since(provisionStart)
 		if err != nil {
+			cloud.RecordProvision(tierSlug, req.OS, "error", provisionDur)
 			logger.Logger.Error().Err(err).Str("node_id", req.NodeID).Msg("cloud provision failed")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "provision_failed",
@@ -118,6 +125,37 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
+		cloud.RecordProvision(tierSlug, req.OS, "success", provisionDur)
+
+		// Place a billing hold for the minimum prepaid period.
+		holdAmount := costPerHour * minimumHours
+		holdDesc := fmt.Sprintf("Cloud compute: %s (%d hrs at $%.2f/hr)",
+			result.NodeID, minimumHours, float64(costPerHour)/100.0)
+		hold, holdErr := billingClient.CreateHold(
+			c.Request.Context(), billingUserID, bearerToken, holdAmount, holdDesc,
+		)
+		if holdErr != nil {
+			// Log the failure but do not block provisioning -- the node is already running.
+			// The metering service will continue to record usage regardless of hold status.
+			logger.Logger.Error().
+				Err(holdErr).
+				Str("node_id", result.NodeID).
+				Int("amount_cents", holdAmount).
+				Msg("failed to create billing hold after provision")
+		}
+
+		// Store billing metadata on the CloudNode so deprovision can settle.
+		if node, nodeErr := provisioner.GetNode(c.Request.Context(), result.NodeID); nodeErr == nil {
+			node.ProvisionedAt = result.CreatedAt
+			node.CentsPerHour = costPerHour
+			node.BillingUserID = billingUserID
+			node.BearerToken = bearerToken
+			if hold != nil {
+				node.HoldID = hold.ID
+			}
+		}
+
+		cloud.RecordBillingHold(tierSlug)
 		c.JSON(http.StatusCreated, result)
 	}
 }
@@ -151,7 +189,36 @@ func CloudDeprovisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
+		// Settle billing hold with actual usage before tearing down the node.
+		billingClient := billing.NewClient()
+		if node.HoldID != "" {
+			elapsed := time.Since(node.ProvisionedAt)
+			elapsedHours := elapsed.Hours()
+			actualCents := int(math.Ceil(elapsedHours * float64(node.CentsPerHour)))
+			if actualCents < 0 {
+				actualCents = 0
+			}
+			if settleErr := billingClient.SettleHold(
+				c.Request.Context(), node.HoldID, node.BearerToken, actualCents,
+			); settleErr != nil {
+				logger.Logger.Error().
+					Err(settleErr).
+					Str("node_id", nodeID).
+					Str("hold_id", node.HoldID).
+					Int("actual_cents", actualCents).
+					Msg("failed to settle billing hold on deprovision")
+			} else {
+				logger.Logger.Info().
+					Str("node_id", nodeID).
+					Str("hold_id", node.HoldID).
+					Int("actual_cents", actualCents).
+					Str("elapsed", elapsed.String()).
+					Msg("settled billing hold on deprovision")
+			}
+		}
+
 		if err := provisioner.Deprovision(c.Request.Context(), nodeID); err != nil {
+			cloud.RecordDeprovision("error")
 			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("cloud deprovision failed")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "deprovision_failed",
@@ -160,6 +227,7 @@ func CloudDeprovisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
+		cloud.RecordDeprovision("success")
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "deprovisioned",
 			"node_id": nodeID,
@@ -480,6 +548,7 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 		if !allowance.Allowed {
+			cloud.RecordBillingCheck("denied")
 			c.JSON(http.StatusPaymentRequired, gin.H{
 				"error":          allowance.Reason,
 				"balance_cents":  allowance.BalanceCents,
@@ -488,6 +557,7 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			})
 			return
 		}
+		cloud.RecordBillingCheck("allowed")
 
 		var results []*cloud.ProvisionResult
 		var errors []string
@@ -503,11 +573,25 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			}
 			agentReq.Labels["playground.hanzo.ai/team"] = req.TeamName
 
+			tierSlug := agentReq.InstanceType
+			if tierSlug == "" {
+				tierSlug = "s-2vcpu-4gb"
+			}
+			agentOS := agentReq.OS
+			if agentOS == "" {
+				agentOS = "linux"
+			}
+
+			provisionStart := time.Now()
 			result, err := provisioner.Provision(c.Request.Context(), &agentReq)
+			provisionDur := time.Since(provisionStart)
 			if err != nil {
+				cloud.RecordProvision(tierSlug, agentOS, "error", provisionDur)
 				errors = append(errors, err.Error())
 				continue
 			}
+			cloud.RecordProvision(tierSlug, agentOS, "success", provisionDur)
+			cloud.RecordBillingHold(tierSlug)
 			results = append(results, result)
 		}
 

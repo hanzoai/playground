@@ -7,6 +7,8 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -47,20 +49,20 @@ type ProvisionRequest struct {
 	// Injected as HANZO_API_KEY so usage is billed to the user, not a shared service key.
 	UserAPIKey string `json:"-"` // Never from JSON; set by handler
 	// Multi-OS desktop support
-	OS           string `json:"os,omitempty"`            // "linux" (default), "macos", "windows"
-	Provider     string `json:"provider,omitempty"`      // Visor provider name for Mac/Windows VMs
+	OS           string   `json:"os,omitempty"`            // "linux" (default), "macos", "windows"
+	Provider     string   `json:"provider,omitempty"`      // Visor provider name for Mac/Windows VMs
 	InstanceType string   `json:"instance_type,omitempty"` // Cloud instance type (e.g. "mac2.metal", "t3.medium")
-	SSHKeyIDs    []string `json:"ssh_key_ids,omitempty"`    // Provider SSH key IDs to inject
+	SSHKeyIDs    []string `json:"ssh_key_ids,omitempty"`   // Provider SSH key IDs to inject
 }
 
 // ProvisionResult describes the outcome of provisioning.
 type ProvisionResult struct {
-	NodeID    string   `json:"node_id"`
-	PodName   string   `json:"pod_name"`
-	Namespace string   `json:"namespace"`
-	NodeType  NodeType `json:"node_type"`
-	Status    string   `json:"status"` // "provisioning", "running", "failed"
-	Endpoint  string   `json:"endpoint,omitempty"` // Internal service URL
+	NodeID    string    `json:"node_id"`
+	PodName   string    `json:"pod_name"`
+	Namespace string    `json:"namespace"`
+	NodeType  NodeType  `json:"node_type"`
+	Status    string    `json:"status"` // "provisioning", "running", "failed"
+	Endpoint  string    `json:"endpoint,omitempty"` // Internal service URL
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -81,17 +83,30 @@ type CloudNode struct {
 	Labels         map[string]string `json:"labels"`
 	CreatedAt      time.Time         `json:"created_at"`
 	LastSeen       time.Time         `json:"last_seen"`
+	// Billing: hold placed at provision time, settled on deprovision.
+	HoldID        string    `json:"hold_id,omitempty"`
+	ProvisionedAt time.Time `json:"provisioned_at"`
+	// CentsPerHour is the billing rate used for hold/settle calculations.
+	CentsPerHour int `json:"cents_per_hour,omitempty"`
+	// BillingUserID is the Commerce user ID (org/name format) for billing.
+	BillingUserID string `json:"billing_user_id,omitempty"`
+	// BearerToken is the IAM token of the launching user, kept for settle calls.
+	BearerToken string `json:"-"`
 }
 
 // Provisioner manages cloud agent lifecycle on Kubernetes and multi-cloud VMs.
 // Linux bots: K8s pods with operative sidecar (cheap, containerized).
 // Mac/Windows bots: Real VMs via Visor (AWS EC2, DO, GCP, etc.) with RDP/VNC access.
+//
+// Node state is persisted to BoltDB so tracked agents survive pod restarts.
+// Without persistence, a restart loses all tracked agents, creating orphaned
+// compute and billing leaks.
 type Provisioner struct {
-	config    config.CloudConfig
-	k8s       KubernetesClient
-	visor     *VisorClient // nil if Visor not configured
-	mu        sync.RWMutex
-	nodes     map[string]*CloudNode // nodeID -> node
+	config config.CloudConfig
+	k8s    KubernetesClient
+	visor  *VisorClient // nil if Visor not configured
+	mu     sync.RWMutex
+	store  *NodeStore
 }
 
 // KubernetesClient is the interface for K8s operations.
@@ -107,6 +122,10 @@ type KubernetesClient interface {
 	ListAgentPods(ctx context.Context, namespace, labelSelector string) ([]*PodStatus, error)
 	// GetPodLogs returns recent logs for a pod.
 	GetPodLogs(ctx context.Context, namespace, podName string, tailLines int64) (string, error)
+	// CreateSecret creates or updates a K8s Secret with the given data.
+	CreateSecret(ctx context.Context, namespace, name string, data map[string]string, labels map[string]string) error
+	// DeleteSecret removes a K8s Secret.
+	DeleteSecret(ctx context.Context, namespace, name string) error
 }
 
 // SidecarSpec describes an additional container to run alongside the main agent.
@@ -139,6 +158,9 @@ type PodSpec struct {
 	ControlPlaneURL string // URL for agent to connect back
 	Sidecars        []SidecarSpec
 	NodeSelector    map[string]string
+	// SecretRef is the name of a K8s Secret whose keys are injected as env vars
+	// via envFrom. Sensitive values (API keys, tokens) go here instead of Env.
+	SecretRef string
 }
 
 // PodStatus represents the current state of a pod.
@@ -152,12 +174,26 @@ type PodStatus struct {
 	Message   string
 }
 
-// NewProvisioner creates a new cloud agent provisioner.
-func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient) *Provisioner {
+// NewProvisioner creates a new cloud agent provisioner backed by BoltDB.
+// dataDir is the directory where the nodes.db file will be stored; it defaults
+// to the value of PLAYGROUND_DATA_DIR (or /data if unset).
+func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient, dataDir string) (*Provisioner, error) {
+	if dataDir == "" {
+		dataDir = os.Getenv("PLAYGROUND_DATA_DIR")
+	}
+	if dataDir == "" {
+		dataDir = "/data"
+	}
+
+	store, err := NewNodeStore(filepath.Join(dataDir, "nodes.db"))
+	if err != nil {
+		return nil, fmt.Errorf("open node store: %w", err)
+	}
+
 	p := &Provisioner{
 		config: cfg,
 		k8s:    k8sClient,
-		nodes:     make(map[string]*CloudNode),
+		store:  store,
 	}
 	// Initialize Visor client for Mac/Windows VM provisioning
 	if cfg.Visor.Enabled && cfg.Visor.Endpoint != "" {
@@ -166,7 +202,17 @@ func NewProvisioner(cfg config.CloudConfig, k8sClient KubernetesClient) *Provisi
 			Str("endpoint", cfg.Visor.Endpoint).
 			Msg("visor multi-cloud VM provisioner enabled")
 	}
-	return p
+
+	logger.Logger.Info().
+		Str("db_path", filepath.Join(dataDir, "nodes.db")).
+		Msg("node store opened for crash recovery")
+
+	return p, nil
+}
+
+// Close releases the underlying BoltDB resources. Call on shutdown.
+func (p *Provisioner) Close() error {
+	return p.store.Close()
 }
 
 // Provision creates a new cloud agent. Routes based on OS:
@@ -186,8 +232,6 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 		return p.provisionVM(ctx, req)
 	}
 	// Route DigitalOcean droplet requests to Visor VM provisioning.
-	// This creates a real DO droplet with @hanzo/bot pre-installed via cloud-init,
-	// giving users a full Linux VM (not just a K8s pod) for heavier workloads.
 	if req.Provider == "digitalocean" {
 		return p.provisionDroplet(ctx, req)
 	}
@@ -197,27 +241,20 @@ func (p *Provisioner) Provision(ctx context.Context, req *ProvisionRequest) (*Pr
 
 // provisionK8sPod creates a Linux bot as a K8s pod with operative sidecar.
 func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
-
-	// Generate node ID if not provided
 	nodeID := req.NodeID
 	if nodeID == "" {
 		nodeID = fmt.Sprintf("cloud-%s", uuid.New().String()[:8])
 	}
-
-	// Sanitize pod name (K8s DNS-1123 label)
 	podName := sanitizePodName(fmt.Sprintf("agent-%s", nodeID))
-
 	namespace := p.config.Kubernetes.Namespace
 	image := p.config.Kubernetes.BotImage
 	if req.Image != "" {
 		image = req.Image
 	}
 
-	// Resource defaults — scale based on mode
 	cpu := p.config.Kubernetes.DefaultCPU
 	memory := p.config.Kubernetes.DefaultMemory
 	if req.OS == "terminal" {
-		// Terminal-only: no X11/VNC but still needs Node.js heap for bot agent
 		if cpu == p.config.Kubernetes.DefaultCPU {
 			cpu = "200m"
 		}
@@ -232,7 +269,6 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		memory = req.Memory
 	}
 
-	// Check org limits
 	if req.Org != "" {
 		count := p.countByOrg(req.Org)
 		if count >= p.config.Kubernetes.MaxAgentsPerOrg {
@@ -240,7 +276,6 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		}
 	}
 
-	// Build labels
 	labels := map[string]string{
 		"app.kubernetes.io/name":       "playground-agent",
 		"app.kubernetes.io/part-of":    "hanzo-playground",
@@ -258,7 +293,6 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		labels[k] = v
 	}
 
-	// Build env vars
 	env := map[string]string{
 		"AGENT_NODE_ID":         nodeID,
 		"PLAYGROUND_SERVER":     fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
@@ -274,32 +308,26 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if req.DisplayName != "" {
 		env["AGENT_DISPLAY_NAME"] = req.DisplayName
 	}
-	// Inject Hanzo API env vars for bot LLM calls.
-	// Default: api.hanzo.ai; overridable via CLOUD_API_ENDPOINT env var.
 	if p.config.Kubernetes.CloudAPIEndpoint != "" {
 		env["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
-		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint // backward compat
+		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
 	}
-	// Per-user billing: use the launching user's API key so usage is
-	// tracked and billed to their account. Fall back to shared service key.
 	apiKey := req.UserAPIKey
 	if apiKey == "" {
 		apiKey = p.config.Kubernetes.CloudAPIKey
 	}
 	if apiKey != "" {
 		env["HANZO_API_KEY"] = apiKey
-		env["OPENAI_API_KEY"] = apiKey // backward compat
+		env["OPENAI_API_KEY"] = apiKey
 	}
 	if req.UserAPIKey != "" {
 		logger.Logger.Info().
 			Str("node_id", nodeID).
 			Str("owner", req.Owner).
+			Str("api_key", RedactKey(req.UserAPIKey)).
 			Msg("using per-user API key for billing")
 	}
 
-	// Cloud pods connect as nodes to the central bot-gateway so all nodes
-	// (local Macs, cloud terminals, desktop agents) appear in one unified
-	// gateway at gw.hanzo.bot.
 	env["BOT_CLOUD_NODE"] = "true"
 	if p.config.Kubernetes.GatewayURL != "" {
 		env["BOT_NODE_GATEWAY_URL"] = p.config.Kubernetes.GatewayURL
@@ -312,34 +340,23 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	} else {
 		env["BOT_GATEWAY_TOKEN"] = nodeID
 	}
-
-	// Set NODE_OPTIONS to scale V8 heap based on container memory limit.
-	// The bot image (Node.js) defaults to ~512MB heap which OOMs under tight limits.
-	// Reserve ~128MB for OS/native overhead and give the rest to V8.
 	env["NODE_OPTIONS"] = nodeOptionsForMemory(p.config.Kubernetes.LimitMemory)
 
-	// Terminal-only mode: skip operative desktop, use lightweight ttyd shell access.
-	// This is for "xterm + Claude Code" — no desktop environment needed.
 	terminalOnly := req.OS == "terminal"
-
 	if terminalOnly {
 		env["AGENT_MODE"] = "terminal"
 		env["TTYD_URL"] = "http://localhost:7681"
 	} else if p.config.Kubernetes.OperativeEnabled {
-		// Wire operative desktop URL if sidecar is enabled
 		env["OPERATIVE_URL"] = "http://localhost:8501"
 		env["OPERATIVE_VNC_URL"] = "http://localhost:6080"
 	}
 
-	// User-provided env vars override everything
 	for k, v := range req.Env {
 		env[k] = v
 	}
 
-	// Build sidecar containers
 	var sidecars []SidecarSpec
 	if terminalOnly {
-		// Terminal-only: lightweight ttyd for web-based terminal access
 		sidecars = append(sidecars, SidecarSpec{
 			Name:  "ttyd",
 			Image: "tsl0922/ttyd:1.7.7-alpine",
@@ -353,7 +370,6 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			LimitMem: "512Mi",
 		})
 	} else if p.config.Kubernetes.OperativeEnabled {
-		// Build operative env: display settings + Hanzo API for billing through us
 		operativeEnv := map[string]string{
 			"DISPLAY":      ":1",
 			"DISPLAY_NUM":  "1",
@@ -363,16 +379,15 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			"API_PROVIDER": "hanzo",
 		}
 		if apiKey != "" {
-			operativeEnv["HANZO_API_KEY"] = apiKey
-			operativeEnv["ANTHROPIC_API_KEY"] = apiKey // operative SDK reads this
+			env["ANTHROPIC_API_KEY"] = apiKey
 		}
 		if p.config.Kubernetes.CloudAPIEndpoint != "" {
 			operativeEnv["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
 		}
 		sidecars = append(sidecars, SidecarSpec{
-			Name:  "operative",
-			Image: p.config.Kubernetes.OperativeImage,
-			Env:   operativeEnv,
+			Name:     "operative",
+			Image:    p.config.Kubernetes.OperativeImage,
+			Env:      operativeEnv,
 			Ports:    []int32{8080, 6080, 5900, 8501},
 			CPU:      "200m",
 			Memory:   "512Mi",
@@ -381,13 +396,26 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		})
 	}
 
+	safeEnv, secretData := splitSensitiveEnv(env)
+	secretName := agentSecretName(nodeID)
+
+	if len(secretData) > 0 {
+		secretLabels := map[string]string{
+			"app.kubernetes.io/managed-by": "playground-provisioner",
+			"playground.hanzo.ai/node-id":  nodeID,
+		}
+		if err := p.k8s.CreateSecret(ctx, namespace, secretName, secretData, secretLabels); err != nil {
+			return nil, fmt.Errorf("failed to create agent secret: %w", err)
+		}
+	}
+
 	spec := &PodSpec{
 		Name:            podName,
 		Namespace:       namespace,
 		Image:           image,
 		ImagePullSecret: p.config.Kubernetes.ImagePullSecret,
 		ServiceAccount:  p.config.Kubernetes.ServiceAccount,
-		Env:             env,
+		Env:             safeEnv,
 		Labels:          labels,
 		Annotations: map[string]string{
 			"playground.hanzo.ai/provisioned-at": time.Now().UTC().Format(time.RFC3339),
@@ -401,6 +429,9 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Sidecars:        sidecars,
 		NodeSelector:    p.config.Kubernetes.NodeSelector,
 	}
+	if len(secretData) > 0 {
+		spec.SecretRef = secretName
+	}
 
 	logger.Logger.Info().
 		Str("node_id", nodeID).
@@ -408,6 +439,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Str("namespace", namespace).
 		Str("image", image).
 		Str("org", req.Org).
+		Str("secret", secretName).
 		Msg("provisioning cloud agent")
 
 	podStatus, err := p.k8s.CreateAgentPod(ctx, spec)
@@ -431,7 +463,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Image:          image,
 		OS:             nodeOS,
 		RemoteProtocol: nodeProtocol,
-		Endpoint:       p.config.Kubernetes.GatewayURL, // Cloud pods are accessed through the central gateway
+		Endpoint:       p.config.Kubernetes.GatewayURL,
 		Owner:          req.Owner,
 		Org:            req.Org,
 		Labels:         labels,
@@ -439,9 +471,9 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		LastSeen:       time.Now(),
 	}
 
-	p.mu.Lock()
-	p.nodes[nodeID] = node
-	p.mu.Unlock()
+	if err := p.store.Put(node); err != nil {
+		return nil, fmt.Errorf("persist node %s: %w", nodeID, err)
+	}
 
 	return &ProvisionResult{
 		NodeID:    nodeID,
@@ -455,9 +487,6 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 }
 
 // provisionVM creates a Mac or Windows VM via Visor and registers the bot.
-// Mac: minimum 1-day billing (Apple licensing on dedicated hardware).
-// Windows: RDP-based, charged per day.
-// Users can also connect their own Mac/Windows machines as local nodes.
 func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
 	if p.visor == nil {
 		return nil, fmt.Errorf("visor not configured — Mac/Windows VMs require Visor integration (set HANZO_AGENTS_VISOR_ENABLED=true)")
@@ -475,7 +504,6 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 		org = "hanzo"
 	}
 
-	// Check org limits
 	if req.Org != "" {
 		count := p.countByOrg(req.Org)
 		if count >= p.config.Kubernetes.MaxAgentsPerOrg {
@@ -491,13 +519,11 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 		Str("org", req.Org).
 		Msg("provisioning VM via visor")
 
-	// List available machines from Visor, or return info for provisioning
 	machines, err := p.visor.ListMachines(ctx, org)
 	if err != nil {
 		logger.Logger.Warn().Err(err).Msg("visor list machines failed, continuing with registration")
 	}
 
-	// Look for an available machine matching the OS
 	var matchedMachine *VisorMachine
 	for i := range machines {
 		m := &machines[i]
@@ -519,7 +545,6 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 			Str("ip", matchedMachine.PublicIP).
 			Msg("matched existing visor machine")
 	} else {
-		// No running VM found — launch one via Visor's cloud provider
 		logger.Logger.Info().
 			Str("os", string(os)).
 			Str("provider", req.Provider).
@@ -527,7 +552,7 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 
 		instanceType := req.InstanceType
 		if instanceType == "" {
-			providerType := "AWS" // default
+			providerType := "AWS"
 			if req.Provider != "" {
 				providerType = req.Provider
 			}
@@ -590,9 +615,9 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 		node.Status = matchedMachine.State
 	}
 
-	p.mu.Lock()
-	p.nodes[nodeID] = node
-	p.mu.Unlock()
+	if err := p.store.Put(node); err != nil {
+		return nil, fmt.Errorf("persist node %s: %w", nodeID, err)
+	}
 
 	return &ProvisionResult{
 		NodeID:    nodeID,
@@ -606,8 +631,6 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 }
 
 // provisionDroplet creates a DigitalOcean droplet with @hanzo/bot pre-installed.
-// The droplet boots with cloud-init that installs the bot and connects to the gateway.
-// Unlike K8s pods, droplets give users a full Linux VM with root access.
 func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionRequest) (*ProvisionResult, error) {
 	if p.visor == nil {
 		return nil, fmt.Errorf("visor not configured — DigitalOcean droplet provisioning requires Visor (set HANZO_AGENTS_VISOR_ENABLED=true)")
@@ -623,7 +646,6 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		org = "hanzo"
 	}
 
-	// Check org limits
 	if req.Org != "" {
 		count := p.countByOrg(req.Org)
 		if count >= p.config.Kubernetes.MaxAgentsPerOrg {
@@ -648,9 +670,14 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		Str("org", org).
 		Msg("provisioning DO droplet via visor")
 
-	// Pass gateway URL and API key as env tags for cloud-init.
-	// Droplets run outside K8s, so use the public gateway URL (wss://gw.hanzo.bot)
-	// rather than the internal K8s service URL.
+	// Pass non-sensitive env vars as tags for cloud-init. Droplets run outside
+	// K8s, so use the public gateway URL (wss://gw.hanzo.bot) rather than the
+	// internal K8s service URL.
+	//
+	// SECURITY: API keys and tokens are NOT placed in env: tags because DO tags
+	// are readable via the DO API. Instead, they are passed via user-data
+	// (write-only) using the "secret:" prefix, which Visor's cloud-init reads
+	// only from the droplet's user-data metadata (not from API-visible tags).
 	gatewayURL := p.config.Kubernetes.GatewayURL
 	if strings.HasPrefix(gatewayURL, "ws://") && strings.Contains(gatewayURL, ".svc") {
 		gatewayURL = "wss://gw.hanzo.bot"
@@ -660,10 +687,14 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		"env:AGENT_NODE_ID":        nodeID,
 	}
 	if p.config.Kubernetes.GatewayToken != "" {
-		tags["env:BOT_GATEWAY_TOKEN"] = p.config.Kubernetes.GatewayToken
+		tags["secret:BOT_GATEWAY_TOKEN"] = p.config.Kubernetes.GatewayToken
 	}
 	if req.UserAPIKey != "" {
-		tags["env:HANZO_API_KEY"] = req.UserAPIKey
+		tags["secret:HANZO_API_KEY"] = req.UserAPIKey
+		logger.Logger.Info().
+			Str("node_id", nodeID).
+			Str("api_key", RedactKey(req.UserAPIKey)).
+			Msg("passing user API key via secure user-data for droplet")
 	}
 
 	vmReq := &VMProvisionRequest{
@@ -710,9 +741,9 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 		LastSeen:  time.Now(),
 	}
 
-	p.mu.Lock()
-	p.nodes[nodeID] = node
-	p.mu.Unlock()
+	if err := p.store.Put(node); err != nil {
+		return nil, fmt.Errorf("persist node %s: %w", nodeID, err)
+	}
 
 	return &ProvisionResult{
 		NodeID:    nodeID,
@@ -727,11 +758,11 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 
 // Deprovision removes a cloud agent from the cluster or terminates a VM.
 func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
-	p.mu.RLock()
-	node, ok := p.nodes[nodeID]
-	p.mu.RUnlock()
-
-	if !ok {
+	node, err := p.store.Get(nodeID)
+	if err != nil {
+		return fmt.Errorf("read node %s from store: %w", nodeID, err)
+	}
+	if node == nil {
 		return fmt.Errorf("cloud node %q not found", nodeID)
 	}
 
@@ -741,7 +772,6 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 		Str("os", node.OS).
 		Msg("deprovisioning cloud agent")
 
-	// Route VM/droplet nodes to Visor for teardown
 	os := DesktopOS(node.OS)
 	isVisorManaged := os == OSMacOS || os == OSWindows || node.Labels["playground.hanzo.ai/type"] == "droplet"
 	if isVisorManaged {
@@ -756,26 +786,34 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 			return fmt.Errorf("failed to delete machine via visor: %w", err)
 		}
 	} else {
-		// Linux/terminal pods: delete via K8s API
+		// Delete the K8s Secret holding API keys before deleting the pod.
+		// Best-effort: the secret may not exist if the node was provisioned
+		// before the secret-based approach was introduced.
+		secretName := agentSecretName(nodeID)
+		if err := p.k8s.DeleteSecret(ctx, node.Namespace, secretName); err != nil {
+			logger.Logger.Warn().Err(err).
+				Str("secret", secretName).
+				Msg("failed to delete agent secret (may not exist)")
+		}
 		if err := p.k8s.DeleteAgentPod(ctx, node.Namespace, node.PodName, p.config.Kubernetes.GracefulShutdown); err != nil {
 			return fmt.Errorf("failed to delete agent pod: %w", err)
 		}
 	}
 
-	p.mu.Lock()
-	delete(p.nodes, nodeID)
-	p.mu.Unlock()
+	if err := p.store.Delete(nodeID); err != nil {
+		return fmt.Errorf("remove node %s from store: %w", nodeID, err)
+	}
 
 	return nil
 }
 
 // GetNode returns info about a provisioned cloud node.
 func (p *Provisioner) GetNode(ctx context.Context, nodeID string) (*CloudNode, error) {
-	p.mu.RLock()
-	node, ok := p.nodes[nodeID]
-	p.mu.RUnlock()
-
-	if !ok {
+	node, err := p.store.Get(nodeID)
+	if err != nil {
+		return nil, fmt.Errorf("read node %s from store: %w", nodeID, err)
+	}
+	if node == nil {
 		return nil, fmt.Errorf("cloud node %q not found", nodeID)
 	}
 
@@ -785,28 +823,37 @@ func (p *Provisioner) GetNode(ctx context.Context, nodeID string) (*CloudNode, e
 		return node, nil // Return cached info on K8s error
 	}
 
-	p.mu.Lock()
 	node.Status = podStatus.Phase
 	node.LastSeen = time.Now()
-	p.mu.Unlock()
+	if putErr := p.store.Put(node); putErr != nil {
+		logger.Logger.Warn().Err(putErr).Str("node_id", nodeID).Msg("failed to persist refreshed node status")
+	}
 
 	return node, nil
 }
 
 // ListNodes returns all provisioned cloud nodes, optionally filtered by org.
+// It merges persisted state from BoltDB with live K8s pod status.
 func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, error) {
 	selector := "app.kubernetes.io/managed-by=playground-provisioner"
 	if org != "" {
 		selector += fmt.Sprintf(",playground.hanzo.ai/org=%s", org)
 	}
 
+	stored, err := p.store.List()
+	if err != nil {
+		return nil, fmt.Errorf("list nodes from store: %w", err)
+	}
+
+	storeIndex := make(map[string]*CloudNode, len(stored))
+	for _, n := range stored {
+		storeIndex[n.NodeID] = n
+	}
+
 	pods, err := p.k8s.ListAgentPods(ctx, p.config.Kubernetes.Namespace, selector)
 	if err != nil {
-		// Fall back to in-memory list
-		p.mu.RLock()
-		defer p.mu.RUnlock()
 		var result []*CloudNode
-		for _, n := range p.nodes {
+		for _, n := range stored {
 			if org == "" || n.Org == org {
 				result = append(result, n)
 			}
@@ -814,7 +861,6 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 		return result, nil
 	}
 
-	// Sync in-memory state with K8s and include non-K8s nodes (e.g. DO droplets).
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -822,17 +868,16 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 	var result []*CloudNode
 	for _, ps := range pods {
 		nodeID := ""
-		// Extract node ID from pod name
 		if strings.HasPrefix(ps.Name, "agent-") {
 			nodeID = strings.TrimPrefix(ps.Name, "agent-")
 		}
 		seen[nodeID] = true
-		if existing, ok := p.nodes[nodeID]; ok {
+		if existing, ok := storeIndex[nodeID]; ok {
 			existing.Status = ps.Phase
 			existing.LastSeen = time.Now()
+			_ = p.store.Put(existing)
 			result = append(result, existing)
 		} else {
-			// Pod exists in K8s but not in memory — rehydrate
 			node := &CloudNode{
 				NodeID:    nodeID,
 				PodName:   ps.Name,
@@ -841,14 +886,13 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 				Status:    ps.Phase,
 				LastSeen:  time.Now(),
 			}
-			p.nodes[nodeID] = node
+			_ = p.store.Put(node)
 			result = append(result, node)
 		}
 	}
 
-	// Include non-K8s nodes (DO droplets, VMs) that are only tracked in memory.
-	for id, n := range p.nodes {
-		if seen[id] {
+	for _, n := range stored {
+		if seen[n.NodeID] {
 			continue
 		}
 		if org != "" && n.Org != org {
@@ -862,64 +906,63 @@ func (p *Provisioner) ListNodes(ctx context.Context, org string) ([]*CloudNode, 
 
 // GetLogs returns recent logs for a cloud agent pod.
 func (p *Provisioner) GetLogs(ctx context.Context, nodeID string, tailLines int64) (string, error) {
-	p.mu.RLock()
-	node, ok := p.nodes[nodeID]
-	p.mu.RUnlock()
-
-	if !ok {
+	node, err := p.store.Get(nodeID)
+	if err != nil {
+		return "", fmt.Errorf("read node %s from store: %w", nodeID, err)
+	}
+	if node == nil {
 		return "", fmt.Errorf("cloud node %q not found", nodeID)
 	}
 
 	return p.k8s.GetPodLogs(ctx, node.Namespace, node.PodName, tailLines)
 }
 
-// Sync refreshes the in-memory node list from Kubernetes and rehydrates
+// Sync refreshes the node list from Kubernetes and rehydrates
 // non-K8s nodes (DO droplets, VMs) from Visor.
 func (p *Provisioner) Sync(ctx context.Context) error {
-	_, err := p.ListNodes(ctx, "")
+	nodes, err := p.ListNodes(ctx, "")
 	if err != nil {
 		return err
 	}
 
-	// Rehydrate DO droplets and VMs from Visor so they survive restarts.
+	SyncActiveAgentCount(len(nodes))
+
 	if p.visor != nil {
 		if err := p.rehydrateFromVisor(ctx); err != nil {
 			logger.Logger.Warn().Err(err).Msg("failed to rehydrate nodes from visor")
+		}
+		all, listErr := p.store.List()
+		if listErr == nil {
+			SyncActiveAgentCount(len(all))
 		}
 	}
 	return nil
 }
 
 // rehydrateFromVisor loads machines from Visor and adds any that are missing
-// from the in-memory node map. This recovers DO droplets after a restart.
+// from the store. This recovers DO droplets after a restart.
 func (p *Provisioner) rehydrateFromVisor(ctx context.Context) error {
 	machines, err := p.visor.ListMachines(ctx, "hanzo")
 	if err != nil {
 		return err
 	}
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	existing, err := p.store.List()
+	if err != nil {
+		return fmt.Errorf("list nodes for visor rehydration: %w", err)
+	}
+	existingByPod := make(map[string]bool, len(existing))
+	for _, n := range existing {
+		existingByPod[n.PodName] = true
+	}
 
 	added := 0
 	for _, m := range machines {
-		// Skip machines that are already tracked
-		found := false
-		for _, n := range p.nodes {
-			if n.PodName == m.Name {
-				found = true
-				break
-			}
-		}
-		if found {
+		if existingByPod[m.Name] {
 			continue
 		}
 
-		// Reconstruct node from Visor machine data
 		nodeID := m.Name
-		if strings.HasPrefix(m.Name, "do-") {
-			nodeID = m.Name
-		}
 
 		node := &CloudNode{
 			NodeID:         nodeID,
@@ -938,13 +981,16 @@ func (p *Provisioner) rehydrateFromVisor(ctx context.Context) error {
 			LastSeen: time.Now(),
 		}
 		if m.CreatedTime != "" {
-			if t, err := time.Parse("2006-01-02T15:04:05-07:00", m.CreatedTime); err == nil {
+			if t, parseErr := time.Parse("2006-01-02T15:04:05-07:00", m.CreatedTime); parseErr == nil {
 				node.CreatedAt = t
-			} else if t, err := time.Parse("2006-01-02T15:04:05Z", m.CreatedTime); err == nil {
+			} else if t, parseErr := time.Parse("2006-01-02T15:04:05Z", m.CreatedTime); parseErr == nil {
 				node.CreatedAt = t
 			}
 		}
-		p.nodes[nodeID] = node
+		if putErr := p.store.Put(node); putErr != nil {
+			logger.Logger.Warn().Err(putErr).Str("node_id", nodeID).Msg("failed to persist rehydrated visor node")
+			continue
+		}
 		added++
 	}
 
@@ -956,15 +1002,37 @@ func (p *Provisioner) rehydrateFromVisor(ctx context.Context) error {
 
 // countByOrg returns the number of cloud nodes for an organization.
 func (p *Provisioner) countByOrg(org string) int {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
+	nodes, err := p.store.List()
+	if err != nil {
+		logger.Logger.Warn().Err(err).Msg("failed to list nodes for org count")
+		return 0
+	}
 	count := 0
-	for _, n := range p.nodes {
+	for _, n := range nodes {
 		if n.Org == org {
 			count++
 		}
 	}
 	return count
+}
+
+// RunningBillingNodes returns all provisioned nodes that have an active billing
+// hold. Used by the metering adapter to report usage for running compute.
+func (p *Provisioner) RunningBillingNodes() []*CloudNode {
+	nodes, err := p.store.List()
+	if err != nil {
+		logger.Logger.Warn().Err(err).Msg("failed to list nodes for billing")
+		return nil
+	}
+
+	var result []*CloudNode
+	for _, n := range nodes {
+		if n.HoldID == "" || n.CentsPerHour <= 0 || n.BillingUserID == "" {
+			continue
+		}
+		result = append(result, n)
+	}
+	return result
 }
 
 // sanitizePodName ensures the name is a valid K8s DNS-1123 label.
@@ -985,7 +1053,6 @@ func sanitizePodName(name string) string {
 
 // nodeOptionsForMemory returns a NODE_OPTIONS string with --max-old-space-size
 // set appropriately for the given K8s memory limit (e.g. "4Gi", "2Gi", "512Mi").
-// Reserves 128MB for OS and native heap, gives the rest to V8.
 func nodeOptionsForMemory(memLimit string) string {
 	limitMB := 0
 	memLimit = strings.TrimSpace(memLimit)
@@ -1001,9 +1068,9 @@ func nodeOptionsForMemory(memLimit string) string {
 		}
 	}
 	if limitMB <= 256 {
-		limitMB = 1024 // fallback: 1GB
+		limitMB = 1024
 	}
-	heapMB := limitMB - 128 // reserve for OS + native
+	heapMB := limitMB - 128
 	if heapMB < 256 {
 		heapMB = 256
 	}
@@ -1011,8 +1078,6 @@ func nodeOptionsForMemory(memLimit string) string {
 }
 
 // nodeArgs builds the container args to run the bot in node mode.
-// Gateway URL is passed via BOT_NODE_GATEWAY_URL env var.
-// If no gateway URL is configured, falls back to standalone gateway mode.
 func nodeArgs(gatewayURL, nodeID string) []string {
 	if gatewayURL == "" {
 		return []string{
@@ -1024,6 +1089,45 @@ func nodeArgs(gatewayURL, nodeID string) []string {
 		"node", "hanzo-bot.mjs", "node", "run",
 		"--name", nodeID,
 	}
+}
+
+// agentSecretName returns the K8s Secret name for an agent's sensitive env vars.
+func agentSecretName(nodeID string) string {
+	return sanitizePodName(fmt.Sprintf("agent-keys-%s", nodeID))
+}
+
+// RedactKey returns a redacted version of an API key, showing only the first 6
+// characters followed by "...". Safe for logging without leaking secrets.
+func RedactKey(key string) string {
+	if len(key) <= 6 {
+		return "***"
+	}
+	return key[:6] + "..."
+}
+
+// sensitiveEnvKeys lists env var names that contain API keys or tokens and must
+// be stored in a K8s Secret rather than inline in the pod spec.
+var sensitiveEnvKeys = map[string]bool{
+	"HANZO_API_KEY":     true,
+	"OPENAI_API_KEY":    true,
+	"ANTHROPIC_API_KEY": true,
+	"BOT_GATEWAY_TOKEN": true,
+}
+
+// splitSensitiveEnv separates env vars into non-sensitive (safe for pod spec)
+// and sensitive (must go into a K8s Secret). Keys listed in sensitiveEnvKeys
+// are classified as sensitive.
+func splitSensitiveEnv(env map[string]string) (safe map[string]string, secret map[string]string) {
+	safe = make(map[string]string, len(env))
+	secret = make(map[string]string)
+	for k, v := range env {
+		if sensitiveEnvKeys[k] {
+			secret[k] = v
+		} else {
+			safe[k] = v
+		}
+	}
+	return safe, secret
 }
 
 // sanitizeLabel ensures a value is safe for K8s labels.
