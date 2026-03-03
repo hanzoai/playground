@@ -84,7 +84,7 @@ func TestCheckProvisionAllowance_SufficientFunds(t *testing.T) {
 	defer srv.Close()
 
 	client := newTestClient(srv.URL, "")
-	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4)
+	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4, 1)
 	require.NoError(t, err)
 
 	assert.True(t, allow.Allowed)
@@ -99,7 +99,7 @@ func TestCheckProvisionAllowance_InsufficientFunds(t *testing.T) {
 	defer srv.Close()
 
 	client := newTestClient(srv.URL, "")
-	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4)
+	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4, 1)
 	require.NoError(t, err)
 
 	assert.False(t, allow.Allowed)
@@ -115,7 +115,7 @@ func TestCheckProvisionAllowance_ZeroBalance(t *testing.T) {
 	defer srv.Close()
 
 	client := newTestClient(srv.URL, "")
-	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4)
+	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4, 1)
 	require.NoError(t, err)
 
 	assert.False(t, allow.Allowed)
@@ -127,7 +127,7 @@ func TestCheckProvisionAllowance_ExactlyOneHour(t *testing.T) {
 	defer srv.Close()
 
 	client := newTestClient(srv.URL, "")
-	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4)
+	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4, 1)
 	require.NoError(t, err)
 
 	assert.True(t, allow.Allowed)
@@ -137,9 +137,86 @@ func TestCheckProvisionAllowance_ExactlyOneHour(t *testing.T) {
 func TestCheckProvisionAllowance_CommerceDown(t *testing.T) {
 	// Unreachable server
 	client := newTestClient("http://127.0.0.1:1", "")
-	_, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4)
+	_, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 4, 1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "billing gate")
+}
+
+// --- CentsPerHourVM tests ---
+
+func TestCentsPerHourVM_MacInstances(t *testing.T) {
+	tests := []struct {
+		instanceType string
+		expected     int
+	}{
+		{"mac2.metal", 65},
+		{"mac2-m2.metal", 65},
+		{"mac-m4.metal", 123},
+		{"mac-m4pro.metal", 123},
+		{"mac2-m1ultra.metal", 500},
+	}
+	for _, tt := range tests {
+		t.Run(tt.instanceType, func(t *testing.T) {
+			assert.Equal(t, tt.expected, CentsPerHourVM(tt.instanceType))
+		})
+	}
+}
+
+func TestCentsPerHourVM_NonMacInstances(t *testing.T) {
+	assert.Equal(t, 4, CentsPerHourVM("t3.medium"))
+	assert.Equal(t, 8, CentsPerHourVM("t3.large"))
+	assert.Equal(t, 4, CentsPerHourVM("unknown-instance"))
+}
+
+// --- MinimumHours tests ---
+
+func TestMinimumHours_MacIs24(t *testing.T) {
+	macTypes := []string{
+		"mac2.metal", "mac2-m1ultra.metal", "mac2-m2.metal",
+		"mac2-m2pro.metal", "mac-m4.metal", "mac-m4pro.metal",
+	}
+	for _, mt := range macTypes {
+		t.Run(mt, func(t *testing.T) {
+			assert.Equal(t, 24, MinimumHours(mt), "Mac instances require 24h minimum (Apple licensing)")
+		})
+	}
+}
+
+func TestMinimumHours_NonMacIs1(t *testing.T) {
+	assert.Equal(t, 1, MinimumHours("t3.medium"))
+	assert.Equal(t, 1, MinimumHours("s-2vcpu-4gb"))
+	assert.Equal(t, 1, MinimumHours("unknown"))
+}
+
+// --- Mac 24h billing tests ---
+
+func TestCheckProvisionAllowance_Mac24hMinimum_Denied(t *testing.T) {
+	// $15.00 balance, Mac needs $15.60 (24h × $0.65/hr)
+	srv, _ := newTestServer(1500)
+	defer srv.Close()
+
+	client := newTestClient(srv.URL, "")
+	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 65, 24)
+	require.NoError(t, err)
+
+	assert.False(t, allow.Allowed)
+	assert.Equal(t, 1560, allow.RequiredCents) // 65 × 24
+	assert.Contains(t, allow.Reason, "24 hours")
+	assert.Contains(t, allow.Reason, "Apple licensing")
+}
+
+func TestCheckProvisionAllowance_Mac24hSufficient(t *testing.T) {
+	// $16.00 balance, Mac needs $15.60 (24h × $0.65/hr) — sufficient
+	srv, _ := newTestServer(1600)
+	defer srv.Close()
+
+	client := newTestClient(srv.URL, "")
+	allow, err := CheckProvisionAllowance(context.Background(), client, "hanzo/z", "tok", 65, 24)
+	require.NoError(t, err)
+
+	assert.True(t, allow.Allowed)
+	assert.Equal(t, 1560, allow.RequiredCents)
+	assert.Equal(t, 24, allow.HoursAfford) // 1600/65 = 24
 }
 
 // --- Client case normalization tests ---

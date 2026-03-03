@@ -41,12 +41,22 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 		req.Owner = user.Sub
 		req.Org = orgID
 
-		// Determine compute tier for billing check
+		// Determine compute tier for billing check.
+		// VM requests (Mac/Windows) use CentsPerHourVM; K8s pods use CentsPerHour.
+		// Mac instances have a 24-hour prepaid minimum (Apple macOS licensing requirement).
+		// Canonical pricing lives in pricing.hanzo.ai; these are static fallbacks.
+		isVMRequest := req.OS == "macos" || req.OS == "windows"
 		tierSlug := req.InstanceType
 		if tierSlug == "" {
 			tierSlug = "s-2vcpu-4gb" // default K8s tier
 		}
-		costPerHour := billing.CentsPerHour(tierSlug)
+		var costPerHour int
+		if isVMRequest {
+			costPerHour = billing.CentsPerHourVM(tierSlug)
+		} else {
+			costPerHour = billing.CentsPerHour(tierSlug)
+		}
+		minimumHours := billing.MinimumHours(tierSlug)
 
 		// Extract bearer token for billing API call
 		bearerToken := ""
@@ -56,12 +66,12 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			}
 		}
 
-		// Check billing: require at least 1 hour of compute balance.
+		// Check billing: require minimumHours of compute balance.
 		// Commerce stores balances under "org/name" format, not UUID.
 		billingUserID := user.Organization + "/" + user.LoginName
 		allowance, err := billing.CheckProvisionAllowance(
 			c.Request.Context(), billingClient,
-			billingUserID, bearerToken, costPerHour,
+			billingUserID, bearerToken, costPerHour, minimumHours,
 		)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("billing check failed")
@@ -72,12 +82,17 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 		if !allowance.Allowed {
-			c.JSON(http.StatusPaymentRequired, gin.H{
+			resp := gin.H{
 				"error":          allowance.Reason,
 				"balance_cents":  allowance.BalanceCents,
 				"required_cents": allowance.RequiredCents,
 				"hours_afford":   allowance.HoursAfford,
-			})
+				"minimum_hours":  minimumHours,
+			}
+			if minimumHours == 24 {
+				resp["note"] = "macOS instances require a 24-hour minimum due to Apple licensing requirements — this is not a Hanzo limitation."
+			}
+			c.JSON(http.StatusPaymentRequired, resp)
 			return
 		}
 
@@ -420,14 +435,25 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
-		// Calculate total hourly cost for the entire team
+		// Calculate total cost for the entire team.
+		// Use the highest minimumHours across all agents (e.g. if one agent
+		// is Mac with 24h minimum, the whole team check uses 24h).
 		totalCentsPerHour := 0
+		maxMinimumHours := 1
 		for _, agentReq := range req.Agents {
 			slug := agentReq.InstanceType
 			if slug == "" {
 				slug = "s-2vcpu-4gb"
 			}
-			totalCentsPerHour += billing.CentsPerHour(slug)
+			isVM := agentReq.OS == "macos" || agentReq.OS == "windows"
+			if isVM {
+				totalCentsPerHour += billing.CentsPerHourVM(slug)
+			} else {
+				totalCentsPerHour += billing.CentsPerHour(slug)
+			}
+			if mh := billing.MinimumHours(slug); mh > maxMinimumHours {
+				maxMinimumHours = mh
+			}
 		}
 
 		// Extract bearer token for billing API call
@@ -438,12 +464,12 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			}
 		}
 
-		// Check billing: require at least 1 hour of total team compute.
+		// Check billing: require minimumHours of total team compute.
 		// Commerce stores balances under "org/name" format, not UUID.
 		billingUserID := user.Organization + "/" + user.LoginName
 		allowance, err := billing.CheckProvisionAllowance(
 			c.Request.Context(), billingClient,
-			billingUserID, bearerToken, totalCentsPerHour,
+			billingUserID, bearerToken, totalCentsPerHour, maxMinimumHours,
 		)
 		if err != nil {
 			logger.Logger.Error().Err(err).Msg("billing check failed for team provision")
@@ -495,7 +521,9 @@ func TeamProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 }
 
 // CloudBillingBalanceHandler returns the user's billing balance and
-// affordability for each preset tier. Used by frontend to show pricing context.
+// affordability for each preset tier, including VM presets for Mac/Windows.
+// Used by frontend to show pricing context. Canonical pricing from pricing.hanzo.ai;
+// these are static fallbacks for the billing pre-check.
 func CloudBillingBalanceHandler() gin.HandlerFunc {
 	billingClient := billing.NewClient()
 
@@ -503,6 +531,17 @@ func CloudBillingBalanceHandler() gin.HandlerFunc {
 		Name         string `json:"name"`
 		CentsPerHour int    `json:"cents_per_hour"`
 		HoursAfford  int    `json:"hours_afford"`
+	}
+
+	type vmPreset struct {
+		Name            string `json:"name"`
+		InstanceType    string `json:"instance_type"`
+		OS              string `json:"os"`
+		CentsPerHour    int    `json:"cents_per_hour"`
+		MinimumHours    int    `json:"minimum_hours"`
+		MinimumCostCents int   `json:"minimum_cost_cents"`
+		HoursAfford     int    `json:"hours_afford"`
+		Note            string `json:"note,omitempty"`
 	}
 
 	return func(c *gin.Context) {
@@ -531,6 +570,8 @@ func CloudBillingBalanceHandler() gin.HandlerFunc {
 		}
 
 		availableCents := int(balance.Available)
+
+		// K8s container presets
 		presets := []presetAffordability{
 			{Name: "starter", CentsPerHour: billing.CentsPerHour("starter")},
 			{Name: "pro", CentsPerHour: billing.CentsPerHour("pro")},
@@ -543,10 +584,30 @@ func CloudBillingBalanceHandler() gin.HandlerFunc {
 			}
 		}
 
+		// VM presets for Mac/Windows/Linux VMs (provisioned via Visor).
+		// Mac 24h minimum is an Apple macOS licensing requirement, not a Hanzo policy.
+		macNote := "24-hour minimum required by Apple macOS licensing — not a Hanzo limitation."
+		vmPresets := []vmPreset{
+			{Name: "mac-m2", InstanceType: "mac2-m2.metal", OS: "macos",
+				CentsPerHour: 65, MinimumHours: 24, MinimumCostCents: 1560, Note: macNote},
+			{Name: "mac-m4", InstanceType: "mac-m4.metal", OS: "macos",
+				CentsPerHour: 123, MinimumHours: 24, MinimumCostCents: 2952, Note: macNote},
+			{Name: "windows", InstanceType: "t3.medium", OS: "windows",
+				CentsPerHour: 4, MinimumHours: 1, MinimumCostCents: 4},
+			{Name: "linux-vm", InstanceType: "t3.medium", OS: "linux",
+				CentsPerHour: 4, MinimumHours: 1, MinimumCostCents: 4},
+		}
+		for i := range vmPresets {
+			if vmPresets[i].CentsPerHour > 0 {
+				vmPresets[i].HoursAfford = availableCents / vmPresets[i].CentsPerHour
+			}
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"balance_cents": availableCents,
 			"currency":      "usd",
-			"presets":        presets,
+			"presets":       presets,
+			"vm_presets":    vmPresets,
 		})
 	}
 }

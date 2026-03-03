@@ -353,16 +353,26 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			LimitMem: "512Mi",
 		})
 	} else if p.config.Kubernetes.OperativeEnabled {
+		// Build operative env: display settings + Hanzo API for billing through us
+		operativeEnv := map[string]string{
+			"DISPLAY":      ":1",
+			"DISPLAY_NUM":  "1",
+			"RESOLUTION":   "1920x1080x24",
+			"WIDTH":        "1920",
+			"HEIGHT":       "1080",
+			"API_PROVIDER": "hanzo",
+		}
+		if apiKey != "" {
+			operativeEnv["HANZO_API_KEY"] = apiKey
+			operativeEnv["ANTHROPIC_API_KEY"] = apiKey // operative SDK reads this
+		}
+		if p.config.Kubernetes.CloudAPIEndpoint != "" {
+			operativeEnv["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
+		}
 		sidecars = append(sidecars, SidecarSpec{
 			Name:  "operative",
 			Image: p.config.Kubernetes.OperativeImage,
-			Env: map[string]string{
-				"DISPLAY":     ":1",
-				"DISPLAY_NUM": "1",
-				"RESOLUTION":  "1920x1080x24",
-				"WIDTH":       "1920",
-				"HEIGHT":      "1080",
-			},
+			Env:   operativeEnv,
 			Ports:    []int32{8080, 6080, 5900, 8501},
 			CPU:      "200m",
 			Memory:   "512Mi",
