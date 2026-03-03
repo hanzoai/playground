@@ -313,7 +313,6 @@ func TestUsageReporter_SetsTimestamp(t *testing.T) {
 		InitialBackoff: 1 * time.Millisecond,
 	})
 
-	before := time.Now().UnixMilli()
 	reporter.Report(UsageRecord{
 		UserID:       "hanzo/z",
 		Model:        "claude-sonnet-4",
