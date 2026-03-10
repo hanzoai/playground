@@ -7,7 +7,7 @@
  */
 
 import type { SoundName } from './audioService';
-import { getGlobalApiKey } from './api';
+import { getGlobalApiKey, getGlobalIamToken } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 
@@ -24,8 +24,11 @@ export interface UserPreferencesDTO {
 
 function authHeaders(): Headers {
   const headers = new Headers({ 'Content-Type': 'application/json' });
+  const iamToken = getGlobalIamToken();
   const apiKey = getGlobalApiKey();
-  if (apiKey) {
+  if (iamToken) {
+    headers.set('Authorization', `Bearer ${iamToken}`);
+  } else if (apiKey) {
     headers.set('X-API-Key', apiKey);
   }
   return headers;
