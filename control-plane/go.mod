@@ -1,6 +1,6 @@
 module github.com/hanzoai/playground/control-plane
 
-go 1.26
+go 1.24.0
 
 toolchain go1.24.2
 
