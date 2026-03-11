@@ -14,18 +14,40 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
+  console.log("[AuthCallbackPage] render", {
+    hasHandleCallback: !!handleCallback,
+    url: window.location.href,
+    ssState: sessionStorage.getItem("hanzo_iam_state"),
+    ssVerifier: sessionStorage.getItem("hanzo_iam_code_verifier")?.substring(0, 10),
+  });
+
   useEffect(() => {
+    console.log("[AuthCallbackPage] useEffect fired", {
+      hasHandleCallback: !!handleCallback,
+      url: window.location.href,
+    });
+
     if (!handleCallback) {
       // Not in IAM mode — redirect home
+      console.log("[AuthCallbackPage] no handleCallback, navigating to /");
       navigate("/", { replace: true });
       return;
     }
 
     handleCallback()
-      .then(() => navigate("/", { replace: true }))
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : String(err)),
-      );
+      .then(() => {
+        console.log("[AuthCallbackPage] handleCallback SUCCESS, navigating to /");
+        // Use requestAnimationFrame to ensure React has flushed the
+        // isAuthenticated=true state update from completeAuth() before we
+        // navigate to "/" (which mounts AuthGuard).
+        requestAnimationFrame(() => {
+          navigate("/", { replace: true });
+        });
+      })
+      .catch((err) => {
+        console.error("[AuthCallbackPage] handleCallback FAILED:", err);
+        setError(err instanceof Error ? err.message : String(err));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
