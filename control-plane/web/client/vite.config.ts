@@ -35,8 +35,7 @@ export default defineConfig(({ mode }) => {
       sourcemap: process.env.VITE_BUILD_SOURCEMAP === 'true',
     },
     esbuild: {
-      // Temporarily keep console.log in production for OAuth debugging
-      drop: mode === 'production' ? ['debugger'] : [],
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
     },
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.1.x'),

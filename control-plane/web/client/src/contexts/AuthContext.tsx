@@ -88,14 +88,6 @@ const initStoredKey = (() => {
 function IamAuthBridge({ children }: { children: ReactNode }) {
   const iam = useIamHook();
 
-  console.log("[IamAuthBridge] render", {
-    isLoading: iam.isLoading,
-    isAuthenticated: iam.isAuthenticated,
-    hasAccessToken: !!iam.accessToken,
-    error: iam.error?.message,
-    url: window.location.href,
-  });
-
   // Sync IAM access token so REST calls include Authorization: Bearer
   useEffect(() => {
     setGlobalIamToken(iam.accessToken);
@@ -122,7 +114,6 @@ function IamAuthBridge({ children }: { children: ReactNode }) {
   );
 
   if (iam.isLoading) {
-    console.log("[IamAuthBridge] showing loading state, children NOT rendered");
     return (
       <div className="flex items-center justify-center min-h-screen">
         Loading...
@@ -130,7 +121,6 @@ function IamAuthBridge({ children }: { children: ReactNode }) {
     );
   }
 
-  console.log("[IamAuthBridge] rendering children (Router)");
   return (
     <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
