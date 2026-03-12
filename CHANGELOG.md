@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.193] - 2026-03-12
+
+
+### Fixed
+
+- Fix: dropdown menu clipped by overflow-hidden on Nodes page
+
+The outer container had overflow-hidden which prevented the + Add
+dropdown from being visible. Moved overflow constraint to inner
+content container only.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5433073)
+
 ## [0.1.41-rc.192] - 2026-03-12
 
 
