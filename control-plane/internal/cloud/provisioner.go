@@ -303,6 +303,11 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	env["BOT_CLOUD_NODE"] = "true"
 	if p.config.Kubernetes.GatewayURL != "" {
 		env["BOT_NODE_GATEWAY_URL"] = p.config.Kubernetes.GatewayURL
+		// When the gateway URL uses ws:// (internal K8s service), allow
+		// plaintext WebSocket on private/internal hostnames.
+		if strings.HasPrefix(p.config.Kubernetes.GatewayURL, "ws://") {
+			env["OPENCLAW_ALLOW_INSECURE_PRIVATE_WS"] = "1"
+		}
 	}
 	gatewayToken := p.config.Kubernetes.GatewayToken
 	if gatewayToken != "" {
