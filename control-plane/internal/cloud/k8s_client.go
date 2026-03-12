@@ -26,25 +26,44 @@ type InClusterK8sClient struct {
 }
 
 // NewInClusterClient creates a K8s client using the in-cluster service account.
+//
+// On managed Kubernetes (e.g. DigitalOcean DOKS), the in-cluster ClusterIP
+// (10.x.x.x) may be unreachable due to CGNAT routing / Cilium NetworkPolicy
+// issues. Set KUBERNETES_API_URL to the external API server URL to bypass:
+//
+//	KUBERNETES_API_URL=https://<cluster-id>.k8s.ondigitalocean.com
 func NewInClusterClient() (*InClusterK8sClient, error) {
-	host := os.Getenv("KUBERNETES_SERVICE_HOST")
-	port := os.Getenv("KUBERNETES_SERVICE_PORT")
-	if host == "" || port == "" {
-		return nil, fmt.Errorf("not running inside Kubernetes (KUBERNETES_SERVICE_HOST/PORT not set)")
-	}
-
 	tokenBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read service account token: %w", err)
 	}
 
+	// Allow override for managed K8s where in-cluster ClusterIP is unreachable
+	apiServer := os.Getenv("KUBERNETES_API_URL")
+	if apiServer == "" {
+		host := os.Getenv("KUBERNETES_SERVICE_HOST")
+		port := os.Getenv("KUBERNETES_SERVICE_PORT")
+		if host == "" || port == "" {
+			return nil, fmt.Errorf("not running inside Kubernetes (KUBERNETES_SERVICE_HOST/PORT not set)")
+		}
+		apiServer = fmt.Sprintf("https://%s:%s", host, port)
+	}
+
+	// Use in-cluster CA cert if available; for external URLs, fall back to
+	// system cert pool (DO's *.k8s.ondigitalocean.com uses a public CA).
+	tlsCfg := tlsConfigFromServiceAccount()
+
+	logger.Logger.Info().
+		Str("api_server", apiServer).
+		Msg("K8s client initialized")
+
 	return &InClusterK8sClient{
-		apiServer: fmt.Sprintf("https://%s:%s", host, port),
+		apiServer: apiServer,
 		token:     string(tokenBytes),
 		client: &http.Client{
 			Timeout: 60 * time.Second,
 			Transport: &http.Transport{
-				TLSClientConfig: tlsConfigFromServiceAccount(),
+				TLSClientConfig: tlsCfg,
 			},
 		},
 	}, nil
@@ -390,18 +409,25 @@ func extractPodStatus(pod map[string]interface{}) (*PodStatus, error) {
 	}, nil
 }
 
-// tlsConfigFromServiceAccount builds TLS config using the in-cluster CA cert.
+// tlsConfigFromServiceAccount builds TLS config using the in-cluster CA cert
+// combined with system certs. This handles both in-cluster ClusterIP
+// (needs the K8s CA) and external API URLs (need public CAs).
 func tlsConfigFromServiceAccount() *tls.Config {
-	caCert, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
-	if err != nil {
-		logger.Logger.Warn().Err(err).Msg("failed to read in-cluster CA cert, using insecure")
-		return &tls.Config{InsecureSkipVerify: true}
+	// Start with system cert pool for external URLs
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil || rootCAs == nil {
+		rootCAs = x509.NewCertPool()
 	}
 
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	// Add in-cluster CA cert if available
+	caCert, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+	if err != nil {
+		logger.Logger.Warn().Err(err).Msg("failed to read in-cluster CA cert, using system certs only")
+	} else {
+		rootCAs.AppendCertsFromPEM(caCert)
+	}
 
 	return &tls.Config{
-		RootCAs: caCertPool,
+		RootCAs: rootCAs,
 	}
 }
