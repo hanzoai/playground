@@ -1,0 +1,131 @@
+name: Fix K8s API NetworkPolicy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  fix-netpol:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Get current K8s API endpoint IP
+        id: api
+        run: |
+          ENDPOINT_IP=$(kubectl get endpoints kubernetes -n default -o jsonpath='{.subsets[0].addresses[0].ip}')
+          echo "endpoint_ip=$ENDPOINT_IP" >> "$GITHUB_OUTPUT"
+          echo "K8s API endpoint IP: $ENDPOINT_IP"
+          echo ""
+          echo "Current NetworkPolicy:"
+          kubectl get networkpolicy allow-kube-api-egress -n hanzo -o yaml
+
+      - name: Update allow-kube-api-egress to include actual endpoint IP
+        run: |
+          ENDPOINT_IP="${{ steps.api.outputs.endpoint_ip }}"
+          echo "Updating allow-kube-api-egress to also allow $ENDPOINT_IP/32"
+
+          cat <<EOF | kubectl apply -f -
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: allow-kube-api-egress
+            namespace: hanzo
+            labels:
+              app.kubernetes.io/managed-by: hanzo-netpol
+              hanzo-netpol/phase: "1"
+          spec:
+            podSelector: {}
+            policyTypes:
+            - Egress
+            egress:
+            - ports:
+              - port: 443
+                protocol: TCP
+              to:
+              - ipBlock:
+                  cidr: 10.124.32.1/32
+              - ipBlock:
+                  cidr: ${ENDPOINT_IP}/32
+              - ipBlock:
+                  cidr: 100.64.0.0/10
+          EOF
+
+          echo ""
+          echo "Updated NetworkPolicy:"
+          kubectl get networkpolicy allow-kube-api-egress -n hanzo -o yaml
+
+      - name: Verify connectivity with debug pod
+        run: |
+          kubectl delete pod netpol-test -n hanzo --ignore-not-found 2>/dev/null || true
+          sleep 2
+
+          NODE=$(kubectl get pods -n hanzo -l app=hanzo-playground -o jsonpath='{.items[0].spec.nodeName}')
+
+          kubectl run netpol-test \
+            --namespace=hanzo \
+            --image=curlimages/curl:latest \
+            --restart=Never \
+            --overrides="{
+              \"apiVersion\": \"v1\",
+              \"spec\": {
+                \"serviceAccountName\": \"playground-agent\",
+                \"nodeName\": \"$NODE\",
+                \"containers\": [{
+                  \"name\": \"netpol-test\",
+                  \"image\": \"curlimages/curl:latest\",
+                  \"command\": [\"sleep\", \"120\"]
+                }]
+              },
+              \"metadata\": {
+                \"labels\": {
+                  \"app\": \"hanzo-playground\"
+                }
+              }
+            }" \
+            --command -- sleep 120
+
+          echo "Waiting for test pod..."
+          kubectl wait --for=condition=ready pod/netpol-test -n hanzo --timeout=60s
+
+          echo ""
+          echo "=== Test K8s API /healthz ==="
+          kubectl exec netpol-test -n hanzo -- sh -c '
+            curl -sk --max-time 10 "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/healthz" 2>&1
+          '
+          echo ""
+          echo "Exit: $?"
+
+          echo ""
+          echo "=== Test K8s API with SA token ==="
+          kubectl exec netpol-test -n hanzo -- sh -c '
+            TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+            CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            curl -sk --max-time 10 \
+              --cacert "$CACERT" \
+              -H "Authorization: Bearer $TOKEN" \
+              "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/hanzo/pods?limit=1" 2>&1 | head -20
+          '
+          echo ""
+          echo "K8s API connectivity: SUCCESS"
+
+      - name: Restart playground to pick up new network state
+        run: |
+          kubectl rollout restart deployment hanzo-playground -n hanzo
+          kubectl rollout status deployment hanzo-playground -n hanzo --timeout=120s
+          echo "Playground restarted successfully"
+
+      - name: Cleanup
+        if: always()
+        run: kubectl delete pod netpol-test -n hanzo --ignore-not-found 2>/dev/null || true
