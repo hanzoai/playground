@@ -1,0 +1,88 @@
+name: K8s Diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Cluster info
+        run: |
+          echo "=== Cluster nodes ==="
+          kubectl get nodes -o wide
+          echo ""
+          echo "=== K8s API server endpoint ==="
+          kubectl cluster-info
+          echo ""
+          echo "=== K8s API service ==="
+          kubectl get svc kubernetes -n default -o wide
+
+      - name: Playground pod status
+        run: |
+          echo "=== Playground deployment ==="
+          kubectl get deployment hanzo-playground -n hanzo -o wide
+          echo ""
+          echo "=== Playground pods ==="
+          kubectl get pods -n hanzo -l app=hanzo-playground -o wide
+          echo ""
+          echo "=== Pod describe ==="
+          kubectl describe pods -n hanzo -l app=hanzo-playground
+
+      - name: Check service account
+        run: |
+          echo "=== Service account ==="
+          POD=$(kubectl get pods -n hanzo -l app=hanzo-playground -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          if [ -n "$POD" ]; then
+            echo "Pod: $POD"
+            echo ""
+            echo "=== Pod spec serviceAccount ==="
+            kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.serviceAccountName}'
+            echo ""
+            echo ""
+            echo "=== Check KUBERNETES_SERVICE env vars ==="
+            kubectl exec "$POD" -n hanzo -- env 2>/dev/null | grep KUBERNETES || echo "Could not exec into pod"
+            echo ""
+            echo "=== Check SA token mount ==="
+            kubectl exec "$POD" -n hanzo -- ls -la /var/run/secrets/kubernetes.io/serviceaccount/ 2>/dev/null || echo "Could not check SA mount"
+            echo ""
+            echo "=== Test K8s API connectivity ==="
+            kubectl exec "$POD" -n hanzo -- sh -c 'curl -sk --max-time 5 https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/healthz 2>&1' || echo "Could not test API connectivity"
+            echo ""
+            echo "=== DNS resolution ==="
+            kubectl exec "$POD" -n hanzo -- sh -c 'nslookup kubernetes.default.svc.cluster.local 2>&1 || echo "nslookup not available"' || true
+            echo ""
+            echo "=== Network connectivity test ==="
+            kubectl exec "$POD" -n hanzo -- sh -c 'timeout 5 sh -c "echo > /dev/tcp/$KUBERNETES_SERVICE_HOST/$KUBERNETES_SERVICE_PORT" 2>&1 && echo "TCP connection OK" || echo "TCP connection FAILED"' || true
+          else
+            echo "No playground pod found"
+          fi
+
+      - name: Check NetworkPolicies
+        run: |
+          echo "=== NetworkPolicies in hanzo namespace ==="
+          kubectl get networkpolicies -n hanzo 2>/dev/null || echo "No network policies"
+
+      - name: All pods in hanzo namespace
+        run: |
+          echo "=== All pods in hanzo ==="
+          kubectl get pods -n hanzo -o wide
+
+      - name: Recent events
+        run: |
+          echo "=== Recent events in hanzo namespace ==="
+          kubectl get events -n hanzo --sort-by='.lastTimestamp' | tail -30
