@@ -16,6 +16,9 @@ permissions:
   packages: write
   id-token: write
 
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -111,12 +114,65 @@ jobs:
 
   deploy:
     needs: build-and-push
-    uses: hanzoai/universe/.github/workflows/reusable-deploy-service.yml@main
-    with:
-      service: hanzo-playground
-      image: ghcr.io/hanzoai/playground:${{ github.sha }}
-      cluster: hanzo-k8s
-      namespace: hanzo
-      rollback-on-failure: true
-    secrets:
-      HANZO_API_KEY: ${{ secrets.HANZO_API_KEY }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Pre-deploy snapshot
+        id: snapshot
+        run: |
+          SVC="hanzo-playground"
+          NS="hanzo"
+          CURRENT_IMAGE=$(kubectl get deployment "$SVC" -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "none")
+          echo "current_image=$CURRENT_IMAGE" >> "$GITHUB_OUTPUT"
+          echo "### Pre-deploy: $SVC" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Current image: \`$CURRENT_IMAGE\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Target image: \`ghcr.io/hanzoai/playground:${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Rolling update
+        run: |
+          SVC="hanzo-playground"
+          NS="hanzo"
+          IMAGE="ghcr.io/hanzoai/playground:${{ github.sha }}"
+          CONTAINER=$(kubectl get deployment "$SVC" -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].name}')
+          echo "Updating $SVC container=$CONTAINER to $IMAGE"
+          kubectl set image "deployment/$SVC" "$CONTAINER=$IMAGE" -n "$NS"
+
+      - name: Monitor rollout
+        id: rollout
+        run: |
+          SVC="hanzo-playground"
+          NS="hanzo"
+          if kubectl rollout status "deployment/$SVC" -n "$NS" --timeout=600s; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Verify pods ready
+        if: steps.rollout.outputs.status == 'success'
+        run: |
+          SVC="hanzo-playground"
+          NS="hanzo"
+          kubectl wait --for=condition=available "deployment/$SVC" -n "$NS" --timeout=120s
+          echo "### Post-deploy: $SVC" >> "$GITHUB_STEP_SUMMARY"
+          kubectl get pods -l "app=$SVC" -n "$NS" --no-headers | while read line; do
+            echo "- \`$line\`" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Auto-rollback on failure
+        if: failure()
+        run: |
+          SVC="hanzo-playground"
+          NS="hanzo"
+          echo "::warning::Rolling back $SVC to previous version"
+          kubectl rollout undo "deployment/$SVC" -n "$NS"
+          kubectl rollout status "deployment/$SVC" -n "$NS" --timeout=300s
