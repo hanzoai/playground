@@ -70,7 +70,7 @@ func DefaultCloudConfig() CloudConfig {
 		Kubernetes: KubernetesConfig{
 			Enabled:          false,
 			Namespace:        "hanzo",
-			BotImage:         "ghcr.io/hanzoai/bot:latest",
+			BotImage:         "ghcr.io/hanzoai/bot:main",
 			ImagePullSecret:  "ghcr-secret",
 			ServiceAccount:   "playground-agent",
 			MaxAgentsPerOrg:  20,
