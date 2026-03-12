@@ -42,7 +42,7 @@ func NewInClusterClient() (*InClusterK8sClient, error) {
 		apiServer: fmt.Sprintf("https://%s:%s", host, port),
 		token:     string(tokenBytes),
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 			Transport: &http.Transport{
 				TLSClientConfig: tlsConfigFromServiceAccount(),
 			},
@@ -67,14 +67,29 @@ func (c *InClusterK8sClient) CreateAgentPod(ctx context.Context, spec *PodSpec) 
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/json")
 
+	logger.Logger.Debug().
+		Str("url", createURL).
+		Str("pod", spec.Name).
+		Str("namespace", spec.Namespace).
+		Msg("creating agent pod via K8s API")
+
 	resp, err := c.client.Do(req)
 	if err != nil {
+		logger.Logger.Error().
+			Err(err).
+			Str("url", createURL).
+			Str("api_server", c.apiServer).
+			Msg("K8s API request failed — check network connectivity and NetworkPolicies")
 		return nil, fmt.Errorf("K8s API request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		logger.Logger.Error().
+			Int("status", resp.StatusCode).
+			Str("body", string(respBody)).
+			Msg("K8s API returned error")
 		return nil, fmt.Errorf("K8s API returned %d: %s", resp.StatusCode, string(respBody))
 	}
 

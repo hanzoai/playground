@@ -21,7 +21,7 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: NetworkPolicy YAML - kube-api-egress
+      - name: NetworkPolicy YAML details
         run: |
           echo "=== allow-kube-api-egress ==="
           kubectl get networkpolicy allow-kube-api-egress -n hanzo -o yaml
@@ -32,30 +32,39 @@ jobs:
           echo "=== allow-dns-egress ==="
           kubectl get networkpolicy allow-dns-egress -n hanzo -o yaml
           echo ""
-          echo "=== default-deny-ingress ==="
-          kubectl get networkpolicy default-deny-ingress -n hanzo -o yaml
+          echo "=== allow-intra-namespace-egress ==="
+          kubectl get networkpolicy allow-intra-namespace-egress -n hanzo -o yaml 2>/dev/null || echo "Not found"
           echo ""
           echo "=== allow-intra-namespace ==="
-          kubectl get networkpolicy allow-intra-namespace -n hanzo -o yaml
+          kubectl get networkpolicy allow-intra-namespace -n hanzo -o yaml 2>/dev/null || echo "Not found"
+
+      - name: K8s API endpoint details
+        run: |
+          echo "=== K8s API service ClusterIP ==="
+          kubectl get svc kubernetes -n default -o wide
           echo ""
-          echo "=== allow-from-ingress-and-nodes ==="
-          kubectl get networkpolicy allow-from-ingress-and-nodes -n hanzo -o yaml
+          echo "=== K8s API endpoints (actual backend IPs) ==="
+          kubectl get endpoints kubernetes -n default -o yaml
+          echo ""
+          echo "=== Cluster info ==="
+          kubectl cluster-info
 
       - name: Playground pod details
         run: |
           POD=$(kubectl get pods -n hanzo -l app=hanzo-playground -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
           echo "Pod: $POD"
           echo ""
-          echo "=== Full pod YAML (spec only) ==="
-          kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec}' | python3 -m json.tool 2>/dev/null || kubectl get pod "$POD" -n hanzo -o yaml | grep -A 50 "spec:"
-          echo ""
           echo "=== Pod labels ==="
           kubectl get pod "$POD" -n hanzo -o jsonpath='{.metadata.labels}' | python3 -m json.tool
           echo ""
-          echo "=== Service account details ==="
+          echo "=== Service account ==="
+          kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.serviceAccountName}'
+          echo ""
+          echo ""
+          echo "=== Service account YAML ==="
           kubectl get serviceaccount playground-agent -n hanzo -o yaml
           echo ""
-          echo "=== ClusterRole/ClusterRoleBinding for playground-agent ==="
+          echo "=== ClusterRoleBindings for playground-agent ==="
           kubectl get clusterrolebinding -o json | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
@@ -63,9 +72,9 @@ jobs:
               for sub in item.get('subjects', []):
                   if sub.get('name') == 'playground-agent':
                       print(json.dumps(item, indent=2))
-          " 2>/dev/null || echo "No ClusterRoleBinding found"
+          " 2>/dev/null || echo "None found"
           echo ""
-          echo "=== RoleBinding for playground-agent ==="
+          echo "=== RoleBindings for playground-agent ==="
           kubectl get rolebinding -n hanzo -o json | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
@@ -73,128 +82,112 @@ jobs:
               for sub in item.get('subjects', []):
                   if sub.get('name') == 'playground-agent':
                       print(json.dumps(item, indent=2))
-          " 2>/dev/null || echo "No RoleBinding found"
+          " 2>/dev/null || echo "None found"
 
-      - name: Debug pod - test K8s API connectivity
+      - name: Debug pod connectivity test
         run: |
-          echo "=== Launching debug pod on same node as playground ==="
           NODE=$(kubectl get pods -n hanzo -l app=hanzo-playground -o jsonpath='{.items[0].spec.nodeName}')
-          echo "Playground node: $NODE"
+          echo "Playground runs on node: $NODE"
 
-          # Create a debug pod with the same service account
-          cat <<'DEBUGEOF' | kubectl apply -f -
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: playground-debug
-            namespace: hanzo
-            labels:
-              app: hanzo-playground
-          spec:
-            serviceAccountName: playground-agent
-            nodeName: NODEPLACEHOLDER
-            containers:
-            - name: debug
-              image: curlimages/curl:latest
-              command: ["sleep", "120"]
-            restartPolicy: Never
-          DEBUGEOF
-
-          # Patch the node name
+          # Clean up any leftover debug pod
           kubectl delete pod playground-debug -n hanzo --ignore-not-found 2>/dev/null || true
           sleep 2
 
-          cat <<EOF | kubectl apply -f -
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: playground-debug
-            namespace: hanzo
-            labels:
-              app: hanzo-playground
-          spec:
-            serviceAccountName: playground-agent
-            nodeName: "$NODE"
-            containers:
-            - name: debug
-              image: curlimages/curl:latest
-              command: ["sleep", "120"]
-            restartPolicy: Never
-          EOF
+          # Create debug pod with same SA and labels, on same node
+          kubectl run playground-debug \
+            --namespace=hanzo \
+            --image=curlimages/curl:latest \
+            --restart=Never \
+            --overrides="{
+              \"apiVersion\": \"v1\",
+              \"spec\": {
+                \"serviceAccountName\": \"playground-agent\",
+                \"nodeName\": \"$NODE\",
+                \"containers\": [{
+                  \"name\": \"playground-debug\",
+                  \"image\": \"curlimages/curl:latest\",
+                  \"command\": [\"sleep\", \"180\"]
+                }]
+              },
+              \"metadata\": {
+                \"labels\": {
+                  \"app\": \"hanzo-playground\"
+                }
+              }
+            }" \
+            --command -- sleep 180
 
-          echo "Waiting for debug pod..."
-          kubectl wait --for=condition=ready pod/playground-debug -n hanzo --timeout=60s || {
-            echo "Debug pod not ready, checking status:"
+          echo "Waiting for debug pod to be ready..."
+          kubectl wait --for=condition=ready pod/playground-debug -n hanzo --timeout=90s || {
+            echo "Pod not ready:"
             kubectl describe pod playground-debug -n hanzo
-            exit 0
+            exit 1
           }
 
           echo ""
-          echo "=== Environment vars ==="
-          kubectl exec playground-debug -n hanzo -- env | grep KUBERNETES || echo "No KUBERNETES vars"
+          echo "=== KUBERNETES_SERVICE env vars ==="
+          kubectl exec playground-debug -n hanzo -- env | grep KUBERNETES || echo "No vars"
 
           echo ""
-          echo "=== SA token exists? ==="
-          kubectl exec playground-debug -n hanzo -- ls -la /var/run/secrets/kubernetes.io/serviceaccount/ 2>/dev/null || echo "No SA mount"
+          echo "=== SA token files ==="
+          kubectl exec playground-debug -n hanzo -- ls -la /var/run/secrets/kubernetes.io/serviceaccount/ || echo "No SA mount"
 
           echo ""
-          echo "=== Test K8s API /healthz ==="
-          kubectl exec playground-debug -n hanzo -- curl -sk --max-time 10 https://${KUBERNETES_SERVICE_HOST:-10.124.32.1}:${KUBERNETES_SERVICE_PORT:-443}/healthz 2>&1 || true
+          echo "=== Test 1: curl K8s API /healthz (no auth, 10s timeout) ==="
+          kubectl exec playground-debug -n hanzo -- sh -c '
+            curl -svk --max-time 10 "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/healthz" 2>&1
+          ' || echo "FAILED"
 
           echo ""
-          echo "=== Test K8s API with SA token ==="
+          echo "=== Test 2: curl K8s API /healthz with SA token ==="
           kubectl exec playground-debug -n hanzo -- sh -c '
             TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
             CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            HOST=$KUBERNETES_SERVICE_HOST
-            PORT=$KUBERNETES_SERVICE_PORT
-            echo "Connecting to https://$HOST:$PORT/healthz"
-            curl -sk --max-time 10 \
+            curl -sv --max-time 10 \
               --cacert "$CACERT" \
               -H "Authorization: Bearer $TOKEN" \
-              "https://$HOST:$PORT/healthz" 2>&1
-            echo ""
-            echo "Exit code: $?"
-          ' || echo "Could not test with SA token"
+              "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/healthz" 2>&1
+          ' || echo "FAILED"
 
           echo ""
-          echo "=== Test creating a pod via API ==="
+          echo "=== Test 3: POST create pod (dry-run) ==="
           kubectl exec playground-debug -n hanzo -- sh -c '
             TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
             CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            HOST=$KUBERNETES_SERVICE_HOST
-            PORT=$KUBERNETES_SERVICE_PORT
-            echo "Testing POST to pods API..."
-            curl -sk --max-time 10 \
+            curl -sv --max-time 15 \
               --cacert "$CACERT" \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
               -X POST \
-              -d "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"name\":\"test-probe-$(date +%s)\",\"namespace\":\"hanzo\"},\"spec\":{\"containers\":[{\"name\":\"test\",\"image\":\"busybox\",\"command\":[\"sleep\",\"1\"]}],\"restartPolicy\":\"Never\"}}" \
-              "https://$HOST:$PORT/api/v1/namespaces/hanzo/pods" 2>&1
-            echo ""
-            echo "Exit code: $?"
-          ' || echo "Could not test pod creation"
+              -d "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"name\":\"test-dry-run\",\"namespace\":\"hanzo\"},\"spec\":{\"containers\":[{\"name\":\"test\",\"image\":\"busybox:latest\",\"command\":[\"sleep\",\"1\"]}],\"restartPolicy\":\"Never\"}}" \
+              "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/hanzo/pods?dryRun=All" 2>&1
+          ' || echo "FAILED"
 
           echo ""
-          echo "=== TCP connectivity test ==="
+          echo "=== Test 4: DNS resolution ==="
           kubectl exec playground-debug -n hanzo -- sh -c '
-            HOST=$KUBERNETES_SERVICE_HOST
-            PORT=$KUBERNETES_SERVICE_PORT
-            echo "Testing TCP to $HOST:$PORT..."
-            curl -sk --max-time 5 --connect-timeout 5 "https://$HOST:$PORT/" 2>&1
-            echo "Exit: $?"
-          ' || echo "TCP test failed"
+            nslookup kubernetes.default.svc.cluster.local 2>&1 || echo "nslookup failed"
+          ' || echo "FAILED"
 
-      - name: Cleanup debug pod
+          echo ""
+          echo "=== Test 5: traceroute to K8s API ==="
+          kubectl exec playground-debug -n hanzo -- sh -c '
+            curl -sv --max-time 5 --connect-timeout 5 "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/" 2>&1 | head -20
+          ' || echo "FAILED"
+
+      - name: Cleanup
+        if: always()
+        run: kubectl delete pod playground-debug -n hanzo --ignore-not-found 2>/dev/null || true
+
+      - name: Playground logs (last 50 lines)
         if: always()
         run: |
-          kubectl delete pod playground-debug -n hanzo --ignore-not-found 2>/dev/null || true
-          # Also clean up any test-probe pods
-          kubectl delete pods -n hanzo -l "!app" --field-selector=status.phase=Succeeded --ignore-not-found 2>/dev/null || true
-
-      - name: Playground logs
-        run: |
           POD=$(kubectl get pods -n hanzo -l app=hanzo-playground -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-          echo "=== Last 100 lines of playground logs ==="
-          kubectl logs "$POD" -n hanzo --tail=100 2>/dev/null || echo "Could not get logs"
+          echo "=== Playground logs ==="
+          kubectl logs "$POD" -n hanzo --tail=50 2>/dev/null || echo "Could not get logs"
+
+      - name: Recent events
+        if: always()
+        run: |
+          echo "=== Recent events in hanzo namespace ==="
+          kubectl get events -n hanzo --sort-by='.lastTimestamp' | tail -20

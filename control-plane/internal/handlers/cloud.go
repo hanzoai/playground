@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -53,7 +54,14 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			}
 		}
 
-		result, err := provisioner.Provision(c.Request.Context(), &req)
+		// Use a dedicated context with generous timeout for K8s API calls.
+		// The incoming HTTP request context may have a short deadline
+		// (e.g. from KrakenD/nginx reverse proxy) that expires before
+		// the K8s API responds, causing "context deadline exceeded".
+		provisionCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		result, err := provisioner.Provision(provisionCtx, &req)
 		if err != nil {
 			logger.Logger.Error().Err(err).Str("node_id", req.NodeID).Msg("cloud provision failed")
 			c.JSON(http.StatusInternalServerError, gin.H{
