@@ -6,6 +6,245 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.190] - 2026-03-12
+
+
+### CI
+
+- Ci: migrate deploy to HANZO_API_KEY + KMS via reusable workflow
+
+Replace inline doctl/kubectl deploy with reusable-deploy-service.yml from
+hanzoai/universe that handles KMS credential fetch, rolling update, health
+check, and auto-rollback. (b0e2691)
+
+
+
+### Chores
+
+- Chore: add K8s diagnostic workflow for debugging cloud deploy
+
+Workflow dispatch to check cluster health, pod status, service account
+mounting, API connectivity, and network policies.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (9c1c953)
+
+- Chore: remove OAuth debug logging and restore production console stripping
+
+The IAM login redirect loop is fixed. Remove the temporary diagnostic
+code that was added to trace the issue:
+- Remove localStorage __auth_debug trail from AuthGuard and AuthCallbackPage
+- Remove console.log statements from IamAuthBridge in AuthContext
+- Restore esbuild drop: ['console', 'debugger'] in vite.config.ts
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (838b731)
+
+- Chore: update IAM auth helper and Go dependencies (51d58b7)
+
+
+
+### Fixed
+
+- Fix(release): prevent tag collision from stale VERSION file
+
+The release workflow was failing because pushes to main triggered
+releases with a stale VERSION file (0.1.41-rc.170) that computed
+tags already created by previous successful releases.
+
+Two fixes:
+1. Rebase onto origin/main before bumping to pick up version-bump
+   commits from prior releases
+2. Guard against tag collision — if computed tag already exists,
+   skip the release gracefully instead of failing
+3. Sync VERSION to 0.1.41-rc.189 (matching latest existing tag)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (78a51d7)
+
+- Fix: use --node-id flag instead of --name in cloud pod args
+
+The bot CLI's "node run" subcommand expects --node-id, not --name.
+The wrong flag caused commander to silently ignore the node ID,
+leaving the node host without a proper identifier.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5966d40)
+
+- Fix(ci): inline deploy steps instead of broken reusable workflow
+
+The reusable workflow from hanzoai/universe (private repo) can't be
+referenced due to GitHub Actions cross-repo workflow access issues.
+Inline the doctl + kubectl deploy steps directly.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (224cc26)
+
+- Fix(ci): add id-token permission for K8s deploy via KMS OIDC
+
+The reusable deploy workflow needs id-token:write to authenticate
+with Hanzo KMS via OIDC for fetching K8s credentials.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7163780)
+
+- Fix: skip HTTP health checks for nodes with no base URL
+
+Local bots behind NAT register with an empty base_url since the
+Playground server cannot reach them via HTTP.  The health monitor
+was performing HTTP checks on the empty URL, failing 3 times, and
+marking the node inactive — overriding the valid heartbeat signal.
+
+Now RegisterNode skips adding the node to HTTP monitoring when
+base_url is empty.  These nodes rely solely on heartbeat-based
+liveness detection instead.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d638d78)
+
+- Fix: don't clear IAM auth on gateway unauthorized (fixes redirect loop)
+
+The gateway WebSocket connection was returning 1008 (Policy Violation)
+after IAM login, which triggered clearAuth() → logout → token clear →
+redirect back to login → infinite loop.
+
+In IAM mode, the OIDC token is valid even if the gateway doesn't accept
+it yet. Only clear auth on gateway unauthorized in API-key mode.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (350661f)
+
+- Fix: prevent OAuth callback redirect loop with defensive guards
+
+AuthGuard now checks sessionStorage for existing tokens and skips
+IAM redirect when on the /auth/callback page. AuthCallbackPage uses
+requestAnimationFrame before navigating to "/" so React can flush
+the isAuthenticated state update from completeAuth(). Also adds
+debug logging across the auth flow for diagnostics.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (fd9ce00)
+
+- Fix(ci): use correct container name 'playground' in kubectl set image
+
+The K8s deployment has container named 'playground', not 'hanzo-playground'.
+Verified from successful Deploy #194 workflow logs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (8adfe95)
+
+- Fix(ci): correct container name in kubectl set image
+
+The deploy step used `control-plane` as the container name, but the
+K8s deployment spec names the container `hanzo-playground`. This
+caused "unable to find container named control-plane" error.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (2b41032)
+
+- Fix: revert go directive from 1.26 (non-existent) to 1.24.0
+
+Commit 51d58b7 bumped go.mod to `go 1.26` which does not exist yet
+(current latest is 1.24.x), causing `go mod download` to fail in
+Docker builds. This broke Deploy #195 and #196.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d2da708)
+
+- Fix: use IAM bearer token for preferences API auth
+
+The preferences API only used API key auth (X-API-Key header), which
+is null in IAM mode. This caused preferences sync to fail silently
+with 401, so onboardingComplete was never persisted to the backend.
+After completing setup, the app would redirect back to login because
+it couldn't verify onboarding was done.
+
+Now checks for IAM token first (Authorization: Bearer), falling back
+to API key, matching the pattern used by the main api.ts client.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (782cd1a)
+
+
+
+### Other
+
+- Add stale agent pod cleanup workflow (5f767d7)
+
+- Add targeted agent pod debug workflow (d704c89)
+
+- Add K8s cloud pod debug workflow
+
+Diagnoses cloud launch failures: lists cloud pods, checks provision
+endpoint from within the cluster, dumps playground logs filtered for
+provisioning errors.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (361b73c)
+
+- Fix bot showing offline: skip HTTP health check for nodes without base URL
+
+StatusManager.GetBotStatus() performed a live HTTP health check on every
+call, even for nodes with no base_url (e.g. local bots behind NAT).
+The HTTP probe always failed for these nodes, which incorrectly set
+health_status to "inactive" and lifecycle_status to "offline" in storage
+— overriding the heartbeat-based liveness signal.
+
+Now GetBotStatus() checks the node's BaseURL before attempting an HTTP
+probe. Nodes without a reachable URL fall back to storage-based status,
+preserving whatever the heartbeat handler set.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (abf77d8)
+
+- Support external K8s API URL via KUBERNETES_API_URL env var
+
+On DigitalOcean DOKS, the in-cluster ClusterIP (10.124.32.1) is
+unreachable from pods due to Cilium CNI + NetworkPolicy interaction
+with CGNAT routing. The actual API server endpoint (100.65.41.233) is
+in the 100.64.0.0/10 range which isn't properly routed.
+
+Fix: Add KUBERNETES_API_URL env var support to bypass the ClusterIP
+and connect directly via the external API server URL
+(https://<cluster-id>.k8s.ondigitalocean.com) which routes through
+the public internet and is allowed by allow-external-egress policy.
+
+Also update TLS config to combine system certs with in-cluster CA
+so both external and internal API URLs work.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d18be7c)
+
+- Add workflow to fix K8s API NetworkPolicy for DOKS
+
+Root cause: The allow-kube-api-egress NetworkPolicy only allows egress to
+the ClusterIP 10.124.32.1/32, but on DOKS the actual K8s API endpoint is
+at 100.65.41.233 (in the 100.64.0.0/10 CGNAT range). Cilium CNI evaluates
+the policy against the pre-DNAT destination, so traffic to the ClusterIP
+gets blocked because 10.124.32.1 is excluded by allow-external-egress
+(which excludes 10.0.0.0/8) and the kube-api-egress only matches the
+ClusterIP, not the actual endpoint IP.
+
+Fix: Add the actual endpoint IP and the CGNAT range to the egress policy.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (a2a60dc)
+
+- Fix K8s API timeout: use dedicated context + increase timeout
+
+The provisioner was using the HTTP request context which inherits the
+reverse proxy (KrakenD/nginx) timeout. This caused "context deadline
+exceeded" when creating agent pods because the proxy timeout was shorter
+than the K8s API response time.
+
+Changes:
+- Use context.Background() with 60s timeout instead of request context
+- Increase K8s HTTP client timeout from 30s to 60s
+- Add debug logging for K8s API calls to aid diagnosis
+- Fix diagnostic workflow debug pod creation
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (91371db)
+
+- Enhance K8s diagnostic workflow with debug pod and NetworkPolicy YAML dump
+
+Adds a debug pod (curlimages/curl) with the same service account and labels
+as the playground pod to test K8s API connectivity from inside the cluster.
+Also dumps full YAML of key NetworkPolicies, SA bindings, and pod logs.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7b52624)
+
+- Debug: enable console.log in production + add localStorage debug trail
+
+Temporarily disable esbuild console stripping so debug logs appear in
+the browser console. Also add localStorage-based '__auth_debug' trail
+that persists across page navigations to diagnose the OAuth callback
+redirect loop where tokens are not being stored.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f2cbeb2)
+
 ## [0.1.41-rc.170] - 2026-03-02
 
 
