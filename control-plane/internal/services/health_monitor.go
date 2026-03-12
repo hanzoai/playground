@@ -95,8 +95,16 @@ func NewHealthMonitor(storage storage.StorageProvider, config HealthMonitorConfi
 	}
 }
 
-// RegisterNode adds an agent to the active monitoring list
+// RegisterNode adds an agent to the active monitoring list.
+// Nodes with an empty base URL (e.g. local bots behind NAT) are skipped
+// because HTTP health checks would always fail; they rely on heartbeats
+// for liveness instead.
 func (hm *HealthMonitor) RegisterNode(nodeID, baseURL string) {
+	if baseURL == "" {
+		logger.Logger.Debug().Msgf("🏥 Skipping HTTP health monitoring for node %s (no base URL)", nodeID)
+		return
+	}
+
 	hm.agentsMutex.Lock()
 	defer hm.agentsMutex.Unlock()
 
