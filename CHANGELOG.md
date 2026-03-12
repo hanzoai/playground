@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.191] - 2026-03-12
+
+
+### Added
+
+- Feat: replace 'Add Serverless Bot' with unified add menu on Nodes page
+
+The + Add button now shows a dropdown matching the canvas controls:
+- Launch Terminal (lightweight shell)
+- Launch Desktop (Linux + VNC)
+- Launch Cloud Bot (full bot runtime)
+- Connect Local Bot (serverless registration)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (56eccd8)
+
 ## [0.1.41-rc.190] - 2026-03-12
 
 
