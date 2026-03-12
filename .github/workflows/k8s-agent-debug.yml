@@ -1,0 +1,65 @@
+name: K8s Agent Pod Debug
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Describe agent-cloud pods
+        run: |
+          for pod in $(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            echo "==============================="
+            echo "=== Pod: $pod ==="
+            echo "==============================="
+            kubectl describe pod "$pod" -n hanzo 2>/dev/null | grep -A 200 "Containers:"
+            echo ""
+          done
+
+      - name: Agent container logs
+        run: |
+          for pod in $(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            echo "==============================="
+            echo "=== Logs for $pod (agent container) ==="
+            echo "==============================="
+            kubectl logs "$pod" -n hanzo -c agent --tail=50 2>&1 || echo "No agent container logs"
+            echo ""
+            echo "=== Previous logs for $pod (agent container) ==="
+            kubectl logs "$pod" -n hanzo -c agent --previous --tail=50 2>&1 || echo "No previous agent logs"
+            echo ""
+          done
+
+      - name: Operative container logs
+        run: |
+          for pod in $(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            echo "==============================="
+            echo "=== Logs for $pod (operative container) ==="
+            echo "==============================="
+            kubectl logs "$pod" -n hanzo -c operative --tail=30 2>&1 || echo "No operative container logs"
+            echo ""
+          done
+
+      - name: Pod YAML spec (first agent pod)
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          if [ -n "$POD" ]; then
+            echo "=== Full Pod spec for $POD ==="
+            kubectl get pod "$POD" -n hanzo -o yaml 2>/dev/null | head -200
+          else
+            echo "No agent-cloud pods found"
+          fi
