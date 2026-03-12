@@ -151,11 +151,22 @@ func (sm *StatusManager) GetBotStatus(ctx context.Context, nodeID string) (*type
 	}
 	sm.cacheMutex.RUnlock()
 
-	// Perform live health check via HTTP
+	// Perform live health check via HTTP — but only for nodes that expose a
+	// reachable base URL.  Local bots (base_url == "") and NAT-ed nodes have
+	// no HTTP endpoint the control plane can reach, so attempting a health
+	// check would always fail and incorrectly mark them as inactive.  For
+	// those nodes we rely on heartbeats as the liveness signal and fall back
+	// to the persisted storage status.
 	var status *types.BotStatus
 	var healthCheckSuccessful bool
+	var healthCheckAttempted bool
 
-	if sm.nodeClient != nil {
+	// Look up the node to decide whether an HTTP probe is feasible.
+	agent, agentErr := sm.storage.GetNode(ctx, nodeID)
+
+	if sm.nodeClient != nil && agentErr == nil && agent != nil && agent.BaseURL != "" {
+		healthCheckAttempted = true
+
 		// Create a timeout context for the health check (2-3 seconds)
 		healthCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
@@ -203,22 +214,30 @@ func (sm *StatusManager) GetBotStatus(ctx context.Context, nodeID string) (*type
 			}
 		}
 	} else {
-		// Fallback to storage-based status if no agent client available
-		agent, err := sm.storage.GetNode(ctx, nodeID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get agent: %w", err)
+		// No HTTP endpoint to probe (local bot, NAT-ed node, or no nodeClient).
+		// Build status from whatever is persisted in storage.
+		if agentErr != nil || agent == nil {
+			if agentErr != nil {
+				return nil, fmt.Errorf("failed to get agent: %w", agentErr)
+			}
+			return nil, fmt.Errorf("agent %s not found", nodeID)
 		}
 		status = types.FromLegacyStatus(agent.HealthStatus, agent.LifecycleStatus, agent.LastHeartbeat)
+		logger.Logger.Debug().Str("node_id", nodeID).Msg("🏥 Skipping HTTP health check (no base URL), using storage status")
 	}
 
-	// Update storage with live verification result
-	if healthCheckSuccessful {
-		if err := sm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
-			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to update agent health status in storage")
-		}
-	} else {
-		if err := sm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
-			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to update agent health status in storage")
+	// Update storage with live verification result — only when we actually
+	// performed an HTTP probe.  Nodes that rely on heartbeat-only liveness
+	// must not be overwritten here.
+	if healthCheckAttempted {
+		if healthCheckSuccessful {
+			if err := sm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
+				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to update agent health status in storage")
+			}
+		} else {
+			if err := sm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
+				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to update agent health status in storage")
+			}
 		}
 	}
 
