@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.194] - 2026-03-12
+
+
+### Fixed
+
+- Fix: allow plaintext ws:// for internal K8s gateway connections
+
+Cloud pods in the same K8s cluster should connect to the gateway via
+the internal service URL (ws://bot-gateway.hanzo.svc:80) rather than
+the external wss://gw.hanzo.bot which goes through Cloudflare.
+
+When the gateway URL uses ws://, set OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
+on the cloud pod to allow plaintext WebSocket on private/internal
+hostnames. This is safe because the traffic stays within the K8s
+cluster network.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (af180eb)
+
 ## [0.1.41-rc.193] - 2026-03-12
 
 
