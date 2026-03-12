@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.192] - 2026-03-12
+
+
+### Fixed
+
+- Fix: use :main Docker tag instead of :latest for cloud bot pods
+
+The Docker workflow only pushes :latest on version tags, not main branch
+pushes. Since we deploy from main, pods were pulling stale :latest images.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f3f643a)
+
 ## [0.1.41-rc.191] - 2026-03-12
 
 
