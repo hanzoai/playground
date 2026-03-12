@@ -8,7 +8,7 @@ import {
   WifiSlash,
 } from "@/components/ui/icon-bridge";
 import { getNodeStatusPresentation } from "@/utils/node-status";
-import type { ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 
 interface EnhancedNodesHeaderProps {
   totalNodes: number;
@@ -20,6 +20,7 @@ interface EnhancedNodesHeaderProps {
   isConnected: boolean;
   isReconnecting?: boolean;
   onAddServerless?: () => void;
+  onLaunchCloud?: (type: 'linux' | 'terminal' | 'desktop') => void;
   onReconnect?: () => void;
   actions?: ReactNode;
   subtitle?: string;
@@ -59,10 +60,23 @@ export function EnhancedNodesHeader({
   isConnected,
   isReconnecting = false,
   onAddServerless,
+  onLaunchCloud,
   onReconnect,
   actions,
   subtitle = "Monitor and manage your AI hanzo nodes in the Playground orchestration platform.",
 }: EnhancedNodesHeaderProps) {
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false);
+      }
+    };
+    if (showAddMenu) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAddMenu]);
   const ConnectionIcon = isConnected ? WifiHigh : WifiSlash;
   const connectionLabel = isConnected
     ? "Live updates"
@@ -137,15 +151,72 @@ export function EnhancedNodesHeader({
           </Button>
         )}
 
-        {onAddServerless && (
-          <Button
-            size="sm"
-            className="h-8 px-3 gap-1.5"
-            onClick={onAddServerless}
-          >
-            <Plus className="w-4 h-4" />
-            Add Serverless Bot
-          </Button>
+        {(onLaunchCloud || onAddServerless) && (
+          <div className="relative" ref={addMenuRef}>
+            <Button
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={() => setShowAddMenu((prev) => !prev)}
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </Button>
+            {showAddMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-xl border border-border/60 bg-card/95 py-1.5 shadow-xl backdrop-blur-sm">
+                {onLaunchCloud && (
+                  <>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { onLaunchCloud('terminal'); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">⌨️</span>
+                      <span>
+                        <span className="font-medium">Launch Terminal</span>
+                        <span className="block text-xs text-muted-foreground">Lightweight shell (512Mi)</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { onLaunchCloud('desktop'); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">🖥️</span>
+                      <span>
+                        <span className="font-medium">Launch Desktop</span>
+                        <span className="block text-xs text-muted-foreground">Linux + VNC desktop (512Mi+)</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { onLaunchCloud('linux'); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">🤖</span>
+                      <span>
+                        <span className="font-medium">Launch Cloud Bot</span>
+                        <span className="block text-xs text-muted-foreground">Full bot runtime (512Mi+)</span>
+                      </span>
+                    </button>
+                    <div className="mx-2 my-1 h-px bg-border/40" />
+                  </>
+                )}
+                {onAddServerless && (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                    onClick={() => { onAddServerless(); setShowAddMenu(false); }}
+                  >
+                    <span className="text-base leading-none">🔗</span>
+                    <span>
+                      <span className="font-medium">Connect Local Bot</span>
+                      <span className="block text-xs text-muted-foreground">Register existing bot</span>
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

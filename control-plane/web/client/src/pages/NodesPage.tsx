@@ -7,6 +7,7 @@ import type {
   LifecycleStatus,
 } from "../types/playground";
 import { getNodesSummary } from "../services/api";
+import { spaceApi } from "../services/spaceApi";
 import { useNodeEventsSSE, useUnifiedStatusSSE } from "../hooks/useSSE";
 import { useGateway } from "../hooks/useGateway";
 import { gateway } from "../services/gatewayClient";
@@ -18,7 +19,7 @@ import { DensityToggle, type DensityMode } from "../components/DensityToggle";
 import { ServerlessRegistrationModal } from "../components/ServerlessRegistrationModal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import type { ButtonProps } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { PageHeader } from "../components/PageHeader";
 import { summarizeNodeStatuses } from "@/utils/node-status";
 import {
@@ -124,6 +125,8 @@ export function NodesPage() {
   const [density, setDensity] = useState<DensityMode>("comfortable");
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [showServerlessModal, setShowServerlessModal] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement>(null);
   const backendNodesRef = useRef<NodeSummary[]>([]);
 
   // Connect to bot gateway for live node discovery
@@ -620,6 +623,40 @@ export function NodesPage() {
       ? "Reconnecting…"
       : "Disconnected";
 
+  // Close add menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false);
+      }
+    };
+    if (showAddMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAddMenu]);
+
+  const handleLaunchCloud = useCallback(
+    async (type: 'linux' | 'terminal' | 'desktop') => {
+      const displayName = `bot-${Date.now().toString(36)}`;
+      const os = type === 'desktop' ? 'linux' : type;
+      console.info(`[cloud] Provisioning ${type} node (os=${os})...`);
+      try {
+        const result = await spaceApi.provisionCloudNode({
+          display_name: displayName,
+          os,
+        });
+        console.info(`[cloud] Provisioned: node_id=${result.node_id} pod=${result.pod_name} status=${result.status}`);
+        // Refresh nodes list to pick up the new cloud node
+        fetchNodes();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[cloud] Provisioning failed (os=${os}): ${msg}`);
+      }
+    },
+    [fetchNodes]
+  );
+
   const pageHeaderActions: HeaderAction[] = [];
 
   if (!connected) {
@@ -631,13 +668,6 @@ export function NodesPage() {
       disabled: reconnecting,
     });
   }
-
-  pageHeaderActions.push({
-    label: "Add Serverless Bot",
-    onClick: () => setShowServerlessModal(true),
-    icon: <Plus className="h-4 w-4" />,
-    variant: "default",
-  });
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -668,6 +698,66 @@ export function NodesPage() {
           actions={pageHeaderActions}
           aside={
             <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+              {/* + Add dropdown — matches canvas controls menu */}
+              <div className="relative" ref={addMenuRef}>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => setShowAddMenu((prev) => !prev)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+                {showAddMenu && (
+                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-xl border border-border/60 bg-card/95 py-1.5 shadow-xl backdrop-blur-sm">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { handleLaunchCloud('terminal'); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">⌨️</span>
+                      <span>
+                        <span className="font-medium">Launch Terminal</span>
+                        <span className="block text-xs text-muted-foreground">Lightweight shell (512Mi)</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { handleLaunchCloud('desktop'); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">🖥️</span>
+                      <span>
+                        <span className="font-medium">Launch Desktop</span>
+                        <span className="block text-xs text-muted-foreground">Linux + VNC desktop (512Mi+)</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { handleLaunchCloud('linux'); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">🤖</span>
+                      <span>
+                        <span className="font-medium">Launch Cloud Bot</span>
+                        <span className="block text-xs text-muted-foreground">Full bot runtime (512Mi+)</span>
+                      </span>
+                    </button>
+                    <div className="mx-2 my-1 h-px bg-border/40" />
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent/60 transition-colors"
+                      onClick={() => { setShowServerlessModal(true); setShowAddMenu(false); }}
+                    >
+                      <span className="text-base leading-none">🔗</span>
+                      <span>
+                        <span className="font-medium">Connect Local Bot</span>
+                        <span className="block text-xs text-muted-foreground">Register existing bot</span>
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
               <Badge variant="count" size="sm">
                 {summary.total} total
               </Badge>
