@@ -1012,7 +1012,7 @@ func nodeArgs(gatewayURL, nodeID string) []string {
 	}
 	return []string{
 		"node", "hanzo-bot.mjs", "node", "run",
-		"--name", nodeID,
+		"--node-id", nodeID,
 	}
 }
 
