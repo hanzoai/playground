@@ -1,0 +1,33 @@
+name: K8s Cleanup Stale Agent Pods
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Delete stale agent-cloud pods
+        run: |
+          echo "=== Current agent-cloud pods ==="
+          kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o wide 2>/dev/null || echo "No agent-cloud pods"
+          echo ""
+          echo "=== Deleting all agent-cloud pods ==="
+          kubectl delete pods -n hanzo -l "playground.hanzo.ai/type" --grace-period=0 --force 2>/dev/null || echo "No pods to delete"
+          echo ""
+          echo "=== Pods after cleanup ==="
+          kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o wide 2>/dev/null || echo "No agent-cloud pods"
