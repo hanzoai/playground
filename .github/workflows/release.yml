@@ -159,6 +159,18 @@ jobs:
             git fetch --tags origin "refs/tags/${tag}:refs/tags/${tag}" --depth=1
             release_sha="$(git rev-parse "${tag}")"
           else
+            # Ensure we have the latest VERSION from origin/main to avoid
+            # tag conflicts when multiple pushes trigger concurrent releases.
+            # The triggering commit may have a stale VERSION file, so we
+            # rebase onto origin/main to pick up any version-bump commits.
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git fetch origin main
+            git rebase origin/main || {
+              echo "Rebase failed — another release may be in progress. Skipping."
+              exit 0
+            }
+
             if [ "${ENVIRONMENT}" = "staging" ]; then
               # Staging: Always create prerelease version
               CHANNEL="prerelease"
@@ -171,10 +183,22 @@ jobs:
             fi
             version="$("${cmd[@]}")"
             tag="v${version}"
+
+            # Guard against tag collision (e.g., concurrent workflow runs)
+            git fetch --tags origin
+            if git rev-parse "refs/tags/${tag}" >/dev/null 2>&1; then
+              echo "Tag ${tag} already exists — skipping release (another run likely handled it)."
+              # Output the existing tag's info so downstream jobs can still reference it
+              release_sha="$(git rev-parse "refs/tags/${tag}")"
+              echo "version=${version}" >> "$GITHUB_OUTPUT"
+              echo "tag_name=${tag}" >> "$GITHUB_OUTPUT"
+              echo "release_sha=${release_sha}" >> "$GITHUB_OUTPUT"
+              echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
             python scripts/update_changelog.py --version "${version}"
             git status --short
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
             git add -A
             git commit -m "chore(release): ${tag}"
             git tag -a "${tag}" -m "Release ${tag}"
