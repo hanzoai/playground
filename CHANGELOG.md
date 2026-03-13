@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.195] - 2026-03-13
+
+
+### Added
+
+- Feat(provisioner): add pod readiness watcher with heartbeat forwarding
+
+After provisioning a cloud agent pod, start a background goroutine that:
+1. Polls K8s until the pod is Running/Ready
+2. Registers the node with the control plane (idempotent)
+3. Sends periodic heartbeats every 30s
+
+This fixes the issue where cloud bots stay stuck in "Provisioning" on
+the dashboard because the status manager never receives heartbeats to
+transition them to "Active".
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (a763c6d)
+
 ## [0.1.41-rc.194] - 2026-03-12
 
 
