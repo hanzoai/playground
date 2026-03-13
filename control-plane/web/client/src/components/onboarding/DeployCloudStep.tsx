@@ -1,23 +1,35 @@
 import { useState } from 'react';
 import { useSpaceStore } from '@/stores/spaceStore';
+import { spaceApi } from '@/services/spaceApi';
+import { useCanvasStore } from '@/stores/canvasStore';
 
 export function DeployCloudStep() {
-  const { activeSpace, registerNode } = useSpaceStore();
+  const { activeSpace } = useSpaceStore();
+  const upsertBot = useCanvasStore((s) => s.upsertBot);
   const [deploying, setDeploying] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDeploy = async () => {
     if (!activeSpace) return;
     setDeploying(true);
+    setError(null);
     try {
-      await registerNode({
-        name: `cloud-${Date.now().toString(36)}`,
-        type: 'cloud',
+      const displayName = `bot-${Date.now().toString(36)}`;
+      const result = await spaceApi.provisionCloudNode({
+        display_name: displayName,
         os: 'linux',
       });
+      // Add provisioned node to the canvas
+      upsertBot(result.node_id, {
+        name: displayName,
+        status: 'provisioning',
+        source: 'cloud',
+      });
       setDone(true);
-    } catch {
-      // error handled by store
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
     } finally {
       setDeploying(false);
     }
@@ -31,6 +43,14 @@ export function DeployCloudStep() {
           Provision a Node in your org's Kubernetes cluster.
         </p>
       </div>
+
+      {error && (
+        <div className="border border-red-500/30 bg-red-500/5 rounded-lg p-3">
+          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+            Provisioning failed: {error}
+          </p>
+        </div>
+      )}
 
       {done ? (
         <div className="border border-green-500/30 bg-green-500/5 rounded-lg p-3">

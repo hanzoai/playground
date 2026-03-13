@@ -89,36 +89,52 @@ export function CanvasPage() {
     }
   }, [latestEvent, nodes, setBotStatus, syncAgents]);
 
-  // Poll gateway node.list to transition provisioning bots to idle.
+  // Poll gateway node.list to:
+  // 1. Transition provisioning bots to idle when their node connects.
+  // 2. Discover connected cloud nodes missing from the canvas and add them.
   // Cloud nodes connect to the gateway (not the Playground backend), so
   // SSE events from the backend never fire for them.  This effect bridges
   // the gap by checking the gateway's connected-node list periodically.
+  const upsertBot = useCanvasStore((s) => s.upsertBot);
   useEffect(() => {
     if (!isConnected) return;
 
-    async function reconcileProvisioningBots() {
+    async function reconcileNodes() {
       try {
         const resp = await nodeList(true);
         const gwNodes = (resp.nodes ?? []).filter((n) => n.connected);
         if (gwNodes.length === 0) return;
 
+        // Build set of agentIds already on canvas
+        const canvasAgentIds = new Set<string>();
         for (const node of nodes) {
           if (node.type !== NODE_TYPES.bot) continue;
-          const bot = node.data as unknown as Bot;
-          if (bot.status !== 'provisioning') continue;
+          canvasAgentIds.add((node.data as unknown as Bot).agentId);
+        }
 
-          // Match by nodeId, or by displayName containing the canvas agentId.
-          // Cloud nodes have displayName like "agent-cloud-3f7d7054" while
-          // the canvas tracks them as "cloud-3f7d7054".
-          const match = gwNodes.some(
-            (gw) =>
-              gw.nodeId === bot.agentId ||
-              gw.displayName === bot.agentId ||
-              gw.displayName === `agent-${bot.agentId}` ||
-              (gw.displayName && bot.agentId && gw.displayName.includes(bot.agentId))
-          );
-          if (match) {
-            setBotStatus(bot.agentId, 'idle');
+        for (const gw of gwNodes) {
+          // Check if this gateway node is already on the canvas
+          const onCanvas = canvasAgentIds.has(gw.nodeId);
+
+          if (onCanvas) {
+            // Transition provisioning bots to idle
+            const canvasBot = nodes.find(
+              (n) => n.type === NODE_TYPES.bot && (n.data as unknown as Bot).agentId === gw.nodeId
+            );
+            if (canvasBot) {
+              const botData = canvasBot.data as unknown as Bot;
+              if (botData.status === 'provisioning') {
+                setBotStatus(gw.nodeId, 'idle');
+              }
+            }
+          } else if (gw.nodeId.startsWith('cloud-')) {
+            // Cloud node connected to gateway but not on canvas — add it
+            const displayName = gw.displayName || gw.nodeId;
+            upsertBot(gw.nodeId, {
+              name: displayName,
+              status: 'idle',
+              source: 'cloud',
+            });
           }
         }
       } catch {
@@ -127,10 +143,10 @@ export function CanvasPage() {
     }
 
     // Run immediately, then every 10s
-    reconcileProvisioningBots();
-    const timer = setInterval(reconcileProvisioningBots, 10_000);
+    reconcileNodes();
+    const timer = setInterval(reconcileNodes, 10_000);
     return () => clearInterval(timer);
-  }, [isConnected, nodes, setBotStatus]);
+  }, [isConnected, nodes, setBotStatus, upsertBot]);
 
   // Bootstrap spaces on direct navigation (e.g. /playground)
   useEffect(() => {
