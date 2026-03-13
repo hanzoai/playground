@@ -174,7 +174,7 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
                 <ChatPanel agentId={bot.agentId} sessionKey={bot.sessionKey} />
               )}
               {bot.activeView === 'operative' && (
-                <OperativePanel agentId={bot.agentId} />
+                <OperativePanel agentId={bot.agentId} nodeId={bot.agentId} />
               )}
               {bot.activeView === 'files' && (
                 <FileViewer agentId={bot.agentId} />

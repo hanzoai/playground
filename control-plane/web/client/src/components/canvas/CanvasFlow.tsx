@@ -66,15 +66,19 @@ export function CanvasFlow({ className }: { className?: string }) {
     persistTimer.current = setTimeout(persist, 1000);
   }, [persist]);
 
+  // Use a ref to avoid stale closure capturing old `nodes` in rAF callbacks.
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+
   const handleNodesChange: OnNodesChange = useCallback(
     (changes) => {
       onNodesChange(changes);
       requestAnimationFrame(() => {
-        storeSetNodes(nodes);
+        storeSetNodes(nodesRef.current);
         debouncedPersist();
       });
     },
-    [onNodesChange, storeSetNodes, nodes, debouncedPersist]
+    [onNodesChange, storeSetNodes, debouncedPersist]
   );
 
   const handleEdgesChange: OnEdgesChange = useCallback(
