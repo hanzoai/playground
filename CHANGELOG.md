@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.196] - 2026-03-13
+
+
+### Fixed
+
+- Fix(playground): wire DeployCloudStep to actual cloud provisioner and auto-discover connected nodes
+
+DeployCloudStep was calling spaceApi.registerNode() which only creates a
+database record without provisioning an actual K8s pod. Changed to call
+spaceApi.provisionCloudNode() which triggers the real cloud provisioner.
+
+Also enhanced the CanvasPage reconciliation loop to discover cloud nodes
+that are connected to the gateway but missing from the canvas, and
+automatically add them. This fixes the case where canvas localStorage
+is cleared or nodes were provisioned outside the current browser session.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6ec3a8b)
+
 ## [0.1.41-rc.195] - 2026-03-13
 
 
