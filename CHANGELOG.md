@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.197] - 2026-03-13
+
+
+### Fixed
+
+- Fix(canvas): pass nodeId to OperativePanel for VNC tunnel routing
+
+- Bot.tsx: pass nodeId={bot.agentId} to OperativePanel so the gateway
+  tunnels VNC to the correct cloud node instead of its own local display
+- CanvasFlow.tsx: fix stale closure in handleNodesChange by using a ref
+  for nodes so rAF callbacks always read the latest nodes list
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (e376b82)
+
 ## [0.1.41-rc.196] - 2026-03-13
 
 
