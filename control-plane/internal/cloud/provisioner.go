@@ -7,6 +7,7 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -438,6 +439,12 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	p.nodes[nodeID] = node
 	p.mu.Unlock()
 
+	// Start background pod readiness watcher to send heartbeats to the
+	// control plane once the pod is Running. Without this, cloud nodes
+	// stay in "provisioning" state on the dashboard because the status
+	// manager only transitions to "active" upon receiving heartbeats.
+	go p.watchPodReady(nodeID, podName, namespace, spec.ControlPlaneURL)
+
 	return &ProvisionResult{
 		NodeID:    nodeID,
 		PodName:   podName,
@@ -447,6 +454,105 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Endpoint:  node.Endpoint,
 		CreatedAt: node.CreatedAt,
 	}, nil
+}
+
+// watchPodReady polls K8s until the agent pod is Running, then sends
+// heartbeats to the control plane so the dashboard transitions from
+// "Provisioning" to "Active". Runs as a goroutine — best-effort only.
+func (p *Provisioner) watchPodReady(nodeID, podName, namespace, controlPlaneURL string) {
+	const (
+		pollInterval = 5 * time.Second
+		maxWait      = 5 * time.Minute
+		heartbeatInterval = 30 * time.Second
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), maxWait)
+	defer cancel()
+
+	// Phase 1: wait for pod to be Running
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Logger.Warn().
+				Str("node_id", nodeID).
+				Str("pod_name", podName).
+				Msg("pod readiness watcher timed out waiting for pod")
+			return
+		case <-ticker.C:
+			status, err := p.k8s.GetNodePod(ctx, namespace, podName)
+			if err != nil {
+				continue
+			}
+			if status.Ready || status.Phase == "Running" {
+				logger.Logger.Info().
+					Str("node_id", nodeID).
+					Str("pod_name", podName).
+					Msg("cloud agent pod is ready, starting heartbeats")
+				goto heartbeatLoop
+			}
+		}
+	}
+
+heartbeatLoop:
+	// Phase 2: send periodic heartbeats to the control plane
+	ticker.Reset(heartbeatInterval)
+	// Register and send first heartbeat immediately
+	p.registerAndHeartbeat(nodeID, controlPlaneURL)
+
+	for {
+		select {
+		case <-ticker.C:
+			// Check if pod still exists
+			status, err := p.k8s.GetNodePod(context.Background(), namespace, podName)
+			if err != nil || status.Phase == "Failed" || status.Phase == "Succeeded" {
+				logger.Logger.Info().
+					Str("node_id", nodeID).
+					Msg("cloud agent pod terminated, stopping heartbeats")
+				return
+			}
+			p.registerAndHeartbeat(nodeID, controlPlaneURL)
+		}
+	}
+}
+
+// registerAndHeartbeat registers the node with the control plane (idempotent)
+// and sends a heartbeat so the dashboard transitions from "Provisioning" to "Active".
+func (p *Provisioner) registerAndHeartbeat(nodeID, controlPlaneURL string) {
+	if controlPlaneURL == "" {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Register (or update) the node — makes it visible in the dashboard.
+	// The register endpoint is idempotent: creates on first call, updates on subsequent.
+	regBody := fmt.Sprintf(`{"id":"%s","deployment_type":"long_running","health_status":"active","lifecycle_status":"running","version":"cloud","metadata":{"platform":"linux"}}`, nodeID)
+	regURL := fmt.Sprintf("%s/api/v1/nodes/register", controlPlaneURL)
+	regReq, err := http.NewRequestWithContext(ctx, "POST", regURL, strings.NewReader(regBody))
+	if err != nil {
+		return
+	}
+	regReq.Header.Set("Content-Type", "application/json")
+	if resp, err := http.DefaultClient.Do(regReq); err == nil {
+		resp.Body.Close()
+	}
+
+	// Send heartbeat to update last_heartbeat timestamp
+	hbURL := fmt.Sprintf("%s/api/v1/nodes/%s/heartbeat", controlPlaneURL, nodeID)
+	hbReq, err := http.NewRequestWithContext(ctx, "POST", hbURL, strings.NewReader(`{"status":"active"}`))
+	if err != nil {
+		return
+	}
+	hbReq.Header.Set("Content-Type", "application/json")
+	if resp, err := http.DefaultClient.Do(hbReq); err == nil {
+		resp.Body.Close()
+	} else {
+		logger.Logger.Debug().Err(err).Str("node_id", nodeID).Msg("heartbeat failed")
+	}
 }
 
 // provisionVM creates a Mac or Windows VM via Visor and registers the bot.
