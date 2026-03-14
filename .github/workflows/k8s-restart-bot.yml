@@ -1,0 +1,52 @@
+name: Restart Bot Gateway & Agent Pods
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Restart bot-gateway deployment
+        run: |
+          echo "=== Rolling restart bot-gateway ==="
+          kubectl rollout restart deployment/bot-gateway -n hanzo
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/bot-gateway -n hanzo --timeout=120s || echo "Rollout timed out (gateway may still be restarting)"
+
+      - name: Delete cloud agent pods (will be recreated by provisioner)
+        run: |
+          echo "=== Deleting cloud agent pods so they restart with new image ==="
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          if [ -z "$PODS" ]; then
+            echo "No agent pods found"
+            exit 0
+          fi
+          for POD in $PODS; do
+            echo "Deleting $POD..."
+            kubectl delete pod "$POD" -n hanzo --grace-period=10 || echo "Failed to delete $POD"
+          done
+          echo "Done. Pods will be recreated by the control-plane provisioner."
+
+      - name: Verify bot-gateway running
+        run: |
+          sleep 10
+          echo "=== Bot gateway pods ==="
+          kubectl get pods -n hanzo -l app=bot-gateway -o wide
+          echo ""
+          echo "=== Agent pods ==="
+          kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o wide 2>/dev/null || echo "No agent pods yet (provisioner will recreate them)"
