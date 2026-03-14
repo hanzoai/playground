@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.202] - 2026-03-14
+
+
+### CI
+
+- Ci: add VNC deep fix workflow (2744214)
+
+- Ci: add VNC fix workflow (kill hung x11vnc) (0cd5ec9)
+
+- Ci: add VNC operative debug workflow (2c45f23)
+
+- Ci: add VNC registry debug workflow (ca73947)
+
+- Ci: add VNC deep debug workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (69d3c04)
+
+- Ci: fix container names in diagnostic workflow (agent not bot)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (97edd2a)
+
+- Ci: add full diagnostic logs workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7a8ca8c)
+
+- Ci: add workflow to check VNC tunnel logs and pod state
+
+Diagnostic workflow to verify VNC tunnel URL rewriting, x11vnc status,
+and gateway tunnel logs on running pods.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5c59e7e)
+
+- Ci: add workflow to restart bot-gateway and agent pods
+
+Dispatches a rolling restart of the bot-gateway deployment and deletes
+cloud agent pods so they pick up new Docker images. Useful after Docker
+Release CI completes.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5fa05d6)
+
+
+
+### Fixed
+
+- Fix(vnc): patch x11vnc_startup.sh to add -nolookup -noxdamage flags
+
+The operative container's built-in startup script starts x11vnc without
+-nolookup (blocking reverse DNS) or -noxdamage (CPU spin). The previous
+PostStart approach of killing and restarting x11vnc was defeated by the
+startup script's monitor loop which restarted x11vnc without the flags.
+
+Now we sed-patch the startup script itself, then kill x11vnc so the
+monitor loop restarts with the corrected flags. (de9a41a)
+
 ## [0.1.41-rc.201] - 2026-03-14
 
 
