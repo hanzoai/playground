@@ -1,0 +1,45 @@
+name: Check VNC Registry Node IDs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Gateway full logs (connection events)
+        run: |
+          GWPOD=$(kubectl get pods -n hanzo -l app=bot-gateway -o jsonpath='{.items[0].metadata.name}')
+          echo "=== Gateway logs: node connections ==="
+          kubectl logs "$GWPOD" -n hanzo --tail=500 2>/dev/null | grep -iE "register|connect|hello|node|device|instanceId|vnc" || echo "no matches"
+
+      - name: Agent container logs (connection details)
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}')
+          for POD in $PODS; do
+            echo "=== $POD agent logs (connection) ==="
+            kubectl logs "$POD" -n hanzo -c agent --tail=200 2>/dev/null | grep -iE "hello|connect|register|gateway|node.*id|device|instanceId|vnc" || echo "  no matches"
+            echo ""
+          done
+
+      - name: Check BOT_NODE_ID env in agent
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}')
+          for POD in $PODS; do
+            echo "=== $POD env vars ==="
+            kubectl exec "$POD" -n hanzo -c agent -- sh -c 'echo "BOT_NODE_ID=$BOT_NODE_ID"; echo "BOT_INSTANCE_ID=$BOT_INSTANCE_ID"; echo "BOT_DEVICE_ID=$BOT_DEVICE_ID"; echo "HOSTNAME=$HOSTNAME"' 2>/dev/null || echo "exec failed"
+          done
