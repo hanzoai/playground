@@ -22,36 +22,72 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Get gateway VNC logs
+      - name: Test VNC deadlock and websockify
         run: |
-          echo "=== Gateway pods ==="
-          kubectl get pods -n hanzo -l app=bot-gateway -o wide 2>/dev/null || echo "no gateway pods found"
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          echo "Pod: $POD"
+
+          echo "=== 1. Direct TCP to x11vnc:5900 — wait 5s (expect deadlock) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3" 2>/dev/null | xxd | head -5 || echo "DEADLOCK CONFIRMED: no data in 5s"
+          ' 2>/dev/null || echo "exec failed"
           echo ""
 
-          echo "=== Gateway pod count ==="
-          GW_PODS=$(kubectl get pods -n hanzo -l app=bot-gateway -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
-          echo "Pods: $GW_PODS"
-          POD_COUNT=$(echo "$GW_PODS" | wc -w)
-          echo "Count: $POD_COUNT"
+          echo "=== 2. Send RFB version FIRST to break deadlock ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 8 bash -c "
+              exec 3<>/dev/tcp/127.0.0.1/5900
+              printf \"RFB 003.008\n\" >&3
+              head -c 200 <&3
+            " 2>/dev/null | xxd | head -10 || echo "no response even after sending RFB version"
+          ' 2>/dev/null || echo "exec failed"
           echo ""
 
-          for GW in $GW_PODS; do
-            echo "========================================"
-            echo "GATEWAY: $GW"
-            echo "========================================"
+          echo "=== 3. websockify data flow test (python) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 25 python3 -c "
+import socket, time, os, base64
 
-            echo "=== VNC proxy logs (last 100 lines) ==="
-            kubectl logs "$GW" -n hanzo --tail=100 2>/dev/null | grep -i "vnc-proxy\|vnc\|tunnel" || echo "no vnc logs"
-            echo ""
-
-            echo "=== Recent errors (last 50 lines) ==="
-            kubectl logs "$GW" -n hanzo --tail=50 2>/dev/null | grep -i "error\|warn\|ERR\|WARN" || echo "no errors"
-            echo ""
-          done
-
-          echo "=== Gateway service ==="
-          kubectl get svc -n hanzo | grep -i gateway 2>/dev/null || echo "no gateway svc"
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(5)
+s.connect(('127.0.0.1', 6080))
+key = base64.b64encode(os.urandom(16)).decode()
+req = ('GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ' + key + '\r\nSec-WebSocket-Version: 13\r\n\r\n').encode()
+s.sendall(req)
+resp = b''
+while True:
+    chunk = s.recv(4096)
+    resp += chunk
+    if b'\r\n\r\n' in resp:
+        break
+print('WS Response:', resp.decode('utf-8', errors='replace').strip())
+print('Waiting 15s for VNC data via websockify...')
+s.settimeout(15)
+try:
+    frame = s.recv(4096)
+    print(f'Got frame: {len(frame)} bytes, hex: {frame[:30].hex()}')
+except socket.timeout:
+    print('TIMEOUT: No VNC data via websockify in 15s - DEADLOCK AT websockify->x11vnc CONFIRMED')
+s.close()
+" 2>&1 || echo "python test failed"
           echo ""
 
-          echo "=== Gateway deployment replicas ==="
-          kubectl get deployment -n hanzo | grep -i gateway 2>/dev/null || echo "no gateway deployment"
+          echo "=== 4. x11vnc version + process ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            ps aux | grep x11vnc | grep -v grep
+            echo "---"
+            x11vnc -version 2>&1 | head -3
+            echo "---"
+            dpkg -l 2>/dev/null | grep -i "libvnc\|x11vnc" || echo "no packages"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 5. Alternative VNC servers? ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            which Xvnc 2>/dev/null && echo "Xvnc found" || echo "Xvnc not found"
+            which vncserver 2>/dev/null && echo "vncserver found" || echo "vncserver not found"
+            dpkg -l 2>/dev/null | grep -i "tiger\|tightvnc" || echo "no alt vnc"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 6. x11vnc stderr log ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -20 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
