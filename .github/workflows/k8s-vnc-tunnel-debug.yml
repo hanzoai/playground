@@ -22,59 +22,72 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Debug VNC tunnel on all playground pods
+      - name: Test VNC deadlock and websockify
         run: |
-          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
-          for POD in $PODS; do
-            echo "========================================"
-            echo "POD: $POD"
-            echo "========================================"
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          echo "Pod: $POD"
 
-            echo "=== Pod status ==="
-            kubectl get pod "$POD" -n hanzo -o jsonpath='{.status.phase}' 2>/dev/null
-            echo ""
+          echo "=== 1. Direct TCP to x11vnc:5900 — wait 5s (expect deadlock) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3" 2>/dev/null | xxd | head -5 || echo "DEADLOCK: no data in 5s"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "=== Container statuses ==="
-            kubectl get pod "$POD" -n hanzo -o jsonpath='{range .status.containerStatuses[*]}{.name}: ready={.ready}, state={.state}{"\n"}{end}' 2>/dev/null
-            echo ""
+          echo "=== 2. Send RFB version FIRST to break deadlock ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 8 bash -c "
+              exec 3<>/dev/tcp/127.0.0.1/5900
+              printf \"RFB 003.008\n\" >&3
+              head -c 200 <&3
+            " 2>/dev/null | xxd | head -10 || echo "no response even after sending RFB version"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "=== 1. Agent container logs (last 50 lines, VNC related) ==="
-            kubectl logs "$POD" -n hanzo -c agent --tail=50 2>/dev/null | grep -i "vnc\|tunnel\|websock\|6080\|5900\|invoke" || echo "no vnc-related logs"
-            echo ""
+          echo "=== 3. websockify data flow test (python) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 25 python3 -c "
+import socket, time, os, base64, hashlib, struct
 
-            echo "=== 2. Agent container ALL recent logs (last 30 lines) ==="
-            kubectl logs "$POD" -n hanzo -c agent --tail=30 2>/dev/null || echo "no agent logs"
-            echo ""
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(5)
+s.connect(('127.0.0.1', 6080))
+key = base64.b64encode(os.urandom(16)).decode()
+req = ('GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ' + key + '\r\nSec-WebSocket-Version: 13\r\n\r\n').encode()
+s.sendall(req)
+resp = b''
+while True:
+    chunk = s.recv(4096)
+    resp += chunk
+    if b'\r\n\r\n' in resp:
+        break
+print('WS Response:', resp.decode('utf-8', errors='replace').strip())
+print('Waiting 15s for VNC data via websockify...')
+s.settimeout(15)
+try:
+    frame = s.recv(4096)
+    print(f'Got frame: {len(frame)} bytes, hex: {frame[:30].hex()}')
+except socket.timeout:
+    print('TIMEOUT: No VNC data via websockify in 15s - DEADLOCK CONFIRMED')
+s.close()
+" 2>&1 || echo "python test failed"
+          echo ""
 
-            echo "=== 3. Operative: websockify process ==="
-            kubectl exec "$POD" -n hanzo -c operative -- ps aux 2>/dev/null | grep -E "websockify|x11vnc|Xvfb" || echo "no processes found"
-            echo ""
+          echo "=== 4. x11vnc version + process ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            ps aux | grep x11vnc | grep -v grep
+            echo "---"
+            x11vnc -version 2>&1 | head -3
+            echo "---"
+            dpkg -l 2>/dev/null | grep -i "libvnc\|x11vnc" || echo "no packages"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "=== 4. Operative: port 6080 (websockify) listening? ==="
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ss -tlnp | grep -E "6080|5900"' 2>/dev/null || echo "ports not found"
-            echo ""
+          echo "=== 5. Alternative VNC servers available? ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            which Xvnc 2>/dev/null && echo "Xvnc found" || echo "Xvnc not found"
+            which tigervncserver 2>/dev/null && echo "tigervnc found" || echo "tigervnc not found"
+            dpkg -l 2>/dev/null | grep -i "tiger\|tightvnc" || echo "no alt vnc"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "=== 5. Operative: test websockify WS handshake on 6080 ==="
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-              if command -v curl >/dev/null 2>&1; then
-                curl -v --no-buffer -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" http://127.0.0.1:6080/ 2>&1 | head -20
-              else
-                echo "curl not available, trying nc..."
-                printf "GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n" | timeout 3 nc 127.0.0.1 6080 2>/dev/null | head -10 || echo "nc failed"
-              fi
-            ' 2>/dev/null || echo "exec failed"
-            echo ""
-
-            echo "=== 6. Operative: x11vnc stderr log ==="
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -20 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
-            echo ""
-
-            echo "=== 7. Agent: check BOT_VNC_PORT env ==="
-            kubectl exec "$POD" -n hanzo -c agent -- sh -c 'echo "BOT_VNC_PORT=$BOT_VNC_PORT BOT_VNC_HOST=$BOT_VNC_HOST"' 2>/dev/null || echo "exec failed"
-            echo ""
-
-            echo "=== 8. Agent: can it reach operative port 6080? ==="
-            kubectl exec "$POD" -n hanzo -c agent -- sh -c '
-              timeout 3 bash -c "exec 3<>/dev/tcp/127.0.0.1/6080 && echo CONNECTED || echo FAILED"' 2>/dev/null || echo "exec failed"
-            echo ""
-          done
+          echo "=== 6. x11vnc stderr log (last 20 lines) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -20 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
