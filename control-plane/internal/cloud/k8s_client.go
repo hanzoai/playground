@@ -254,9 +254,10 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 	}
 
 	container := map[string]interface{}{
-		"name":  "agent",
-		"image": spec.Image,
-		"env":   envVars,
+		"name":            "agent",
+		"image":           spec.Image,
+		"imagePullPolicy": "Always",
+		"env":             envVars,
 		"resources": map[string]interface{}{
 			"requests": map[string]string{
 				"cpu":    spec.CPU,
@@ -309,9 +310,10 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			})
 		}
 		scContainer := map[string]interface{}{
-			"name":  sc.Name,
-			"image": sc.Image,
-			"env":   scEnv,
+			"name":            sc.Name,
+			"image":           sc.Image,
+			"imagePullPolicy": "Always",
+			"env":             scEnv,
 			"ports": scPorts,
 			"resources": map[string]interface{}{
 				"requests": map[string]string{
