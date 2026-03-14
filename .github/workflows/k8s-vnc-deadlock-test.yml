@@ -1,0 +1,104 @@
+name: VNC Deadlock Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Test VNC deadlock and noVNC
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          echo "Pod: $POD"
+
+          echo "=== 1. Direct TCP to x11vnc:5900 — wait 5s for RFB banner (expect deadlock) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3" 2>/dev/null | xxd | head -5 || echo "DEADLOCK: no data in 5s"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 2. Send RFB version FIRST to break deadlock ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            (printf "RFB 003.008\n"; sleep 3; cat) | timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat >&3 & cat <&3" 2>/dev/null | xxd | head -10 || echo "no response"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 3. Send a single byte to break MSG_PEEK ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            (printf "\x00"; sleep 3; cat) | timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat >&3 & cat <&3" 2>/dev/null | xxd | head -10 || echo "no response"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 4. Test websockify via python websocket client ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            python3 -c "
+import socket, time, select
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((\"127.0.0.1\", 6080))
+# Send minimal WebSocket upgrade
+req = b\"GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n\"
+s.sendall(req)
+time.sleep(1)
+# Read response
+data = b\"\"
+while select.select([s], [], [], 3)[0]:
+    chunk = s.recv(4096)
+    if not chunk:
+        break
+    data += chunk
+    if len(data) > 200:
+        break
+print(\"WS Upgrade response:\", data[:300].decode(\"utf-8\", errors=\"replace\"))
+# After upgrade, wait for VNC data
+time.sleep(3)
+while select.select([s], [], [], 3)[0]:
+    chunk = s.recv(4096)
+    if not chunk:
+        break
+    data += chunk
+    print(\"After upgrade data:\", repr(chunk[:50]))
+    break
+else:
+    print(\"No VNC data received after WS upgrade (DEADLOCK at websockify->x11vnc)\")
+s.close()
+" 2>&1' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 5. x11vnc version and startup flags ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            x11vnc -version 2>&1
+            echo "---"
+            ps aux | grep x11vnc | grep -v grep
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 6. Check x11vnc LibVNCServer version ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            ldd $(which x11vnc) 2>/dev/null | grep -i vnc || echo "no vnc lib found"
+            dpkg -l | grep -i "libvnc\|x11vnc" 2>/dev/null || echo "no packages found"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 7. Check if Xvnc/TigerVNC is available as alternative ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            which Xvnc 2>/dev/null || echo "Xvnc not found"
+            which vncserver 2>/dev/null || echo "vncserver not found"
+            which tigervncserver 2>/dev/null || echo "tigervncserver not found"
+            dpkg -l | grep -i "tiger\|tight\|xvnc" 2>/dev/null || echo "no alt vnc packages"
+          ' 2>/dev/null || echo "exec failed"
