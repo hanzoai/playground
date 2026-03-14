@@ -84,7 +84,7 @@ jobs:
         run: |
           POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
 
-          HAS_TIGER=$(kubectl exec "$POD" -n hanzo -c operative -- sh -c 'which x0vncserver 2>/dev/null && echo "yes" || echo "no"' 2>/dev/null)
+          HAS_TIGER=$(kubectl exec "$POD" -n hanzo -c operative -- sh -c 'which x0vncserver >/dev/null 2>&1 && echo "yes" || echo "no"' 2>/dev/null)
 
           if [ "$HAS_TIGER" = "no" ]; then
             echo "=== Installing TigerVNC ==="
@@ -94,7 +94,7 @@ jobs:
           fi
 
           # Check if x0vncserver is running
-          X0_RUNNING=$(kubectl exec "$POD" -n hanzo -c operative -- sh -c 'pgrep -x x0vncserver && echo "yes" || echo "no"' 2>/dev/null)
+          X0_RUNNING=$(kubectl exec "$POD" -n hanzo -c operative -- sh -c 'pgrep -x x0vncserver >/dev/null 2>&1 && echo "yes" || echo "no"' 2>/dev/null)
           echo "x0vncserver running: $X0_RUNNING"
 
           if [ "$X0_RUNNING" = "no" ] && [ "$HAS_TIGER" = "yes" ]; then
