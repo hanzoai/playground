@@ -381,10 +381,14 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			// with -nolookup (prevents blocking reverse DNS lookup that causes x11vnc
 			// to accept TCP connections but never send the RFB protocol banner) and
 			// -noxdamage (prevents "fast read" spin loop that starves network I/O).
+			// Use pgrep -x (exact binary name) instead of pkill -f to avoid
+			// killing our own shell (which also has "x11vnc" in its cmdline args).
 			PostStart: []string{"/bin/sh", "-c",
-				"sleep 5; pkill -f x11vnc 2>/dev/null; sleep 1; " +
+				"sleep 5; " +
+					"PID=$(pgrep -x x11vnc 2>/dev/null); [ -n \"$PID\" ] && kill \"$PID\" 2>/dev/null; " +
+					"sleep 1; " +
 					"x11vnc -display :1 -forever -shared -wait 200 -rfbport 5900 " +
-					"-nopw -nolookup -noxdamage -nap 2>/tmp/x11vnc_fixed.log &"},
+					"-nopw -nolookup -noxdamage -nap > /tmp/x11vnc_fixed.log 2>&1 &"},
 		})
 	}
 
