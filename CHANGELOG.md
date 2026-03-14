@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.200] - 2026-03-14
+
+
+### CI
+
+- Ci: add workflow to fix x11vnc (-nolookup) in running operative containers
+
+One-shot workflow_dispatch workflow to immediately restart x11vnc with
+-nolookup/-noxdamage/-nap flags in all currently running agent pods,
+without requiring users to deprovision and reprovision their cloud bots.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (9fa8921)
+
+
+
+### Fixed
+
+- Fix(operative): use pgrep -x to kill x11vnc without self-matching
+
+pkill -f x11vnc matches any process with "x11vnc" in its cmdline, including
+the postStart hook shell itself (which has x11vnc in its args). This caused
+exit code 143 (SIGTERM) killing the hook. Switch to pgrep -x (exact binary
+name match) to avoid self-termination.
+
+Also update k8s-fix-vnc workflow to use pgrep -x and write a script file
+to avoid shell cmdline matching issues when running via kubectl exec.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (3094b0a)
+
 ## [0.1.41-rc.199] - 2026-03-14
 
 
