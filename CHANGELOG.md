@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.203] - 2026-03-14
+
+
+### CI
+
+- Ci: add VNC start workflow (1b0a6c3)
+
+
+
+### Other
+
+- Fix VNC: add -nowsock flag to x11vnc to disable WebSocket on port 5900
+
+x11vnc was rejecting TCP connections from the node-host with
+'webSocketsHandshake: unknown connection error' because it was
+treating raw VNC/RFB connections as WebSocket connections.
+
+Adding -nowsock disables x11vnc's built-in WebSocket support,
+so the node-host can connect via plain TCP for the RFB protocol.
+Also adds -nap to reduce idle CPU usage (was at 86.8%). (f033c2a)
+
+- Add X11 debug workflow for VNC (25ad898)
+
+- Add quick VNC check workflow with correct container name (30ac267)
+
+- Add detailed VNC debug workflow with correct container names (1c7f071)
+
 ## [0.1.41-rc.202] - 2026-03-14
 
 
