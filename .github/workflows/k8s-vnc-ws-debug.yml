@@ -1,0 +1,61 @@
+name: VNC WebSocket Debug
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Check x11vnc WebSocket behavior
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          echo "Pod: $POD"
+
+          echo "=== 1. x11vnc -help output (websocket/ws related) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -help 2>&1 | grep -i "websock\|ws\|nowsock\|nows\|-ws " || echo "no ws help found"' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 2. x11vnc -opts (all options) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -opts 2>&1 || echo "failed"' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 3. Handshake test with 10s wait ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            (echo -n ""; timeout 10 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; head -c 100 <&3" 2>/dev/null) | od -c | head -5 || echo "no data received in 10s"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 4. Test: send RFB version to trigger server response ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            (printf "RFB 003.008\n"; sleep 2) | timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat >&3 & cat <&3" 2>/dev/null | od -c | head -5 || echo "no response"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 5. Test with nc: just connect and listen for 10s ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 10 nc -w 10 127.0.0.1 5900 2>/dev/null | od -c | head -5 || echo "no data from nc"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 6. x11vnc stderr log (last 30 lines) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -30 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 7. Check x11vnc version ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -version 2>&1 || echo "version failed"' 2>/dev/null || echo "exec failed"
