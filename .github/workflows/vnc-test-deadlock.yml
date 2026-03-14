@@ -39,30 +39,32 @@ jobs:
         run: |
           POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
           echo "Testing websockify data flow via python:"
-          kubectl exec "$POD" -n hanzo -c operative -- timeout 25 python3 << 'PYEOF'
-import socket, time, os, base64
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(5)
-s.connect(("127.0.0.1", 6080))
-key = base64.b64encode(os.urandom(16)).decode()
-req = f"GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode()
-s.sendall(req)
-resp = b""
-while True:
-    chunk = s.recv(4096)
-    resp += chunk
-    if b"\r\n\r\n" in resp:
-        break
-print("WS upgrade:", resp.decode("utf-8", errors="replace").strip())
-print("Waiting 15s for VNC data from websockify...")
-s.settimeout(15)
-try:
-    frame = s.recv(4096)
-    print(f"Got: {len(frame)} bytes hex={frame[:30].hex()}")
-except socket.timeout:
-    print("DEADLOCK CONFIRMED: No VNC data via websockify in 15s")
-s.close()
-PYEOF
+          cat > /tmp/ws_test.py << 'PYEOF'
+          import socket, time, os, base64
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.settimeout(5)
+          s.connect(("127.0.0.1", 6080))
+          key = base64.b64encode(os.urandom(16)).decode()
+          req = f"GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode()
+          s.sendall(req)
+          resp = b""
+          while True:
+              chunk = s.recv(4096)
+              resp += chunk
+              if b"\r\n\r\n" in resp:
+                  break
+          print("WS upgrade:", resp.decode("utf-8", errors="replace").strip())
+          print("Waiting 15s for VNC data from websockify...")
+          s.settimeout(15)
+          try:
+              frame = s.recv(4096)
+              print(f"Got: {len(frame)} bytes hex={frame[:30].hex()}")
+          except socket.timeout:
+              print("DEADLOCK CONFIRMED: No VNC data via websockify in 15s")
+          s.close()
+          PYEOF
+          kubectl cp /tmp/ws_test.py "$POD":/tmp/ws_test.py -n hanzo -c operative
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 25 python3 /tmp/ws_test.py 2>&1 || echo "python test failed"
 
       - name: x11vnc info
         run: |
