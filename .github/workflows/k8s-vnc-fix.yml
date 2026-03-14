@@ -1,0 +1,60 @@
+name: Fix VNC (Kill Hung x11vnc)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Kill hung x11vnc and restart
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+            echo "=== $POD: killing hung x11vnc ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'killall -9 x11vnc 2>/dev/null; echo "killed all x11vnc"' 2>/dev/null || true
+            echo "Waiting 3s for restart..."
+            sleep 3
+            echo "=== $POD: check x11vnc after restart ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ps aux | grep x11vnc | grep -v grep' 2>/dev/null || echo "no x11vnc running"
+            echo ""
+            echo "=== $POD: test VNC handshake ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'echo "" | timeout 3 nc -w2 127.0.0.1 5900 2>&1 | head -c 100 || echo "nc failed"' 2>/dev/null || true
+            echo ""
+          done
+
+      - name: Verify VNC is healthy
+        run: |
+          sleep 5
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+            echo "=== $POD: x11vnc process ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ps aux | grep x11vnc | grep -v grep' 2>/dev/null || echo "no x11vnc"
+            echo ""
+            echo "=== $POD: port 5900 ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ss -tlnp 2>/dev/null | grep 5900 || echo "no listener on 5900"' 2>/dev/null || true
+            echo ""
+            echo "=== $POD: VNC handshake test ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'echo "" | timeout 3 nc -w2 127.0.0.1 5900 2>&1 | head -c 100 || echo "nc failed"' 2>/dev/null || true
+            echo ""
+            echo "=== $POD: operative logs (last 10) ==="
+            kubectl logs "$POD" -n hanzo -c operative --tail=10 2>/dev/null || echo "no logs"
+          done
