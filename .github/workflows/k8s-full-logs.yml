@@ -15,28 +15,32 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
-      - name: Gateway full logs (last 100)
+      - name: Agent pod details
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "=== Pod: $POD ==="
+          echo "--- Container names ---"
+          kubectl get pod "$POD" -n hanzo -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}'
+          echo ""
+          echo "--- Container statuses ---"
+          kubectl get pod "$POD" -n hanzo -o jsonpath='{range .status.containerStatuses[*]}{.name}: ready={.ready} state={.state}{"\n"}{end}'
+      - name: Agent container logs (last 200)
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "=== agent container logs ==="
+          kubectl logs "$POD" -n hanzo -c agent --tail=200 2>/dev/null || echo "=== trying first container ==="
+          kubectl logs "$POD" -n hanzo --tail=200 2>/dev/null | head -100 || echo "failed"
+      - name: Agent container env vars
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "=== agent container env ==="
+          kubectl exec "$POD" -n hanzo -c agent -- env 2>/dev/null | grep -iE "BOT_|GATEWAY|NODE|OPENCLAW|PORT" || echo "exec failed"
+      - name: Operative container logs (last 50)
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "=== operative container logs ==="
+          kubectl logs "$POD" -n hanzo -c operative --tail=50 2>/dev/null || echo "failed"
+      - name: Gateway full logs (last 200)
         run: |
           GWPOD=$(kubectl get pods -n hanzo -l app=bot-gateway -o jsonpath='{.items[0].metadata.name}')
-          echo "=== Gateway pod: $GWPOD ==="
-          kubectl logs "$GWPOD" -n hanzo --tail=100 2>/dev/null || echo "failed"
-      - name: Bot container full logs (last 100)
-        run: |
-          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
-          echo "=== Bot container logs: $POD ==="
-          kubectl logs "$POD" -n hanzo -c bot --tail=100 2>/dev/null || echo "failed"
-      - name: Check bot container env vars
-        run: |
-          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
-          echo "=== Bot container env (filtered) ==="
-          kubectl exec "$POD" -n hanzo -c bot -- env 2>/dev/null | grep -i "BOT_\|GATEWAY\|NODE" || echo "exec failed or no matches"
-      - name: Check bot container image digest
-        run: |
-          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
-          echo "=== Image status ==="
-          kubectl get pod "$POD" -n hanzo -o jsonpath='{range .status.containerStatuses[*]}{.name}: {.image} -> {.imageID}{"\n"}{end}'
-      - name: Check gateway node registry
-        run: |
-          GWPOD=$(kubectl get pods -n hanzo -l app=bot-gateway -o jsonpath='{.items[0].metadata.name}')
-          echo "=== Gateway logs: node connections ==="
-          kubectl logs "$GWPOD" -n hanzo --tail=500 2>/dev/null | grep -i "node\|register\|connect\|hello" || echo "no node-related logs"
+          kubectl logs "$GWPOD" -n hanzo --tail=200 2>/dev/null || echo "failed"
