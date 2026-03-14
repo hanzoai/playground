@@ -1,0 +1,120 @@
+name: Debug Gateway Connection
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug-gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: List gateway pods
+        run: |
+          echo "=== Gateway pods ==="
+          kubectl get pods -n hanzo -l app=bot-gateway -o wide 2>/dev/null || \
+          kubectl get pods -n hanzo | grep -i gateway || \
+          kubectl get pods -n hanzo | grep -i bot
+
+      - name: Check gateway service
+        run: |
+          echo "=== Gateway service ==="
+          kubectl get svc bot-gateway -n hanzo -o yaml 2>/dev/null || echo "No bot-gateway service"
+          echo ""
+          echo "=== Gateway endpoints ==="
+          kubectl get endpoints bot-gateway -n hanzo 2>/dev/null || echo "No endpoints"
+
+      - name: Gateway pod details
+        run: |
+          # Find any gateway pod
+          GW_POD=$(kubectl get pods -n hanzo -o name 2>/dev/null | grep gateway | head -1)
+          if [ -z "$GW_POD" ]; then
+            echo "No gateway pod found by name. Trying label..."
+            GW_POD=$(kubectl get pods -n hanzo -l app=bot-gateway -o name 2>/dev/null | head -1)
+          fi
+          if [ -z "$GW_POD" ]; then
+            echo "Still no gateway pod. Listing all pods..."
+            kubectl get pods -n hanzo -o wide
+            exit 0
+          fi
+          echo "Gateway pod: $GW_POD"
+          echo ""
+          echo "=== Pod describe ==="
+          kubectl describe "$GW_POD" -n hanzo | head -80
+          echo ""
+          echo "=== Container images ==="
+          kubectl get "$GW_POD" -n hanzo -o jsonpath='{.spec.containers[*].image}'
+          echo ""
+
+      - name: Gateway logs (last 200 lines)
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name 2>/dev/null | grep gateway | head -1)
+          if [ -z "$GW_POD" ]; then
+            GW_POD=$(kubectl get pods -n hanzo -l app=bot-gateway -o name 2>/dev/null | head -1)
+          fi
+          if [ -z "$GW_POD" ]; then
+            echo "No gateway pod found"
+            exit 0
+          fi
+          echo "=== Last 200 log lines ==="
+          kubectl logs "$GW_POD" -n hanzo --tail=200 2>&1
+
+      - name: Gateway error logs
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name 2>/dev/null | grep gateway | head -1)
+          if [ -z "$GW_POD" ]; then
+            GW_POD=$(kubectl get pods -n hanzo -l app=bot-gateway -o name 2>/dev/null | head -1)
+          fi
+          if [ -z "$GW_POD" ]; then
+            echo "No gateway pod found"
+            exit 0
+          fi
+          echo "=== Error/warning lines (last 500) ==="
+          kubectl logs "$GW_POD" -n hanzo --tail=500 2>&1 | grep -iE "error|fail|reject|denied|origin|auth|unauthorized|403|401|close" || echo "No error lines"
+
+      - name: Gateway config check
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name 2>/dev/null | grep gateway | head -1)
+          if [ -z "$GW_POD" ]; then
+            GW_POD=$(kubectl get pods -n hanzo -l app=bot-gateway -o name 2>/dev/null | head -1)
+          fi
+          if [ -z "$GW_POD" ]; then
+            echo "No gateway pod found"
+            exit 0
+          fi
+          echo "=== Gateway config file ==="
+          kubectl exec "$GW_POD" -n hanzo -- cat /etc/bot/bot.json 2>&1 || echo "No config at /etc/bot/bot.json"
+          echo ""
+          echo "=== Env vars ==="
+          kubectl exec "$GW_POD" -n hanzo -- sh -c '
+            echo "BOT_CONFIG_PATH=$BOT_CONFIG_PATH"
+            echo "NODE_ENV=$NODE_ENV"
+          ' 2>&1 || echo "Failed to read env"
+
+      - name: Test WebSocket from outside
+        run: |
+          echo "=== Testing wss://gw.hanzo.bot ==="
+          # Test basic HTTPS connectivity
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 10 "https://gw.hanzo.bot/" 2>&1 || echo "curl failed"
+          echo ""
+          # Test WebSocket upgrade
+          curl -s -i --max-time 10 \
+            -H "Connection: Upgrade" \
+            -H "Upgrade: websocket" \
+            -H "Sec-WebSocket-Version: 13" \
+            -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+            -H "Origin: https://app.hanzo.bot" \
+            "https://gw.hanzo.bot/" 2>&1 | head -30
