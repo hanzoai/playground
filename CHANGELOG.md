@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.199] - 2026-03-14
+
+
+### Fixed
+
+- Fix(operative): restart x11vnc with -nolookup in postStart lifecycle hook
+
+x11vnc in the operative sidecar accepts TCP connections but never sends
+the RFB protocol banner. Root cause: x11vnc performs a blocking reverse
+DNS lookup on each new client IP before sending the banner. In K8s pods,
+reverse DNS resolution can block indefinitely, stalling the VNC handshake.
+
+Fix: add a postStart lifecycle hook that kills the default x11vnc process
+5s after container startup (giving Xvfb time to initialize), then restarts
+x11vnc with:
+  -nolookup  : skip reverse DNS lookup (prevents banner-send hang)
+  -noxdamage : disable XDAMAGE extension (prevents CPU-spinning fast-read mode)
+  -nap       : sleep more when screen is idle (reduces unnecessary CPU use)
+  -wait 200  : 200ms between polling cycles (further reduces CPU pressure)
+
+Also adds PostStart []string to SidecarSpec and wires it into the K8s pod
+manifest as a lifecycle.postStart.exec hook.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (9beef4d)
+
 ## [0.1.41-rc.198] - 2026-03-13
 
 
