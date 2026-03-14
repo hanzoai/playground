@@ -1,0 +1,134 @@
+name: Check x11vnc Options
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Check x11vnc websocket-related options
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "=== x11vnc help for ws/websocket/http options ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -help 2>&1 | grep -iE "ws|websock|http|peek|proto|rawfb" || echo "no matches"' 2>&1
+
+      - name: Check x11vnc -rawfb approach
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "=== Try connecting with HTTP GET approach (WebSocket-like) ==="
+          cat > /tmp/ws_peek_test.py << 'PYEOF'
+          import socket, time
+
+          # Test: What if we send a proper HTTP GET websocket upgrade?
+          # LibVNCServer might recognize this and switch to WS mode
+          print("=== Test: Send GET (WebSocket upgrade) to x11vnc:5900 ===")
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.settimeout(5)
+          s.connect(("127.0.0.1", 5900))
+
+          upgrade = (
+              "GET / HTTP/1.1\r\n"
+              "Host: 127.0.0.1:5900\r\n"
+              "Upgrade: websocket\r\n"
+              "Connection: Upgrade\r\n"
+              "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+              "Sec-WebSocket-Version: 13\r\n"
+              "\r\n"
+          )
+          s.sendall(upgrade.encode())
+          print(f"Sent {len(upgrade)} bytes WebSocket upgrade")
+
+          try:
+              resp = b""
+              while True:
+                  chunk = s.recv(4096)
+                  if not chunk:
+                      break
+                  resp += chunk
+                  if b"\r\n\r\n" in resp:
+                      break
+              print(f"Got {len(resp)} bytes response")
+              print(f"Response: {resp.decode('utf-8', errors='replace')[:500]}")
+              if b"101" in resp:
+                  print("SUCCESS: WebSocket upgrade accepted!")
+                  # Now try to receive VNC data as a WS frame
+                  s.settimeout(5)
+                  try:
+                      frame = s.recv(4096)
+                      print(f"WS frame: {len(frame)} bytes, hex={frame[:30].hex()}")
+                  except socket.timeout:
+                      print("No WS frame data in 5s")
+              elif b"400" in resp or b"405" in resp:
+                  print("WebSocket upgrade rejected")
+          except socket.timeout:
+              print("TIMEOUT waiting for WebSocket response")
+          s.close()
+
+          time.sleep(1)
+
+          # Check if websockify on 6080 can talk properly
+          print("\n=== Test: websockify 6080 WS upgrade ===")
+          import base64, os
+          s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s2.settimeout(5)
+          s2.connect(("127.0.0.1", 6080))
+          key = base64.b64encode(os.urandom(16)).decode()
+          upgrade2 = (
+              "GET / HTTP/1.1\r\n"
+              f"Host: 127.0.0.1:6080\r\n"
+              "Upgrade: websocket\r\n"
+              "Connection: Upgrade\r\n"
+              f"Sec-WebSocket-Key: {key}\r\n"
+              "Sec-WebSocket-Version: 13\r\n"
+              "\r\n"
+          )
+          s2.sendall(upgrade2.encode())
+          try:
+              resp2 = b""
+              while True:
+                  chunk = s2.recv(4096)
+                  if not chunk:
+                      break
+                  resp2 += chunk
+                  if b"\r\n\r\n" in resp2:
+                      break
+              print(f"websockify resp: {resp2.decode('utf-8', errors='replace')[:300]}")
+              if b"101" in resp2:
+                  print("websockify WS upgrade OK")
+                  # Send RFB version as a WS binary frame to websockify
+                  # websockify will relay it as TCP to x11vnc
+                  import struct
+                  rfb = b"RFB 003.008\n"
+                  # WS binary frame: opcode 0x82, length
+                  ws_frame = bytes([0x82, len(rfb)]) + rfb
+                  s2.sendall(ws_frame)
+                  print(f"Sent WS binary frame with RFB version ({len(ws_frame)} bytes)")
+                  s2.settimeout(10)
+                  try:
+                      frame = s2.recv(4096)
+                      print(f"Got WS frame: {len(frame)} bytes, hex={frame[:40].hex()}")
+                  except socket.timeout:
+                      print("TIMEOUT - websockify+x11vnc still deadlocked even with RFB injection via WS")
+          except socket.timeout:
+              print("TIMEOUT waiting for websockify WS response")
+          s2.close()
+          PYEOF
+
+          kubectl cp /tmp/ws_peek_test.py "$POD":/tmp/ws_peek_test.py -n hanzo -c operative
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 40 python3 /tmp/ws_peek_test.py 2>&1
