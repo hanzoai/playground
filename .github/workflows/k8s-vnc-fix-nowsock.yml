@@ -1,0 +1,73 @@
+name: Fix VNC - Add -nowsock flag
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Patch x11vnc startup script and restart
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+            echo "=== Patching $POD ==="
+
+            echo "1. Current x11vnc flags:"
+            kubectl exec "$POD" -n hanzo -c operative -- pgrep -xa x11vnc 2>/dev/null || echo "not running"
+
+            echo "2. Patching startup script to add -nowsock -nap..."
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              SCRIPT=/home/operative/.operative/x11vnc_startup.sh
+              if grep -q "\-nowsock" "$SCRIPT" 2>/dev/null; then
+                echo "Already patched"
+              else
+                sed -i "s/-nopw -nolookup -noxdamage/-nopw -nolookup -noxdamage -nap -nowsock/" "$SCRIPT" 2>/dev/null || \
+                sed -i "s/-nopw/-nopw -nolookup -noxdamage -nap -nowsock/" "$SCRIPT" 2>/dev/null
+                echo "Patched"
+              fi
+              echo "Script content:"
+              grep x11vnc "$SCRIPT" | head -5
+            ' 2>/dev/null || echo "patch failed"
+
+            echo "3. Killing x11vnc to trigger restart with new flags..."
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              PID=$(pgrep -x x11vnc 2>/dev/null)
+              if [ -n "$PID" ]; then
+                kill "$PID" 2>/dev/null
+                echo "Killed PID $PID"
+                sleep 3
+              else
+                echo "Not running"
+              fi
+            ' 2>/dev/null || echo "kill failed"
+
+            echo "4. Checking new x11vnc process:"
+            sleep 3
+            kubectl exec "$POD" -n hanzo -c operative -- pgrep -xa x11vnc 2>/dev/null || echo "not running yet"
+
+            echo "5. CPU usage:"
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ps aux | grep x11vnc | grep -v grep' 2>/dev/null || echo "failed"
+
+            echo "6. Port 5900:"
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ss -tlnp | grep 5900' 2>/dev/null || echo "not listening"
+
+            echo ""
+          done

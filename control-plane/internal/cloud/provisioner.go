@@ -378,15 +378,20 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			LimitCPU: "1000m",
 			LimitMem: "2Gi",
 			// Fix x11vnc: the operative image's startup script starts x11vnc
-			// without -nolookup (reverse DNS lookup blocks VNC handshake in K8s)
-			// or -noxdamage (causes CPU spin that starves network I/O).
-			// Instead of fighting the startup script's monitor loop (which
-			// restarts x11vnc without our flags), we patch the startup script
-			// itself to include the needed flags, then kill x11vnc so the
-			// monitor restarts it with the corrected command line.
+			// without critical flags for K8s:
+			//   -nolookup  — reverse DNS lookup blocks VNC handshake in K8s
+			//   -noxdamage — prevents CPU spin from XDAMAGE events
+			//   -nap       — reduces idle CPU usage
+			//   -nowsock   — disables built-in WebSocket on port 5900 so the
+			//                 node-host can connect via raw TCP (RFB protocol)
+			//                 Without this, x11vnc tries WebSocket handshake
+			//                 and fails with "webSocketsHandshake: unknown
+			//                 connection error" on plain TCP connections.
+			// We patch the startup script and kill x11vnc so the monitor loop
+			// restarts it with the corrected command line.
 			PostStart: []string{"/bin/sh", "-c",
 				"sleep 3; " +
-					"sed -i 's/-nopw/-nopw -nolookup -noxdamage/' /home/operative/.operative/x11vnc_startup.sh 2>/dev/null; " +
+					"sed -i 's/-nopw/-nopw -nolookup -noxdamage -nap -nowsock/' /home/operative/.operative/x11vnc_startup.sh 2>/dev/null; " +
 					"PID=$(pgrep -x x11vnc 2>/dev/null); [ -n \"$PID\" ] && kill \"$PID\" 2>/dev/null; " +
 					"true"},
 		})
