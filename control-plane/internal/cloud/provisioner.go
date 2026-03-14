@@ -517,19 +517,16 @@ heartbeatLoop:
 	// Register and send first heartbeat immediately
 	p.registerAndHeartbeat(nodeID, controlPlaneURL)
 
-	for {
-		select {
-		case <-ticker.C:
-			// Check if pod still exists
-			status, err := p.k8s.GetNodePod(context.Background(), namespace, podName)
-			if err != nil || status.Phase == "Failed" || status.Phase == "Succeeded" {
-				logger.Logger.Info().
-					Str("node_id", nodeID).
-					Msg("cloud agent pod terminated, stopping heartbeats")
-				return
-			}
-			p.registerAndHeartbeat(nodeID, controlPlaneURL)
+	for range ticker.C {
+		// Check if pod still exists
+		status, err := p.k8s.GetNodePod(context.Background(), namespace, podName)
+		if err != nil || status.Phase == "Failed" || status.Phase == "Succeeded" {
+			logger.Logger.Info().
+				Str("node_id", nodeID).
+				Msg("cloud agent pod terminated, stopping heartbeats")
+			return
 		}
+		p.registerAndHeartbeat(nodeID, controlPlaneURL)
 	}
 }
 
