@@ -1,0 +1,65 @@
+name: VNC Deep Fix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Dump x11vnc startup script
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+            echo "=== $POD: x11vnc_startup.sh ==="
+            kubectl exec "$POD" -n hanzo -c operative -- cat /home/operative/.operative/x11vnc_startup.sh 2>/dev/null || echo "not found"
+            echo ""
+            echo "=== $POD: supervisord.conf (if exists) ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'cat /etc/supervisor/conf.d/*.conf 2>/dev/null || cat /etc/supervisord.conf 2>/dev/null || echo "no supervisord"' 2>/dev/null || true
+          done
+
+      - name: Kill all x11vnc startup scripts and processes, start clean one
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+            echo "=== $POD: kill all x11vnc and startup scripts ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              # Kill ALL x11vnc_startup.sh loops
+              pkill -f x11vnc_startup.sh 2>/dev/null || true
+              sleep 1
+              # Kill all x11vnc processes
+              killall -9 x11vnc 2>/dev/null || true
+              sleep 2
+              # Start a single clean x11vnc
+              x11vnc -display :1 -forever -shared -wait 50 -rfbport 5900 -nopw -nolookup -noxdamage > /tmp/x11vnc_clean.log 2>&1 &
+              echo "Started clean x11vnc"
+              sleep 2
+              # Verify
+              echo "=== processes ==="
+              ps aux | grep x11vnc | grep -v grep || echo "no x11vnc"
+              echo "=== port 5900 ==="
+              ss -tlnp 2>/dev/null | grep 5900 || echo "no listener"
+              echo "=== VNC handshake ==="
+              (echo "" | timeout 2 nc -w1 127.0.0.1 5900 | xxd | head -3) 2>/dev/null || echo "nc test failed"
+              echo "=== x11vnc_clean.log ==="
+              tail -5 /tmp/x11vnc_clean.log 2>/dev/null || echo "no log"
+            ' 2>/dev/null || echo "exec failed"
+          done
