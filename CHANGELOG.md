@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.207] - 2026-03-14
+
+
+### Documentation
+
+- Docs: update LLM.md with chat session and desktop VNC fix details
+
+Updated debugging history for agent-cloud-58b82c78: chat session fix
+(NodeRegistry integration in agents.ts), desktop VNC fix (pcmanfm
+desktop icons replacing broken tint2 launcher), and VNC auto-reconnect.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6152668)
+
+
+
+### Fixed
+
+- Fix(cloud): set imagePullPolicy=Always for agent pods
+
+Without this, K8s defaults to IfNotPresent for :main tagged images,
+causing new pods to use stale cached images after a bot image update.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (4605543)
+
 ## [0.1.41-rc.206] - 2026-03-14
 
 
