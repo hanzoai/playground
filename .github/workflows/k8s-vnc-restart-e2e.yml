@@ -1,0 +1,225 @@
+name: Restart Pod + TigerVNC Hotfix + E2E Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  restart-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Delete agent pod to force restart with new images
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "Deleting pod: $POD"
+          kubectl delete pod "$POD" -n hanzo --grace-period=10
+          echo "Pod deleted, waiting for new pod..."
+          sleep 15
+
+      - name: Wait for new pod to be ready
+        run: |
+          echo "Waiting for new pod to become Ready..."
+          for i in $(seq 1 60); do
+            POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+            if [ -n "$POD" ]; then
+              STATUS=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.status.phase}' 2>/dev/null || true)
+              READY=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.status.containerStatuses[*].ready}' 2>/dev/null || true)
+              echo "  [$i] Pod=$POD Status=$STATUS Ready=$READY"
+              if [ "$STATUS" = "Running" ] && echo "$READY" | grep -q "true"; then
+                echo "Pod is ready!"
+                break
+              fi
+            else
+              echo "  [$i] No pod found yet..."
+            fi
+            sleep 5
+          done
+
+      - name: Check which VNC server is available
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+          echo "Pod: $POD"
+          echo ""
+          echo "=== Check for x0vncserver ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'which x0vncserver 2>/dev/null && echo "x0vncserver FOUND" || echo "x0vncserver NOT found"'
+          echo ""
+          echo "=== Check for x11vnc ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'which x11vnc 2>/dev/null && echo "x11vnc found" || echo "x11vnc NOT found"'
+          echo ""
+          echo "=== VNC processes running ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ps aux | grep -E "x0vnc|x11vnc|websockify" | grep -v grep || echo "No VNC processes"'
+          echo ""
+          echo "=== Port 5900 listener ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'netstat -tuln | grep 5900 || echo "Nothing on 5900"'
+
+      - name: Install TigerVNC if not present and start x0vncserver
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+
+          # Check if x0vncserver already available
+          HAS_TIGER=$(kubectl exec "$POD" -n hanzo -c operative -- sh -c 'which x0vncserver 2>/dev/null && echo "yes" || echo "no"' 2>/dev/null)
+
+          if [ "$HAS_TIGER" = "no" ]; then
+            echo "=== Installing tigervnc-scraping-server ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sudo apt-get update -qq 2>&1 | tail -3
+            kubectl exec "$POD" -n hanzo -c operative -- sudo apt-get install -y -qq tigervnc-scraping-server 2>&1 | tail -5
+          else
+            echo "x0vncserver already installed"
+          fi
+
+          # Check if x0vncserver is already running
+          RUNNING=$(kubectl exec "$POD" -n hanzo -c operative -- sh -c 'pgrep -x x0vncserver 2>/dev/null && echo "yes" || echo "no"' 2>/dev/null)
+
+          if [ "$RUNNING" = "no" ]; then
+            echo "=== Killing x11vnc if running ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              X11PID=$(pgrep -x x11vnc 2>/dev/null || true)
+              if [ -n "$X11PID" ]; then
+                kill -9 $X11PID 2>/dev/null || true
+                echo "Killed x11vnc PID=$X11PID"
+              fi
+              MONPID=$(pgrep -f "x11vnc_startup" 2>/dev/null || true)
+              if [ -n "$MONPID" ]; then
+                kill -9 $MONPID 2>/dev/null || true
+                echo "Killed monitor PID=$MONPID"
+              fi
+              sleep 1
+            ' 2>&1 || true
+
+            echo "=== Starting x0vncserver ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              nohup x0vncserver -display :1 -rfbport 5900 -SecurityTypes None > /tmp/x0vnc.log 2>&1 &
+              sleep 2
+              ps aux | grep x0vnc | grep -v grep || echo "x0vncserver NOT running"
+            ' 2>&1
+          else
+            echo "x0vncserver already running"
+          fi
+
+      - name: Test VNC handshake (RFB protocol)
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+
+          cat > /tmp/vnc_e2e_test.py << 'PYEOF'
+          import socket, time
+
+          print("Test 1: Direct TCP to x0vncserver:5900...")
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.settimeout(5)
+          try:
+              s.connect(("127.0.0.1", 5900))
+              data = s.recv(100)
+              print(f"  Got {len(data)} bytes: {data!r}")
+              if data.startswith(b"RFB"):
+                  print("  SUCCESS: RFB banner received immediately")
+                  s.sendall(b"RFB 003.008\n")
+                  sec = s.recv(200)
+                  print(f"  Security: {len(sec)} bytes")
+                  if len(sec) > 0:
+                      print("  FULL SUCCESS: VNC handshake works")
+              else:
+                  print(f"  UNEXPECTED: {data[:20].hex()}")
+          except socket.timeout:
+              print("  TIMEOUT (deadlock)")
+          except Exception as e:
+              print(f"  ERROR: {e}")
+          s.close()
+
+          time.sleep(0.5)
+
+          print("\nTest 2: Check websockify:6080 → x0vncserver:5900...")
+          import base64, os
+          s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s2.settimeout(10)
+          try:
+              s2.connect(("127.0.0.1", 6080))
+              key = base64.b64encode(os.urandom(16)).decode()
+              upgrade = (
+                  "GET / HTTP/1.1\r\n"
+                  f"Host: 127.0.0.1:6080\r\n"
+                  "Upgrade: websocket\r\n"
+                  "Connection: Upgrade\r\n"
+                  f"Sec-WebSocket-Key: {key}\r\n"
+                  "Sec-WebSocket-Version: 13\r\n"
+                  "\r\n"
+              )
+              s2.sendall(upgrade.encode())
+              resp = b""
+              while True:
+                  chunk = s2.recv(4096)
+                  if not chunk: break
+                  resp += chunk
+                  if b"\r\n\r\n" in resp: break
+
+              if b"101" not in resp:
+                  print(f"  WS upgrade failed: {resp.decode('utf-8', errors='replace')[:200]}")
+              else:
+                  print("  WS upgrade OK")
+                  s2.settimeout(5)
+                  frame = s2.recv(4096)
+                  print(f"  WS frame: {len(frame)} bytes")
+                  if len(frame) >= 2:
+                      length = frame[1] & 0x7f
+                      payload = frame[2:2+length]
+                      if b"RFB" in payload:
+                          print("  FULL SUCCESS: RFB through websockify!")
+          except socket.timeout:
+              print("  TIMEOUT through websockify")
+          except Exception as e:
+              print(f"  ERROR: {e}")
+          s2.close()
+
+          print("\nTest 3: Bot agent container — check invoke-vnc.ts version...")
+          import subprocess
+          r = subprocess.run(["cat", "/app/dist/node-host/invoke-vnc.js"],
+                           capture_output=True, text=True)
+          if "protocol injection" in r.stdout.lower() or "rfb_client_version" in r.stdout.lower():
+              print("  WARNING: Old invoke-vnc.ts with RFB injection still deployed!")
+          elif "TigerVNC" in r.stdout or "no protocol injection" in r.stdout.lower() or "no\n * protocol injection" in r.stdout.lower():
+              print("  OK: New invoke-vnc.ts (clean TCP bridge)")
+          else:
+              # Check for the key indicator: clean bridge has no RFB_CLIENT_VERSION
+              lines = r.stdout[:500]
+              print(f"  invoke-vnc.js first 200 chars: {lines[:200]}")
+          PYEOF
+
+          # Run tests 1-2 in operative container
+          kubectl cp /tmp/vnc_e2e_test.py "$POD":/tmp/vnc_e2e_test.py -n hanzo -c operative
+          echo "=== VNC Protocol Tests (operative container) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 30 python3 /tmp/vnc_e2e_test.py 2>&1
+
+          echo ""
+          echo "=== Bot Image Check (agent container) ==="
+          kubectl exec "$POD" -n hanzo -c agent -- sh -c '
+            if [ -f /app/dist/node-host/invoke-vnc.js ]; then
+              if grep -q "RFB_CLIENT_VERSION" /app/dist/node-host/invoke-vnc.js; then
+                echo "WARNING: Old invoke-vnc with RFB injection"
+              else
+                echo "OK: New invoke-vnc (no RFB injection)"
+                head -15 /app/dist/node-host/invoke-vnc.js
+              fi
+            else
+              echo "invoke-vnc.js not found at expected path"
+              find /app -name "invoke-vnc*" 2>/dev/null | head -5
+            fi
+          ' 2>&1
+
+          echo ""
+          echo "=== CPU usage check ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            ps aux | grep -E "x0vnc|x11vnc" | grep -v grep
+          ' 2>&1
