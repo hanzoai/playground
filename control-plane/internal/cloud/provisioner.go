@@ -112,14 +112,17 @@ type KubernetesClient interface {
 
 // SidecarSpec describes an additional container to run alongside the main agent.
 type SidecarSpec struct {
-	Name     string
-	Image    string
-	Env      map[string]string
-	Ports    []int32
-	CPU      string
-	Memory   string
-	LimitCPU string
-	LimitMem string
+	Name      string
+	Image     string
+	Env       map[string]string
+	Ports     []int32
+	CPU       string
+	Memory    string
+	LimitCPU  string
+	LimitMem  string
+	// PostStart is an optional lifecycle hook command run after the container starts.
+	// The hook must exit 0; on non-zero exit K8s will kill and restart the container.
+	PostStart []string
 }
 
 // PodSpec describes the desired state for an agent pod.
@@ -374,6 +377,14 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Memory:   "512Mi",
 			LimitCPU: "1000m",
 			LimitMem: "2Gi",
+			// Fix x11vnc: after operative starts, kill the default x11vnc and restart
+			// with -nolookup (prevents blocking reverse DNS lookup that causes x11vnc
+			// to accept TCP connections but never send the RFB protocol banner) and
+			// -noxdamage (prevents "fast read" spin loop that starves network I/O).
+			PostStart: []string{"/bin/sh", "-c",
+				"sleep 5; pkill -f x11vnc 2>/dev/null; sleep 1; " +
+					"x11vnc -display :1 -forever -shared -wait 200 -rfbport 5900 " +
+					"-nopw -nolookup -noxdamage -nap 2>/tmp/x11vnc_fixed.log &"},
 		})
 	}
 

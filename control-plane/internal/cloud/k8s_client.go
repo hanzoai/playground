@@ -324,6 +324,16 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 				},
 			},
 		}
+		// Attach lifecycle hooks if specified
+		if len(sc.PostStart) > 0 {
+			scContainer["lifecycle"] = map[string]interface{}{
+				"postStart": map[string]interface{}{
+					"exec": map[string]interface{}{
+						"command": sc.PostStart,
+					},
+				},
+			}
+		}
 		containers = append(containers, scContainer)
 	}
 
