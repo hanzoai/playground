@@ -12,7 +12,7 @@ env:
 jobs:
   debug:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
@@ -22,40 +22,88 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Check x11vnc WebSocket behavior
+      - name: Test VNC deadlock and websockify
         run: |
           POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
           echo "Pod: $POD"
 
-          echo "=== 1. x11vnc -help output (websocket/ws related) ==="
-          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -help 2>&1 | grep -i "websock\|ws\|nowsock\|nows\|-ws " || echo "no ws help found"' 2>/dev/null || echo "exec failed"
-          echo ""
-
-          echo "=== 2. x11vnc -opts (all options) ==="
-          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -opts 2>&1 || echo "failed"' 2>/dev/null || echo "exec failed"
-          echo ""
-
-          echo "=== 3. Handshake test with 10s wait ==="
+          echo "=== 1. Direct TCP to x11vnc:5900 — wait 5s (expect deadlock) ==="
           kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-            (echo -n ""; timeout 10 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; head -c 100 <&3" 2>/dev/null) | od -c | head -5 || echo "no data received in 10s"
+            timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3" 2>/dev/null | xxd | head -5 || echo "DEADLOCK: no data in 5s"
           ' 2>/dev/null || echo "exec failed"
           echo ""
 
-          echo "=== 4. Test: send RFB version to trigger server response ==="
+          echo "=== 2. Send RFB version FIRST to break deadlock ==="
           kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-            (printf "RFB 003.008\n"; sleep 2) | timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat >&3 & cat <&3" 2>/dev/null | od -c | head -5 || echo "no response"
+            timeout 8 bash -c "
+              exec 3<>/dev/tcp/127.0.0.1/5900
+              printf \"RFB 003.008\n\" >&3
+              head -c 200 <&3
+            " 2>/dev/null | xxd | head -10 || echo "no response even after sending RFB version"
           ' 2>/dev/null || echo "exec failed"
           echo ""
 
-          echo "=== 5. Test with nc: just connect and listen for 10s ==="
+          echo "=== 3. websockify → x11vnc data flow test (python) ==="
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 20 python3 -c "
+import socket, time, select, hashlib, base64, struct, os
+
+# Connect to websockify
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(5)
+s.connect(('127.0.0.1', 6080))
+
+# WebSocket handshake
+key = base64.b64encode(os.urandom(16)).decode()
+req = (
+    'GET / HTTP/1.1\r\n'
+    'Host: 127.0.0.1:6080\r\n'
+    'Upgrade: websocket\r\n'
+    'Connection: Upgrade\r\n'
+    f'Sec-WebSocket-Key: {key}\r\n'
+    'Sec-WebSocket-Version: 13\r\n'
+    '\r\n'
+).encode()
+s.sendall(req)
+
+# Read upgrade response
+resp = b''
+while True:
+    chunk = s.recv(4096)
+    resp += chunk
+    if b'\r\n\r\n' in resp:
+        break
+print('WS Response:', resp.decode('utf-8', errors='replace').strip())
+
+# Now wait for VNC data via websocket frames
+print('Waiting for VNC data via websockify (10s)...')
+s.settimeout(10)
+try:
+    frame = s.recv(4096)
+    print(f'Got frame: {len(frame)} bytes, hex: {frame[:30].hex()}')
+except socket.timeout:
+    print('TIMEOUT: No VNC data received via websockify in 10s — DEADLOCK CONFIRMED')
+
+s.close()
+" 2>&1 || echo "python test failed"
+          echo ""
+
+          echo "=== 4. x11vnc process and version ==="
           kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-            timeout 10 nc -w 10 127.0.0.1 5900 2>/dev/null | od -c | head -5 || echo "no data from nc"
+            ps aux | grep x11vnc | grep -v grep
+            echo "---"
+            x11vnc -version 2>&1
+            echo "---"
+            dpkg -l | grep -i "libvnc\|x11vnc" 2>/dev/null || echo "no packages"
           ' 2>/dev/null || echo "exec failed"
           echo ""
 
-          echo "=== 6. x11vnc stderr log (last 30 lines) ==="
+          echo "=== 5. Check for alternative VNC servers ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            which Xvnc 2>/dev/null && echo "Xvnc available" || echo "Xvnc not found"
+            which tigervncserver 2>/dev/null && echo "tigervnc available" || echo "tigervnc not found"
+            dpkg -l 2>/dev/null | grep -i "tiger\|xvnc\|tightvnc" || echo "no alt vnc packages"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
+
+          echo "=== 6. x11vnc stderr log ==="
           kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -30 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
-          echo ""
-
-          echo "=== 7. Check x11vnc version ==="
-          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'x11vnc -version 2>&1 || echo "version failed"' 2>/dev/null || echo "exec failed"
