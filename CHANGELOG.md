@@ -6,6 +6,118 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.205] - 2026-03-14
+
+
+### CI
+
+- Ci: add workflow to debug x11vnc WebSocket auto-detection
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (a006375)
+
+
+
+### Fixed
+
+- Fix(vnc): remove x11vnc PostStart patch - TigerVNC doesn't need it
+
+The operative container now uses TigerVNC x0vncserver instead of x11vnc.
+TigerVNC doesn't need -nolookup/-noxdamage/-nap flags and speaks the
+RFB protocol correctly, so the PostStart lifecycle hook that patched
+the startup script is no longer needed.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f792e85)
+
+- Fix: remove broken YAML workflows, fix remaining ones
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (79707e6)
+
+
+
+### Other
+
+- Debug(vnc): deep diagnostic - x11vnc logs, strace, alternative VNC servers
+
+Need to understand why x11vnc ignores ALL data on accepted connections
+and find alternative VNC servers available in the container.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (757615e)
+
+- Debug(vnc): simplified RFB test against fresh x11vnc instance
+
+x11vnc was restarted by monitor loop and is now at 0.1% CPU (healthy).
+Tests normal RFB, RFB injection, WS upgrade, and websockify bridging.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (016f9c0)
+
+- Debug(vnc): fix restart test to use display :1 and only kill x11vnc process
+
+Previous run failed because it used display :0 but x11vnc runs on :1.
+Also killed the startup script wrapper unintentionally.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f1d3347)
+
+- Debug(vnc): add workflow to restart x11vnc and test all connection methods
+
+Hypothesis: x11vnc is stuck at 86% CPU in a bad state and not processing
+any connections. This workflow kills x11vnc, restarts it cleanly, and
+immediately tests RFB (normal + injection), WebSocket upgrade, and
+websockify bridging.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (3317c81)
+
+- Debug(vnc): add workflow to test WebSocket upgrade to x11vnc and websockify
+
+Tests two approaches:
+1. HTTP GET WebSocket upgrade directly to x11vnc:5900 (LibVNCServer checks for "G")
+2. WebSocket upgrade to websockify:6080 with RFB version injection via WS binary frame
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (1c017e0)
+
+- Debug(vnc): add comprehensive RFB protocol test workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (40390ec)
+
+- Debug(vnc): add gateway & agent VNC log check workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (fa73189)
+
+- Debug: new deadlock test workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (eae92c2)
+
+- Debug: repurpose force-start for deadlock test
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f056cbf)
+
+- Debug: repurpose gw-vnc-logs for deadlock test
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f23cfb2)
+
+- Debug: replace tunnel debug with deadlock + websockify test
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (b8e58ec)
+
+- Debug: update VNC WS debug with deadlock + websockify tests
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (70e13c6)
+
+- Debug: add VNC deadlock test workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (533f6e9)
+
+- Debug: add gateway VNC logs workflow
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (84a6e6b)
+
+- Debug: increase timeout to 5min
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (14039b2)
+
+- Debug: add VNC tunnel debug workflow for agent+operative containers
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (26e8eee)
+
 ## [0.1.41-rc.204] - 2026-03-14
 
 
