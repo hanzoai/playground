@@ -6,6 +6,101 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.206] - 2026-03-14
+
+
+### Fixed
+
+- Fix(cloud): add --security full --ask off to cloud agent node args
+
+Cloud agent pods were starting with default exec policy (security=deny,
+ask=on-miss), causing all terminal commands to be blocked with
+SYSTEM_RUN_DENIED: approval required. Cloud agents should run with
+full exec permissions since they're sandboxed containers.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (0bc4770)
+
+
+
+### Other
+
+- Add IAM import test workflow (6203a24)
+
+- Fix YAML indentation in IAM debug workflow (4e079cd)
+
+- Rename IAM debug workflow to force re-parse (fca2b27)
+
+- Re-add IAM debug workflow with module checks (10a1ab7)
+
+- Remove old IAM debug workflow (82ac048)
+
+- Trigger workflow re-parse (3c7968b)
+
+- Update IAM debug workflow with module checks (1383d05)
+
+- Add k8s IAM debug workflow for JWT validation troubleshooting
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d82d971)
+
+- Add gateway debug workflow (c50089f)
+
+- Add gateway connection debug workflow (d323d1d)
+
+- Add agent connection diagnostic workflow (93d3967)
+
+- Clean up 28 diagnostic workflow files from VNC debugging
+
+Remove 28 debug/diagnostic workflow files created during VNC
+troubleshooting. Keep only k8s-cleanup-agents.yml and
+k8s-reprovision-test.yml as useful operational tools.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (dc882d6)
+
+- Fix HAS_TIGER/X0_RUNNING checks — redirect stdout to /dev/null
+
+which and pgrep output was contaminating the variable, causing
+the equality check to fail.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (aa215c3)
+
+- Fix kill step exit code 137 in reprovision workflow
+
+Separate x11vnc kill and x0vncserver start into different kubectl
+exec calls with || true to prevent exit code propagation.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (b9f256a)
+
+- Add re-provision + TigerVNC hotfix + VNC test workflow
+
+Calls the provision API to create a new cloud agent pod, applies
+TigerVNC hotfix if the xvfb base hasn't rebuilt yet, then runs
+VNC protocol tests.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (12185a5)
+
+- Add restart + TigerVNC hotfix + E2E test workflow
+
+Restarts the agent pod to pick up new bot image (simplified
+invoke-vnc.ts), applies TigerVNC hotfix if xvfb base hasn't
+rebuilt yet, then runs VNC protocol tests.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (fec4787)
+
+- Debug(vnc): fix hotfix kill approach - use pgrep -x to avoid killing shell
+
+The killall command matched the startup script path which killed the
+kubectl exec session. Use pgrep -x for exact match instead.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (57974c7)
+
+- Debug(vnc): hotfix workflow - install TigerVNC and test in running pod
+
+Installs tigervnc-scraping-server directly in the running pod, kills
+x11vnc, starts x0vncserver, and tests that RFB protocol works correctly.
+This validates the fix before the Docker image rebuild completes.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (d1385e4)
+
 ## [0.1.41-rc.205] - 2026-03-14
 
 
