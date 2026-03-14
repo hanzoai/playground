@@ -33,27 +33,30 @@ jobs:
           kubectl exec "$POD" -n hanzo -c operative -- sh -c 'which x0vncserver && x0vncserver --version 2>&1 | head -2' 2>&1
 
           echo ""
-          echo "=== Step 2: Kill x11vnc and start x0vncserver ==="
+          echo "=== Step 2: Kill x11vnc process only (by PID) ==="
           kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-            # Kill x11vnc and its monitor
-            killall -9 x11vnc 2>/dev/null
-            # Kill the startup script monitor loop
-            for PID in $(pgrep -f x11vnc_startup); do kill -9 $PID 2>/dev/null; done
-            sleep 1
-            echo "Killed x11vnc and monitor"
-
-            # Start x0vncserver
-            x0vncserver -display :1 -rfbport 5900 -SecurityTypes None &
-            VNC_PID=$!
-            sleep 2
-
-            if kill -0 $VNC_PID 2>/dev/null; then
-              echo "x0vncserver running (PID=$VNC_PID)"
-              ps aux | grep x0vnc | grep -v grep
+            # Kill x11vnc by exact process match (not startup script)
+            X11PID=$(pgrep -x x11vnc 2>/dev/null || true)
+            if [ -n "$X11PID" ]; then
+              kill -9 $X11PID 2>/dev/null || true
+              echo "Killed x11vnc PID=$X11PID"
             else
-              echo "FAILED: x0vncserver not running"
-              exit 1
+              echo "x11vnc not running"
             fi
+            # Kill the monitor subshell
+            MONPID=$(pgrep -f "x11vnc_startup" 2>/dev/null || true)
+            if [ -n "$MONPID" ]; then
+              kill -9 $MONPID 2>/dev/null || true
+              echo "Killed monitor PID=$MONPID"
+            fi
+            sleep 1
+          ' 2>&1 || true
+
+          echo "=== Step 2b: Start x0vncserver ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            nohup x0vncserver -display :1 -rfbport 5900 -SecurityTypes None > /tmp/x0vnc.log 2>&1 &
+            sleep 2
+            ps aux | grep x0vnc | grep -v grep || echo "x0vncserver NOT running"
           ' 2>&1
 
           echo ""
