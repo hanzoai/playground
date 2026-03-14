@@ -1,0 +1,102 @@
+name: Check Agent Connection Status
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  check-connection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Find agent pod
+        id: pod
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+          echo "pod=$POD" >> "$GITHUB_OUTPUT"
+          if [ -z "$POD" ]; then
+            echo "No agent pod found!"
+            kubectl get pods -n hanzo --show-labels 2>/dev/null | head -20
+            exit 1
+          fi
+          echo "Found pod: $POD"
+          kubectl get pod "$POD" -n hanzo -o wide
+
+      - name: Check agent container env vars
+        run: |
+          POD="${{ steps.pod.outputs.pod }}"
+          echo "=== Key environment variables ==="
+          kubectl exec "$POD" -n hanzo -c agent -- sh -c '
+            echo "BOT_CLOUD_NODE=$BOT_CLOUD_NODE"
+            echo "BOT_NODE_GATEWAY_URL=$BOT_NODE_GATEWAY_URL"
+            echo "AGENT_NODE_ID=$AGENT_NODE_ID"
+            echo "PLAYGROUND_SERVER=$PLAYGROUND_SERVER"
+            echo "BOT_GATEWAY_TOKEN length=$(echo -n "$BOT_GATEWAY_TOKEN" | wc -c)"
+            echo "OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=$OPENCLAW_ALLOW_INSECURE_PRIVATE_WS"
+          ' 2>&1 || echo "Failed to read env vars"
+
+      - name: Check agent container processes
+        run: |
+          POD="${{ steps.pod.outputs.pod }}"
+          echo "=== Running processes ==="
+          kubectl exec "$POD" -n hanzo -c agent -- ps aux 2>&1 || echo "ps failed"
+
+      - name: Check agent container logs (last 100 lines)
+        run: |
+          POD="${{ steps.pod.outputs.pod }}"
+          echo "=== Agent container logs (last 100 lines) ==="
+          kubectl logs "$POD" -n hanzo -c agent --tail=100 2>&1
+
+      - name: Check agent container logs for errors
+        run: |
+          POD="${{ steps.pod.outputs.pod }}"
+          echo "=== Error/warning lines ==="
+          kubectl logs "$POD" -n hanzo -c agent --tail=500 2>&1 | grep -iE "error|fail|reject|disconnect|refused|timeout|crash|panic|ECONNREFUSED|ENOTFOUND" || echo "No error lines found"
+
+      - name: Check gateway connectivity from pod
+        run: |
+          POD="${{ steps.pod.outputs.pod }}"
+          echo "=== DNS resolution ==="
+          kubectl exec "$POD" -n hanzo -c agent -- sh -c '
+            # Check if gateway service is reachable
+            GW_URL="$BOT_NODE_GATEWAY_URL"
+            echo "Gateway URL: $GW_URL"
+
+            # Try internal service
+            nslookup bot-gateway.hanzo.svc 2>&1 || echo "DNS lookup failed for internal service"
+
+            # Try curl to gateway
+            if command -v curl >/dev/null 2>&1; then
+              echo ""
+              echo "=== Curl to gateway ==="
+              curl -s -o /dev/null -w "HTTP %{http_code}" --max-time 5 "http://bot-gateway.hanzo.svc:18789/" 2>&1 || echo "curl failed"
+            fi
+
+            # Check if websocket port is reachable
+            if command -v nc >/dev/null 2>&1; then
+              echo ""
+              echo "=== Netcat to gateway ==="
+              nc -z -w 5 bot-gateway.hanzo.svc 18789 && echo "Port 18789 reachable" || echo "Port 18789 NOT reachable"
+            fi
+          ' 2>&1 || echo "Connectivity check failed"
+
+      - name: Check K8s services in hanzo namespace
+        run: |
+          echo "=== Services ==="
+          kubectl get svc -n hanzo 2>&1
+          echo ""
+          echo "=== Endpoints for bot-gateway ==="
+          kubectl get endpoints bot-gateway -n hanzo 2>&1 || echo "No bot-gateway service found"
