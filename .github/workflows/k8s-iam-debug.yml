@@ -1,0 +1,98 @@
+name: Debug IAM Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug-iam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Check IAM service status
+        run: |
+          echo "=== IAM pods ==="
+          kubectl get pods -n hanzo | grep -i iam || echo "No IAM pods found"
+          echo ""
+          echo "=== IAM service ==="
+          kubectl get svc -n hanzo | grep -i iam || echo "No IAM service found"
+          echo ""
+          echo "=== IAM endpoints ==="
+          kubectl get endpoints -n hanzo | grep -i iam || echo "No IAM endpoints found"
+
+      - name: Test JWKS endpoint from gateway pod
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          echo "Using gateway pod: $GW_POD"
+          echo ""
+          echo "=== Fetch JWKS from internal URL ==="
+          kubectl exec "$GW_POD" -n hanzo -- sh -c '
+            curl -s --max-time 10 "http://iam.hanzo.svc.cluster.local/.well-known/jwks" 2>&1
+          ' || echo "JWKS fetch failed"
+          echo ""
+          echo "=== Fetch OIDC discovery ==="
+          kubectl exec "$GW_POD" -n hanzo -- sh -c '
+            curl -s --max-time 10 "http://iam.hanzo.svc.cluster.local/.well-known/openid-configuration" 2>&1
+          ' || echo "OIDC discovery failed"
+
+      - name: Test JWKS from external URL
+        run: |
+          echo "=== External JWKS ==="
+          curl -s --max-time 10 "https://hanzo.id/.well-known/jwks" 2>&1 | head -100
+          echo ""
+          echo "=== External OIDC discovery ==="
+          curl -s --max-time 10 "https://hanzo.id/.well-known/openid-configuration" 2>&1 | head -100
+
+      - name: Check gateway detailed auth logs
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          echo "=== Last 500 lines filtered for auth/iam/jwt/jwks ==="
+          kubectl logs "$GW_POD" -n hanzo --tail=500 2>&1 | grep -iE "iam|jwt|jwks|token|auth|validate|signature|expir|audience|issuer|claim|subject" | tail -40 || echo "No matching lines"
+
+      - name: Check IAM pod logs
+        run: |
+          IAM_POD=$(kubectl get pods -n hanzo -o name | grep -i iam | head -1 | sed 's|pod/||')
+          if [ -z "$IAM_POD" ]; then
+            echo "No IAM pod found"
+            exit 0
+          fi
+          echo "IAM pod: $IAM_POD"
+          echo "=== IAM pod logs (last 100) ==="
+          kubectl logs "$IAM_POD" -n hanzo --tail=100 2>&1
+
+      - name: DNS resolution test from gateway
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          echo "=== DNS for iam.hanzo.svc.cluster.local ==="
+          kubectl exec "$GW_POD" -n hanzo -- sh -c '
+            cat /etc/resolv.conf
+            echo "---"
+            # Try getent
+            getent hosts iam.hanzo.svc.cluster.local 2>&1 || echo "getent failed"
+            echo "---"
+            # Try wget as alternative to nslookup
+            wget -q -O- --timeout=5 "http://iam.hanzo.svc.cluster.local/.well-known/jwks" 2>&1 | head -20 || echo "wget failed"
+          ' 2>&1 || echo "DNS test failed"
+
+      - name: Check gateway config IAM section
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          kubectl exec "$GW_POD" -n hanzo -- cat /etc/bot/bot.json 2>&1 | python3 -c "
+          import json, sys
+          cfg = json.load(sys.stdin)
+          iam = cfg.get('gateway',{}).get('auth',{}).get('iam',{})
+          print(json.dumps(iam, indent=2))
+          " 2>&1 || echo "Config parse failed"
