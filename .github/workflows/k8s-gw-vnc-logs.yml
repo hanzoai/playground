@@ -1,0 +1,57 @@
+name: Gateway VNC Logs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Get gateway VNC logs
+        run: |
+          echo "=== Gateway pods ==="
+          kubectl get pods -n hanzo -l app=bot-gateway -o wide 2>/dev/null || echo "no gateway pods found"
+          echo ""
+
+          echo "=== Gateway pod count ==="
+          GW_PODS=$(kubectl get pods -n hanzo -l app=bot-gateway -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          echo "Pods: $GW_PODS"
+          POD_COUNT=$(echo "$GW_PODS" | wc -w)
+          echo "Count: $POD_COUNT"
+          echo ""
+
+          for GW in $GW_PODS; do
+            echo "========================================"
+            echo "GATEWAY: $GW"
+            echo "========================================"
+
+            echo "=== VNC proxy logs (last 100 lines) ==="
+            kubectl logs "$GW" -n hanzo --tail=100 2>/dev/null | grep -i "vnc-proxy\|vnc\|tunnel" || echo "no vnc logs"
+            echo ""
+
+            echo "=== Recent errors (last 50 lines) ==="
+            kubectl logs "$GW" -n hanzo --tail=50 2>/dev/null | grep -i "error\|warn\|ERR\|WARN" || echo "no errors"
+            echo ""
+          done
+
+          echo "=== Gateway service ==="
+          kubectl get svc -n hanzo | grep -i gateway 2>/dev/null || echo "no gateway svc"
+          echo ""
+
+          echo "=== Gateway deployment replicas ==="
+          kubectl get deployment -n hanzo | grep -i gateway 2>/dev/null || echo "no gateway deployment"
