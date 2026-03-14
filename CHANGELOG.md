@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.204] - 2026-03-14
+
+
+### CI
+
+- Ci: add workflow to force-start x11vnc with correct flags
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (c1ab8ac)
+
+
+
+### Fixed
+
+- Fix(provisioner): remove invalid -nowsock flag from x11vnc PostStart
+
+-nowsock is not a recognized x11vnc option and causes x11vnc to exit
+immediately after startup. This was preventing x11vnc from running in
+operative containers, breaking VNC Desktop access. Keep -nap -nolookup
+-noxdamage which are valid and needed.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (ded1afd)
+
+- Fix(ci): remove invalid -nowsock flag, use only valid x11vnc options
+
+-nowsock is not a recognized x11vnc option and causes it to exit
+immediately. This was the reason x11vnc wouldn't restart after being
+killed. Use -nap (reduces CPU) with -nolookup -noxdamage only.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6e6b3bf)
+
 ## [0.1.41-rc.203] - 2026-03-14
 
 
