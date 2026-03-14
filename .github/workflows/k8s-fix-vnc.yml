@@ -1,0 +1,68 @@
+name: Fix VNC in Running Pods
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  fix-vnc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Restart x11vnc with -nolookup in all operative containers
+        run: |
+          echo "=== Finding all agent pods with operative sidecar ==="
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          if [ -z "$PODS" ]; then
+            echo "No agent pods found"
+            exit 0
+          fi
+          echo "Agent pods: $PODS"
+          echo ""
+
+          for POD in $PODS; do
+            echo "=== Fixing x11vnc in pod: $POD ==="
+
+            # Check if operative container exists
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then
+              echo "  No operative container in $POD, skipping"
+              continue
+            fi
+
+            # Kill old x11vnc and start fresh with fixed flags
+            echo "  Restarting x11vnc with -nolookup -noxdamage -nap flags..."
+            kubectl exec "$POD" -n hanzo -c operative -- /bin/sh -c \
+              "pkill -f x11vnc 2>/dev/null; sleep 1; nohup x11vnc -display :1 -forever -shared -wait 200 -rfbport 5900 -nopw -nolookup -noxdamage -nap > /tmp/x11vnc_fixed.log 2>&1 &" \
+              && echo "  Done: x11vnc restarted in $POD" \
+              || echo "  Warning: exec failed for $POD (pod may be starting up)"
+
+            echo ""
+          done
+
+      - name: Verify x11vnc listening on all pods
+        run: |
+          sleep 3
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+
+            echo "=== Checking x11vnc in $POD ==="
+            kubectl exec "$POD" -n hanzo -c operative -- /bin/sh -c \
+              "ss -tlnp | grep 5900 || netstat -tlnp 2>/dev/null | grep 5900 || echo 'port check failed'" \
+              2>/dev/null || echo "  exec failed"
+            echo ""
+          done
