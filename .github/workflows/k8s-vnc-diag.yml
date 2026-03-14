@@ -1,0 +1,136 @@
+name: VNC Deep Diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Diagnose x11vnc and find alternatives
+        run: |
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}')
+
+          cat > /tmp/diag.py << 'PYEOF'
+          import subprocess, socket, time, os
+
+          def run(cmd):
+              r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+              return r.stdout.strip() + ("\nSTDERR: " + r.stderr.strip() if r.stderr.strip() else "")
+
+          print("=== 1. x11vnc stderr log ===")
+          print(run("cat /tmp/x11vnc_stderr.log 2>/dev/null || echo 'no log'"))
+
+          print("\n=== 2. x11vnc version details ===")
+          print(run("x11vnc -version 2>&1 | head -5"))
+
+          print("\n=== 3. Available VNC servers ===")
+          for cmd in ["Xvnc", "vncserver", "tigervnc", "tightvncserver", "Xtigervnc"]:
+              r = subprocess.run(["which", cmd], capture_output=True, text=True)
+              if r.returncode == 0:
+                  print(f"  FOUND: {cmd} at {r.stdout.strip()}")
+                  v = subprocess.run([cmd, "-version"], capture_output=True, text=True)
+                  print(f"    version: {(v.stdout + v.stderr).strip()[:200]}")
+              else:
+                  print(f"  NOT FOUND: {cmd}")
+
+          print("\n=== 4. libvncserver version ===")
+          print(run("dpkg -l | grep -i vnc 2>/dev/null || echo 'no dpkg'"))
+          print(run("ldconfig -p 2>/dev/null | grep -i vnc || echo 'no ldconfig'"))
+
+          print("\n=== 5. Try strace on accept (need to see what x11vnc does on connect) ===")
+          # Kill current x11vnc and restart with strace
+          print(run("killall -9 x11vnc 2>/dev/null; sleep 1; echo 'killed'"))
+          time.sleep(2)
+
+          # Start x11vnc and capture strace output
+          env = os.environ.copy()
+          env["DISPLAY"] = ":1"
+
+          # First check if strace is available
+          r = subprocess.run(["which", "strace"], capture_output=True, text=True)
+          if r.returncode != 0:
+              print("strace not available, trying ltrace...")
+              r2 = subprocess.run(["which", "ltrace"], capture_output=True, text=True)
+              if r2.returncode != 0:
+                  print("ltrace not available either. Starting x11vnc normally...")
+                  proc = subprocess.Popen(
+                      ["x11vnc", "-display", ":1", "-forever", "-shared",
+                       "-nopw", "-nolookup", "-noxdamage", "-nap",
+                       "-rfbport", "5900", "-o", "/tmp/x11vnc_diag.log"],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+              else:
+                  proc = subprocess.Popen(
+                      ["ltrace", "-e", "recv+send+accept+select+poll", "-o", "/tmp/x11vnc_ltrace.log",
+                       "x11vnc", "-display", ":1", "-forever", "-shared",
+                       "-nopw", "-nolookup", "-noxdamage", "-nap",
+                       "-rfbport", "5900", "-o", "/tmp/x11vnc_diag.log"],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+          else:
+              proc = subprocess.Popen(
+                  ["strace", "-f", "-e", "trace=network,read,write", "-o", "/tmp/x11vnc_strace.log",
+                   "x11vnc", "-display", ":1", "-forever", "-shared",
+                   "-nopw", "-nolookup", "-noxdamage", "-nap",
+                   "-rfbport", "5900", "-o", "/tmp/x11vnc_diag.log"],
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+
+          print(f"Started x11vnc (PID={proc.pid})")
+          time.sleep(3)
+
+          if proc.poll() is not None:
+              print(f"x11vnc exited: {proc.returncode}")
+              print(run("cat /tmp/x11vnc_diag.log 2>/dev/null"))
+          else:
+              print(f"x11vnc running, state: {run(f'ps -p {proc.pid} -o stat --no-headers')}")
+
+          # Now make a test connection
+          print("\n=== 6. Connect and check what x11vnc does ===")
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.settimeout(3)
+          try:
+              s.connect(("127.0.0.1", 5900))
+              print("Connected, waiting 3s for data...")
+              try:
+                  data = s.recv(100)
+                  print(f"Got: {data!r}")
+              except socket.timeout:
+                  print("TIMEOUT (no data)")
+          except Exception as e:
+              print(f"Connect error: {e}")
+          s.close()
+          time.sleep(1)
+
+          print("\n=== 7. x11vnc diagnostic log ===")
+          print(run("cat /tmp/x11vnc_diag.log 2>/dev/null | tail -50"))
+
+          print("\n=== 8. strace/ltrace output (last 50 lines) ===")
+          for f in ["/tmp/x11vnc_strace.log", "/tmp/x11vnc_ltrace.log"]:
+              content = run(f"tail -50 {f} 2>/dev/null")
+              if content and "No such file" not in content:
+                  print(f"--- {f} ---")
+                  print(content)
+
+          print("\n=== 9. Check if x11vnc -rawfb can bypass MSG_PEEK ===")
+          print(run("x11vnc -help 2>&1 | grep -A5 'libvncserver-config\\|LibVNCServer version' || echo 'no version info in help'"))
+
+          print("\n=== 10. apt list available VNC packages ===")
+          print(run("apt list 2>/dev/null | grep -iE 'vnc|tigervnc|tightvnc|xvnc' || echo 'no apt'"))
+          PYEOF
+
+          kubectl cp /tmp/diag.py "$POD":/tmp/diag.py -n hanzo -c operative
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 30 python3 /tmp/diag.py 2>&1
