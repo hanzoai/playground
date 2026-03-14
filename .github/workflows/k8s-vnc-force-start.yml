@@ -12,7 +12,7 @@ env:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
@@ -22,50 +22,66 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Fix startup script and force-start x11vnc
+      - name: Test VNC deadlock
         run: |
-          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
-          for POD in $PODS; do
-            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
-            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
-            echo "=== $POD ==="
+          POD=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          echo "Pod: $POD"
 
-            echo "1. Remove invalid -nowsock from startup script..."
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-              SCRIPT=/home/operative/.operative/x11vnc_startup.sh
-              # Remove -nowsock (invalid flag that crashes x11vnc)
-              sed -i "s/ -nowsock//g" "$SCRIPT" 2>/dev/null
-              # Ensure -nap -nolookup -noxdamage are present
-              if ! grep -q "\-nap" "$SCRIPT" 2>/dev/null; then
-                sed -i "s/-nopw/-nopw -nolookup -noxdamage -nap/" "$SCRIPT" 2>/dev/null
-              fi
-              echo "Script now:"
-              cat "$SCRIPT"
-            ' 2>/dev/null || echo "patch failed"
-            echo ""
+          echo "=== 1. Direct TCP to x11vnc:5900 - wait 5s ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 5 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3" 2>/dev/null | xxd | head -5 || echo "DEADLOCK: no data in 5s"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "2. Kill any existing x11vnc and start fresh..."
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-              pkill -x x11vnc 2>/dev/null || true
-              sleep 1
-              # Start with valid flags only (no -nowsock!)
-              x11vnc -display :1 -forever -shared -wait 50 -rfbport 5900 -nopw -nolookup -noxdamage -nap </dev/null >/dev/null 2>/tmp/x11vnc_stderr.log &
-              echo "Started PID $!"
-              sleep 3
-            ' 2>/dev/null || echo "start failed"
+          echo "=== 2. Send RFB version FIRST to break deadlock ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            timeout 8 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; printf \"RFB 003.008\n\" >&3; head -c 200 <&3" 2>/dev/null | xxd | head -10 || echo "no response"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "3. Verify running:"
-            kubectl exec "$POD" -n hanzo -c operative -- pgrep -xa x11vnc 2>/dev/null || echo "not running"
+          echo "=== 3. websockify data flow test ==="
+          kubectl exec "$POD" -n hanzo -c operative -- timeout 25 python3 -c "
+import socket, time, os, base64
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(5)
+s.connect(('127.0.0.1', 6080))
+key = base64.b64encode(os.urandom(16)).decode()
+req = ('GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ' + key + '\r\nSec-WebSocket-Version: 13\r\n\r\n').encode()
+s.sendall(req)
+resp = b''
+while True:
+    chunk = s.recv(4096)
+    resp += chunk
+    if b'\r\n\r\n' in resp:
+        break
+print('WS upgrade:', resp.decode('utf-8', errors='replace').strip())
+print('Waiting 15s for VNC data from websockify...')
+s.settimeout(15)
+try:
+    frame = s.recv(4096)
+    print(f'Got: {len(frame)} bytes hex={frame[:30].hex()}')
+except socket.timeout:
+    print('DEADLOCK CONFIRMED: No VNC data via websockify in 15s')
+s.close()
+" 2>&1 || echo "python test failed"
+          echo ""
 
-            echo "4. Port 5900:"
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ss -tlnp | grep 5900' 2>/dev/null || echo "not listening"
+          echo "=== 4. x11vnc info ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            ps aux | grep x11vnc | grep -v grep
+            echo "---"
+            x11vnc -version 2>&1 | head -3
+            echo "---"
+            dpkg -l 2>/dev/null | grep -i "libvnc\|x11vnc" || echo "no packages"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "5. CPU usage:"
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ps aux | grep x11vnc | grep -v grep' 2>/dev/null || echo "failed"
+          echo "=== 5. Alt VNC servers? ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+            which Xvnc 2>/dev/null && echo "Xvnc found" || echo "Xvnc not found"
+            which vncserver 2>/dev/null && echo "vncserver found" || echo "vncserver not found"
+          ' 2>/dev/null || echo "exec failed"
+          echo ""
 
-            echo "6. VNC handshake test (should show RFB banner):"
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-              timeout 3 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3 & sleep 1; kill %1 2>/dev/null" 2>/dev/null || echo "handshake failed"
-            ' 2>/dev/null || echo "exec failed"
-            echo ""
-          done
+          echo "=== 6. x11vnc stderr ==="
+          kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -20 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
