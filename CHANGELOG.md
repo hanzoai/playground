@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.201] - 2026-03-14
+
+
+### Fixed
+
+- Fix(cloud): use for range instead of for{select{}} in heartbeat loop (gosimple S1000)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7e224a4)
+
+- Fix(ci): fix YAML syntax error in k8s-fix-vnc workflow
+
+Replaced heredoc shell syntax (which breaks YAML parsing) with printf
+to write the x11vnc startup script. The workflow now properly has the
+workflow_dispatch trigger recognized by GitHub Actions.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (a354cac)
+
 ## [0.1.41-rc.200] - 2026-03-14
 
 
