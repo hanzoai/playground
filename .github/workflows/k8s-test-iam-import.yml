@@ -1,0 +1,124 @@
+name: Test IAM Import in Gateway
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  test-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Check auth.js references to auth-iam
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          echo "=== Find auth-iam references in compiled JS ==="
+          kubectl exec "$GW_POD" -n hanzo -- sh -c '
+            echo "--- auth-iam dist files ---"
+            ls -la /app/dist/auth-iam* 2>/dev/null
+            echo ""
+            echo "--- grep for auth-iam in all dist JS files ---"
+            grep -rl "auth-iam" /app/dist/*.js 2>/dev/null | head -10
+            echo ""
+            echo "--- grep context of auth-iam references ---"
+            grep -n "auth-iam" /app/dist/*.js 2>/dev/null | head -20
+          ' 2>&1
+
+      - name: Test dynamic import path resolution
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          kubectl exec "$GW_POD" -n hanzo -- node -e '
+            async function testImport() {
+              // Test 1: Try importing ./auth-iam.js (the path used in auth.ts)
+              console.log("Test 1: import ./auth-iam.js from /app/dist/");
+              try {
+                process.chdir("/app/dist");
+                const mod = await import("./auth-iam.js");
+                console.log("  SUCCESS - exports:", Object.keys(mod));
+              } catch(e) {
+                console.log("  FAILED:", e.code, e.message.substring(0, 200));
+              }
+
+              // Test 2: Try the hashed filenames
+              console.log("\nTest 2: Try hashed filenames");
+              const fs = await import("fs");
+              const files = fs.readdirSync("/app/dist").filter(f => f.startsWith("auth-iam"));
+              for (const f of files) {
+                try {
+                  const mod = await import("./" + f);
+                  console.log("  " + f + " - SUCCESS, exports:", Object.keys(mod));
+                } catch(e) {
+                  console.log("  " + f + " - FAILED:", e.message.substring(0, 100));
+                }
+              }
+
+              // Test 3: Try importing from the main gateway module context
+              console.log("\nTest 3: Check how auth.js resolves auth-iam");
+              const authFiles = fs.readdirSync("/app/dist").filter(f => f.startsWith("auth-") && !f.startsWith("auth-iam"));
+              console.log("  auth files:", authFiles);
+              for (const f of authFiles) {
+                try {
+                  const content = fs.readFileSync("/app/dist/" + f, "utf8");
+                  const matches = content.match(/auth-iam[^"'\''\s]*/g);
+                  if (matches) {
+                    console.log("  " + f + " references:", [...new Set(matches)]);
+                  }
+                } catch(e) {
+                  console.log("  " + f + " read failed:", e.message.substring(0, 100));
+                }
+              }
+            }
+            testImport().catch(e => console.error("Test failed:", e));
+          ' 2>&1
+
+      - name: Test actual token validation
+        run: |
+          GW_POD=$(kubectl get pods -n hanzo -o name | grep bot-gateway | head -1 | sed 's|pod/||')
+          kubectl exec "$GW_POD" -n hanzo -- node -e '
+            async function testValidation() {
+              // Find and import the auth-iam module
+              const fs = await import("fs");
+              process.chdir("/app/dist");
+              const files = fs.readdirSync(".").filter(f => f.startsWith("auth-iam") && f.endsWith(".js"));
+
+              for (const f of files) {
+                console.log("Trying " + f + "...");
+                try {
+                  const mod = await import("./" + f);
+                  if (typeof mod.validateIamToken === "function") {
+                    console.log("Found validateIamToken in " + f);
+
+                    // Try to validate a dummy token to see the error
+                    const config = {
+                      serverUrl: "http://iam.hanzo.svc.cluster.local",
+                      clientId: "hanzobot-client-id",
+                      orgName: "hanzo",
+                      appName: "app-hanzobot",
+                      jwksUrl: "http://iam.hanzo.svc.cluster.local/.well-known/jwks"
+                    };
+
+                    // Test with a clearly invalid token
+                    const result = await mod.validateIamToken("invalid.test.token", config);
+                    console.log("Dummy token result:", JSON.stringify(result));
+                    break;
+                  }
+                } catch(e) {
+                  console.log(f + " import/test failed:", e.message.substring(0, 200));
+                }
+              }
+            }
+            testValidation().catch(e => console.error(e.message));
+          ' 2>&1
