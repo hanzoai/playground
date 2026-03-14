@@ -22,7 +22,7 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Debug and force-start x11vnc
+      - name: Fix startup script and force-start x11vnc
         run: |
           PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
           for POD in $PODS; do
@@ -30,38 +30,42 @@ jobs:
             if [ -z "$HAS_OPERATIVE" ]; then continue; fi
             echo "=== $POD ==="
 
-            echo "1. All processes:"
-            kubectl exec "$POD" -n hanzo -c operative -- ps aux 2>/dev/null || echo "ps failed"
-            echo ""
-
-            echo "2. Startup script content:"
-            kubectl exec "$POD" -n hanzo -c operative -- cat /home/operative/.operative/x11vnc_startup.sh 2>/dev/null || echo "not found"
-            echo ""
-
-            echo "3. x11vnc stderr log:"
-            kubectl exec "$POD" -n hanzo -c operative -- cat /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"
-            echo ""
-
-            echo "4. DISPLAY and X server check:"
-            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'echo "DISPLAY=$DISPLAY"; ls -la /tmp/.X*-lock 2>/dev/null || echo "no X lock"; DISPLAY=:1 xdpyinfo 2>&1 | head -5 || echo "xdpyinfo failed"' 2>/dev/null || echo "exec failed"
-            echo ""
-
-            echo "5. Force starting x11vnc with -nowsock -nap..."
+            echo "1. Remove invalid -nowsock from startup script..."
             kubectl exec "$POD" -n hanzo -c operative -- sh -c '
-              # Kill any existing
+              SCRIPT=/home/operative/.operative/x11vnc_startup.sh
+              # Remove -nowsock (invalid flag that crashes x11vnc)
+              sed -i "s/ -nowsock//g" "$SCRIPT" 2>/dev/null
+              # Ensure -nap -nolookup -noxdamage are present
+              if ! grep -q "\-nap" "$SCRIPT" 2>/dev/null; then
+                sed -i "s/-nopw/-nopw -nolookup -noxdamage -nap/" "$SCRIPT" 2>/dev/null
+              fi
+              echo "Script now:"
+              cat "$SCRIPT"
+            ' 2>/dev/null || echo "patch failed"
+            echo ""
+
+            echo "2. Kill any existing x11vnc and start fresh..."
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
               pkill -x x11vnc 2>/dev/null || true
               sleep 1
-              # Start directly with correct flags
-              x11vnc -display :1 -forever -shared -wait 50 -rfbport 5900 -nopw -nolookup -noxdamage -nap -nowsock </dev/null >/dev/null 2>/tmp/x11vnc_stderr.log &
+              # Start with valid flags only (no -nowsock!)
+              x11vnc -display :1 -forever -shared -wait 50 -rfbport 5900 -nopw -nolookup -noxdamage -nap </dev/null >/dev/null 2>/tmp/x11vnc_stderr.log &
               echo "Started PID $!"
               sleep 3
             ' 2>/dev/null || echo "start failed"
 
-            echo "6. Verify running:"
+            echo "3. Verify running:"
             kubectl exec "$POD" -n hanzo -c operative -- pgrep -xa x11vnc 2>/dev/null || echo "not running"
-            echo ""
 
-            echo "7. Port 5900:"
+            echo "4. Port 5900:"
             kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ss -tlnp | grep 5900' 2>/dev/null || echo "not listening"
+
+            echo "5. CPU usage:"
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ps aux | grep x11vnc | grep -v grep' 2>/dev/null || echo "failed"
+
+            echo "6. VNC handshake test (should show RFB banner):"
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              timeout 3 bash -c "exec 3<>/dev/tcp/127.0.0.1/5900; cat <&3 & sleep 1; kill %1 2>/dev/null" 2>/dev/null || echo "handshake failed"
+            ' 2>/dev/null || echo "exec failed"
             echo ""
           done
