@@ -1,0 +1,46 @@
+name: Start VNC Clean
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Start x11vnc with correct flags
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            HAS_OPERATIVE=$(kubectl get pod "$POD" -n hanzo -o jsonpath='{.spec.containers[?(@.name=="operative")].name}' 2>/dev/null)
+            if [ -z "$HAS_OPERATIVE" ]; then continue; fi
+            echo "=== $POD: starting x11vnc ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              killall -9 x11vnc 2>/dev/null || true
+              sleep 1
+              DISPLAY=:1 x11vnc -display :1 -forever -shared -wait 50 -rfbport 5900 -nopw -nolookup -noxdamage > /tmp/x11vnc_clean.log 2>&1 &
+              echo "Started x11vnc PID=$!"
+              sleep 3
+              echo "=== processes ==="
+              ps aux | grep x11vnc | grep -v grep || echo "  none"
+              echo "=== port 5900 ==="
+              ss -tlnp 2>/dev/null | grep 5900 || echo "  no listener"
+              echo "=== VNC handshake ==="
+              (echo "" | timeout 2 nc -w1 127.0.0.1 5900 | head -c 20) 2>/dev/null; echo ""
+              echo "=== x11vnc log ==="
+              tail -5 /tmp/x11vnc_clean.log 2>/dev/null || echo "  no log"
+            ' 2>/dev/null || echo "exec failed"
+          done
