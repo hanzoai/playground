@@ -1,0 +1,80 @@
+name: VNC Tunnel Debug (Agent + Operative)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
+
+      - name: Debug VNC tunnel on all playground pods
+        run: |
+          PODS=$(kubectl get pods -n hanzo -l "playground.hanzo.ai/type" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+          for POD in $PODS; do
+            echo "========================================"
+            echo "POD: $POD"
+            echo "========================================"
+
+            echo "=== Pod status ==="
+            kubectl get pod "$POD" -n hanzo -o jsonpath='{.status.phase}' 2>/dev/null
+            echo ""
+
+            echo "=== Container statuses ==="
+            kubectl get pod "$POD" -n hanzo -o jsonpath='{range .status.containerStatuses[*]}{.name}: ready={.ready}, state={.state}{"\n"}{end}' 2>/dev/null
+            echo ""
+
+            echo "=== 1. Agent container logs (last 50 lines, VNC related) ==="
+            kubectl logs "$POD" -n hanzo -c agent --tail=50 2>/dev/null | grep -i "vnc\|tunnel\|websock\|6080\|5900\|invoke" || echo "no vnc-related logs"
+            echo ""
+
+            echo "=== 2. Agent container ALL recent logs (last 30 lines) ==="
+            kubectl logs "$POD" -n hanzo -c agent --tail=30 2>/dev/null || echo "no agent logs"
+            echo ""
+
+            echo "=== 3. Operative: websockify process ==="
+            kubectl exec "$POD" -n hanzo -c operative -- ps aux 2>/dev/null | grep -E "websockify|x11vnc|Xvfb" || echo "no processes found"
+            echo ""
+
+            echo "=== 4. Operative: port 6080 (websockify) listening? ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'ss -tlnp | grep -E "6080|5900"' 2>/dev/null || echo "ports not found"
+            echo ""
+
+            echo "=== 5. Operative: test websockify WS handshake on 6080 ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c '
+              if command -v curl >/dev/null 2>&1; then
+                curl -v --no-buffer -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" http://127.0.0.1:6080/ 2>&1 | head -20
+              else
+                echo "curl not available, trying nc..."
+                printf "GET / HTTP/1.1\r\nHost: 127.0.0.1:6080\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n" | timeout 3 nc 127.0.0.1 6080 2>/dev/null | head -10 || echo "nc failed"
+              fi
+            ' 2>/dev/null || echo "exec failed"
+            echo ""
+
+            echo "=== 6. Operative: x11vnc stderr log ==="
+            kubectl exec "$POD" -n hanzo -c operative -- sh -c 'tail -20 /tmp/x11vnc_stderr.log 2>/dev/null || echo "no log"' 2>/dev/null || echo "exec failed"
+            echo ""
+
+            echo "=== 7. Agent: check BOT_VNC_PORT env ==="
+            kubectl exec "$POD" -n hanzo -c agent -- sh -c 'echo "BOT_VNC_PORT=$BOT_VNC_PORT BOT_VNC_HOST=$BOT_VNC_HOST"' 2>/dev/null || echo "exec failed"
+            echo ""
+
+            echo "=== 8. Agent: can it reach operative port 6080? ==="
+            kubectl exec "$POD" -n hanzo -c agent -- sh -c '
+              timeout 3 bash -c "exec 3<>/dev/tcp/127.0.0.1/6080 && echo CONNECTED || echo FAILED"' 2>/dev/null || echo "exec failed"
+            echo ""
+          done
