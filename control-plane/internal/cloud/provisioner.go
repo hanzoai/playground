@@ -377,20 +377,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Memory:   "512Mi",
 			LimitCPU: "1000m",
 			LimitMem: "2Gi",
-			// Fix x11vnc: the operative image's startup script starts x11vnc
-			// without critical flags for K8s:
-			//   -nolookup  — reverse DNS lookup blocks VNC handshake in K8s
-			//   -noxdamage — prevents CPU spin from XDAMAGE events
-			//   -nap       — reduces idle CPU usage
-			//   Note: -nowsock is NOT a valid x11vnc option and causes it to
-			//   exit immediately. WebSocket auto-detect is fine for raw TCP.
-			// We patch the startup script and kill x11vnc so the monitor loop
-			// restarts it with the corrected command line.
-			PostStart: []string{"/bin/sh", "-c",
-				"sleep 3; " +
-					"sed -i 's/-nopw/-nopw -nolookup -noxdamage -nap/' /home/operative/.operative/x11vnc_startup.sh 2>/dev/null; " +
-					"PID=$(pgrep -x x11vnc 2>/dev/null); [ -n \"$PID\" ] && kill \"$PID\" 2>/dev/null; " +
-					"true"},
+			// PostStart hook removed: the operative image now uses TigerVNC
+			// (x0vncserver) instead of x11vnc. TigerVNC speaks the RFB
+			// protocol correctly and doesn't need the -nolookup/-noxdamage
+			// flags that x11vnc required.
 		})
 	}
 
