@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.218] - 2026-03-15
+
+
+### Fixed
+
+- Fix(auth): persist IAM session across browser restarts
+
+The IAM SDK stores tokens in sessionStorage which is cleared when the
+browser closes. The token was already being cached in localStorage via
+setGlobalIamToken(), but on reopening the browser, nobody restored it
+to sessionStorage. Now on startup, we restore the cached token from
+localStorage to sessionStorage so the IAM SDK finds it and treats the
+user as authenticated without forcing another login redirect.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6abf3da)
+
 ## [0.1.41-rc.217] - 2026-03-15
 
 
