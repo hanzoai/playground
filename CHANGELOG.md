@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.219] - 2026-03-15
+
+
+### Fixed
+
+- Fix(auth): fallback to public IAM endpoint for OAuth token exchange
+
+When the internal IAM service (iam.hanzo.svc:8000) is unreachable, the
+auth proxy now falls back to the public endpoint (hanzo.id) for token
+exchange and userinfo requests. This fixes the 502 Bad Gateway error
+during login when the in-cluster IAM service is down.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (3264bcc)
+
 ## [0.1.41-rc.218] - 2026-03-15
 
 
