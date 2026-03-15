@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.220] - 2026-03-15
+
+
+### Fixed
+
+- Fix(auth): handle PKCE error and stale token deadlock in login flow
+
+AuthGuard would get stuck on "Loading..." when sessionStorage had a
+stale access token (restored from localStorage). The stale token check
+prevented signinRedirect() from being called, so no PKCE code_verifier
+was stored. Added a 3-second timeout to clear stale tokens and trigger
+fresh login.
+
+AuthCallbackPage now auto-retries login on PKCE error instead of
+showing a dead-end error page.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7c85c95)
+
 ## [0.1.41-rc.219] - 2026-03-15
 
 
