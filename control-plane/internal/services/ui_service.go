@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,8 +126,11 @@ func (s *UIService) getReconciledNodeStatus(nodeID string, node *types.Node) (ty
 		logger.Logger.Warn().Err(err).Msgf("⚠️  Failed to get cached status for node %s, using fallback", nodeID)
 	}
 
-	// Fallback to BotService if StatusManager is not available
-	if s.botService != nil {
+	// Fallback to BotService if StatusManager is not available.
+	// Skip BotService for cloud nodes — it uses local process checks (kill -0)
+	// which don't apply to remote pods. Cloud nodes rely on heartbeats instead.
+	isCloudNode := strings.HasPrefix(nodeID, "cloud-") || node.DeploymentType == "long_running"
+	if s.botService != nil && !isCloudNode {
 		agentStatus, err := s.botService.GetBotStatus(nodeID)
 		if err == nil && agentStatus != nil {
 			// BotService provides the authoritative running state
