@@ -149,6 +149,9 @@ func (m *MockStorageProvider) GetLockStatus(ctx context.Context, key string) (*t
 func (m *MockStorageProvider) RegisterNode(ctx context.Context, agent *types.Node) error {
 	return nil
 }
+func (m *MockStorageProvider) DeleteNode(ctx context.Context, id string) error {
+	return nil
+}
 func (m *MockStorageProvider) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	return nil, nil
 }

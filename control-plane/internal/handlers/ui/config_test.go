@@ -234,6 +234,11 @@ func (m *MockStorageProvider) RegisterNode(ctx context.Context, agent *types.Nod
 	return args.Error(0)
 }
 
+func (m *MockStorageProvider) DeleteNode(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockStorageProvider) GetNode(ctx context.Context, id string) (*types.Node, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {

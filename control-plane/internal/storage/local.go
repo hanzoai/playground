@@ -4315,6 +4315,38 @@ func (ls *LocalStorage) RegisterNode(ctx context.Context, agent *types.Node) err
 	return nil
 }
 
+// DeleteNode removes a node and its associated DID entries from the database.
+func (ls *LocalStorage) DeleteNode(ctx context.Context, id string) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context cancelled during delete node: %w", err)
+	}
+	tx, err := ls.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction for node deletion: %w", err)
+	}
+	defer rollbackTx(tx, "DeleteNode:"+id)
+
+	// Delete from DID registry
+	if _, err := tx.ExecContext(ctx, `DELETE FROM did_registry WHERE agent_id = ?`, id); err != nil {
+		return fmt.Errorf("failed to delete DID entries for node %s: %w", id, err)
+	}
+
+	// Delete the node itself
+	result, err := tx.ExecContext(ctx, `DELETE FROM nodes WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete node %s: %w", id, err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("node %s not found in database", id)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit node deletion: %w", err)
+	}
+	return nil
+}
+
 // executeRegisterNode performs the actual agent registration using DBTX interface
 func (ls *LocalStorage) executeRegisterNode(ctx context.Context, q DBTX, agent *types.Node) error {
 	query := `

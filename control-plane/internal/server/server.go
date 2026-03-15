@@ -1153,7 +1153,7 @@ func (s *PlaygroundServer) setupRoutes() {
 // registerCloudRoutes registers cloud provisioning endpoints on the given router group.
 func (s *PlaygroundServer) registerCloudRoutes(cloudAPI *gin.RouterGroup) {
 	cloudAPI.POST("/nodes/provision", handlers.CloudProvisionHandler(s.cloudProvisioner))
-	cloudAPI.DELETE("/nodes/:node_id", handlers.CloudDeprovisionHandler(s.cloudProvisioner))
+	cloudAPI.DELETE("/nodes/:node_id", handlers.CloudDeprovisionHandler(s.cloudProvisioner, s.storage))
 	cloudAPI.GET("/nodes", handlers.CloudListNodesHandler(s.cloudProvisioner))
 	cloudAPI.GET("/nodes/:node_id", handlers.CloudGetNodeHandler(s.cloudProvisioner))
 	cloudAPI.GET("/nodes/:node_id/logs", handlers.CloudGetLogsHandler(s.cloudProvisioner))

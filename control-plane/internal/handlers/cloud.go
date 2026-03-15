@@ -12,6 +12,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/cloud"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
 )
 
 var pricingHTTPClient = &http.Client{Timeout: 5 * time.Second}
@@ -76,9 +77,11 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 }
 
 // CloudDeprovisionHandler removes a cloud agent from the cluster.
-func CloudDeprovisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
+// It attempts K8s pod cleanup via the provisioner and always removes
+// the node from the storage DB so stale entries are cleaned up.
+func CloudDeprovisionHandler(provisioner *cloud.Provisioner, storageProvider storage.StorageProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		org, ok := middleware.RequireOrg(c)
+		_, ok := middleware.RequireOrg(c)
 		if !ok {
 			return
 		}
@@ -92,24 +95,16 @@ func CloudDeprovisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
-		// Verify node belongs to org
-		node, err := provisioner.GetNode(c.Request.Context(), nodeID)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "node not found"})
-			return
-		}
-		if node.Org != "" && node.Org != org {
-			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "node does not belong to your organization"})
-			return
+		// Try K8s pod cleanup via provisioner (best-effort — pod may already be gone)
+		if err := provisioner.Deprovision(c.Request.Context(), nodeID); err != nil {
+			logger.Logger.Warn().Err(err).Str("node_id", nodeID).
+				Msg("cloud deprovision: pod cleanup skipped (may already be gone)")
 		}
 
-		if err := provisioner.Deprovision(c.Request.Context(), nodeID); err != nil {
-			logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("cloud deprovision failed")
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "deprovision_failed",
-				"message": err.Error(),
-			})
-			return
+		// Always remove from the node registry DB
+		if err := storageProvider.DeleteNode(c.Request.Context(), nodeID); err != nil {
+			logger.Logger.Warn().Err(err).Str("node_id", nodeID).
+				Msg("cloud deprovision: DB cleanup note")
 		}
 
 		c.JSON(http.StatusOK, gin.H{

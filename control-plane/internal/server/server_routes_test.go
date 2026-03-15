@@ -192,6 +192,7 @@ func (s *stubStorage) GetLockStatus(ctx context.Context, key string) (*types.Dis
 
 // Agent registry
 func (s *stubStorage) RegisterNode(ctx context.Context, agent *types.Node) error { return nil }
+func (s *stubStorage) DeleteNode(ctx context.Context, id string) error              { return nil }
 func (s *stubStorage) ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error) {
 	return nil, nil
 }

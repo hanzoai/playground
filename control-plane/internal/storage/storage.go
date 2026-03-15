@@ -105,6 +105,7 @@ type StorageProvider interface {
 	// Node registry
 	RegisterNode(ctx context.Context, agent *types.Node) error
 	GetNode(ctx context.Context, id string) (*types.Node, error)
+	DeleteNode(ctx context.Context, id string) error
 	ListNodes(ctx context.Context, filters types.BotFilters) ([]*types.Node, error)
 	UpdateNodeHealth(ctx context.Context, id string, status types.HealthStatus) error
 	UpdateNodeHealthAtomic(ctx context.Context, id string, status types.HealthStatus, expectedLastHeartbeat *time.Time) error
