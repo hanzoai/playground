@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.221] - 2026-03-15
+
+
+### Fixed
+
+- Fix(cloud): add DeleteNode to storage and fix stale node cleanup
+
+The deprovision handler could not clean up stale cloud nodes after a
+control-plane redeploy because: 1) there was no DeleteNode method in
+the storage interface, and 2) the handler returned "not found" when the
+K8s pod was already gone.
+
+Now the handler always removes nodes from the DB regardless of pod
+state, so orphaned registry entries get cleaned up properly.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (07918e4)
+
 ## [0.1.41-rc.220] - 2026-03-15
 
 
