@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.213] - 2026-03-15
+
+
+### Fixed
+
+- Fix(ui): show active status for connected bots instead of always inactive
+
+BotsSkillsTable required exact health_status+lifecycle_status match,
+falling back to inactive when fields were unknown. Now uses resilient
+multi-level fallback with a nodeConnected prop from the node's own
+connectivity state.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (ab2317a)
+
 ## [0.1.41-rc.212] - 2026-03-15
 
 
