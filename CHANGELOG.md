@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.209] - 2026-03-15
+
+
+### Fixed
+
+- Fix(canvas): deprovision cloud pods on delete + survive provisioner restart
+
+Two issues fixed:
+
+1. Canvas bot deletion: removing a cloud bot from the canvas only removed
+   the UI element — the pod kept running and the 10s reconcile loop
+   re-added it. Now 'remove' and 'delete' both call cloudDeprovision()
+   for cloud agents to actually terminate the K8s pod.
+
+2. Provisioner restart resilience: Deprovision() and GetNode() used an
+   in-memory map that was empty after restart, causing "node not found"
+   errors. Added K8s label-based pod discovery as fallback so orphaned
+   pods can be managed even after the provisioner restarts.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (916c520)
+
 ## [0.1.41-rc.208] - 2026-03-15
 
 
