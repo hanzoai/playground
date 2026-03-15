@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.224] - 2026-03-15
+
+
+### Fixed
+
+- Fix(cloud): remove PostStart hook that caused operative CrashLoopBackOff
+
+The PostStart lifecycle hook ran apt-get install tigervnc-scraping-server
+inside the operative container on every pod start. This took longer than
+the K8s lifecycle hook timeout (30s), causing the container to be killed
+(exit code 137) and enter CrashLoopBackOff.
+
+The operative image's x11vnc_startup.sh already prefers x0vncserver over
+x11vnc when available. The Dockerfile.xvfb base image installs both VNC
+servers. The fix is to use a properly built image rather than installing
+packages at runtime.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7f9b2f3)
+
 ## [0.1.41-rc.223] - 2026-03-15
 
 
