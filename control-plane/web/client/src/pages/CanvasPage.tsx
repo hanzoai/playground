@@ -96,6 +96,7 @@ export function CanvasPage() {
   // SSE events from the backend never fire for them.  This effect bridges
   // the gap by checking the gateway's connected-node list periodically.
   const upsertBot = useCanvasStore((s) => s.upsertBot);
+  const persistCanvas = useCanvasStore((s) => s.persist);
   useEffect(() => {
     if (!isConnected) return;
 
@@ -112,6 +113,8 @@ export function CanvasPage() {
           canvasAgentIds.add((node.data as unknown as Bot).agentId);
         }
 
+        let dirty = false;
+
         for (const gw of gwNodes) {
           // Check if this gateway node is already on the canvas
           const onCanvas = canvasAgentIds.has(gw.nodeId);
@@ -125,10 +128,12 @@ export function CanvasPage() {
               const botData = canvasBot.data as unknown as Bot;
               if (botData.status === 'provisioning') {
                 setBotStatus(gw.nodeId, 'idle');
+                dirty = true;
               }
               // Ensure cloud bots have a sessionKey for chat
               if (gw.nodeId.startsWith('cloud-') && !botData.sessionKey) {
                 upsertBot(gw.nodeId, { sessionKey: `agent:${gw.nodeId}:main` });
+                dirty = true;
               }
             }
           } else if (gw.nodeId.startsWith('cloud-')) {
@@ -140,7 +145,13 @@ export function CanvasPage() {
               source: 'cloud',
               sessionKey: `agent:${gw.nodeId}:main`,
             });
+            dirty = true;
           }
+        }
+
+        // Persist changes to localStorage so sessionKey survives page reload
+        if (dirty) {
+          persistCanvas();
         }
       } catch {
         // Gateway RPC failed — skip this cycle
@@ -151,7 +162,7 @@ export function CanvasPage() {
     reconcileNodes();
     const timer = setInterval(reconcileNodes, 10_000);
     return () => clearInterval(timer);
-  }, [isConnected, nodes, setBotStatus, upsertBot]);
+  }, [isConnected, nodes, setBotStatus, upsertBot, persistCanvas]);
 
   // Bootstrap spaces on direct navigation (e.g. /playground)
   useEffect(() => {
