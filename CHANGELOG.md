@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.223] - 2026-03-15
+
+
+### Fixed
+
+- Fix(vnc): auto-install TigerVNC in operative pods via PostStart hook
+
+The operative Docker image still ships x11vnc which deadlocks behind the
+bot-gateway WebSocket tunnel (x11vnc uses recv(MSG_PEEK) before sending
+the RFB version banner). This PostStart hook installs TigerVNC
+(x0vncserver) and replaces x11vnc on every new pod so VNC works without
+manual intervention.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (b0476bb)
+
 ## [0.1.41-rc.222] - 2026-03-15
 
 
