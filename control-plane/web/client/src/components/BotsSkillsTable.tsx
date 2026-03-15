@@ -32,6 +32,8 @@ interface BotsSkillsTableProps {
     health_status: string;
     lifecycle_status: string;
   };
+  /** Fallback signal: is the node connected/ready? Used when agentStatus fields are unknown. */
+  nodeConnected?: boolean;
   nodeId?: string;
   className?: string;
 }
@@ -55,6 +57,7 @@ export function BotsSkillsTable({
   skillDIDs = {},
   agentDID,
   agentStatus,
+  nodeConnected,
   nodeId,
   className,
 }: BotsSkillsTableProps) {
@@ -62,11 +65,24 @@ export function BotsSkillsTable({
   const [searchTerm, setSearchTerm] = useState<string>("");
   const navigate = useNavigate();
 
-  // Determine if agent is active based on health and lifecycle status
-  const isAgentActive = agentStatus
-    ? agentStatus.health_status === "active" &&
-      (agentStatus.lifecycle_status === "ready" || agentStatus.lifecycle_status === "degraded")
-    : false;
+  // Determine if agent is active based on health and lifecycle status.
+  // Falls back to nodeConnected when agentStatus fields are unknown/missing.
+  const isAgentActive = (() => {
+    if (agentStatus) {
+      const { health_status, lifecycle_status } = agentStatus;
+      // Exact match on both fields (original logic)
+      if (health_status === "active" &&
+          (lifecycle_status === "ready" || lifecycle_status === "degraded")) {
+        return true;
+      }
+      // Health is active but lifecycle unknown — still treat as active
+      if (health_status === "active") return true;
+      // Lifecycle is ready/running but health unknown — still treat as active
+      if (lifecycle_status === "ready" || lifecycle_status === "running") return true;
+    }
+    // Fallback to node connectivity signal
+    return nodeConnected ?? false;
+  })();
 
   const componentStatus: "active" | "inactive" = isAgentActive ? "active" : "inactive";
 

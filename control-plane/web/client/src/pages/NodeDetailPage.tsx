@@ -1046,6 +1046,10 @@ function NodeDetailPageContent() {
                 skillDIDs={didInfo?.skills}
                 agentDID={didInfo?.did}
                 agentStatus={botStatusForTable}
+                nodeConnected={
+                  node.health_status === "active" ||
+                  node.lifecycle_status === "ready"
+                }
                 nodeId={nodeId}
                 className="w-full"
               />
