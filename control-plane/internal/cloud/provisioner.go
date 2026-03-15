@@ -286,8 +286,9 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	}
 	// Per-user billing: use the launching user's API key so usage is
 	// tracked and billed to their account. Fall back to shared service key.
+	// Only use UserAPIKey if it looks like a real API key (hk-...), not a JWT token.
 	apiKey := req.UserAPIKey
-	if apiKey == "" {
+	if apiKey == "" || strings.HasPrefix(apiKey, "eyJ") {
 		apiKey = p.config.Kubernetes.CloudAPIKey
 	}
 	if apiKey != "" {
