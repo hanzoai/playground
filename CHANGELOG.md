@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.211] - 2026-03-15
+
+
+### Fixed
+
+- Fix(canvas): derive sessionKey for cloud bots so chat works
+
+Cloud agents discovered via node.list reconcile loop were missing
+sessionKey, causing ChatPanel to show "No session connected".
+Now derives sessionKey as agent:{nodeId}:main for cloud bots both
+when adding new bots and when updating existing ones.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (43e1478)
+
 ## [0.1.41-rc.210] - 2026-03-15
 
 
