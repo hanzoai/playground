@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"io"
 	"log"
 	"net/http"
@@ -16,9 +17,26 @@ type AuthProxyConfig struct {
 	TokenEndpoint string
 	// UserinfoEndpoint is the IAM userinfo endpoint.
 	UserinfoEndpoint string
+	// FallbackTokenEndpoint is used when the primary TokenEndpoint is unreachable.
+	// Typically the public endpoint (e.g. "https://hanzo.id/oauth/token").
+	FallbackTokenEndpoint string
+	// FallbackUserinfoEndpoint is used when the primary UserinfoEndpoint is unreachable.
+	FallbackUserinfoEndpoint string
 }
 
 var proxyClient = &http.Client{Timeout: 15 * time.Second}
+
+// doTokenRequest sends a POST to the given endpoint with the provided body.
+// Returns the response or an error.
+func doTokenRequest(ctx *gin.Context, endpoint string, body []byte, contentType string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx.Request.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Accept", "application/json")
+	return proxyClient.Do(req)
+}
 
 // AuthTokenProxyHandler proxies OAuth token exchange requests to the IAM server.
 // This avoids browser CORS issues when the IAM server doesn't send
@@ -26,6 +44,8 @@ var proxyClient = &http.Client{Timeout: 15 * time.Second}
 //
 // The frontend POSTs form-encoded token requests to /auth/token, and this
 // handler forwards them server-to-server to the IAM token endpoint.
+// If the primary (internal) endpoint is unreachable, falls back to the
+// public endpoint to ensure login works even when in-cluster IAM is down.
 func AuthTokenProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if cfg.TokenEndpoint == "" {
@@ -33,20 +53,33 @@ func AuthTokenProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Forward the body as-is to the upstream token endpoint.
-		req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, cfg.TokenEndpoint, c.Request.Body)
+		// Buffer the request body so we can retry with the fallback endpoint.
+		body, err := io.ReadAll(io.LimitReader(c.Request.Body, 1<<20)) // 1MB limit
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create proxy request"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
 			return
 		}
-		req.Header.Set("Content-Type", c.GetHeader("Content-Type"))
-		req.Header.Set("Accept", "application/json")
+		contentType := c.GetHeader("Content-Type")
 
-		resp, err := proxyClient.Do(req)
+		// Try primary endpoint first.
+		resp, err := doTokenRequest(c, cfg.TokenEndpoint, body, contentType)
 		if err != nil {
 			log.Printf("[auth-proxy] token endpoint %s error: %v", cfg.TokenEndpoint, err)
-			c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable"})
-			return
+
+			// Fallback to public endpoint if configured and different.
+			if cfg.FallbackTokenEndpoint != "" && cfg.FallbackTokenEndpoint != cfg.TokenEndpoint {
+				log.Printf("[auth-proxy] falling back to public token endpoint: %s", cfg.FallbackTokenEndpoint)
+				resp, err = doTokenRequest(c, cfg.FallbackTokenEndpoint, body, contentType)
+				if err != nil {
+					log.Printf("[auth-proxy] fallback token endpoint %s also failed: %v", cfg.FallbackTokenEndpoint, err)
+					c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable (both internal and public)"})
+					return
+				}
+				// Fallback succeeded — fall through to stream response
+			} else {
+				c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable"})
+				return
+			}
 		}
 		defer resp.Body.Close()
 
@@ -58,6 +91,7 @@ func AuthTokenProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 }
 
 // AuthUserinfoProxyHandler proxies OAuth userinfo requests to the IAM server.
+// Falls back to the public endpoint if the internal one is unreachable.
 func AuthUserinfoProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if cfg.UserinfoEndpoint == "" {
@@ -65,22 +99,36 @@ func AuthUserinfoProxyHandler(cfg AuthProxyConfig) gin.HandlerFunc {
 			return
 		}
 
-		req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, cfg.UserinfoEndpoint, nil)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create proxy request"})
-			return
+		doUserinfo := func(endpoint string) (*http.Response, error) {
+			req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, endpoint, nil)
+			if err != nil {
+				return nil, err
+			}
+			if auth := c.GetHeader("Authorization"); auth != "" {
+				req.Header.Set("Authorization", auth)
+			}
+			req.Header.Set("Accept", "application/json")
+			return proxyClient.Do(req)
 		}
-		// Forward the Authorization header from the browser.
-		if auth := c.GetHeader("Authorization"); auth != "" {
-			req.Header.Set("Authorization", auth)
-		}
-		req.Header.Set("Accept", "application/json")
 
-		resp, err := proxyClient.Do(req)
+		// Try primary endpoint first.
+		resp, err := doUserinfo(cfg.UserinfoEndpoint)
 		if err != nil {
 			log.Printf("[auth-proxy] userinfo endpoint %s error: %v", cfg.UserinfoEndpoint, err)
-			c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable"})
-			return
+
+			// Fallback to public endpoint if configured and different.
+			if cfg.FallbackUserinfoEndpoint != "" && cfg.FallbackUserinfoEndpoint != cfg.UserinfoEndpoint {
+				log.Printf("[auth-proxy] falling back to public userinfo endpoint: %s", cfg.FallbackUserinfoEndpoint)
+				resp, err = doUserinfo(cfg.FallbackUserinfoEndpoint)
+				if err != nil {
+					log.Printf("[auth-proxy] fallback userinfo endpoint %s also failed: %v", cfg.FallbackUserinfoEndpoint, err)
+					c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable (both internal and public)"})
+					return
+				}
+			} else {
+				c.JSON(http.StatusBadGateway, gin.H{"error": "IAM server unreachable"})
+				return
+			}
 		}
 		defer resp.Body.Close()
 

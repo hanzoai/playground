@@ -719,9 +719,14 @@ func (s *PlaygroundServer) setupRoutes() {
 		if iamEndpoint == "" {
 			iamEndpoint = s.config.IAM.PublicEndpoint
 		}
+		// Use the public endpoint as fallback when internal IAM is unreachable.
+		// This ensures OAuth token exchange works even when iam.hanzo.svc is down.
+		fallbackEndpoint := s.config.IAM.PublicEndpoint
 		authProxyCfg := handlers.AuthProxyConfig{
-			TokenEndpoint:    iamEndpoint + "/oauth/token",
-			UserinfoEndpoint: iamEndpoint + "/oauth/userinfo",
+			TokenEndpoint:            iamEndpoint + "/oauth/token",
+			UserinfoEndpoint:         iamEndpoint + "/oauth/userinfo",
+			FallbackTokenEndpoint:    fallbackEndpoint + "/oauth/token",
+			FallbackUserinfoEndpoint: fallbackEndpoint + "/oauth/userinfo",
 		}
 		s.Router.POST("/v1/auth/token", handlers.AuthTokenProxyHandler(authProxyCfg))
 		s.Router.GET("/v1/auth/userinfo", handlers.AuthUserinfoProxyHandler(authProxyCfg))
