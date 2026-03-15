@@ -16,6 +16,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [validating, setValidating] = useState(false);
   const [showApiKeyForm, setShowApiKeyForm] = useState(false);
   const iamRedirectAttempted = useRef(false);
+  // Track whether we cleared a stale token so we don't loop
+  const staleTokenCleared = useRef(false);
 
   // Auto-redirect to IAM login — skip the intermediate "Sign in" button page
   useEffect(() => {
@@ -30,7 +32,31 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // After a successful handleCallback(), tokens are stored before React state
     // (isAuthenticated) is updated. This prevents a race where AuthGuard fires
     // signinRedirect() before the isAuthenticated state has been flushed.
+    //
+    // However, if isAuthenticated is false and we have a sessionStorage token,
+    // the token might be stale (e.g. restored from localStorage but expired).
+    // Set a timeout to clear it and proceed with redirect if auth doesn't
+    // resolve within 3 seconds.
     if (sessionStorage.getItem('hanzo_iam_access_token')) {
+      if (!isAuthenticated && !staleTokenCleared.current) {
+        const timer = setTimeout(() => {
+          // After 3s, if still not authenticated, the token is stale.
+          // Clear it so the redirect can proceed.
+          if (!isAuthenticated) {
+            console.warn('[auth-guard] Clearing stale sessionStorage token — auth did not resolve');
+            sessionStorage.removeItem('hanzo_iam_access_token');
+            staleTokenCleared.current = true;
+            // Trigger redirect by calling iamLogin directly
+            if (authMode === "iam" && iamLogin && authRequired && !iamRedirectAttempted.current) {
+              iamRedirectAttempted.current = true;
+              iamLogin().catch(() => {
+                iamRedirectAttempted.current = false;
+              });
+            }
+          }
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
       return;
     }
 
@@ -72,6 +98,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // IAM mode: if tokens exist in sessionStorage but React state hasn't caught
   // up yet (race condition after callback), show a brief loading state rather
   // than the redirect UI. The IamProvider will sync isAuthenticated shortly.
+  // The useEffect timeout above ensures we don't get stuck here forever.
   if (authMode === "iam" && sessionStorage.getItem('hanzo_iam_access_token')) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">

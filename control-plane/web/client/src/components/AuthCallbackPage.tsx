@@ -3,16 +3,21 @@
  *
  * Handles the IAM OIDC redirect callback.
  * Exchanges the authorization code for tokens, then redirects to home.
+ *
+ * If the PKCE code verifier is missing (e.g. stale session, browser restart,
+ * or previous failed attempt consumed it), automatically starts a fresh login
+ * flow instead of showing a dead-end error.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export function AuthCallbackPage() {
-  const { handleCallback } = useAuth();
+  const { handleCallback, iamLogin } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const retryAttempted = useRef(false);
 
   useEffect(() => {
     if (!handleCallback) {
@@ -30,7 +35,21 @@ export function AuthCallbackPage() {
         });
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : String(err));
+        const msg = err instanceof Error ? err.message : String(err);
+
+        // If PKCE code verifier is missing, the login flow wasn't properly
+        // initiated in this session (stale session, browser restart, or the
+        // previous failed attempt consumed it). Start a fresh login.
+        if (msg.includes("PKCE") && iamLogin && !retryAttempted.current) {
+          retryAttempted.current = true;
+          console.warn("[auth-callback] PKCE verifier missing, restarting login flow");
+          iamLogin().catch(() => {
+            setError("Login failed. Please try again.");
+          });
+          return;
+        }
+
+        setError(msg);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
