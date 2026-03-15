@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.210] - 2026-03-15
+
+
+### Fixed
+
+- Fix(status): skip BotService process check for cloud agents
+
+Cloud agents run as remote K8s pods, not local processes. The
+BotService reconciliation uses kill(pid, 0) to check if a process
+is running, which always fails for cloud nodes (no local PID),
+causing them to show as "Inactive" despite being connected.
+
+Skip BotService for cloud nodes (cloud-* prefix or long_running
+deployment type) and fall through to the heartbeat-based fallback
+which correctly reads health_status and lifecycle_status from the DB.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f7568ef)
+
 ## [0.1.41-rc.209] - 2026-03-15
 
 
