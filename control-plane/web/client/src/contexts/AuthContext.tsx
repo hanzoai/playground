@@ -102,6 +102,7 @@ function IamAuthBridge({ children }: { children: ReactNode }) {
       authRequired: true,
       clearAuth: () => {
         iam.logout();
+        localStorage.removeItem(IAM_LOCAL_KEY);
         resetAllStores();
       },
       authMode: "iam",
@@ -220,6 +221,27 @@ function ApiKeyAuthProvider({ children }: { children: ReactNode }) {
 // ---------------------------------------------------------------------------
 // AuthProvider — delegates to IAM or API key mode
 // ---------------------------------------------------------------------------
+
+// Restore IAM access token from localStorage → sessionStorage on startup.
+// The IAM SDK stores tokens in sessionStorage (cleared on browser close), but
+// setGlobalIamToken() also caches them in localStorage. On reopening the
+// browser, we restore the cached token so the SDK finds it and treats the user
+// as authenticated without forcing another login redirect.
+const IAM_SESSION_KEY = "hanzo_iam_access_token";
+const IAM_LOCAL_KEY = "af_iam_token";
+
+(() => {
+  try {
+    if (isIamMode && !sessionStorage.getItem(IAM_SESSION_KEY)) {
+      const cached = localStorage.getItem(IAM_LOCAL_KEY);
+      if (cached) {
+        sessionStorage.setItem(IAM_SESSION_KEY, cached);
+      }
+    }
+  } catch {
+    // Storage APIs may not be available
+  }
+})();
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   if (isIamMode && iamConfig) {
