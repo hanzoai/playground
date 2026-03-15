@@ -384,18 +384,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Memory:   "512Mi",
 			LimitCPU: "1000m",
 			LimitMem: "2Gi",
-			// PostStart: install TigerVNC (x0vncserver) and replace x11vnc.
-			// The operative image still ships x11vnc which deadlocks behind
-			// the bot-gateway WebSocket tunnel. x0vncserver speaks the RFB
-			// protocol correctly (sends version banner first).
-			PostStart: []string{"/bin/sh", "-c",
-				"sudo apt-get update -qq && " +
-					"sudo apt-get install -y -qq tigervnc-scraping-server 2>/dev/null; " +
-					"kill $(pgrep -f 'x11vnc -display') 2>/dev/null; " +
-					"kill $(pgrep -f x11vnc_startup) 2>/dev/null; " +
-					"sleep 1; " +
-					"nohup x0vncserver -display :1 -rfbport 5900 -SecurityTypes None > /tmp/x0vnc.log 2>&1 & " +
-					"true"},
+			// NOTE: The operative image's x11vnc_startup.sh already prefers
+			// x0vncserver (TigerVNC) over x11vnc when available. The Dockerfile.xvfb
+			// base image installs both. No PostStart hook needed if the image
+			// is built from the current Dockerfile.xvfb.
 		})
 	}
 
