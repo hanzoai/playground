@@ -853,6 +853,30 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 	node, ok := p.nodes[nodeID]
 	p.mu.RUnlock()
 
+	// If the node isn't in the in-memory map (e.g. after a restart),
+	// try to find the K8s pod directly by its node-id label.
+	if !ok {
+		namespace := p.config.Kubernetes.Namespace
+		if namespace == "" {
+			namespace = "hanzo"
+		}
+		selector := fmt.Sprintf("playground.hanzo.ai/node-id=%s", nodeID)
+		pods, err := p.k8s.ListAgentPods(ctx, namespace, selector)
+		if err == nil && len(pods) > 0 {
+			// Reconstruct minimal node info from the discovered pod.
+			node = &CloudNode{
+				NodeID:    nodeID,
+				PodName:   nodeID, // Pod name matches node ID for cloud agents
+				Namespace: namespace,
+				OS:        "linux",
+			}
+			ok = true
+			logger.Logger.Info().
+				Str("node_id", nodeID).
+				Msg("discovered orphaned cloud pod from K8s for deprovision")
+		}
+	}
+
 	if !ok {
 		return fmt.Errorf("cloud node %q not found", nodeID)
 	}
@@ -896,6 +920,29 @@ func (p *Provisioner) GetNode(ctx context.Context, nodeID string) (*CloudNode, e
 	p.mu.RLock()
 	node, ok := p.nodes[nodeID]
 	p.mu.RUnlock()
+
+	// If not in memory, try to discover from K8s (e.g. after a restart).
+	if !ok {
+		namespace := p.config.Kubernetes.Namespace
+		if namespace == "" {
+			namespace = "hanzo"
+		}
+		selector := fmt.Sprintf("playground.hanzo.ai/node-id=%s", nodeID)
+		pods, err := p.k8s.ListAgentPods(ctx, namespace, selector)
+		if err == nil && len(pods) > 0 {
+			node = &CloudNode{
+				NodeID:    nodeID,
+				PodName:   nodeID,
+				Namespace: namespace,
+				OS:        "linux",
+				Status:    pods[0].Phase,
+			}
+			p.mu.Lock()
+			p.nodes[nodeID] = node
+			p.mu.Unlock()
+			ok = true
+		}
+	}
 
 	if !ok {
 		return nil, fmt.Errorf("cloud node %q not found", nodeID)

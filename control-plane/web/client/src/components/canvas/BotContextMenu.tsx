@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useBotStore } from '@/stores/botStore';
-import { agentsDelete, chatAbort } from '@/services/gatewayApi';
+import { agentsDelete, chatAbort, cloudDeprovision } from '@/services/gatewayApi';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -124,11 +124,20 @@ export function BotContextMenu({ state, onClose }: BotContextMenuProps) {
           break;
 
         case 'remove':
+          // For cloud bots, removing from canvas should also deprovision the pod
+          // so the reconcile loop doesn't re-add them.
+          if (agentId.startsWith('cloud-')) {
+            try { await cloudDeprovision(agentId); } catch { /* ignore */ }
+          }
           removeBot(agentId);
           break;
 
         case 'delete':
           try { await agentsDelete(agentId); } catch { /* ignore */ }
+          // Also deprovision cloud pods so they don't reconnect and reappear
+          if (agentId.startsWith('cloud-')) {
+            try { await cloudDeprovision(agentId); } catch { /* ignore */ }
+          }
           removeBot(agentId);
           useBotStore.getState().removeAgent(agentId);
           break;
