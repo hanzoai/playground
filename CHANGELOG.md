@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.212] - 2026-03-15
+
+
+### Fixed
+
+- Fix: persist canvas state after reconcile loop sets sessionKey
+
+The reconcile loop correctly sets sessionKey for cloud bots via
+upsertBot, but changes were only in-memory and never persisted to
+localStorage. On page reload, sessionKey was lost, causing chat to
+show "No session connected". Now calls persist() after any reconcile
+changes.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (9377e00)
+
 ## [0.1.41-rc.211] - 2026-03-15
 
 
