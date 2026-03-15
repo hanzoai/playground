@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.214] - 2026-03-15
+
+
+### Fixed
+
+- Fix(cloud): correct gateway URL port from 18789 to 80
+
+The K8s bot-gateway Service exposes port 80 (mapped to container port
+18789), but the default GatewayURL used port 18789 directly which is
+not exposed on the Service. Cloud node pods could not connect back to
+the gateway, breaking VNC tunnels and other node-to-gateway comms.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (52ec8a3)
+
 ## [0.1.41-rc.213] - 2026-03-15
 
 
