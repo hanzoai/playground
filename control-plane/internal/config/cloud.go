@@ -37,7 +37,7 @@ type KubernetesConfig struct {
 	CloudAPIKey      string `yaml:"cloud_api_key" mapstructure:"cloud_api_key"`
 	// Central gateway: cloud pods connect as nodes to the shared bot-gateway
 	// so all nodes (local Mac + cloud pods) appear in one unified gateway.
-	GatewayURL   string `yaml:"gateway_url" mapstructure:"gateway_url"`     // ws://bot-gateway.hanzo.svc:18789
+	GatewayURL   string `yaml:"gateway_url" mapstructure:"gateway_url"`     // ws://bot-gateway.hanzo.svc:80
 	GatewayToken string `yaml:"gateway_token" mapstructure:"gateway_token"` // Shared auth token
 }
 
@@ -83,7 +83,7 @@ func DefaultCloudConfig() CloudConfig {
 			OperativeEnabled: true,
 			OperativeImage:   "ghcr.io/hanzoai/operative:latest",
 			CloudAPIEndpoint: "https://api.hanzo.ai/v1",
-			GatewayURL:       "ws://bot-gateway.hanzo.svc:18789",
+			GatewayURL:       "ws://bot-gateway.hanzo.svc:80",
 		},
 		Visor: VisorConfig{
 			Enabled:  false,
