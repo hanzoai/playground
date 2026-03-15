@@ -384,10 +384,18 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			Memory:   "512Mi",
 			LimitCPU: "1000m",
 			LimitMem: "2Gi",
-			// PostStart hook removed: the operative image now uses TigerVNC
-			// (x0vncserver) instead of x11vnc. TigerVNC speaks the RFB
-			// protocol correctly and doesn't need the -nolookup/-noxdamage
-			// flags that x11vnc required.
+			// PostStart: install TigerVNC (x0vncserver) and replace x11vnc.
+			// The operative image still ships x11vnc which deadlocks behind
+			// the bot-gateway WebSocket tunnel. x0vncserver speaks the RFB
+			// protocol correctly (sends version banner first).
+			PostStart: []string{"/bin/sh", "-c",
+				"sudo apt-get update -qq && " +
+					"sudo apt-get install -y -qq tigervnc-scraping-server 2>/dev/null; " +
+					"kill $(pgrep -f 'x11vnc -display') 2>/dev/null; " +
+					"kill $(pgrep -f x11vnc_startup) 2>/dev/null; " +
+					"sleep 1; " +
+					"nohup x0vncserver -display :1 -rfbport 5900 -SecurityTypes None > /tmp/x0vnc.log 2>&1 & " +
+					"true"},
 		})
 	}
 
