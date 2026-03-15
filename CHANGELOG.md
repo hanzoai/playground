@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.215] - 2026-03-15
+
+
+### Fixed
+
+- Fix(ui): gracefully handle backend API failure on My Bots page
+
+When /nodes/summary returns 503 (e.g. backend proxy down), fall back
+to gateway-only node list instead of showing "Connection Error" banner.
+Only show the error if both backend and gateway fail to provide nodes.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (7f50287)
+
 ## [0.1.41-rc.214] - 2026-03-15
 
 
