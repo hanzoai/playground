@@ -117,7 +117,7 @@ export function CanvasPage() {
           const onCanvas = canvasAgentIds.has(gw.nodeId);
 
           if (onCanvas) {
-            // Transition provisioning bots to idle
+            // Transition provisioning bots to idle and ensure sessionKey is set
             const canvasBot = nodes.find(
               (n) => n.type === NODE_TYPES.bot && (n.data as unknown as Bot).agentId === gw.nodeId
             );
@@ -125,6 +125,10 @@ export function CanvasPage() {
               const botData = canvasBot.data as unknown as Bot;
               if (botData.status === 'provisioning') {
                 setBotStatus(gw.nodeId, 'idle');
+              }
+              // Ensure cloud bots have a sessionKey for chat
+              if (gw.nodeId.startsWith('cloud-') && !botData.sessionKey) {
+                upsertBot(gw.nodeId, { sessionKey: `agent:${gw.nodeId}:main` });
               }
             }
           } else if (gw.nodeId.startsWith('cloud-')) {
@@ -134,6 +138,7 @@ export function CanvasPage() {
               name: displayName,
               status: 'idle',
               source: 'cloud',
+              sessionKey: `agent:${gw.nodeId}:main`,
             });
           }
         }
