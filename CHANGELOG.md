@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.222] - 2026-03-15
+
+
+### Fixed
+
+- Fix(cloud): fix DeleteNode SQL for Postgres (column name and params)
+
+The did_registry table has no agent_id column, causing the delete to
+fail silently. Simplified to just delete from the nodes table using
+Postgres $1 parameter syntax.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (190a93b)
+
 ## [0.1.41-rc.221] - 2026-03-15
 
 
