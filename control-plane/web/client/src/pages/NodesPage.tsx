@@ -216,10 +216,24 @@ export function NodesPage() {
       setNodes(merged);
       setLastRefresh(new Date());
     } catch (err) {
-      console.error("Failed to load nodes summary:", err);
-      setError(
-        "Failed to load hanzo nodes. Please ensure the Playground server is running and accessible."
-      );
+      console.warn("[NodesPage] Backend /nodes/summary failed, trying gateway-only:", err);
+      // Backend API failed — fall back to gateway-only node list
+      try {
+        const gatewayNodes = await fetchGatewayNodes([]);
+        if (gatewayNodes.length > 0) {
+          setNodes(gatewayNodes);
+          setLastRefresh(new Date());
+          // Don't show error — gateway provided the nodes
+        } else {
+          setError(
+            "Failed to load hanzo nodes. Please ensure the Playground server is running and accessible."
+          );
+        }
+      } catch {
+        setError(
+          "Failed to load hanzo nodes. Please ensure the Playground server is running and accessible."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
