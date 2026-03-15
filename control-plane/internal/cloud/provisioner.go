@@ -331,6 +331,12 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	// This is for "xterm + Claude Code" — no desktop environment needed.
 	terminalOnly := req.OS == "terminal"
 
+	// Pass team/org identity so the bot SDK registers with the correct team.
+	if req.Org != "" {
+		env["HANZO_TEAM_ID"] = req.Org
+		env["AGENT_TEAM_ID"] = req.Org
+	}
+
 	if terminalOnly {
 		env["AGENT_MODE"] = "terminal"
 		env["TTYD_URL"] = "http://localhost:7681"
@@ -450,7 +456,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	// control plane once the pod is Running. Without this, cloud nodes
 	// stay in "provisioning" state on the dashboard because the status
 	// manager only transitions to "active" upon receiving heartbeats.
-	go p.watchPodReady(nodeID, podName, namespace, spec.ControlPlaneURL)
+	go p.watchPodReady(nodeID, podName, namespace, spec.ControlPlaneURL, req.Org, req.DisplayName)
 
 	return &ProvisionResult{
 		NodeID:    nodeID,
@@ -466,7 +472,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 // watchPodReady polls K8s until the agent pod is Running, then sends
 // heartbeats to the control plane so the dashboard transitions from
 // "Provisioning" to "Active". Runs as a goroutine — best-effort only.
-func (p *Provisioner) watchPodReady(nodeID, podName, namespace, controlPlaneURL string) {
+func (p *Provisioner) watchPodReady(nodeID, podName, namespace, controlPlaneURL, org, displayName string) {
 	const (
 		pollInterval = 5 * time.Second
 		maxWait      = 5 * time.Minute
@@ -507,7 +513,7 @@ heartbeatLoop:
 	// Phase 2: send periodic heartbeats to the control plane
 	ticker.Reset(heartbeatInterval)
 	// Register and send first heartbeat immediately
-	p.registerAndHeartbeat(nodeID, controlPlaneURL)
+	p.registerAndHeartbeat(nodeID, controlPlaneURL, org, displayName)
 
 	for range ticker.C {
 		// Check if pod still exists
@@ -518,13 +524,13 @@ heartbeatLoop:
 				Msg("cloud agent pod terminated, stopping heartbeats")
 			return
 		}
-		p.registerAndHeartbeat(nodeID, controlPlaneURL)
+		p.registerAndHeartbeat(nodeID, controlPlaneURL, org, displayName)
 	}
 }
 
 // registerAndHeartbeat registers the node with the control plane (idempotent)
 // and sends a heartbeat so the dashboard transitions from "Provisioning" to "Active".
-func (p *Provisioner) registerAndHeartbeat(nodeID, controlPlaneURL string) {
+func (p *Provisioner) registerAndHeartbeat(nodeID, controlPlaneURL, org, displayName string) {
 	if controlPlaneURL == "" {
 		return
 	}
@@ -532,9 +538,20 @@ func (p *Provisioner) registerAndHeartbeat(nodeID, controlPlaneURL string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Build bot name from display name or node ID.
+	botName := displayName
+	if botName == "" {
+		botName = nodeID
+	}
+
 	// Register (or update) the node — makes it visible in the dashboard.
 	// The register endpoint is idempotent: creates on first call, updates on subsequent.
-	regBody := fmt.Sprintf(`{"id":"%s","deployment_type":"long_running","health_status":"active","lifecycle_status":"running","version":"cloud","metadata":{"platform":"linux"}}`, nodeID)
+	// Include team_id (org) and a default bot definition so the dashboard shows an active bot.
+	teamField := ""
+	if org != "" {
+		teamField = fmt.Sprintf(`,"team_id":"%s"`, org)
+	}
+	regBody := fmt.Sprintf(`{"id":"%s","deployment_type":"long_running","health_status":"active","lifecycle_status":"ready","version":"cloud"%s,"bots":[{"id":"%s"}],"metadata":{"platform":"linux"}}`, nodeID, teamField, botName)
 	regURL := fmt.Sprintf("%s/api/v1/nodes/register", controlPlaneURL)
 	regReq, err := http.NewRequestWithContext(ctx, "POST", regURL, strings.NewReader(regBody))
 	if err != nil {
