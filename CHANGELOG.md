@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.217] - 2026-03-15
+
+
+### Fixed
+
+- Fix(auth): fallback to local JWT decode when IAM service is unreachable
+
+When the IAM userinfo endpoint (iam.hanzo.svc:8000) is unreachable, the
+middleware now decodes JWT claims locally instead of returning 503 on
+every API request. This provides degraded-but-functional auth by
+extracting user identity from the token payload without signature
+verification. Results are cached for 60s like normal IAM responses.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f6cad5f)
+
 ## [0.1.41-rc.216] - 2026-03-15
 
 
