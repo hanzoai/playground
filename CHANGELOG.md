@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.216] - 2026-03-15
+
+
+### Fixed
+
+- Fix(cloud): use shared API key when user token is JWT
+
+IAM-authenticated users have a JWT token as their API key, but the Zen
+Gateway (cloud-api) expects hk-... format keys. Detect JWT tokens by
+their "eyJ" prefix and fall back to the shared CloudAPIKey from KMS.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (dfc232c)
+
 ## [0.1.41-rc.215] - 2026-03-15
 
 
