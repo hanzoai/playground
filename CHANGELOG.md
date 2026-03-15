@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.208] - 2026-03-15
+
+
+### Fixed
+
+- Fix(provisioner): add team_id and correct lifecycle_status for cloud agents
+
+Cloud agents were missing team_id in the control plane registration,
+showing empty "Team ID" on the dashboard. The lifecycle_status was set
+to "running" instead of "ready", causing the UI to show bot status as
+"Inactive" (UI checks for lifecycle_status === "ready").
+
+Changes:
+- Pass HANZO_TEAM_ID/AGENT_TEAM_ID env vars from req.Org to agent pods
+- Include team_id in the registerAndHeartbeat JSON body
+- Change lifecycle_status from "running" to "ready" to match UI expectations
+- Include a bot definition in the registration so Bots & Skills table is populated
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (bd21f0c)
+
 ## [0.1.41-rc.207] - 2026-03-14
 
 
