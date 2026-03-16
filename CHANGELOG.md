@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.230] - 2026-03-16
+
+
+### Fixed
+
+- Fix: use commerce-api.hanzo.ai for billing API calls
+
+Point billingApi and E2E tests to commerce-api.hanzo.ai/api which has
+proper CORS support, instead of api.hanzo.ai which returns 405 on
+OPTIONS preflight requests.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5613d53)
+
 ## [0.1.41-rc.229] - 2026-03-16
 
 
