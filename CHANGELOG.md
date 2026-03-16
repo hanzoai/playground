@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.226] - 2026-03-16
+
+
+### Fixed
+
+- Fix(e2e): add /org route to auth redirect URL pattern
+
+The PKCE login flow may redirect to /org/settings after authentication.
+Add 'org' to the waitForURL regex so the E2E auth setup doesn't timeout.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (8d80ac8)
+
 ## [0.1.41-rc.225] - 2026-03-16
 
 
