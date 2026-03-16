@@ -166,37 +166,19 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   await submitButton.click({ timeout: 10_000 });
   console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
-  // Wait for either: redirect away from hanzo.id, or an error appearing on page
-  const errorPromise = page.locator('[role="alert"], [class*="error"], [class*="Error"], .text-red-500, .text-destructive')
-    .first()
-    .waitFor({ state: 'visible', timeout: 15_000 })
-    .then(async (el) => {
-      const errText = await page.locator('[role="alert"], [class*="error"], [class*="Error"], .text-red-500, .text-destructive').first().textContent();
-      return `error: ${errText?.trim()}` as const;
-    })
-    .catch(() => 'no-error' as const);
-
-  const result = await Promise.race([navigationPromise, errorPromise]);
-
-  if (result.startsWith('error:')) {
-    throw new Error(`[e2e] Login failed on hanzo.id: ${result}`);
-  }
-
-  if (result === 'no-error') {
-    // Neither redirect nor error — the page is stuck. Take a diagnostic screenshot URL.
-    const currentUrl = page.url();
-    console.log(`[e2e] No redirect after 15s, still on: ${currentUrl}`);
-
-    // Maybe the page redirected but to an unexpected URL on hanzo.id (consent screen, MFA, etc.)
-    // Wait longer for the actual redirect
-    try {
-      await page.waitForURL(
-        (url) => !url.href.includes(cfg.serverUrl),
-        { timeout: 45_000 },
-      );
-    } catch {
-      throw new Error(`[e2e] Login stuck — no redirect from hanzo.id after submit. URL: ${page.url()}`);
+  // Wait for redirect away from hanzo.id. If it doesn't happen, check for errors.
+  try {
+    await navigationPromise;
+  } catch {
+    // No redirect — check if an error is visible on the login page.
+    // hanzo.id uses text-red-400/text-red-500 banners for errors, not class="error".
+    const errorBanner = page.locator('.text-red-400, .text-red-500, [role="alert"], .bg-red-500\\/10').first();
+    const errText = await errorBanner.textContent({ timeout: 3_000 }).catch(() => null);
+    if (errText?.trim()) {
+      throw new Error(`[e2e] Login failed on hanzo.id: ${errText.trim()}`);
     }
+    // No error banner — page is stuck
+    throw new Error(`[e2e] Login stuck — no redirect from hanzo.id after submit. URL: ${page.url()}`);
   }
 
   console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
