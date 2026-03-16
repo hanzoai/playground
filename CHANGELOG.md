@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.231] - 2026-03-16
+
+
+### Fixed
+
+- Fix: correct Commerce API URL construction (same as billing fix)
+
+new URL('/v1/billing/...', baseUrl) drops the /api prefix.
+Use template literal concatenation instead.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (81964dc)
+
 ## [0.1.41-rc.230] - 2026-03-16
 
 
