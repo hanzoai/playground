@@ -43,7 +43,7 @@ export async function getBalance(): Promise<BalanceResult> {
     throw new Error('Cannot determine user identity from token');
   }
 
-  const url = new URL('/v1/billing/balance', COMMERCE_API);
+  const url = new URL(`${COMMERCE_API}/v1/billing/balance`);
   url.searchParams.set('user', userId);
   url.searchParams.set('currency', 'usd');
 
