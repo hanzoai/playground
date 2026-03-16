@@ -29,7 +29,7 @@ export class CommerceHelper {
 
   constructor(token: string, commerceUrl?: string) {
     this.token = token;
-    this.commerceUrl = commerceUrl || process.env.E2E_COMMERCE_API_URL || 'https://api.hanzo.ai';
+    this.commerceUrl = commerceUrl || process.env.E2E_COMMERCE_API_URL || 'https://commerce-api.hanzo.ai/api';
   }
 
   private async request<T>(path: string, opts: RequestInit = {}): Promise<T> {

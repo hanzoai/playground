@@ -2,7 +2,7 @@
 
 import { getGlobalIamToken, getGlobalApiKey } from './api';
 
-const COMMERCE_API = import.meta.env.VITE_COMMERCE_API_URL || 'https://api.hanzo.ai';
+const COMMERCE_API = import.meta.env.VITE_COMMERCE_API_URL || 'https://commerce-api.hanzo.ai/api';
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export interface BalanceResult {
