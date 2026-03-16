@@ -119,43 +119,84 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   }
   console.log(`[e2e] On hanzo.id: ${page.url()}`);
 
-  // Fill the login form
-  const emailInput =
-    page.locator('input[name="username"]').or(
-    page.locator('input[name="email"]')).or(
-    page.locator('input[type="email"]')).or(
-    page.locator('input[placeholder*="email" i]')).or(
-    page.locator('input[placeholder*="username" i]'));
+  // Wait for Next.js hydration — the login form is a React app and event
+  // handlers aren't attached until hydration completes. Without this,
+  // Playwright's fill() updates the DOM but React state stays empty.
+  await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
 
-  const passwordInput =
-    page.locator('input[name="password"]').or(
-    page.locator('input[type="password"]'));
+  // The hanzo.id login form uses placeholder-based inputs with no name/id attrs.
+  // Use simple, direct selectors that match the actual page structure.
+  const emailInput = page.locator('input[placeholder*="email" i]').first();
+  const passwordInput = page.locator('input[type="password"]').first();
 
-  await emailInput.first().fill(cfg.email, { timeout: 15_000 });
-  await passwordInput.first().fill(cfg.password);
-  console.log(`[e2e] Filled credentials`);
+  await emailInput.waitFor({ state: 'visible', timeout: 15_000 });
 
-  // Submit — click Sign In button
+  // Click into the field first to ensure React focus handlers fire,
+  // then clear and type (more reliable than fill() for React controlled inputs).
+  await emailInput.click();
+  await emailInput.fill(cfg.email);
+  await passwordInput.click();
+  await passwordInput.fill(cfg.password);
+
+  // Verify the fill actually took effect in the DOM
+  const filledEmail = await emailInput.inputValue();
+  const filledPw = await passwordInput.inputValue();
+  console.log(`[e2e] Filled credentials (email=${filledEmail ? 'set' : 'EMPTY'}, pw=${filledPw ? 'set' : 'EMPTY'})`);
+
+  if (!filledEmail || !filledPw) {
+    // Retry with keyboard typing if programmatic fill failed
+    console.log(`[e2e] Retrying credential fill with keyboard input...`);
+    await emailInput.click({ clickCount: 3 });
+    await page.keyboard.type(cfg.email, { delay: 30 });
+    await passwordInput.click({ clickCount: 3 });
+    await page.keyboard.type(cfg.password, { delay: 30 });
+  }
+
+  // Submit — click Sign In button (do NOT use force:true, let Playwright
+  // wait for actionability so we know the button is actually interactive)
   const submitButton = page.getByRole('button', { name: /sign in/i }).first();
   await submitButton.waitFor({ state: 'visible', timeout: 10_000 });
-  await submitButton.click({ force: true, timeout: 10_000 });
+
+  // Set up navigation listener BEFORE clicking to avoid race
+  const navigationPromise = page.waitForURL(
+    (url) => !url.href.includes(cfg.serverUrl),
+    { timeout: 60_000 },
+  ).then(() => 'redirected' as const);
+
+  await submitButton.click({ timeout: 10_000 });
   console.log(`[e2e] Clicked submit, waiting for redirect back to app...`);
 
-  // Wait for redirect back to app (login form submits and OIDC redirects)
-  // Race between successful redirect and error message appearing on the login form.
-  const redirectPromise = page.waitForURL(`${baseURL}/**`, { timeout: 60_000 }).then(() => 'ok' as const);
-  const errorPromise = page.locator('.login-panel .alert, .login-form .error, [class*="error-msg"], [class*="errorMessage"]')
+  // Wait for either: redirect away from hanzo.id, or an error appearing on page
+  const errorPromise = page.locator('[role="alert"], [class*="error"], [class*="Error"], .text-red-500, .text-destructive')
     .first()
-    .waitFor({ state: 'visible', timeout: 55_000 })
-    .then(async () => {
-      const errText = await page.locator('.login-panel .alert, .login-form .error, [class*="error-msg"], [class*="errorMessage"]').first().textContent();
-      return `error: ${errText}` as const;
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .then(async (el) => {
+      const errText = await page.locator('[role="alert"], [class*="error"], [class*="Error"], .text-red-500, .text-destructive').first().textContent();
+      return `error: ${errText?.trim()}` as const;
     })
-    .catch(() => null);
+    .catch(() => 'no-error' as const);
 
-  const result = await Promise.race([redirectPromise, errorPromise].filter(Boolean));
-  if (result && typeof result === 'string' && result.startsWith('error:')) {
+  const result = await Promise.race([navigationPromise, errorPromise]);
+
+  if (result.startsWith('error:')) {
     throw new Error(`[e2e] Login failed on hanzo.id: ${result}`);
+  }
+
+  if (result === 'no-error') {
+    // Neither redirect nor error — the page is stuck. Take a diagnostic screenshot URL.
+    const currentUrl = page.url();
+    console.log(`[e2e] No redirect after 15s, still on: ${currentUrl}`);
+
+    // Maybe the page redirected but to an unexpected URL on hanzo.id (consent screen, MFA, etc.)
+    // Wait longer for the actual redirect
+    try {
+      await page.waitForURL(
+        (url) => !url.href.includes(cfg.serverUrl),
+        { timeout: 45_000 },
+      );
+    } catch {
+      throw new Error(`[e2e] Login stuck — no redirect from hanzo.id after submit. URL: ${page.url()}`);
+    }
   }
 
   console.log(`[e2e] Back on app: ${page.url().substring(0, 80)}...`);
