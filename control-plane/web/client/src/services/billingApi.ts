@@ -2,7 +2,7 @@
 
 import { getGlobalIamToken, getGlobalApiKey } from './api';
 
-const COMMERCE_API = import.meta.env.VITE_COMMERCE_API_URL || 'https://commerce.hanzo.ai';
+const COMMERCE_API = import.meta.env.VITE_COMMERCE_API_URL || 'https://api.hanzo.ai';
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export interface BalanceResult {
@@ -30,7 +30,7 @@ function getUserFromToken(token: string): string | null {
 
 /**
  * Get the current user's credit balance from Commerce API.
- * GET /api/v1/billing/balance?user=<sub>&currency=usd
+ * GET /v1/billing/balance?user=<sub>&currency=usd
  */
 export async function getBalance(): Promise<BalanceResult> {
   const token = getGlobalIamToken() || getGlobalApiKey();
@@ -43,7 +43,7 @@ export async function getBalance(): Promise<BalanceResult> {
     throw new Error('Cannot determine user identity from token');
   }
 
-  const url = new URL('/api/v1/billing/balance', COMMERCE_API);
+  const url = new URL('/v1/billing/balance', COMMERCE_API);
   url.searchParams.set('user', userId);
   url.searchParams.set('currency', 'usd');
 

@@ -29,7 +29,7 @@ export class CommerceHelper {
 
   constructor(token: string, commerceUrl?: string) {
     this.token = token;
-    this.commerceUrl = commerceUrl || process.env.E2E_COMMERCE_API_URL || 'https://commerce.hanzo.ai';
+    this.commerceUrl = commerceUrl || process.env.E2E_COMMERCE_API_URL || 'https://api.hanzo.ai';
   }
 
   private async request<T>(path: string, opts: RequestInit = {}): Promise<T> {
@@ -56,7 +56,7 @@ export class CommerceHelper {
    */
   async getBalance(userId: string, currency: string = 'usd'): Promise<Balance> {
     return this.request<Balance>(
-      `/api/v1/billing/balance?user=${encodeURIComponent(userId)}&currency=${currency}`
+      `/v1/billing/balance?user=${encodeURIComponent(userId)}&currency=${currency}`
     );
   }
 
@@ -65,7 +65,7 @@ export class CommerceHelper {
    */
   async getAllBalances(userId: string): Promise<Record<string, Balance>> {
     return this.request<Record<string, Balance>>(
-      `/api/v1/billing/balance/all?user=${encodeURIComponent(userId)}`
+      `/v1/billing/balance/all?user=${encodeURIComponent(userId)}`
     );
   }
 
@@ -74,7 +74,7 @@ export class CommerceHelper {
    */
   async getUsageRecords(userId: string, currency: string = 'usd'): Promise<Transaction[]> {
     return this.request<Transaction[]>(
-      `/api/v1/billing/usage?user=${encodeURIComponent(userId)}&currency=${currency}`
+      `/v1/billing/usage?user=${encodeURIComponent(userId)}&currency=${currency}`
     );
   }
 
@@ -83,7 +83,7 @@ export class CommerceHelper {
    * Idempotent-ish — Commerce may reject if already granted.
    */
   async grantStarterCredit(userId: string): Promise<Transaction> {
-    return this.request<Transaction>('/api/v1/billing/credit', {
+    return this.request<Transaction>('/v1/billing/credit', {
       method: 'POST',
       body: JSON.stringify({ user: userId }),
     });
@@ -100,7 +100,7 @@ export class CommerceHelper {
     provider?: string;
     tags?: string[];
   }): Promise<Transaction> {
-    return this.request<Transaction>('/api/v1/billing/usage', {
+    return this.request<Transaction>('/v1/billing/usage', {
       method: 'POST',
       body: JSON.stringify({
         currency: 'usd',
