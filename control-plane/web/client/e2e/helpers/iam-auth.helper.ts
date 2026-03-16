@@ -174,7 +174,7 @@ export async function performBrowserLogin(page: Page): Promise<void> {
   }
 
   // Wait for callback to process tokens and redirect to app
-  await page.waitForURL(/\/(launch|playground|dashboard|bots|nodes|executions|workflows|canvas|spaces|settings|metrics|identity)/, {
+  await page.waitForURL(/\/(launch|playground|dashboard|bots|nodes|executions|workflows|canvas|spaces|settings|metrics|identity|org)/, {
     timeout: 60_000,
   });
 
