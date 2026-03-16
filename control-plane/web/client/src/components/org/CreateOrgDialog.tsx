@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useIam, useOrganizations } from "@hanzo/iam/react";
 import { IamClient } from "@hanzo/iam";
 import { useTenantStore } from "@/stores/tenantStore";
+import type { KnownOrg } from "@/stores/tenantStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
   const { config, accessToken } = useIam();
   const orgState = useOrganizations();
   const setTenantOrg = useTenantStore((s) => s.setOrg);
+  const addKnownOrg = useTenantStore((s) => s.addKnownOrg);
 
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -90,12 +92,20 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
         token: accessToken ?? undefined,
       });
 
-      // Switch to the new org
+      // Persist the new org locally so it shows in the switcher immediately,
+      // even if the IAM API doesn't return it for non-admin users.
+      const newOrg: KnownOrg = { name: trimmedName, displayName: displayName.trim() || trimmedName };
+      addKnownOrg(newOrg);
+
+      // Switch to the new org and persist the selection
       orgState.switchOrg(trimmedName);
       setTenantOrg(trimmedName);
 
       resetForm();
       onOpenChange(false);
+
+      // Reload to re-fetch the org list in all useOrganizations() instances
+      window.location.reload();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Failed to create organization: ${msg}`);

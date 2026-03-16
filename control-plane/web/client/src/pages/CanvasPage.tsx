@@ -104,37 +104,43 @@ export function CanvasPage() {
       try {
         const resp = await nodeList(true);
         const gwNodes = (resp.nodes ?? []).filter((n) => n.connected);
-        if (gwNodes.length === 0) return;
-
-        // Build set of agentIds already on canvas
-        const canvasAgentIds = new Set<string>();
-        for (const node of nodes) {
-          if (node.type !== NODE_TYPES.bot) continue;
-          canvasAgentIds.add((node.data as unknown as Bot).agentId);
-        }
+        const connectedIds = new Set(gwNodes.map((n) => n.nodeId));
 
         let dirty = false;
 
+        // Mark canvas cloud bots that are NOT connected to the gateway as offline.
+        // This catches stale bots whose K8s pods have been terminated.
+        for (const node of nodes) {
+          if (node.type !== NODE_TYPES.bot) continue;
+          const botData = node.data as unknown as Bot;
+          if (
+            botData.source === 'cloud' &&
+            botData.status !== 'offline' &&
+            botData.status !== 'provisioning' &&
+            !connectedIds.has(botData.agentId)
+          ) {
+            setBotStatus(botData.agentId, 'offline');
+            dirty = true;
+          }
+        }
+
         for (const gw of gwNodes) {
           // Check if this gateway node is already on the canvas
-          const onCanvas = canvasAgentIds.has(gw.nodeId);
+          const canvasBot = nodes.find(
+            (n) => n.type === NODE_TYPES.bot && (n.data as unknown as Bot).agentId === gw.nodeId
+          );
 
-          if (onCanvas) {
-            // Transition provisioning bots to idle and ensure sessionKey is set
-            const canvasBot = nodes.find(
-              (n) => n.type === NODE_TYPES.bot && (n.data as unknown as Bot).agentId === gw.nodeId
-            );
-            if (canvasBot) {
-              const botData = canvasBot.data as unknown as Bot;
-              if (botData.status === 'provisioning') {
-                setBotStatus(gw.nodeId, 'idle');
-                dirty = true;
-              }
-              // Ensure cloud bots have a sessionKey for chat
-              if (gw.nodeId.startsWith('cloud-') && !botData.sessionKey) {
-                upsertBot(gw.nodeId, { sessionKey: `agent:${gw.nodeId}:main` });
-                dirty = true;
-              }
+          if (canvasBot) {
+            const botData = canvasBot.data as unknown as Bot;
+            // Transition provisioning/offline bots to idle when connected
+            if (botData.status === 'provisioning' || botData.status === 'offline') {
+              setBotStatus(gw.nodeId, 'idle');
+              dirty = true;
+            }
+            // Ensure cloud bots have a sessionKey for chat
+            if (gw.nodeId.startsWith('cloud-') && !botData.sessionKey) {
+              upsertBot(gw.nodeId, { sessionKey: `agent:${gw.nodeId}:main` });
+              dirty = true;
             }
           } else if (gw.nodeId.startsWith('cloud-')) {
             // Cloud node connected to gateway but not on canvas — add it

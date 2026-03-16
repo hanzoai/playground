@@ -970,7 +970,7 @@ function NodeDetailPageContent() {
                       <dt className="text-sm font-medium text-muted-foreground">
                         Team ID
                       </dt>
-                      <dd className="text-sm">{node.team_id}</dd>
+                      <dd className="text-sm">{node.team_id || <span className="text-muted-foreground italic">Not set</span>}</dd>
                     </div>
 
                     <div className="space-y-1">
@@ -984,7 +984,7 @@ function NodeDetailPageContent() {
                       <dt className="text-sm font-medium text-muted-foreground">
                         Base URL
                       </dt>
-                      <dd className="text-sm font-mono break-all">{node.base_url}</dd>
+                      <dd className="text-sm font-mono break-all">{node.base_url || <span className="font-sans text-muted-foreground italic">Via Gateway</span>}</dd>
                     </div>
 
                     <div className="space-y-1">

@@ -4,7 +4,7 @@
  * Includes a "Create Organization" option at the bottom of the dropdown.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useOrganizations } from "@hanzo/iam/react";
 import { useTenantStore } from "@/stores/tenantStore";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,25 @@ import { CreateOrgDialog } from "@/components/org/CreateOrgDialog";
 export function IamOrgSelector() {
   const orgState = useOrganizations();
   const setTenantOrg = useTenantStore((s) => s.setOrg);
+  const knownOrgs = useTenantStore((s) => s.knownOrgs);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Merge IAM-fetched orgs with locally-created orgs so newly-created
+  // orgs appear immediately, even if the IAM API didn't return them.
+  const allOrgs = useMemo(() => {
+    const iamOrgs = orgState.organizations ?? [];
+    const names = new Set(iamOrgs.map((o) => o.name));
+    const extras = knownOrgs
+      .filter((ko) => !names.has(ko.name))
+      .map((ko) => ({ owner: "admin", name: ko.name, displayName: ko.displayName }));
+    const merged = [...iamOrgs, ...extras];
+    // Ensure the currently-selected org always appears in the list
+    const mergedNames = new Set(merged.map((o) => o.name));
+    if (orgState.currentOrgId && !mergedNames.has(orgState.currentOrgId)) {
+      merged.push({ owner: "admin", name: orgState.currentOrgId, displayName: orgState.currentOrgId });
+    }
+    return merged;
+  }, [orgState.organizations, knownOrgs, orgState.currentOrgId]);
 
   const handleSwitch = (orgName: string) => {
     orgState.switchOrg(orgName);
@@ -30,10 +48,12 @@ export function IamOrgSelector() {
   };
 
   const currentLabel =
-    orgState.currentOrg?.displayName || orgState.currentOrgId || "Select org";
+    allOrgs.find((o) => o.name === orgState.currentOrgId)?.displayName
+    || orgState.currentOrgId
+    || "Select org";
 
   // When there is zero or one org, show the static label plus the create option
-  if (!orgState.organizations || orgState.organizations.length <= 1) {
+  if (allOrgs.length <= 1) {
     return (
       <>
         <DropdownMenu>
@@ -46,7 +66,7 @@ export function IamOrgSelector() {
           <DropdownMenuContent align="start" className="w-48">
             <DropdownMenuLabel>Organization</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {orgState.organizations?.map((org) => (
+            {allOrgs.map((org) => (
               <DropdownMenuItem
                 key={org.name}
                 onClick={() => handleSwitch(org.name)}
@@ -79,7 +99,7 @@ export function IamOrgSelector() {
         <DropdownMenuContent align="start" className="w-48">
           <DropdownMenuLabel>Organization</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {orgState.organizations.map((org) => (
+          {allOrgs.map((org) => (
             <DropdownMenuItem
               key={org.name}
               onClick={() => handleSwitch(org.name)}
