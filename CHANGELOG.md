@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.225] - 2026-03-16
+
+
+### Fixed
+
+- Fix(ui): add org management to sidebar, fix org switcher & cloud bot metadata
+
+- Add Organization nav entry in sidebar pointing to /org/settings
+- Fix org switcher not showing newly-created orgs (knownOrgs in tenantStore)
+- Ensure currentOrgId always appears in org dropdown
+- Show "Via Gateway" for empty base_url and "Not set" for empty team_id
+- Canvas reconciliation marks disconnected cloud bots as offline
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (03ce9e9)
+
 ## [0.1.41-rc.224] - 2026-03-15
 
 
