@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.228] - 2026-03-16
+
+
+### Fixed
+
+- Fix(e2e): fix false positive error detection on hanzo.id login
+
+The error selector [class*="error"] was too broad and matched elements
+not related to login errors. Replaced error-race approach with simpler
+flow: wait for redirect, if no redirect check for actual error banners
+using hanzo.id's specific classes (text-red-400, bg-red-500/10).
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (76c7603)
+
 ## [0.1.41-rc.227] - 2026-03-16
 
 
