@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.227] - 2026-03-16
+
+
+### CI
+
+- Ci: split functional tests into core (strict) and AI (non-blocking)
+
+OpenRouter/AI-dependent tests (marked @pytest.mark.openrouter) depend on
+external API availability and are inherently flaky. Split the test run:
+- Core tests (not openrouter): strict, must pass for workflow to succeed
+- AI tests (openrouter): run separately with continue-on-error so external
+  API outages don't block the CI pipeline
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (275dacc)
+
+
+
+### Fixed
+
+- Fix(e2e): fix auth login flow for hanzo.id Next.js form
+
+The hanzo.id login page is a custom Next.js app (not standard Casdoor).
+Inputs have no name/id attributes and no <form> wrapper. Key fixes:
+- Wait for networkidle before filling to ensure React hydration completes
+- Use direct placeholder selectors matching actual page structure
+- Click into fields before fill() to trigger React focus handlers
+- Verify fill succeeded; fallback to keyboard typing if not
+- Remove force:true on submit click to respect actionability
+- Better error detection using role="alert" and common error classes
+- Set up navigation listener before clicking to avoid race conditions
+- Clear error reporting when login gets stuck
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (835542c)
+
 ## [0.1.41-rc.226] - 2026-03-16
 
 
