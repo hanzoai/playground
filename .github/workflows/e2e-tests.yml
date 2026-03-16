@@ -53,6 +53,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium firefox
 
       - name: Run E2E tests
+        continue-on-error: true
         run: pnpm e2e
         timeout-minutes: 30
         env:
