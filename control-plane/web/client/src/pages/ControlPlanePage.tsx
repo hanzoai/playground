@@ -17,22 +17,6 @@ import type { BotsResponse, BotWithNode } from '@/types/bots';
 // Types
 // ---------------------------------------------------------------------------
 
-type ConnectivityState = 'connected' | 'heartbeat-delayed' | 'degraded' | 'unreachable' | 'updating';
-
-interface AgentGroup {
-  nodeId: string;
-  nodeName: string;
-  nodeType: 'local' | 'cloud';
-  location: string;
-  status: ConnectivityState;
-  bots: BotWithNode[];
-  metrics: {
-    cpu: number;
-    memory: number;
-    latency: number;
-  };
-}
-
 interface ActivityEvent {
   id: string;
   ts: Date;
@@ -44,68 +28,6 @@ interface ActivityEvent {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function groupBotsByAgent(bots: BotWithNode[]): AgentGroup[] {
-  const groups = new Map<string, AgentGroup>();
-
-  for (const bot of bots) {
-    const nodeId = bot.node_id || 'unknown';
-    if (!groups.has(nodeId)) {
-      // Determine node type from bot_id pattern or node_id
-      const isLocal = nodeId.includes('local') || nodeId.startsWith('dev-');
-      groups.set(nodeId, {
-        nodeId,
-        nodeName: nodeId,
-        nodeType: isLocal ? 'local' : 'cloud',
-        location: isLocal ? 'Local' : 'Cloud',
-        status: bot.node_status === 'active' ? 'connected' : bot.node_status === 'inactive' ? 'unreachable' : 'degraded',
-        bots: [],
-        metrics: { cpu: 0, memory: 0, latency: 0 },
-      });
-    }
-    groups.get(nodeId)!.bots.push(bot);
-  }
-
-  return Array.from(groups.values());
-}
-
-function connectivityLabel(state: ConnectivityState): { text: string; color: string } {
-  switch (state) {
-    case 'connected':         return { text: 'Connected',         color: 'text-green-400' };
-    case 'heartbeat-delayed': return { text: 'Heartbeat Delayed', color: 'text-yellow-400' };
-    case 'degraded':          return { text: 'Degraded',          color: 'text-orange-400' };
-    case 'unreachable':       return { text: 'Unreachable',       color: 'text-red-400' };
-    case 'updating':          return { text: 'Updating',          color: 'text-blue-400' };
-  }
-}
-
-function statusDotColor(state: ConnectivityState): string {
-  switch (state) {
-    case 'connected':         return 'bg-green-400';
-    case 'heartbeat-delayed': return 'bg-yellow-400';
-    case 'degraded':          return 'bg-orange-400';
-    case 'unreachable':       return 'bg-red-400';
-    case 'updating':          return 'bg-blue-400';
-  }
-}
-
-function botStatusColor(nodeStatus: string): string {
-  switch (nodeStatus) {
-    case 'active':   return 'text-green-400';
-    case 'inactive': return 'text-muted-foreground';
-    case 'unknown':  return 'text-yellow-400';
-    default:         return 'text-muted-foreground';
-  }
-}
-
-function botStatusLabel(nodeStatus: string): string {
-  switch (nodeStatus) {
-    case 'active':   return 'Running';
-    case 'inactive': return 'Offline';
-    case 'unknown':  return 'Unknown';
-    default:         return nodeStatus;
-  }
-}
 
 function relativeTime(ts: Date): string {
   const ms = Date.now() - ts.getTime();
@@ -126,7 +48,7 @@ export function ControlPlanePage() {
   const [error, setError] = useState<string | null>(null);
   const [sseConnected, setSseConnected] = useState(false);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
-  const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
+  const [showActivity, setShowActivity] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const activityIdRef = useRef(0);
 
@@ -231,19 +153,6 @@ export function ControlPlanePage() {
   // -----------------------------------------------------------------------
 
   const safeData = data ?? { bots: [], total: 0, online_count: 0, offline_count: 0, nodes_count: 0 };
-  const agents = groupBotsByAgent(safeData.bots);
-  const cloudCount = agents.filter((a) => a.nodeType === 'cloud').length;
-  const localCount = agents.filter((a) => a.nodeType === 'local').length;
-  const healthyCount = agents.filter((a) => a.status === 'connected').length;
-
-  const toggleAgent = useCallback((nodeId: string) => {
-    setExpandedAgents((prev) => {
-      const next = new Set(prev);
-      if (next.has(nodeId)) next.delete(nodeId);
-      else next.add(nodeId);
-      return next;
-    });
-  }, []);
 
   // -----------------------------------------------------------------------
   // Render
@@ -252,7 +161,7 @@ export function ControlPlanePage() {
   return (
     <div className="space-y-0">
       {/* ─── Top Bar ─── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Control Plane</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -287,29 +196,23 @@ export function ControlPlanePage() {
             </svg>
           </button>
 
-          {/* Register Bot */}
+          {/* Activity toggle */}
           <button
             type="button"
-            onClick={() => navigate('/nodes')}
-            className="h-7 px-3 flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+            onClick={() => setShowActivity((v) => !v)}
+            className={cn(
+              'h-7 px-2.5 flex items-center gap-1.5 rounded-md border border-border/50 text-xs font-medium transition-colors',
+              showActivity ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            )}
           >
-            <span>+</span>
-            <span>Register Bot</span>
+            Activity
+            {activity.length > 0 && (
+              <span className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-muted text-[10px] font-mono">
+                {activity.length}
+              </span>
+            )}
           </button>
         </div>
-      </div>
-
-      {/* ─── Metrics Strip ─── */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-4 py-2 px-0 mb-4 border-y border-border/30 text-xs font-mono text-muted-foreground">
-        <MetricCell label="Bots" value={agents.length} />
-        <Sep />
-        <MetricCell label="Cloud" value={cloudCount} />
-        <Sep />
-        <MetricCell label="Local" value={localCount} />
-        <Sep />
-        <MetricCell label="Bots" value={safeData.total} />
-        <Sep />
-        <MetricCell label="Healthy" value={agents.length > 0 ? `${Math.round((healthyCount / agents.length) * 100)}%` : '\u2014'} />
       </div>
 
       {/* ─── Error ─── */}
@@ -319,44 +222,36 @@ export function ControlPlanePage() {
         </div>
       )}
 
-      {/* ─── Main 60/40 Split ─── */}
-      <div className="flex flex-col lg:flex-row gap-4 min-h-[400px]">
-        {/* LEFT: Bot Network State (60%) */}
-        <div className="flex-[3] min-w-0">
-          <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-            Bot Network
-          </div>
-
-          {loading && !data ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground py-8">
-              <span className="h-3 w-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
-              Connecting to bot network...
-            </div>
-          ) : agents.length === 0 ? (
-            <EmptyNetwork onRegisterLocal={() => navigate('/nodes')} onDeployCloud={() => navigate('/nodes')} />
-          ) : (
-            <div className="space-y-1">
-              {agents.map((agent) => (
-                <AgentCard
-                  key={agent.nodeId}
-                  agent={agent}
-                  expanded={expandedAgents.has(agent.nodeId)}
-                  onToggle={() => toggleAgent(agent.nodeId)}
-                  onBotClick={(bot) => navigate(`/bots/${encodeURIComponent(bot.bot_id)}`)}
-                />
-              ))}
-            </div>
-          )}
+      {/* ─── Bot Grid (full width) ─── */}
+      {loading && !data ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground py-12">
+          <span className="h-3 w-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
+          Connecting to bot network...
         </div>
+      ) : safeData.bots.length === 0 ? (
+        <EmptyNetwork onCreate={() => navigate('/playground')} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {safeData.bots.map((bot) => (
+            <BotCard
+              key={bot.bot_id}
+              bot={bot}
+              onOpen={() => navigate(`/playground?bot=${encodeURIComponent(bot.bot_id)}`)}
+              onDetail={() => navigate(`/bots/${encodeURIComponent(bot.bot_id)}`)}
+            />
+          ))}
+        </div>
+      )}
 
-        {/* RIGHT: Activity Stream (40%) */}
-        <div className="flex-[2] min-w-0 border-t lg:border-t-0 lg:border-l border-border/30 pt-4 lg:pt-0 lg:pl-4">
+      {/* ─── Collapsible Activity Stream ─── */}
+      {showActivity && (
+        <div className="mt-6 border-t border-border/30 pt-4">
           <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
             Activity
           </div>
           <ActivityStream events={activity} />
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -365,128 +260,74 @@ export function ControlPlanePage() {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function MetricCell({ label, value }: { label: string; value: number | string }) {
+function EmptyNetwork({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-foreground font-medium">{typeof value === 'number' ? value : value}</span>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function Sep() {
-  return <span className="text-border/50">|</span>;
-}
-
-function EmptyNetwork({ onRegisterLocal, onDeployCloud }: { onRegisterLocal: () => void; onDeployCloud: () => void }) {
-  return (
-    <div className="py-12">
-      <p className="text-sm text-muted-foreground mb-6">No bots connected.</p>
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onRegisterLocal}
-          className="h-8 px-4 flex items-center gap-2 rounded-md border border-border/50 text-xs font-medium text-foreground hover:bg-accent transition-colors"
-        >
-          <span className="text-green-400">+</span>
-          Register Local Bot
-        </button>
-        <button
-          type="button"
-          onClick={onDeployCloud}
-          className="h-8 px-4 flex items-center gap-2 rounded-md border border-border/50 text-xs font-medium text-foreground hover:bg-accent transition-colors"
-        >
-          <span className="text-blue-400">+</span>
-          Deploy Cloud Bot
-        </button>
+    <div className="flex flex-col items-center justify-center py-20">
+      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v8" /><path d="M8 12h8" />
+        </svg>
       </div>
-    </div>
-  );
-}
-
-function AgentCard({
-  agent,
-  expanded,
-  onToggle,
-  onBotClick,
-}: {
-  agent: AgentGroup;
-  expanded: boolean;
-  onToggle: () => void;
-  onBotClick: (bot: BotWithNode) => void;
-}) {
-  const conn = connectivityLabel(agent.status);
-  const dotColor = statusDotColor(agent.status);
-
-  return (
-    <div className="border border-border/30 rounded-md overflow-hidden">
-      {/* Agent header */}
+      <p className="text-sm font-medium text-foreground mb-1">No bots yet</p>
+      <p className="text-xs text-muted-foreground mb-6">Create your first bot to get started.</p>
       <button
         type="button"
-        onClick={onToggle}
-        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-accent/30 transition-colors"
+        onClick={onCreate}
+        className="h-8 px-4 flex items-center gap-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
       >
-        {/* Expand chevron */}
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          className={cn('shrink-0 transition-transform text-muted-foreground', expanded && 'rotate-90')}
-        >
-          <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-
-        {/* Status dot */}
-        <span className={cn('h-2 w-2 rounded-full shrink-0', dotColor)} />
-
-        {/* Name */}
-        <span className="text-sm font-medium truncate">{agent.nodeName}</span>
-
-        {/* Location badge */}
-        <span className={cn(
-          'text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0',
-          agent.nodeType === 'local'
-            ? 'text-green-400 bg-green-500/10'
-            : 'text-blue-400 bg-blue-500/10'
-        )}>
-          {agent.location}
-        </span>
-
-        {/* Status */}
-        <span className={cn('text-[10px] font-mono ml-auto shrink-0', conn.color)}>
-          {conn.text}
-        </span>
-
-        {/* Bot count */}
-        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-          {agent.bots.length} {agent.bots.length === 1 ? 'bot' : 'bots'}
-        </span>
+        Create your first bot
       </button>
+    </div>
+  );
+}
 
-      {/* Expanded: bot list */}
-      {expanded && (
-        <div className="border-t border-border/20">
-          {agent.bots.map((bot) => (
-            <button
-              key={bot.bot_id}
-              type="button"
-              onClick={() => onBotClick(bot)}
-              className="w-full flex items-center gap-3 px-3 py-1.5 pl-9 text-left hover:bg-accent/20 transition-colors text-xs"
-            >
-              <span className={cn('font-mono', botStatusColor(bot.node_status))}>
-                {botStatusLabel(bot.node_status)}
-              </span>
-              <span className="text-foreground truncate">{bot.name || bot.bot_id}</span>
-              {bot.node_version && (
-                <span className="text-muted-foreground font-mono text-[10px] ml-auto truncate max-w-[120px]">
-                  {bot.node_version}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+function BotCard({
+  bot,
+  onOpen,
+  onDetail,
+}: {
+  bot: BotWithNode;
+  onOpen: () => void;
+  onDetail: () => void;
+}) {
+  const dotColor =
+    bot.node_status === 'active' ? 'bg-green-400' :
+    bot.node_status === 'inactive' ? 'bg-red-400' :
+    'bg-yellow-400';
+
+  const lastActive = bot.last_executed
+    ? relativeTime(new Date(bot.last_executed))
+    : bot.last_updated
+    ? relativeTime(new Date(bot.last_updated))
+    : null;
+
+  return (
+    <div
+      className="border border-border/30 rounded-lg p-4 hover:border-border/60 transition-colors cursor-pointer"
+      onClick={onDetail}
+    >
+      {/* Name + status */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className={cn('h-2 w-2 rounded-full shrink-0', dotColor)} />
+        <span className="text-sm font-medium truncate">{bot.name || bot.bot_id}</span>
+      </div>
+
+      {/* Last active */}
+      {lastActive && (
+        <p className="text-xs text-muted-foreground mb-3">
+          Active {lastActive}
+        </p>
       )}
+
+      {/* Open in Playground */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onOpen(); }}
+        className="h-7 px-3 w-full flex items-center justify-center gap-1.5 rounded-md border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+      >
+        Open in Playground
+      </button>
     </div>
   );
 }

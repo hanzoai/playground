@@ -1,12 +1,12 @@
 import React, { Suspense } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantStore } from "@/stores/tenantStore";
-import { ChevronDown, Check } from "@/components/ui/icon-bridge";
+import { ChevronDown, Check, Plus } from "@/components/ui/icon-bridge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,6 +132,7 @@ function usePageTitle(): string | null {
 
 export function TopNavigation() {
   const pageTitle = usePageTitle();
+  const navigate = useNavigate();
 
   return (
     <header
@@ -164,8 +165,16 @@ export function TopNavigation() {
         </div>
       )}
 
-      {/* Right — Theme toggle */}
+      {/* Right — New Bot CTA + Theme toggle */}
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigate('/playground')}
+          className="h-7 px-3 flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+        >
+          <Plus size={14} />
+          <span className="hidden sm:inline">New Bot</span>
+        </button>
         <ModeToggle />
       </div>
     </header>
