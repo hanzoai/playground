@@ -25,7 +25,7 @@ function getConfig(): IamConfig {
     email: process.env.E2E_IAM_USER_EMAIL || '',
     password: process.env.E2E_IAM_USER_PASSWORD || '',
     organization: process.env.E2E_IAM_ORGANIZATION || 'hanzo',
-    application: process.env.E2E_IAM_APPLICATION || 'app-hanzobot',
+    application: process.env.E2E_IAM_APPLICATION || 'app-bot',
   };
 }
 
