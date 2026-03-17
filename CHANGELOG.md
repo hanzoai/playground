@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.232] - 2026-03-17
+
+
+### Fixed
+
+- Fix(control-plane): simplify bot management UX
+
+- Add "New Bot" primary CTA to header right (navigates to /playground)
+- Remove metrics strip from bot list (belongs on /metrics)
+- Replace 60/40 split layout with full-width bot card grid
+- Simplify bot cards to name + status dot + last active + playground action
+- Make activity stream collapsible, hidden by default
+- Clean up empty state to single "Create your first bot" CTA
+- Remove "Register Bot" button (now "New Bot" in header)
+- All "add bot" flows navigate to /playground, not /nodes (61504da)
+
 ## [0.1.41-rc.231] - 2026-03-16
 
 
