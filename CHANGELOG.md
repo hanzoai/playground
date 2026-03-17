@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.233] - 2026-03-17
+
+
+### Fixed
+
+- Fix: correct IAM client ID from hanzobot-client-id to app-bot (4c98182)
+
 ## [0.1.41-rc.232] - 2026-03-17
 
 
