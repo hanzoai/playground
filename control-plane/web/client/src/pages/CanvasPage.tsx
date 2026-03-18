@@ -14,6 +14,7 @@ import { ConnectionIndicator } from '@/components/canvas/ConnectionIndicator';
 import { ActionPill } from '@/components/canvas/ActionPill/ActionPill';
 import { CommandPalette } from '@/components/canvas/CommandPalette';
 import { FirstBotOnboarding } from '@/components/onboarding/FirstBotOnboarding';
+import { TeamLauncher } from '@/components/onboarding/TeamLauncher';
 import { useGateway } from '@/hooks/useGateway';
 import { useNodeEventsSSE } from '@/hooks/useSSE';
 import { nodeList } from '@/services/gatewayApi';
@@ -31,6 +32,7 @@ export function CanvasPage() {
   const initialized = useBotStore((s) => s.initialized);
   const agentCount = useBotStore((s) => s.agents.size);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [teamLauncherOpen, setTeamLauncherOpen] = useState(false);
 
   const activeSpace = useSpaceStore((s) => s.activeSpace);
   const spaceBots = useSpaceStore((s) => s.bots);
@@ -221,6 +223,24 @@ export function CanvasPage() {
 
           {/* ActionPill */}
           <ActionPill />
+
+          {/* Launch Team quick action - bottom right */}
+          {!showOnboarding && (
+            <div className="absolute bottom-4 right-4 z-20 pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setTeamLauncherOpen(true)}
+                className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground touch-manipulation"
+                title="Launch AI Team"
+              >
+                <span className="text-sm leading-none">{'\u{1F465}'}</span>
+                <span>Launch Team</span>
+              </button>
+            </div>
+          )}
+
+          {/* TeamLauncher dialog */}
+          <TeamLauncher open={teamLauncherOpen} onClose={() => setTeamLauncherOpen(false)} />
 
           {/* Onboarding: empty canvas with active space but no bots */}
           {showOnboarding && (

@@ -16,6 +16,9 @@ export interface Bot {
   name: string;
   emoji?: string;
   avatar?: string;
+  role?: string;
+  color?: string;
+  personality?: string;
   status: BotStatus;
   sessionKey?: string;
   model?: string;

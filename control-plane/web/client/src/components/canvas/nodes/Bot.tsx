@@ -78,6 +78,11 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
           : 'ring-1 ring-white/[0.10] hover:ring-white/[0.20]',
         'shadow-2xl',
       )}
+      style={{
+        ...(bot.color && selected ? { boxShadow: `0 0 24px -2px ${bot.color}40` } : {}),
+        ...(bot.color && !selected && (bot.status === 'busy') ? { boxShadow: `0 0 16px -4px ${bot.color}30` } : {}),
+        ...(bot.color ? { borderColor: selected ? `${bot.color}60` : undefined } : {}),
+      }}
     >
       {/* Resize handles */}
       <NodeResizer
@@ -114,15 +119,37 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
         {/* Avatar / Emoji */}
         {bot.avatar ? (
-          <img src={bot.avatar} alt={bot.name} className="h-7 w-7 rounded-full object-cover shrink-0" />
+          <img
+            src={bot.avatar}
+            alt={bot.name}
+            className="h-7 w-7 rounded-full object-cover shrink-0"
+            style={{ outline: `2px solid ${bot.color ?? 'transparent'}`, outlineOffset: '1px' }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+          />
+        ) : null}
+        {!bot.avatar ? (
+          <span className="text-lg leading-none shrink-0">{bot.emoji ?? '\u{1F916}'}</span>
         ) : (
-          <span className="text-lg leading-none shrink-0">{bot.emoji ?? '🤖'}</span>
+          <span className="text-lg leading-none shrink-0 hidden">{bot.emoji ?? '\u{1F916}'}</span>
         )}
 
-        {/* Name + Status */}
+        {/* Name + Role + Status */}
         <div className="flex-1 min-w-0">
-          <div className="text-base font-semibold truncate">{bot.name}</div>
-          <div className="text-xs text-muted-foreground leading-tight">{status.label}</div>
+          <div className="flex items-center gap-1.5">
+            {bot.emoji && bot.avatar && (
+              <span className="text-sm leading-none">{bot.emoji}</span>
+            )}
+            <span className="text-base font-semibold truncate">{bot.name}</span>
+          </div>
+          <div className="text-xs text-muted-foreground leading-tight flex items-center gap-1.5">
+            {bot.role && (
+              <>
+                <span style={{ color: bot.color }}>{bot.role}</span>
+                <span className="text-muted-foreground/40">&middot;</span>
+              </>
+            )}
+            <span>{status.label}</span>
+          </div>
         </div>
 
         {/* Source badge */}
@@ -225,9 +252,17 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 function BotOverview({ bot }: { bot: BotType }) {
   return (
     <div className="w-full px-4 py-3 space-y-3 text-sm overflow-y-auto h-full">
+      {/* Personality */}
+      {bot.personality && (
+        <div className="text-xs text-muted-foreground italic border-l-2 pl-2.5" style={{ borderColor: bot.color ?? 'var(--border)' }}>
+          {bot.personality}
+        </div>
+      )}
+
       {/* Info rows */}
       <div className="space-y-2">
         <Row label="Agent ID" value={bot.agentId} />
+        {bot.role && <Row label="Role" value={bot.role} />}
         {bot.model && <Row label="Model" value={bot.model} />}
         {bot.workspace && <Row label="Workspace" value={bot.workspace} />}
         {bot.sessionKey && <Row label="Session" value={bot.sessionKey} />}
