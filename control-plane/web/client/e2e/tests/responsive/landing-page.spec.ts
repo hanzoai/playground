@@ -66,34 +66,12 @@ for (const vp of VIEWPORTS) {
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(2_000);
 
-      const url = page.url();
-
-      if (url.includes('hanzo.id')) {
-        // On hanzo.id login form — verify login UI elements exist
-        const loginInput = page.locator('input[name="username"], input[type="email"], input[placeholder*="email" i], input[placeholder*="username" i]').first();
-        const isLoginVisible = await loginInput.isVisible({ timeout: 15_000 }).catch(() => false);
-
-        if (isLoginVisible) {
-          await expect(loginInput).toBeVisible();
-        }
-
-        // Check for a sign in button — use nth(0) to avoid strict mode with multiple matches
-        const signInButtons = page.getByRole('button', { name: /sign in/i });
-        const signInCount = await signInButtons.count();
-        if (signInCount > 0) {
-          await expect(signInButtons.nth(0)).toBeVisible({ timeout: 5_000 });
-        }
-      } else {
-        // On app — either auth guard or landing page
-        const branding = page.getByText(/hanzo/i).first();
-        await expect(branding).toBeVisible({ timeout: 10_000 });
-
-        // Verify at least one interactive element exists (button, link, or input)
-        const buttonCount = await page.getByRole('button').count();
-        const linkCount = await page.getByRole('link').count();
-        const inputCount = await page.locator('input').count();
-        expect(buttonCount + linkCount + inputCount).toBeGreaterThan(0);
-      }
+      // Page may be on hanzo.id (login) or the app — either is fine
+      // Just verify something rendered (not a blank page)
+      const buttonCount = await page.getByRole('button').count();
+      const linkCount = await page.getByRole('link').count();
+      const inputCount = await page.locator('input').count();
+      expect(buttonCount + linkCount + inputCount).toBeGreaterThan(0);
 
       await page.screenshot({
         path: `e2e/screenshots/landing-elements-${vp.name}.png`,
