@@ -11,12 +11,13 @@ import { cn } from '@/lib/utils';
 
 interface CanvasControlsProps {
   onFitView: () => void;
+  onAutoLayout?: () => void;
   onAddBot?: (position: { x: number; y: number }) => void;
   onAddStarter?: (position: { x: number; y: number }) => void;
   onLaunchCloud?: (type: 'linux' | 'terminal' | 'desktop') => void;
 }
 
-export function CanvasControls({ onFitView, onAddBot, onAddStarter, onLaunchCloud }: CanvasControlsProps) {
+export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter, onLaunchCloud }: CanvasControlsProps) {
   const { zoomIn, zoomOut } = useReactFlow();
   const { zoom } = useViewport();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,6 +70,20 @@ export function CanvasControls({ onFitView, onAddBot, onAddStarter, onLaunchClou
             <path d="M5 7h4M7 5v4" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
           </svg>
         </ControlButton>
+
+        {onAutoLayout && (
+          <>
+            <div className="mx-1 h-4 w-px bg-border/50" />
+            <ControlButton onClick={onAutoLayout} label="Auto layout">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            </ControlButton>
+          </>
+        )}
       </div>
 
       {/* FAB — bottom left */}

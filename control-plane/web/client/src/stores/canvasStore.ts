@@ -9,6 +9,13 @@ import { create } from 'zustand';
 import type { Node, Edge, Viewport, XYPosition } from '@xyflow/react';
 import type { Bot, BotView } from '@/types/canvas';
 import { NODE_TYPES } from '@/types/canvas';
+import {
+  BOT_NODE_DEFAULT_WIDTH,
+  BOT_NODE_DEFAULT_HEIGHT,
+  GRID_GAP_X,
+  GRID_GAP_Y,
+  GRID_COLUMNS,
+} from '@/components/canvas/nodes/registry';
 
 const STORAGE_KEY_PREFIX = 'playground';
 const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 0.8 };
@@ -44,6 +51,9 @@ interface CanvasStore {
 
   addStarter: (position?: XYPosition) => void;
 
+  /** Re-arrange all bot nodes in a grid layout */
+  autoLayout: () => void;
+
   persist: (tenantId?: string) => void;
   restore: (tenantId?: string) => void;
   /** Reset all state (call on logout/tenant switch) */
@@ -76,11 +86,18 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         ),
       });
     } else {
+      // Auto-position: place in grid based on current bot count
+      const botCount = nodes.filter((n) => n.type === NODE_TYPES.bot).length;
+      const col = botCount % GRID_COLUMNS;
+      const row = Math.floor(botCount / GRID_COLUMNS);
+      const gridPosition = { x: col * GRID_GAP_X, y: row * GRID_GAP_Y };
+
       set({
         nodes: [...nodes, {
           id: id(),
           type: NODE_TYPES.bot,
-          position: position ?? { x: Math.random() * 600, y: Math.random() * 400 },
+          position: position ?? gridPosition,
+          style: { width: BOT_NODE_DEFAULT_WIDTH, height: BOT_NODE_DEFAULT_HEIGHT },
           data: {
             agentId,
             name: data.name ?? 'Bot',
@@ -127,6 +144,27 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           : n
       ),
     });
+  },
+
+  autoLayout: () => {
+    const { nodes } = get();
+    let botIndex = 0;
+    const updated = nodes.map((n) => {
+      if (n.type !== NODE_TYPES.bot) return n;
+      const col = botIndex % GRID_COLUMNS;
+      const row = Math.floor(botIndex / GRID_COLUMNS);
+      botIndex++;
+      return {
+        ...n,
+        position: { x: col * GRID_GAP_X, y: row * GRID_GAP_Y },
+        style: {
+          ...n.style,
+          width: n.style?.width ?? BOT_NODE_DEFAULT_WIDTH,
+          height: n.style?.height ?? BOT_NODE_DEFAULT_HEIGHT,
+        },
+      };
+    });
+    set({ nodes: updated });
   },
 
   addStarter: (position) => {

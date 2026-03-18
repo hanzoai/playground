@@ -2,16 +2,18 @@
  * Bot Node
  *
  * Primary canvas node representing an agent bot.
- * Clean card with status, name, and source badge.
- * Click to expand into terminal/chat/desktop/files.
+ * Large card showing name, status, and live terminal/desktop/chat preview.
+ * Always shows content (no collapsed tiny state).
+ * Resizable via corner handles.
  * Handles hidden by default, shown on hover for connecting.
  */
 
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import { useCallback, useState, lazy, Suspense } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
 import type { Bot as BotType, BotView } from '@/types/canvas';
 import { cn } from '@/lib/utils';
+import { BOT_NODE_MIN_WIDTH, BOT_NODE_MIN_HEIGHT } from './registry';
 
 // Lazy load drill-down panels for code splitting
 const TerminalPanel = lazy(() => import('../drill-down/TerminalPanel').then(m => ({ default: m.TerminalPanel })));
@@ -47,11 +49,12 @@ const VIEW_TABS: { key: BotView; label: string; icon: string }[] = [
 export function BotNodeComponent({ data, selected }: NodeProps) {
   const bot = data as unknown as BotType;
   const setBotView = useCanvasStore((s) => s.setBotView);
-  const [expanded, setExpanded] = useState(false);
+  const removeBot = useCanvasStore((s) => s.removeBot);
+  const [collapsed, setCollapsed] = useState(false);
   const status = STATUS[bot.status] ?? STATUS.idle;
 
-  const handleToggleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
+  const handleToggleCollapse = useCallback(() => {
+    setCollapsed((prev) => !prev);
   }, []);
 
   const handleViewChange = useCallback(
@@ -61,110 +64,138 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
     [setBotView, bot.agentId]
   );
 
+  const handleClose = useCallback(() => {
+    removeBot(bot.agentId);
+  }, [removeBot, bot.agentId]);
+
   return (
     <div
       className={cn(
         'group relative rounded-xl bg-zinc-800/90 transition-all touch-manipulation',
+        'w-full h-full flex flex-col',
         selected
-          ? 'ring-1 ring-primary/50 shadow-[0_0_16px_-2px] shadow-primary/25'
+          ? 'ring-2 ring-primary/60 shadow-[0_0_24px_-2px] shadow-primary/30'
           : 'ring-1 ring-white/[0.10] hover:ring-white/[0.20]',
-        expanded ? 'w-[320px] md:w-[400px] shadow-2xl' : 'w-[180px] md:w-[200px] shadow-lg',
+        'shadow-2xl',
       )}
     >
-      {/* Handles - hidden by default, shown on hover */}
+      {/* Resize handles */}
+      <NodeResizer
+        minWidth={BOT_NODE_MIN_WIDTH}
+        minHeight={collapsed ? 52 : BOT_NODE_MIN_HEIGHT}
+        isVisible={selected ?? false}
+        lineClassName="!border-primary/30"
+        handleClassName="!w-2.5 !h-2.5 !bg-primary/60 !border-2 !border-zinc-800"
+      />
+
+      {/* Connection handles - hidden by default, shown on hover */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-2.5 !h-2.5 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
+        className="!w-3 !h-3 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-2.5 !h-2.5 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
+        className="!w-3 !h-3 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
       />
 
-      {/* Header */}
+      {/* Header - always visible, prominent */}
       <div
-        className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none"
-        onClick={handleToggleExpand}
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none shrink-0"
+        onClick={handleToggleCollapse}
       >
         {/* Status dot */}
         <span className={cn(
-          'h-2 w-2 rounded-full shrink-0',
+          'h-3 w-3 rounded-full shrink-0',
           status.color,
           status.pulse && 'animate-pulse'
         )} />
 
         {/* Avatar / Emoji */}
         {bot.avatar ? (
-          <img src={bot.avatar} alt={bot.name} className="h-6 w-6 rounded-full object-cover shrink-0" />
+          <img src={bot.avatar} alt={bot.name} className="h-7 w-7 rounded-full object-cover shrink-0" />
         ) : (
-          <span className="text-base leading-none shrink-0">{bot.emoji ?? '🤖'}</span>
+          <span className="text-lg leading-none shrink-0">{bot.emoji ?? '🤖'}</span>
         )}
 
         {/* Name + Status */}
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{bot.name}</div>
-          <div className="text-[10px] text-muted-foreground leading-tight">{status.label}</div>
+          <div className="text-base font-semibold truncate">{bot.name}</div>
+          <div className="text-xs text-muted-foreground leading-tight">{status.label}</div>
         </div>
 
         {/* Source badge */}
         <span className={cn(
-          'text-[9px] px-1.5 py-0.5 rounded-full shrink-0 font-medium',
+          'text-[10px] px-2 py-0.5 rounded-full shrink-0 font-medium',
           bot.source === 'local'
             ? 'text-emerald-400 bg-emerald-500/10'
             : 'text-blue-400 bg-blue-500/10'
         )}>
           {bot.source === 'local' ? 'local' : 'cloud'}
         </span>
+
+        {/* Model tag */}
+        {bot.model && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground shrink-0">
+            {bot.model}
+          </span>
+        )}
       </div>
 
-      {/* Compact info - model + skills preview */}
-      {!expanded && (
-        <div className="px-3 pb-2.5 space-y-1">
-          {bot.model && (
-            <div className="text-[10px] text-muted-foreground truncate">{bot.model}</div>
-          )}
-          {bot.skills && bot.skills.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {bot.skills.slice(0, 3).map((skill) => (
-                <span key={skill} className="text-[9px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
-                  {skill}
-                </span>
+      {/* Content area (collapsible) */}
+      {!collapsed && (
+        <div className="flex-1 flex flex-col border-t border-white/[0.08] min-h-0 overflow-hidden">
+          {/* Toolbar: view tabs + actions */}
+          <div className="flex items-center border-b border-white/[0.08] shrink-0">
+            <div className="flex flex-1 overflow-x-auto scrollbar-none">
+              {VIEW_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => handleViewChange(tab.key)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap transition-colors shrink-0',
+                    bot.activeView === tab.key
+                      ? 'text-foreground border-b-2 border-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <span className="text-sm">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
               ))}
-              {bot.skills.length > 3 && (
-                <span className="text-[9px] text-muted-foreground">+{bot.skills.length - 3}</span>
-              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Expanded content */}
-      {expanded && (
-        <div className="border-t border-white/[0.08]">
-          {/* View tabs */}
-          <div className="flex border-b border-white/[0.08] overflow-x-auto scrollbar-none">
-            {VIEW_TABS.map((tab) => (
+            {/* Mini toolbar actions */}
+            <div className="flex items-center gap-0.5 px-2 shrink-0">
+              {/* Collapse button */}
               <button
-                key={tab.key}
                 type="button"
-                onClick={() => handleViewChange(tab.key)}
-                className={cn(
-                  'flex items-center gap-1 px-2.5 py-1.5 text-[11px] whitespace-nowrap transition-colors shrink-0',
-                  bot.activeView === tab.key
-                    ? 'text-foreground border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
+                onClick={handleToggleCollapse}
+                title="Collapse"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
-                <span className="text-xs">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
-            ))}
+              {/* Close button */}
+              <button
+                type="button"
+                onClick={handleClose}
+                title="Remove from canvas"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* Drill-down views */}
-          <div className="h-[200px] md:h-[300px] overflow-hidden">
+          {/* Drill-down content - fills remaining space */}
+          <div className="flex-1 min-h-0 overflow-hidden">
             <Suspense fallback={<Loading />}>
               {bot.activeView === 'overview' && <BotOverview bot={bot} />}
               {bot.activeView === 'terminal' && (
@@ -193,9 +224,9 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
 function BotOverview({ bot }: { bot: BotType }) {
   return (
-    <div className="w-full px-3 py-2.5 space-y-3 text-xs overflow-y-auto h-full">
+    <div className="w-full px-4 py-3 space-y-3 text-sm overflow-y-auto h-full">
       {/* Info rows */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Row label="Agent ID" value={bot.agentId} />
         {bot.model && <Row label="Model" value={bot.model} />}
         {bot.workspace && <Row label="Workspace" value={bot.workspace} />}
@@ -209,10 +240,10 @@ function BotOverview({ bot }: { bot: BotType }) {
       {/* Skills */}
       {bot.skills && bot.skills.length > 0 && (
         <div>
-          <div className="text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider font-medium">Skills</div>
-          <div className="flex flex-wrap gap-1">
+          <div className="text-xs text-muted-foreground mb-1.5 uppercase tracking-wider font-medium">Skills</div>
+          <div className="flex flex-wrap gap-1.5">
             {bot.skills.map((skill) => (
-              <span key={skill} className="text-[10px] px-2 py-0.5 rounded-md bg-muted/50 text-muted-foreground">
+              <span key={skill} className="text-xs px-2.5 py-1 rounded-md bg-muted/50 text-muted-foreground">
                 {skill}
               </span>
             ))}
@@ -223,10 +254,10 @@ function BotOverview({ bot }: { bot: BotType }) {
       {/* Channels */}
       {bot.channels && bot.channels.length > 0 && (
         <div>
-          <div className="text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider font-medium">Channels</div>
-          <div className="flex flex-wrap gap-1">
+          <div className="text-xs text-muted-foreground mb-1.5 uppercase tracking-wider font-medium">Channels</div>
+          <div className="flex flex-wrap gap-1.5">
             {bot.channels.map((ch) => (
-              <span key={ch} className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary/80">
+              <span key={ch} className="text-xs px-2.5 py-1 rounded-md bg-primary/10 text-primary/80">
                 {ch}
               </span>
             ))}
@@ -239,7 +270,7 @@ function BotOverview({ bot }: { bot: BotType }) {
 
 function Loading() {
   return (
-    <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
       Loading...
     </div>
   );
@@ -247,9 +278,9 @@ function Loading() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-2">
+    <div className="flex justify-between gap-3">
       <span className="text-muted-foreground shrink-0">{label}</span>
-      <span className="truncate text-foreground font-mono text-[10px]">{value}</span>
+      <span className="truncate text-foreground font-mono text-xs">{value}</span>
     </div>
   );
 }

@@ -47,6 +47,7 @@ export function CanvasFlow({ className }: { className?: string }) {
   const persist = useCanvasStore((s) => s.persist);
   const upsertBot = useCanvasStore((s) => s.upsertBot);
   const addStarter = useCanvasStore((s) => s.addStarter);
+  const autoLayout = useCanvasStore((s) => s.autoLayout);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(storeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(storeEdges);
@@ -146,6 +147,12 @@ export function CanvasFlow({ className }: { className?: string }) {
     },
     []
   );
+
+  const handleAutoLayout = useCallback(() => {
+    autoLayout();
+    setTimeout(() => fitView({ padding: 0.3, duration: 300 }), 50);
+    debouncedPersist();
+  }, [autoLayout, fitView, debouncedPersist]);
 
   const handleAddBot = useCallback(
     (pos: { x: number; y: number }) => {
@@ -258,6 +265,7 @@ export function CanvasFlow({ className }: { className?: string }) {
         )}
         <CanvasControls
           onFitView={() => fitView({ padding: 0.3 })}
+          onAutoLayout={handleAutoLayout}
           onAddBot={handleAddBot}
           onAddStarter={handleAddStarter}
           onLaunchCloud={handleLaunchCloud}
