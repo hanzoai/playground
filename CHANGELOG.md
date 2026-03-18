@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.241] - 2026-03-18
+
+
+### Added
+
+- Feat(spaces): implement presence tracking and chat persistence
+
+Replace stub presence and chat handlers with real implementations:
+
+- Presence: in-memory sync.Map tracking per-space peer cursors with
+  30s expiry goroutine and EventBus fan-out for cursor/join/leave events
+- Chat: PostgreSQL/SQLite persistence via chat_messages table with
+  EventBus broadcast on send; GetHistory supports ?limit= param
+- SpaceEventBus: new typed event bus for space real-time events
+  (presence.cursor.update, presence.join, presence.leave, chat.room.message)
+- SSE endpoint: GET /api/v1/spaces/:id/events streams space events
+  to connected clients with heartbeat keepalive
+- Migration 020: creates chat_messages table with (space_id, created_at DESC) index
+- 19 new tests, all passing, full suite green (87a21fb)
+
 ## [0.1.41-rc.240] - 2026-03-18
 
 
