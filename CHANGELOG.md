@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.236] - 2026-03-18
+
+
+### Fixed
+
+- Fix(e2e): wait for auth redirect in responsive tests (85c8099)
+
 ## [0.1.41-rc.235] - 2026-03-18
 
 
