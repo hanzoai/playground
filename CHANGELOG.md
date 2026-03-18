@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.239] - 2026-03-18
+
+
+### Added
+
+- Feat(canvas): add Hanzo team agent profiles and team launcher
+
+Add personality profiles for 15 Hanzo AI team agents (Vi, Dev, Des,
+Opera, Sec, Core, DB, Algo, Mark, Su, Fin, Art, Mu, Data, Chat) with
+roles, colors, skills, and system prompt personalities.
+
+Bot nodes now show role subtitle, colored accent glow when selected or
+active, avatar ring color, and personality in overview. TeamLauncher
+modal lets users select and deploy team members to the canvas. Available
+from both the onboarding screen and a persistent bottom-right button. (8b12f9f)
+
+- Feat(multiplayer): add presence cursors and space chat
+
+Phase 2 of multiplayer playground: peer cursor overlay with color-coded
+arrows and name labels (10Hz throttled broadcast), plus a slide-out
+space chat sidebar with unread badge. Server-side Go handlers stub the
+presence and chat room REST endpoints under /spaces/:id/ for future
+WebSocket fan-out and persistence. (de396ba)
+
 ## [0.1.41-rc.238] - 2026-03-18
 
 
