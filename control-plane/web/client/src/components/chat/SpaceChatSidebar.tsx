@@ -39,7 +39,7 @@ export function SpaceChatSidebar({ open, onClose, onUnreadChange }: SpaceChatSid
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Track unread when sidebar is closed
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [_unreadCount, setUnreadCount] = useState(0);
 
   // Listen for incoming chat messages from gateway
   useEffect(() => {
