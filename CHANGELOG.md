@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.238] - 2026-03-18
+
+
+### Fixed
+
+- Fix(canvas): make bot nodes larger, add auto-layout grid
+
+Bot nodes were tiny and overlapped when multiple bots were added.
+
+- Bot.tsx: nodes are now 440x300 default, always show content (terminal/
+  desktop/overview), resizable via NodeResizer, prominent header with
+  name/status, mini toolbar with collapse/close actions
+- registry.ts: export default dimensions and grid layout constants
+- canvasStore.ts: new bots auto-position in a 2-column grid instead of
+  random placement, added autoLayout() to re-arrange all nodes
+- CanvasFlow.tsx: wire autoLayout to controls with fitView after
+- CanvasControls.tsx: add Auto Layout grid button in toolbar (a3628b3)
+
 ## [0.1.41-rc.237] - 2026-03-18
 
 
