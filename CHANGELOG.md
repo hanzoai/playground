@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.234] - 2026-03-18
+
+
+### Fixed
+
+- Fix(e2e): update tests for simplified control plane UI, remove hardcoded node names (c814a91)
+
+- Fix(e2e): update 12 failing tests to match simplified control plane UI
+
+- Logout: use data-sidebar="footer" selector for user menu button
+- Bot listing: replace agent grouping/metrics tests with flat card grid
+- Navigation: use data-sidebar attributes for sidebar visibility/toggle
+- Node listing: check for any node instead of hardcoded "antje-macbook"
+- Responsive: fix strict mode violations with .first()/.nth(0) selectors (fd107e7)
+
 ## [0.1.41-rc.233] - 2026-03-17
 
 
