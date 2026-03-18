@@ -43,9 +43,9 @@ export class TopNavigationPage {
       .or(page.getByText(/organization|org/i).first());
 
     // Sidebar
-    this.sidebarTrigger = page.locator('[class*="SidebarTrigger"]')
+    this.sidebarTrigger = page.locator('[data-sidebar="trigger"]')
       .or(page.getByRole('button', { name: /toggle sidebar|menu/i }));
-    this.sidebarLogo = page.getByText(/hanzo bot/i).first();
+    this.sidebarLogo = page.locator('[data-sidebar="sidebar"]').getByText(/hanzo/i).first();
     this.sidebarVersion = page.getByText(/v\d+\.\d+\.\d+/);
 
     // Sidebar nav links — use href to avoid matching breadcrumb/heading duplicates
@@ -61,9 +61,9 @@ export class TopNavigationPage {
     this.credentialsLink = page.locator('a[href="/identity/credentials"]').first();
     this.settingsLink = page.locator('a[href="/settings"]').first();
 
-    // User menu
-    this.userMenuButton = page.locator('[class*="sidebar-footer"] button, [class*="user-menu"]')
-      .or(page.getByRole('button').filter({ hasText: /account|user|profile/i }));
+    // User menu — SidebarFooter dropdown trigger
+    this.userMenuButton = page.locator('[data-sidebar="footer"] [data-sidebar="menu-button"]')
+      .or(page.locator('[data-sidebar="footer"] button'));
     this.signOutButton = page.getByText(/sign out/i);
   }
 
@@ -125,7 +125,9 @@ export class TopNavigationPage {
   // ---- Sidebar state ----
 
   async expectSidebarVisible() {
-    await expect(this.sidebarLogo).toBeVisible({ timeout: 5_000 });
+    // The sidebar renders with data-sidebar="sidebar"; check it or the logo inside it
+    const sidebar = this.page.locator('[data-sidebar="sidebar"]').first();
+    await expect(sidebar.or(this.sidebarLogo)).toBeVisible({ timeout: 5_000 });
   }
 
   async toggleSidebar() {

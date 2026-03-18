@@ -13,7 +13,9 @@ test.describe('Org & Project Switcher', () => {
 
   test.beforeEach(async ({ page }) => {
     nav = new TopNavigationPage(page);
-    await page.goto('/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    // Wait for sidebar to render (SSE connections prevent networkidle)
+    await page.waitForLoadState('networkidle').catch(() => {});
   });
 
   test('sidebar is visible after login', async () => {
