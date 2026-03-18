@@ -49,6 +49,16 @@ type SpaceBot struct {
 	Status  string `json:"status" db:"status"` // "running", "stopped", "error"
 }
 
+// ChatMessage is a message in a Space chat room.
+type ChatMessage struct {
+	ID          string    `json:"id" db:"id"`
+	SpaceID     string    `json:"space_id" db:"space_id"`
+	UserID      string    `json:"user_id" db:"user_id"`
+	DisplayName string    `json:"display_name" db:"display_name"`
+	Message     string    `json:"message" db:"message"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+}
+
 // ValidRoles for SpaceMember.
 var ValidRoles = map[string]bool{
 	"owner":  true,

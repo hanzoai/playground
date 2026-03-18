@@ -265,3 +265,37 @@ func (s *PostgresStore) RemoveBot(ctx context.Context, spaceID, botID string) er
 		`DELETE FROM space_bots WHERE space_id=$1 AND bot_id=$2`, spaceID, botID)
 	return err
 }
+
+// --- Chat Messages ---
+
+func (s *PostgresStore) InsertChatMessage(ctx context.Context, msg *ChatMessage) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO chat_messages (id, space_id, user_id, display_name, message, created_at)
+		 VALUES ($1,$2,$3,$4,$5,$6)`,
+		msg.ID, msg.SpaceID, msg.UserID, msg.DisplayName, msg.Message, msg.CreatedAt,
+	)
+	return err
+}
+
+func (s *PostgresStore) ListChatMessages(ctx context.Context, spaceID string, limit int) ([]*ChatMessage, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, space_id, user_id, display_name, message, created_at
+		 FROM chat_messages WHERE space_id=$1
+		 ORDER BY created_at DESC LIMIT $2`, spaceID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []*ChatMessage
+	for rows.Next() {
+		var m ChatMessage
+		if err := rows.Scan(&m.ID, &m.SpaceID, &m.UserID, &m.DisplayName, &m.Message, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, &m)
+	}
+	return result, rows.Err()
+}

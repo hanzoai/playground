@@ -68,6 +68,8 @@ type PlaygroundServer struct {
 	observabilityForwarder   services.ObservabilityForwarder
 	cloudProvisioner         *cloud.Provisioner
 	spaceStore               spaces.Store
+	spaceEventBus            *events.SpaceEventBus
+	spacePresenceHandler     *handlers.PresenceHandler
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -355,6 +357,7 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		zapAdminPort:             adminPort,
 		cloudProvisioner:         cloudProvisioner,
 		spaceStore:               spaceStore,
+		spaceEventBus:            events.GlobalSpaceEventBus,
 	}, nil
 }
 
@@ -479,6 +482,11 @@ func (s *PlaygroundServer) Stop() error {
 		if err := s.observabilityForwarder.Stop(ctx); err != nil {
 			logger.Logger.Error().Err(err).Msg("Failed to stop observability forwarder")
 		}
+	}
+
+	// Stop space presence expiry goroutine.
+	if s.spacePresenceHandler != nil {
+		s.spacePresenceHandler.Stop()
 	}
 
 	// HTTP server shutdown is handled by the caller (gin.Engine.Run blocks until killed).
@@ -1190,14 +1198,19 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 	spacesAPI.GET("/:id/bots/:bid/chat", spaceBotHandler.ChatHistory)
 
 	// Presence endpoints (cursor broadcast, peer list)
-	presenceHandler := handlers.NewPresenceHandler(s.spaceStore)
+	presenceHandler := handlers.NewPresenceHandler(s.spaceStore, s.spaceEventBus)
+	s.spacePresenceHandler = presenceHandler
 	spacesAPI.POST("/:id/presence/cursor", presenceHandler.CursorUpdate)
 	spacesAPI.GET("/:id/presence", presenceHandler.ListPresence)
 
 	// Space chat room endpoints
-	chatRoomHandler := handlers.NewChatRoomHandler(s.spaceStore)
+	chatRoomHandler := handlers.NewChatRoomHandler(s.spaceStore, s.spaceEventBus)
 	spacesAPI.POST("/:id/chat", chatRoomHandler.SendMessage)
 	spacesAPI.GET("/:id/chat/history", chatRoomHandler.GetHistory)
+
+	// Space real-time event stream (SSE)
+	spaceEventsHandler := handlers.NewSpaceEventsHandler(s.spaceEventBus)
+	spacesAPI.GET("/:id/events", spaceEventsHandler.StreamEvents)
 
 	nodeProxy := proxy.NewNodeProxy(s.spaceStore)
 	spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)

@@ -62,6 +62,15 @@ func (s *SQLiteStore) Initialize(ctx context.Context) error {
 			status TEXT NOT NULL DEFAULT 'stopped',
 			PRIMARY KEY (space_id, bot_id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS chat_messages (
+			id TEXT PRIMARY KEY,
+			space_id TEXT NOT NULL,
+			user_id TEXT NOT NULL,
+			display_name TEXT NOT NULL DEFAULT '',
+			message TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_chat_messages_space_time ON chat_messages(space_id, created_at DESC)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.db.ExecContext(ctx, stmt); err != nil {
@@ -317,4 +326,38 @@ func (s *SQLiteStore) RemoveBot(ctx context.Context, spaceID, botID string) erro
 	_, err := s.db.ExecContext(ctx,
 		`DELETE FROM space_bots WHERE space_id=? AND bot_id=?`, spaceID, botID)
 	return err
+}
+
+// --- Chat Messages ---
+
+func (s *SQLiteStore) InsertChatMessage(ctx context.Context, msg *ChatMessage) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO chat_messages (id, space_id, user_id, display_name, message, created_at)
+		 VALUES (?,?,?,?,?,?)`,
+		msg.ID, msg.SpaceID, msg.UserID, msg.DisplayName, msg.Message, msg.CreatedAt,
+	)
+	return err
+}
+
+func (s *SQLiteStore) ListChatMessages(ctx context.Context, spaceID string, limit int) ([]*ChatMessage, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, space_id, user_id, display_name, message, created_at
+		 FROM chat_messages WHERE space_id=?
+		 ORDER BY created_at DESC LIMIT ?`, spaceID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []*ChatMessage
+	for rows.Next() {
+		var m ChatMessage
+		if err := rows.Scan(&m.ID, &m.SpaceID, &m.UserID, &m.DisplayName, &m.Message, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, &m)
+	}
+	return result, rows.Err()
 }

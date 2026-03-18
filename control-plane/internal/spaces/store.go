@@ -32,6 +32,10 @@ type Store interface {
 	UpdateBotStatus(ctx context.Context, spaceID, botID, status string) error
 	RemoveBot(ctx context.Context, spaceID, botID string) error
 
+	// Chat messages
+	InsertChatMessage(ctx context.Context, msg *ChatMessage) error
+	ListChatMessages(ctx context.Context, spaceID string, limit int) ([]*ChatMessage, error)
+
 	// Initialize schema
 	Initialize(ctx context.Context) error
 }
