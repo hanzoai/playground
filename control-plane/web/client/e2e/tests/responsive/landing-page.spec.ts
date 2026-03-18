@@ -63,11 +63,14 @@ for (const vp of VIEWPORTS) {
       const page = await context.newPage();
 
       await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30_000 });
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await page.waitForTimeout(2_000);
 
-      // Page may be on hanzo.id (login) or the app — either is fine
-      // Just verify something rendered (not a blank page)
+      // Wait for auth redirect to hanzo.id or app to load (whichever comes first)
+      await Promise.race([
+        page.waitForURL(/hanzo\.id/, { timeout: 20_000 }),
+        page.waitForSelector('button, a, input', { timeout: 20_000 }),
+      ]).catch(() => {});
+
+      // Verify something interactive rendered (login form or app UI)
       const buttonCount = await page.getByRole('button').count();
       const linkCount = await page.getByRole('link').count();
       const inputCount = await page.locator('input').count();
