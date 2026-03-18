@@ -15,9 +15,11 @@ interface CanvasControlsProps {
   onAddBot?: (position: { x: number; y: number }) => void;
   onAddStarter?: (position: { x: number; y: number }) => void;
   onLaunchCloud?: (type: 'linux' | 'terminal' | 'desktop') => void;
+  onToggleChat?: () => void;
+  chatUnread?: number;
 }
 
-export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter, onLaunchCloud }: CanvasControlsProps) {
+export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter, onLaunchCloud, onToggleChat, chatUnread }: CanvasControlsProps) {
   const { zoomIn, zoomOut } = useReactFlow();
   const { zoom } = useViewport();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -82,6 +84,24 @@ export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter
                 <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
               </svg>
             </ControlButton>
+          </>
+        )}
+
+        {onToggleChat && (
+          <>
+            <div className="mx-1 h-4 w-px bg-border/50" />
+            <div className="relative">
+              <ControlButton onClick={onToggleChat} label="Toggle chat">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 2h10a1 1 0 011 1v6a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                </svg>
+              </ControlButton>
+              {(chatUnread ?? 0) > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
+                  {chatUnread! > 99 ? '99+' : chatUnread}
+                </span>
+              )}
+            </div>
           </>
         )}
       </div>

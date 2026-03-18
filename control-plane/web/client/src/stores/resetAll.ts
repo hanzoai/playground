@@ -10,6 +10,7 @@ import { useCanvasStore } from './canvasStore';
 import { useBotStore } from './botStore';
 import { useActionPillStore } from './actionPillStore';
 import { usePermissionModeStore } from './permissionModeStore';
+import { usePresenceStore } from './presenceStore';
 import { useTeamStore } from './teamStore';
 import { useTenantStore } from './tenantStore';
 import { useSpaceStore } from './spaceStore';
@@ -21,6 +22,7 @@ export function resetAllStores(): void {
   useBotStore.getState().reset();
   useActionPillStore.getState().reset();
   usePermissionModeStore.getState().reset();
+  usePresenceStore.getState().reset();
   useTeamStore.getState().reset();
   useTenantStore.getState().reset();
   useSpaceStore.getState().reset();

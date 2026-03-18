@@ -1189,6 +1189,16 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 	spacesAPI.POST("/:id/bots/:bid/chat", spaceBotHandler.ChatMessage)
 	spacesAPI.GET("/:id/bots/:bid/chat", spaceBotHandler.ChatHistory)
 
+	// Presence endpoints (cursor broadcast, peer list)
+	presenceHandler := handlers.NewPresenceHandler(s.spaceStore)
+	spacesAPI.POST("/:id/presence/cursor", presenceHandler.CursorUpdate)
+	spacesAPI.GET("/:id/presence", presenceHandler.ListPresence)
+
+	// Space chat room endpoints
+	chatRoomHandler := handlers.NewChatRoomHandler(s.spaceStore)
+	spacesAPI.POST("/:id/chat", chatRoomHandler.SendMessage)
+	spacesAPI.GET("/:id/chat/history", chatRoomHandler.GetHistory)
+
 	nodeProxy := proxy.NewNodeProxy(s.spaceStore)
 	spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)
 }

@@ -25,16 +25,23 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useCanvasStore } from '@/stores/canvasStore';
+import { usePresenceStore } from '@/stores/presenceStore';
+import { gateway } from '@/services/gatewayClient';
 import { nodeTypes } from './nodes/registry';
 import { CanvasControls } from './CanvasControls';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { BotContextMenu, type BotContextMenuState } from './BotContextMenu';
+import { CursorOverlay } from './CursorOverlay';
+import { SpaceChatSidebar } from '@/components/chat/SpaceChatSidebar';
 import { spaceApi } from '@/services/spaceApi';
 import type { Bot } from '@/types/canvas';
 
 // ---------------------------------------------------------------------------
 // CanvasFlow
 // ---------------------------------------------------------------------------
+
+// Throttle interval for cursor broadcasts (10 Hz = 100ms)
+const CURSOR_THROTTLE_MS = 100;
 
 export function CanvasFlow({ className }: { className?: string }) {
   const storeNodes = useCanvasStore((s) => s.nodes);
@@ -49,14 +56,64 @@ export function CanvasFlow({ className }: { className?: string }) {
   const addStarter = useCanvasStore((s) => s.addStarter);
   const autoLayout = useCanvasStore((s) => s.autoLayout);
 
+  const addPeer = usePresenceStore((s) => s.addPeer);
+  const removePeer = usePresenceStore((s) => s.removePeer);
+  const updateCursor = usePresenceStore((s) => s.updateCursor);
+
   const [nodes, setNodes, onNodesChange] = useNodesState(storeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(storeEdges);
   const { fitView, screenToFlowPosition } = useReactFlow();
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCursorBroadcast = useRef(0);
 
   // Context menus
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [botContextMenu, setBotContextMenu] = useState<BotContextMenuState | null>(null);
+
+  // Chat sidebar state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  // Subscribe to gateway presence events
+  useEffect(() => {
+    const unsubCursor = gateway.on('presence.cursor.update', (payload) => {
+      const data = payload as { userId: string; displayName: string; avatar?: string; x: number; y: number };
+      updateCursor(data.userId, { x: data.x, y: data.y });
+    });
+
+    const unsubJoin = gateway.on('presence.join', (payload) => {
+      const data = payload as { userId: string; displayName: string; avatar?: string; color?: string };
+      addPeer({ userId: data.userId, displayName: data.displayName, avatar: data.avatar, color: data.color ?? '', lastSeen: Date.now() });
+    });
+
+    const unsubLeave = gateway.on('presence.leave', (payload) => {
+      const data = payload as { userId: string };
+      removePeer(data.userId);
+    });
+
+    return () => {
+      unsubCursor();
+      unsubJoin();
+      unsubLeave();
+    };
+  }, [addPeer, removePeer, updateCursor]);
+
+  // Throttled cursor broadcast
+  const broadcastCursor = useCallback(
+    (event: React.MouseEvent) => {
+      const now = Date.now();
+      if (now - lastCursorBroadcast.current < CURSOR_THROTTLE_MS) return;
+      lastCursorBroadcast.current = now;
+
+      const flowPos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      if (gateway.isConnected) {
+        gateway.rpc('presence.cursor', { x: flowPos.x, y: flowPos.y }).catch(() => {
+          // Gateway may not support this RPC yet; silently ignore
+        });
+      }
+    },
+    [screenToFlowPosition]
+  );
 
   // Sync store → local when store changes externally
   useEffect(() => { setNodes(storeNodes); }, [storeNodes, setNodes]);
@@ -215,6 +272,7 @@ export function CanvasFlow({ className }: { className?: string }) {
         onMoveEnd={handleMoveEnd}
         onContextMenu={handleContextMenu}
         onNodeContextMenu={handleNodeContextMenu}
+        onMouseMove={broadcastCursor}
         defaultViewport={storeViewport}
         fitView={nodes.length > 0}
         fitViewOptions={{ padding: 0.3, maxZoom: 1.2 }}
@@ -263,12 +321,15 @@ export function CanvasFlow({ className }: { className?: string }) {
             zoomable
           />
         )}
+        <CursorOverlay />
         <CanvasControls
           onFitView={() => fitView({ padding: 0.3 })}
           onAutoLayout={handleAutoLayout}
           onAddBot={handleAddBot}
           onAddStarter={handleAddStarter}
           onLaunchCloud={handleLaunchCloud}
+          onToggleChat={() => setChatOpen((o) => !o)}
+          chatUnread={chatUnread}
         />
       </ReactFlow>
 
@@ -284,6 +345,11 @@ export function CanvasFlow({ className }: { className?: string }) {
         onClose={() => setBotContextMenu(null)}
       />
 
+      <SpaceChatSidebar
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        onUnreadChange={setChatUnread}
+      />
     </div>
   );
 }
