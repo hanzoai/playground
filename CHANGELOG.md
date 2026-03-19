@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.249] - 2026-03-19
+
+
+### Fixed
+
+- Fix(routes): resolve :botId/:bid param conflict crashing production deploy (a01b609)
+
 ## [0.1.41-rc.248] - 2026-03-19
 
 
