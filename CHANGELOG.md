@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.251] - 2026-03-19
+
+
+### Added
+
+- Feat(canvas): agent runtime selector with multi-harness support
+
+New bot first-boot experience:
+- RuntimeSelector overlay: pick hanzo-dev (default), claude, gemini, qwen, grok, or terminal
+- hanzo-dev highlighted as "Recommended" with IAM login + native ZAP + integrated payments
+- Other runtimes show "Requires API Key" badge
+- Compact runtime badge in bot header for switching at any time
+- SubAgentCard component for Railway-style cascading child agents
+- AgentRuntime type + AGENT_RUNTIMES constant with icon/label/description/auth
+- Bot type extended with runtime, authMode, apiKeyConfigured fields (d1e38cd)
+
 ## [0.1.41-rc.250] - 2026-03-19
 
 
