@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -309,5 +310,134 @@ func TestBuildSandboxPolicy(t *testing.T) {
 			sp := buildSandboxPolicy(tc.mode)
 			assert.Equal(t, tc.expected, sp.Type)
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Runtime auth tests
+// ---------------------------------------------------------------------------
+
+// mockSecretsGetter is a fake KMS client for testing.
+type mockSecretsGetter struct {
+	secrets map[string]map[string]string // orgID -> key -> value
+}
+
+func (m *mockSecretsGetter) GetSecret(_ context.Context, orgID, key string) ([]byte, error) {
+	if m.secrets == nil {
+		return nil, nil
+	}
+	if org, ok := m.secrets[orgID]; ok {
+		if v, ok := org[key]; ok {
+			return []byte(v), nil
+		}
+	}
+	return nil, nil
+}
+
+func newMinimalLifecycle(apiKey string, secrets SecretsGetter) *BotLifecycle {
+	var cfg []BotLifecycleConfig
+	if apiKey != "" || secrets != nil {
+		cfg = append(cfg, BotLifecycleConfig{
+			ServerAPIKey:  apiKey,
+			SecretsClient: secrets,
+		})
+	}
+	return NewBotLifecycle(
+		zap.NewPool(), gossip.NewTracker(), gossip.NewRouter(gossip.NewTracker()),
+		events.NewAgentEventBus(), nil, policy.NewEngine(),
+		cfg...,
+	)
+}
+
+func TestBuildRuntimeEnvHanzoDevDefault(t *testing.T) {
+	lc := newMinimalLifecycle("sk-test-hanzo-key", nil)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "s1"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=hanzo-dev")
+	assert.Contains(t, env, "HANZO_API_KEY=sk-test-hanzo-key")
+}
+
+func TestBuildRuntimeEnvHanzoDevExplicit(t *testing.T) {
+	lc := newMinimalLifecycle("sk-hanzo", nil)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "s1", Runtime: "hanzo-dev"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=hanzo-dev")
+	assert.Contains(t, env, "HANZO_API_KEY=sk-hanzo")
+}
+
+func TestBuildRuntimeEnvHanzoDevNoKey(t *testing.T) {
+	lc := newMinimalLifecycle("", nil)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "s1", Runtime: "hanzo-dev"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=hanzo-dev")
+	assert.Len(t, env, 1, "should only have AGENT_RUNTIME when no API key is set")
+}
+
+func TestBuildRuntimeEnvClaude(t *testing.T) {
+	mock := &mockSecretsGetter{secrets: map[string]map[string]string{
+		"space-1": {"ANTHROPIC_API_KEY": "sk-ant-test"},
+	}}
+	lc := newMinimalLifecycle("", mock)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "space-1", Runtime: "claude"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=claude")
+	assert.Contains(t, env, "ANTHROPIC_API_KEY=sk-ant-test")
+}
+
+func TestBuildRuntimeEnvGemini(t *testing.T) {
+	mock := &mockSecretsGetter{secrets: map[string]map[string]string{
+		"space-2": {"GOOGLE_API_KEY": "goog-test"},
+	}}
+	lc := newMinimalLifecycle("", mock)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "space-2", Runtime: "gemini"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=gemini")
+	assert.Contains(t, env, "GOOGLE_API_KEY=goog-test")
+}
+
+func TestBuildRuntimeEnvOpenAI(t *testing.T) {
+	mock := &mockSecretsGetter{secrets: map[string]map[string]string{
+		"s3": {"OPENAI_API_KEY": "sk-oai-test"},
+	}}
+	lc := newMinimalLifecycle("", mock)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "s3", Runtime: "openai"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=openai")
+	assert.Contains(t, env, "OPENAI_API_KEY=sk-oai-test")
+}
+
+func TestBuildRuntimeEnvUnknownRuntime(t *testing.T) {
+	mock := &mockSecretsGetter{secrets: map[string]map[string]string{
+		"s4": {"CUSTOM_BOT_API_KEY": "custom-key"},
+	}}
+	lc := newMinimalLifecycle("", mock)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "s4", Runtime: "custom-bot"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=custom-bot")
+	assert.Contains(t, env, "CUSTOM_BOT_API_KEY=custom-key")
+}
+
+func TestBuildRuntimeEnvNoSecretsClient(t *testing.T) {
+	lc := newMinimalLifecycle("", nil)
+	env := lc.buildRuntimeEnv(context.Background(), SpawnOpts{SpaceID: "s1", Runtime: "claude"})
+
+	assert.Contains(t, env, "AGENT_RUNTIME=claude")
+	assert.Len(t, env, 1, "should only have AGENT_RUNTIME when no secrets client")
+}
+
+func TestApplyPresetSetsRuntime(t *testing.T) {
+	result := ApplyPreset("senior", SpawnOpts{BotID: "b1", SpaceID: "s1"})
+	assert.Equal(t, "hanzo-dev", result.Runtime)
+}
+
+func TestApplyPresetExplicitRuntimeOverride(t *testing.T) {
+	result := ApplyPreset("senior", SpawnOpts{BotID: "b1", SpaceID: "s1", Runtime: "claude"})
+	assert.Equal(t, "claude", result.Runtime)
+}
+
+func TestAllPresetsHaveHanzoDevRuntime(t *testing.T) {
+	presets := BuiltinPresets()
+	for name, p := range presets {
+		assert.Equal(t, "hanzo-dev", p.Runtime, "preset %q should have hanzo-dev runtime", name)
 	}
 }
