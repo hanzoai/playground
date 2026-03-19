@@ -15,16 +15,12 @@ interface VoiceSettingsProps {
   onVoiceOutputChange: (enabled: boolean) => void;
 }
 
-/** Allow voice toggle on localhost/127.0.0.1 (dev) even if browser gates
- *  the SpeechRecognition constructor — the actual start() call will fail
- *  gracefully. In prod (HTTPS) the real feature-detect applies. */
-const isDev =
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
+/** Cloud ASR via MediaRecorder works on all modern browsers over HTTPS.
+ *  Also allow on localhost/127.0.0.1 for dev. */
 const STT_SUPPORTED =
   typeof window !== 'undefined' &&
-  (isDev || 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  typeof navigator !== 'undefined' &&
+  !!navigator.mediaDevices?.getUserMedia;
 
 const TTS_SUPPORTED =
   typeof window !== 'undefined' && 'speechSynthesis' in window;
