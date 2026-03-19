@@ -5,17 +5,21 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/hanzoai/playground/control-plane/internal/events"
+	"github.com/hanzoai/playground/control-plane/internal/logger"
+	zappool "github.com/hanzoai/playground/control-plane/internal/zap"
 )
 
 // SpaceAgentInjectHandler lets humans inject messages into agent conversations.
 type SpaceAgentInjectHandler struct {
 	eventBus *events.AgentEventBus
+	zapPool  *zappool.Pool
 }
 
 // NewSpaceAgentInjectHandler creates a new SpaceAgentInjectHandler.
-func NewSpaceAgentInjectHandler(eventBus *events.AgentEventBus) *SpaceAgentInjectHandler {
-	return &SpaceAgentInjectHandler{eventBus: eventBus}
+func NewSpaceAgentInjectHandler(eventBus *events.AgentEventBus, zapPool *zappool.Pool) *SpaceAgentInjectHandler {
+	return &SpaceAgentInjectHandler{eventBus: eventBus, zapPool: zapPool}
 }
 
 // injectRequest is the JSON body for injecting a human message.
@@ -48,6 +52,19 @@ func (h *SpaceAgentInjectHandler) InjectMessage(c *gin.Context) {
 	}
 
 	h.eventBus.Publish(event)
+
+	// Best-effort: forward the message to the bot's ZAP sidecar if one is running.
+	if h.zapPool != nil {
+		if sidecar, ok := h.zapPool.Get(agentID); ok {
+			sub := zappool.Submission{
+				ID: uuid.NewString(),
+				Op: zappool.NewUserInputOp([]zappool.UserInput{zappool.NewTextInput(req.Message)}),
+			}
+			if err := sidecar.Client().SendSubmission(sub); err != nil {
+				logger.Logger.Warn().Err(err).Str("agent_id", agentID).Msg("failed to forward inject to ZAP sidecar")
+			}
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "delivered",

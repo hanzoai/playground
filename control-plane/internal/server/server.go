@@ -27,6 +27,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/gossip"
 	"github.com/hanzoai/playground/control-plane/internal/kms"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/policy"
 	"github.com/hanzoai/playground/control-plane/internal/proxy"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services" // Services
@@ -82,6 +83,8 @@ type PlaygroundServer struct {
 	kmsClient                *kms.Client
 	secretsClient            *kms.SecretsClient
 	zapPool                  *zappool.Pool
+	policyEngine             *policy.Engine
+	rateLimiter              *middleware.RateLimiter
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -355,6 +358,9 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	// ZAP sidecar pool
 	zapPool := zappool.NewPool()
 
+	// Policy engine for approval / sandbox governance
+	policyEngine := policy.NewEngine()
+
 	// KMS MPC client (if configured via env)
 	kmsCfg := kms.DefaultConfig()
 	kmsCfg.ApplyEnvOverrides()
@@ -404,6 +410,7 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		kmsClient:                kmsClient,
 		secretsClient:            secretsClient,
 		zapPool:                  zapPool,
+		policyEngine:             policyEngine,
 	}, nil
 }
 
@@ -540,6 +547,11 @@ func (s *PlaygroundServer) Stop() error {
 		s.zapPool.StopAll(context.Background())
 	}
 
+	// Stop rate limiter cleanup goroutine
+	if s.rateLimiter != nil {
+		s.rateLimiter.Stop()
+	}
+
 	// HTTP server shutdown is handled by the caller (gin.Engine.Run blocks until killed).
 	// WebSocket and gRPC connections are closed when the process exits.
 	return nil
@@ -608,6 +620,22 @@ func (s *PlaygroundServer) healthCheckHandler(c *gin.Context) {
 		}
 	}
 
+	// ZAP pool status (informational, not a hard failure)
+	if s.zapPool != nil {
+		checks["zap_pool"] = gin.H{
+			"status":          "healthy",
+			"active_sidecars": s.zapPool.Len(),
+		}
+	}
+
+	// Gossip tracker status (informational, not a hard failure)
+	if s.gossipTracker != nil {
+		checks["gossip"] = gin.H{
+			"status":         "healthy",
+			"tracked_agents": s.gossipTracker.Count(),
+		}
+	}
+
 	// Overall status
 	if !allHealthy {
 		healthStatus["status"] = "unhealthy"
@@ -618,7 +646,9 @@ func (s *PlaygroundServer) healthCheckHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, healthStatus)
 }
 
-// checkStorageHealth performs storage-specific health checks
+// checkStorageHealth performs storage-specific health checks using the
+// StorageProvider.HealthCheck method (which pings the database and runs
+// integrity checks for SQLite or SELECT 1 for Postgres).
 func (s *PlaygroundServer) checkStorageHealth(ctx context.Context) gin.H {
 	if s.storageHealthOverride != nil {
 		return s.storageHealthOverride(ctx)
@@ -626,11 +656,27 @@ func (s *PlaygroundServer) checkStorageHealth(ctx context.Context) gin.H {
 
 	startTime := time.Now()
 
-	// For local storage, try a basic operation
+	// Check context before storage operations.
 	if err := ctx.Err(); err != nil {
 		return gin.H{
 			"status":  "unhealthy",
 			"message": "context timeout during storage check",
+		}
+	}
+
+	if s.storage == nil {
+		return gin.H{
+			"status":        "healthy",
+			"message":       "storage not initialized (default healthy)",
+			"response_time": time.Since(startTime).Milliseconds(),
+		}
+	}
+
+	if err := s.storage.HealthCheck(ctx); err != nil {
+		return gin.H{
+			"status":        "unhealthy",
+			"message":       fmt.Sprintf("storage health check failed: %v", err),
+			"response_time": time.Since(startTime).Milliseconds(),
 		}
 	}
 
@@ -743,6 +789,22 @@ func (s *PlaygroundServer) setupRoutes() {
 	}
 
 	s.Router.Use(cors.New(corsConfig))
+
+	// Per-IP rate limiting: 100 req/s with burst of 200
+	rateLimiter := middleware.NewRateLimiter(100, 200)
+	s.rateLimiter = rateLimiter
+	s.Router.Use(rateLimiter.Middleware())
+
+	// Request body size limit: 1MB default for all POST/PUT
+	s.Router.Use(middleware.MaxBodySize(1 * 1024 * 1024))
+
+	// Log scrubbing for sensitive endpoints
+	s.Router.Use(middleware.ScrubBody(
+		"/api/v1/spaces/:id/git/clone",
+		"/api/v1/spaces/:id/git/push",
+		"/v1/spaces/:id/git/clone",
+		"/v1/spaces/:id/git/push",
+	))
 
 	// Add request logging middleware
 	s.Router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
@@ -1216,8 +1278,24 @@ func (s *PlaygroundServer) setupRoutes() {
 				c.JSON(http.StatusOK, status)
 			})
 		}
-	}
 
+		// Bot presets (role-based defaults for model, approval, sandbox)
+		agentAPI.GET("/presets", func(c *gin.Context) {
+			presets := map[string]interface{}{
+				"cto":       map[string]string{"model": "opus-4.6", "approval": "never", "sandbox": "danger-full-access", "emoji": "crown"},
+				"senior":    map[string]string{"model": "sonnet-4.6", "approval": "on-failure", "sandbox": "workspace-write", "emoji": "construction"},
+				"junior":    map[string]string{"model": "haiku-4.5", "approval": "untrusted", "sandbox": "workspace-write", "emoji": "seedling"},
+				"intern":    map[string]string{"model": "haiku-4.5", "approval": "untrusted", "sandbox": "read-only", "emoji": "books"},
+				"vision":    map[string]string{"model": "opus-4.6", "approval": "untrusted", "sandbox": "read-only", "emoji": "telescope"},
+				"marketing": map[string]string{"model": "sonnet-4.6", "approval": "untrusted", "sandbox": "workspace-write", "emoji": "megaphone"},
+				"sales":     map[string]string{"model": "sonnet-4.6", "approval": "untrusted", "sandbox": "read-only", "emoji": "moneybag"},
+				"design":    map[string]string{"model": "sonnet-4.6", "approval": "untrusted", "sandbox": "workspace-write", "emoji": "palette"},
+				"devops":    map[string]string{"model": "sonnet-4.6", "approval": "on-failure", "sandbox": "danger-full-access", "emoji": "gear"},
+				"security":  map[string]string{"model": "opus-4.6", "approval": "untrusted", "sandbox": "read-only", "emoji": "shield"},
+			}
+			c.JSON(http.StatusOK, gin.H{"presets": presets})
+		})
+	}
 
 }
 
@@ -1276,8 +1354,8 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 	spacesAPI.GET("/:id/events", spaceEventsHandler.StreamEvents)
 
 	// Agent events (SSE streaming for agent activity within spaces)
-	agentEventsHandler := handlers.NewSpaceAgentEventsHandler(s.agentEventBus)
-	agentInjectHandler := handlers.NewSpaceAgentInjectHandler(s.agentEventBus)
+	agentEventsHandler := handlers.NewSpaceAgentEventsHandler(s.agentEventBus, s.zapPool)
+	agentInjectHandler := handlers.NewSpaceAgentInjectHandler(s.agentEventBus, s.zapPool)
 	spacesAPI.GET("/:id/agents/events", agentEventsHandler.HandleSSE)
 	spacesAPI.GET("/:id/agents/:agentId/events", agentEventsHandler.HandleAgentSSE)
 	spacesAPI.POST("/:id/agents/:agentId/inject", agentInjectHandler.InjectMessage)
@@ -1289,6 +1367,17 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 		agents := s.gossipTracker.FindInSpace(spaceID)
 		c.JSON(200, gin.H{"agents": agents})
 	})
+
+	// Policy management (approval gates, sandbox rules)
+	policyHandlers := policy.NewHandlers(s.policyEngine)
+	spacesAPI.GET("/:id/policy", policyHandlers.GetSpacePolicy)
+	spacesAPI.PUT("/:id/policy", policyHandlers.UpdateSpacePolicy)
+	spacesAPI.GET("/:id/bots/:botId/policy", policyHandlers.GetBotPolicy)
+	spacesAPI.PUT("/:id/bots/:botId/policy", policyHandlers.UpdateBotPolicy)
+	spacesAPI.POST("/:id/policy/bypass", policyHandlers.ToggleBypass)
+	spacesAPI.GET("/:id/approvals", policyHandlers.ListApprovals)
+	spacesAPI.POST("/:id/approvals/:requestId", policyHandlers.ResolveApproval)
+	spacesAPI.GET("/:id/approvals/stream", policyHandlers.SSEApprovals)
 
 	// Git operations for space workspaces
 	gitHandlers := gitops.NewHandlers(s.gitManager)
@@ -1303,7 +1392,8 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 		gitAPI.GET("/diff", gitHandlers.Diff)
 		gitAPI.GET("/files", gitHandlers.ListFiles)
 		gitAPI.GET("/files/*filepath", gitHandlers.ReadFile)
-		gitAPI.PUT("/files/*filepath", gitHandlers.WriteFile)
+		// 10MB limit for file writes (overrides the global 1MB default)
+		gitAPI.PUT("/files/*filepath", middleware.MaxBodySize(10*1024*1024), gitHandlers.WriteFile)
 		gitAPI.POST("/clone", gitHandlers.Clone)
 		gitAPI.POST("/push", gitHandlers.Push)
 		gitAPI.POST("/pull", gitHandlers.Pull)

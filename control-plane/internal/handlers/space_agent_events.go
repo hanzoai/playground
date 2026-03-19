@@ -8,16 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hanzoai/playground/control-plane/internal/events"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	zappool "github.com/hanzoai/playground/control-plane/internal/zap"
 )
 
 // SpaceAgentEventsHandler provides SSE endpoints for streaming agent events to the browser.
 type SpaceAgentEventsHandler struct {
 	eventBus *events.AgentEventBus
+	zapPool  *zappool.Pool
 }
 
 // NewSpaceAgentEventsHandler creates a new SpaceAgentEventsHandler.
-func NewSpaceAgentEventsHandler(eventBus *events.AgentEventBus) *SpaceAgentEventsHandler {
-	return &SpaceAgentEventsHandler{eventBus: eventBus}
+func NewSpaceAgentEventsHandler(eventBus *events.AgentEventBus, zapPool *zappool.Pool) *SpaceAgentEventsHandler {
+	return &SpaceAgentEventsHandler{eventBus: eventBus, zapPool: zapPool}
 }
 
 // HandleSSE streams all agent events for a space via Server-Sent Events.
@@ -40,6 +42,9 @@ func (h *SpaceAgentEventsHandler) HandleSSE(c *gin.Context) {
 		"space_id": spaceID,
 		"message":  "Agent event stream connected",
 	}
+	if h.zapPool != nil {
+		connected["sidecar_count"] = len(h.zapPool.ForSpace(spaceID))
+	}
 	if payload, err := json.Marshal(connected); err == nil {
 		writeAgentSSE(c, payload)
 	}
@@ -56,6 +61,9 @@ func (h *SpaceAgentEventsHandler) HandleSSE(c *gin.Context) {
 			heartbeat := map[string]interface{}{
 				"type":      "heartbeat",
 				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			if h.zapPool != nil {
+				heartbeat["sidecar_count"] = len(h.zapPool.ForSpace(spaceID))
 			}
 			if payload, err := json.Marshal(heartbeat); err == nil {
 				if !writeAgentSSE(c, payload) {
@@ -99,6 +107,10 @@ func (h *SpaceAgentEventsHandler) HandleAgentSSE(c *gin.Context) {
 		"space_id": spaceID,
 		"agent_id": agentID,
 		"message":  fmt.Sprintf("Agent %s event stream connected", agentID),
+	}
+	if h.zapPool != nil {
+		_, hasSidecar := h.zapPool.Get(agentID)
+		connected["sidecar_connected"] = hasSidecar
 	}
 	if payload, err := json.Marshal(connected); err == nil {
 		writeAgentSSE(c, payload)
