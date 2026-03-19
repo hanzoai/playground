@@ -79,7 +79,7 @@ func (h *Handlers) UpdateSpacePolicy(c *gin.Context) {
 // GET /api/v1/spaces/:id/bots/:botId/policy
 func (h *Handlers) GetBotPolicy(c *gin.Context) {
 	spaceID := c.Param("id")
-	botID := c.Param("botId")
+	botID := c.Param("bid")
 
 	bp := h.engine.GetBotPolicy(botID, spaceID)
 	if bp == nil {
@@ -107,7 +107,7 @@ func (h *Handlers) UpdateBotPolicy(c *gin.Context) {
 	}
 
 	spaceID := c.Param("id")
-	botID := c.Param("botId")
+	botID := c.Param("bid")
 
 	var req UpdateBotPolicyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
