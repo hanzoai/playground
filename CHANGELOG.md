@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.247] - 2026-03-19
+
+
+### Added
+
+- Feat(tasks): add task system with scheduler, work-stealing, workflows
+
+Durable task execution for agent orchestration:
+- Task lifecycle: pending → claimed → running → completed/failed
+- Work-stealing scheduler: idle agents auto-claim highest-priority tasks
+- Workflow DAGs with dependency resolution
+- Timeout detection and retry logic
+- 14 HTTP endpoints for task/workflow CRUD
+- 41 tests passing with -race
+
+Note: This is the in-playground task layer. Will be backed by
+github.com/hanzoai/tasks (Temporal-style durable execution) when ready. (9ffb7ea)
+
 ## [0.1.41-rc.246] - 2026-03-19
 
 
