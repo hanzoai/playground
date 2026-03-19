@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,25 +17,60 @@ const (
 	locksPrefix = "locks:" //nolint:unused // Reserved for future use
 )
 
-// AcquireLock attempts to acquire a distributed lock.
+// AcquireLock attempts to acquire a distributed lock using ZapDB.
 func (ls *LocalStorage) AcquireLock(ctx context.Context, key string, timeout time.Duration) (*types.DistributedLock, error) {
 	if ls.mode == "postgres" {
 		return ls.acquireLockPostgres(ctx, key, timeout)
 	}
 
-	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+
+	lockID := uuid.NewString()
+	now := time.Now().UTC()
+	expiresAt := now.Add(timeout)
+	zapKey := []byte(locksPrefix + key)
+
 	var lock *types.DistributedLock
 	err := ls.kvStore.Update(func(txn *badger.Txn) error {
-		// Implementation will be added here
-		_ = txn
-		return nil
+		// Check if lock already exists and is still valid
+		item, err := txn.Get(zapKey)
+		if err == nil {
+			// Key exists — check expiry
+			var existing types.DistributedLock
+			if valErr := item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &existing)
+			}); valErr == nil && existing.ExpiresAt.After(now) {
+				return fmt.Errorf("lock '%s' is already held by %s", key, existing.Holder)
+			}
+			// Expired — fall through to overwrite
+		} else if err != badger.ErrKeyNotFound {
+			return fmt.Errorf("failed to check lock: %w", err)
+		}
+
+		lock = &types.DistributedLock{
+			LockID:    lockID,
+			Key:       key,
+			Holder:    lockID,
+			ExpiresAt: expiresAt,
+			CreatedAt: now,
+		}
+
+		data, err := json.Marshal(lock)
+		if err != nil {
+			return fmt.Errorf("failed to marshal lock: %w", err)
+		}
+
+		e := badger.NewEntry(zapKey, data).WithTTL(timeout)
+		return txn.SetEntry(e)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to acquire lock: %w", err)
+		return nil, err
 	}
 	return lock, nil
 }
@@ -45,15 +81,32 @@ func (ls *LocalStorage) ReleaseLock(ctx context.Context, lockID string) error {
 		return ls.releaseLockPostgres(ctx, lockID)
 	}
 
-	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
+	// Scan all locks to find one matching this lockID
 	return ls.kvStore.Update(func(txn *badger.Txn) error {
-		// Implementation will be added here
-		_ = txn
-		return nil
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = []byte(locksPrefix)
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek([]byte(locksPrefix)); it.ValidForPrefix([]byte(locksPrefix)); it.Next() {
+			item := it.Item()
+			var found bool
+			_ = item.Value(func(val []byte) error {
+				var lock types.DistributedLock
+				if err := json.Unmarshal(val, &lock); err == nil && lock.LockID == lockID {
+					found = true
+				}
+				return nil
+			})
+			if found {
+				return txn.Delete(item.KeyCopy(nil))
+			}
+		}
+		return fmt.Errorf("lock '%s' not found", lockID)
 	})
 }
 
@@ -63,21 +116,52 @@ func (ls *LocalStorage) RenewLock(ctx context.Context, lockID string) (*types.Di
 		return ls.renewLockPostgres(ctx, lockID)
 	}
 
-	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	var lock *types.DistributedLock
+	newExpiry := time.Now().UTC().Add(30 * time.Second)
+	var renewed *types.DistributedLock
+
 	err := ls.kvStore.Update(func(txn *badger.Txn) error {
-		// Implementation will be added here
-		_ = txn
-		return nil
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = []byte(locksPrefix)
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek([]byte(locksPrefix)); it.ValidForPrefix([]byte(locksPrefix)); it.Next() {
+			item := it.Item()
+			var lock types.DistributedLock
+			var found bool
+			key := item.KeyCopy(nil)
+			_ = item.Value(func(val []byte) error {
+				if err := json.Unmarshal(val, &lock); err == nil && lock.LockID == lockID {
+					found = true
+				}
+				return nil
+			})
+			if found {
+				it.Close()
+				lock.ExpiresAt = newExpiry
+				data, err := json.Marshal(&lock)
+				if err != nil {
+					return err
+				}
+				ttl := time.Until(newExpiry)
+				if ttl <= 0 {
+					ttl = time.Second
+				}
+				e := badger.NewEntry(key, data).WithTTL(ttl)
+				renewed = &lock
+				return txn.SetEntry(e)
+			}
+		}
+		return fmt.Errorf("lock '%s' not found", lockID)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to renew lock: %w", err)
+		return nil, err
 	}
-	return lock, nil
+	return renewed, nil
 }
 
 // GetLockStatus retrieves the status of a distributed lock.
@@ -86,16 +170,23 @@ func (ls *LocalStorage) GetLockStatus(ctx context.Context, key string) (*types.D
 		return ls.getLockStatusPostgres(ctx, key)
 	}
 
-	// Fast-fail if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
 	var lock *types.DistributedLock
 	err := ls.kvStore.View(func(txn *badger.Txn) error {
-		// Implementation will be added here
-		_ = txn
-		return nil
+		item, err := txn.Get([]byte(locksPrefix + key))
+		if err == badger.ErrKeyNotFound {
+			return nil // no lock held
+		}
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			lock = &types.DistributedLock{}
+			return json.Unmarshal(val, lock)
+		})
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get lock status: %w", err)
