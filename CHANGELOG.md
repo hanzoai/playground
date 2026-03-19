@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.245] - 2026-03-19
+
+
+### Added
+
+- Feat(orchestrator): end-to-end bot lifecycle, presets, rate limiting, production hardening
+
+Orchestrator (internal/orchestrator/):
+- BotLifecycle: SpawnBot connects ZAP sidecar → gossip → event bus → git branch
+- EventPump: goroutine per sidecar pumping ZAP events → AgentEventBus → SSE
+- 10 agent presets: cto, senior, junior, intern, vision, marketing, sales, design, devops, security
+- Tests passing
+
+Production hardening (internal/server/middleware/):
+- Rate limiter: per-IP token bucket, 100 req/s default, 429 on exceed
+- SSE limiter: max 10 concurrent SSE connections per IP
+- Body size limit: 10MB for file writes, 1MB default
+- Log scrubber: redacts request bodies on sensitive paths (git clone, auth, secrets)
+
+Handler wiring:
+- InjectMessage now sends to ZAP sidecar via pool (not just event bus)
+- Policy routes registered (CRUD + bypass toggle + approval stream)
+- Presets API endpoint (GET /api/v1/presets)
+- PodDisruptionBudget for K8s (minAvailable: 1) (3bcee37)
+
 ## [0.1.41-rc.244] - 2026-03-19
 
 
