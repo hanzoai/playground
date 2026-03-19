@@ -6,6 +6,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.243] - 2026-03-19
+
+
+### Added
+
+- Feat(policy): add permissions engine, DNS management, approval workflows
+
+Policy engine for gating bot access to infrastructure:
+- ResourceType ACLs: dns, kms, cloud, iam, git, network, shell, files, secrets, deploy, billing
+- ApprovalMode: managed (humans approve) | trusted (auto-approve safe) | bypass (bots go wild)
+- Per-space and per-bot policy overrides
+- Approval request/resolve flow with SSE streaming to UI
+- DNS manager for bot/space subdomain records
+- Default policies (managed) and bypass policies (full access)
+- Gin HTTP handlers for all policy/approval CRUD
+- Tests passing with -race (18c3191)
+
+- Feat(playground): ZAP protocol, ZapDB, KMS/MPC wallets, gossip discovery, native git, agent events
+
+Massive architecture upgrade for the playground control plane:
+
+Storage:
+- Replace BoltDB with ZapDB (luxfi/zapdb/v4) - LSM engine, no file lock contention,
+  concurrent reads/writes, built-in TTL/compression/encryption
+
+Protocol (internal/zap):
+- Go types mirroring hanzo/dev Rust SQ/EQ protocol (Submission, Op, EventMsg)
+- WebSocket JSON-RPC client for codex-rs app-server sidecars
+- Sidecar lifecycle manager + pool (spawn/stop per bot)
+- 16 tests passing
+
+KMS + MPC Wallets (internal/kms):
+- HTTP client for Lux KMS MPC daemon (Keygen, Sign, Reshare, GetWallet)
+- Secrets client for org-scoped encrypted secret storage
+- Config with PLAYGROUND_KMS_* env overrides
+
+Gossip Discovery (internal/gossip):
+- Agent tracker with capability/space indices
+- Message router with channel-based pub/sub
+- Lightweight consensus (proposal/vote with quorum + timeout)
+- 37 tests passing with -race
+
+Agent Events (internal/events + handlers):
+- AgentEventBus with per-space and per-agent SSE filtering
+- SSE streaming endpoints for real-time agent observation
+- Human message injection (single agent + broadcast)
+- 12 tests passing
+
+Native Git (internal/gitops):
+- Pure-Go git via go-git/v5 (no CLI dependency)
+- Multi-repo per space, agent commits attributed by DID
+- Full HTTP API: status, log, commit, branch, checkout, diff, files, clone
+- 25 tests passing with -race
+
+UI Fixes:
+- Fix duplicate emoji rendering in bot canvas nodes
+- Default bot view changed from overview to terminal
+- Voice input toggle enabled on localhost for dev (3e052f5)
+
 ## [0.1.41-rc.242] - 2026-03-19
 
 
