@@ -1,0 +1,50 @@
+FROM node:22-bookworm AS base
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git zsh vim tmux python3 python3-pip pipx \
+    build-essential ca-certificates jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Default shell
+RUN chsh -s /usr/bin/zsh
+
+# ============================================================
+# Agent Runtimes
+# ============================================================
+
+# 1. Hanzo Dev (DEFAULT -- native ZAP, IAM login, integrated payments)
+RUN npm install -g @hanzo/dev@latest
+
+# 2. Claude Code (Anthropic)
+RUN npm install -g @anthropic-ai/claude-code@latest || true
+
+# 3. Gemini CLI (Google) -- try npm first, fall back to pipx
+RUN npm install -g @anthropic-ai/gemini-cli@latest 2>/dev/null || true
+RUN pipx install google-gemini-cli 2>/dev/null || true
+
+# 4. Hanzo MCP (connects all agents to Hanzo ecosystem)
+RUN npm install -g @hanzo/mcp@latest
+
+# 5. Python agent tools
+RUN pipx install hanzo-zap 2>/dev/null || true
+RUN pipx install hanzo-tasks 2>/dev/null || true
+
+# ============================================================
+# Entrypoint (must COPY before switching to non-root user)
+# ============================================================
+
+COPY deployments/docker/agent-entrypoint.sh /usr/local/bin/agent-entrypoint.sh
+RUN chmod +x /usr/local/bin/agent-entrypoint.sh
+
+# ============================================================
+# Agent user and home
+# ============================================================
+
+RUN useradd -m -s /usr/bin/zsh agent
+USER agent
+WORKDIR /home/agent
+
+RUN mkdir -p /home/agent/.config/hanzo
+
+ENTRYPOINT ["/usr/local/bin/agent-entrypoint.sh"]

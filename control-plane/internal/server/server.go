@@ -90,6 +90,9 @@ type PlaygroundServer struct {
 	taskScheduler            *tasks.Scheduler
 	temporalStore            *tasks.TemporalStore
 	temporalWorker           *tasks.TaskWorker
+	// serverAPIKey is the Hanzo API key for hanzo-dev runtime auto-login.
+	// When set, bots using the hanzo-dev runtime get this key automatically.
+	serverAPIKey string
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -409,6 +412,16 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	gitBasePath := filepath.Join(playgroundHome, "data", "spaces")
 	gitManager := gitops.NewManager(gitBasePath)
 
+	// Resolve API key for hanzo-dev runtime auto-login.
+	// This key is injected into hanzo-dev bots so they authenticate automatically.
+	serverAPIKey := os.Getenv("HANZO_API_KEY")
+	if serverAPIKey == "" {
+		serverAPIKey = os.Getenv("PLAYGROUND_API_KEY")
+	}
+	if serverAPIKey != "" {
+		logger.Logger.Info().Msg("hanzo-dev auto-login configured via server API key")
+	}
+
 	return &PlaygroundServer{
 		storage:               storageProvider,
 		cache:                 cacheProvider,
@@ -448,6 +461,7 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		taskScheduler:            taskScheduler,
 		temporalStore:            temporalStore,
 		temporalWorker:           temporalWorker,
+		serverAPIKey:             serverAPIKey,
 	}, nil
 }
 
@@ -943,7 +957,7 @@ func (s *PlaygroundServer) setupRoutes() {
 		logger.Logger.Info().Msg("🔐 API key authentication enabled")
 	}
 
-	// Expose Prometheus metrics
+	// Expose metrics endpoint (Prometheus-format, scraped by VictoriaMetrics)
 	s.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Public health check endpoint for load balancers and container orchestration (e.g., Railway, K8s)

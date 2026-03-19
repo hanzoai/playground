@@ -23,9 +23,10 @@ func New(
 	eventBus *events.AgentEventBus,
 	gitManager *gitops.Manager,
 	policyEngine *policy.Engine,
+	cfg ...BotLifecycleConfig,
 ) *Orchestrator {
 	return &Orchestrator{
-		Lifecycle: NewBotLifecycle(zapPool, tracker, router, eventBus, gitManager, policyEngine),
+		Lifecycle: NewBotLifecycle(zapPool, tracker, router, eventBus, gitManager, policyEngine, cfg...),
 		Presets:   BuiltinPresets(),
 	}
 }

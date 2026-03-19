@@ -4,6 +4,7 @@ package orchestrator
 type Preset struct {
 	Name           string   `json:"name"`
 	DisplayName    string   `json:"display_name"`
+	Runtime        string   `json:"runtime"`         // default agent runtime ("hanzo-dev")
 	Model          string   `json:"model"`
 	ApprovalPolicy string   `json:"approval_policy"` // "never", "on-failure", "untrusted", "on-request"
 	SandboxMode    string   `json:"sandbox_mode"`    // "danger-full-access", "workspace-write", "read-only"
@@ -18,6 +19,7 @@ var builtinPresets = map[string]Preset{
 	"cto": {
 		Name:           "cto",
 		DisplayName:    "CTO",
+		Runtime:        "hanzo-dev",
 		Model:          "opus",
 		ApprovalPolicy: "never",
 		SandboxMode:    "danger-full-access",
@@ -29,6 +31,7 @@ var builtinPresets = map[string]Preset{
 	"senior": {
 		Name:           "senior",
 		DisplayName:    "Senior Engineer",
+		Runtime:        "hanzo-dev",
 		Model:          "sonnet",
 		ApprovalPolicy: "untrusted",
 		SandboxMode:    "workspace-write",
@@ -40,6 +43,7 @@ var builtinPresets = map[string]Preset{
 	"junior": {
 		Name:           "junior",
 		DisplayName:    "Junior Engineer",
+		Runtime:        "hanzo-dev",
 		Model:          "haiku",
 		ApprovalPolicy: "on-failure",
 		SandboxMode:    "workspace-write",
@@ -51,6 +55,7 @@ var builtinPresets = map[string]Preset{
 	"intern": {
 		Name:           "intern",
 		DisplayName:    "Intern",
+		Runtime:        "hanzo-dev",
 		Model:          "haiku",
 		ApprovalPolicy: "on-request",
 		SandboxMode:    "read-only",
@@ -62,6 +67,7 @@ var builtinPresets = map[string]Preset{
 	"vision": {
 		Name:           "vision",
 		DisplayName:    "Product Visionary",
+		Runtime:        "hanzo-dev",
 		Model:          "opus",
 		ApprovalPolicy: "on-failure",
 		SandboxMode:    "read-only",
@@ -73,6 +79,7 @@ var builtinPresets = map[string]Preset{
 	"marketing": {
 		Name:           "marketing",
 		DisplayName:    "Marketing Engineer",
+		Runtime:        "hanzo-dev",
 		Model:          "sonnet",
 		ApprovalPolicy: "on-failure",
 		SandboxMode:    "workspace-write",
@@ -84,6 +91,7 @@ var builtinPresets = map[string]Preset{
 	"sales": {
 		Name:           "sales",
 		DisplayName:    "Sales Engineer",
+		Runtime:        "hanzo-dev",
 		Model:          "sonnet",
 		ApprovalPolicy: "on-failure",
 		SandboxMode:    "read-only",
@@ -95,6 +103,7 @@ var builtinPresets = map[string]Preset{
 	"design": {
 		Name:           "design",
 		DisplayName:    "Designer",
+		Runtime:        "hanzo-dev",
 		Model:          "sonnet",
 		ApprovalPolicy: "on-failure",
 		SandboxMode:    "workspace-write",
@@ -106,6 +115,7 @@ var builtinPresets = map[string]Preset{
 	"devops": {
 		Name:           "devops",
 		DisplayName:    "DevOps Engineer",
+		Runtime:        "hanzo-dev",
 		Model:          "sonnet",
 		ApprovalPolicy: "untrusted",
 		SandboxMode:    "danger-full-access",
@@ -117,6 +127,7 @@ var builtinPresets = map[string]Preset{
 	"security": {
 		Name:           "security",
 		DisplayName:    "Security Engineer",
+		Runtime:        "hanzo-dev",
 		Model:          "opus",
 		ApprovalPolicy: "on-failure",
 		SandboxMode:    "read-only",
@@ -149,6 +160,9 @@ func GetPreset(name string) Preset {
 func ApplyPreset(presetName string, opts SpawnOpts) SpawnOpts {
 	p := GetPreset(presetName)
 
+	if opts.Runtime == "" {
+		opts.Runtime = p.Runtime
+	}
 	if opts.Model == "" {
 		opts.Model = p.Model
 	}

@@ -47,6 +47,9 @@ type ProvisionRequest struct {
 	// Per-user billing: IAM token of the launching user.
 	// Injected as HANZO_API_KEY so usage is billed to the user, not a shared service key.
 	UserAPIKey string `json:"-"` // Never from JSON; set by handler
+	// Agent runtime: which CLI agent to launch in the container.
+	// Supported: "hanzo-dev" (default), "claude", "gemini", "qwen", "grok", "terminal".
+	Runtime string `json:"runtime,omitempty"`
 	// Multi-OS desktop support
 	OS           string `json:"os,omitempty"`            // "linux" (default), "macos", "windows"
 	Provider     string `json:"provider,omitempty"`      // Visor provider name for Mac/Windows VMs
@@ -269,6 +272,13 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		"AGENT_NODE_TYPE":       string(NodeTypeCloud),
 		"HANZO_PLAYGROUND_MODE": "production",
 	}
+	// Agent runtime selection (defaults to hanzo-dev)
+	runtime := req.Runtime
+	if runtime == "" {
+		runtime = "hanzo-dev"
+	}
+	env["AGENT_RUNTIME"] = runtime
+
 	if req.Model != "" {
 		env["AGENT_MODEL"] = req.Model
 	}

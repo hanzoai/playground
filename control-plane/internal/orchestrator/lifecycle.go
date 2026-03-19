@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +22,7 @@ type SpawnOpts struct {
 	SpaceID        string
 	Name           string
 	Model          string
+	Runtime        string // "hanzo-dev" (default), "claude", "gemini", etc.
 	Preset         string // "cto", "senior", "junior", "intern", ""
 	ApprovalPolicy string // maps to zap.AskForApproval
 	SandboxMode    string // maps to zap.SandboxPolicy type
@@ -41,6 +43,28 @@ type BotLifecycle struct {
 	policyEngine *policy.Engine
 	pumps        map[string]context.CancelFunc // botID -> cancel for event pump
 	mu           sync.Mutex
+
+	// serverAPIKey is the Hanzo API key used for hanzo-dev runtime auto-login.
+	// When set, bots using the hanzo-dev runtime (the default) get this key
+	// injected automatically -- no user configuration needed.
+	serverAPIKey string
+
+	// secretsClient fetches user-configured API keys from KMS for non-default runtimes.
+	secretsClient SecretsGetter
+}
+
+// SecretsGetter retrieves encrypted secrets from KMS.
+type SecretsGetter interface {
+	GetSecret(ctx context.Context, orgID, key string) ([]byte, error)
+}
+
+// BotLifecycleConfig holds optional configuration for BotLifecycle.
+type BotLifecycleConfig struct {
+	// ServerAPIKey is the Hanzo API key for hanzo-dev runtime auto-login.
+	ServerAPIKey string
+
+	// SecretsClient fetches user-configured API keys from KMS.
+	SecretsClient SecretsGetter
 }
 
 // NewBotLifecycle creates a BotLifecycle wiring all subsystems together.
@@ -51,8 +75,9 @@ func NewBotLifecycle(
 	eventBus *events.AgentEventBus,
 	gitManager *gitops.Manager,
 	policyEngine *policy.Engine,
+	cfg ...BotLifecycleConfig,
 ) *BotLifecycle {
-	return &BotLifecycle{
+	lc := &BotLifecycle{
 		zapPool:      zapPool,
 		tracker:      tracker,
 		router:       router,
@@ -61,18 +86,24 @@ func NewBotLifecycle(
 		policyEngine: policyEngine,
 		pumps:        make(map[string]context.CancelFunc),
 	}
+	if len(cfg) > 0 {
+		lc.serverAPIKey = cfg[0].ServerAPIKey
+		lc.secretsClient = cfg[0].SecretsClient
+	}
+	return lc
 }
 
 // SpawnBot is the master function that brings a bot online in a space.
 // It:
 //  1. Applies preset defaults
 //  2. Checks policy engine for permission to create bot
-//  3. Spawns ZAP sidecar via pool
-//  4. Registers agent in gossip tracker
-//  5. Subscribes agent to gossip router
-//  6. Creates agent git branch in space repo
-//  7. Starts event pump goroutine (sidecar events -> event bus)
-//  8. Publishes AgentJoinedSpace event
+//  3. Configures runtime auth env (API keys for hanzo-dev/claude/gemini/etc.)
+//  4. Spawns ZAP sidecar via pool
+//  5. Registers agent in gossip tracker
+//  6. Subscribes agent to gossip router
+//  7. Creates agent git branch in space repo
+//  8. Starts event pump goroutine (sidecar events -> event bus)
+//  9. Publishes AgentJoinedSpace event
 func (l *BotLifecycle) SpawnBot(ctx context.Context, opts SpawnOpts) error {
 	// Apply preset defaults for any unset fields.
 	if opts.Preset != "" {
@@ -115,13 +146,17 @@ func (l *BotLifecycle) SpawnBot(ctx context.Context, opts SpawnOpts) error {
 			Msg("[orchestrator] spawn requires approval")
 	}
 
-	// 2. Spawn ZAP sidecar.
+	// 2. Configure runtime auth environment variables.
+	env := l.buildRuntimeEnv(ctx, opts)
+
+	// 3. Spawn ZAP sidecar.
 	sidecarOpts := zap.SidecarOpts{
 		SpaceID:        opts.SpaceID,
 		BotID:          opts.BotID,
 		Model:          opts.Model,
 		ApprovalPolicy: zap.AskForApproval(opts.ApprovalPolicy),
 		Sandbox:        buildSandboxPolicy(opts.SandboxMode),
+		Env:            env,
 	}
 
 	// Set working directory to the space repo path if git manager is available.
@@ -138,7 +173,7 @@ func (l *BotLifecycle) SpawnBot(ctx context.Context, opts SpawnOpts) error {
 		return fmt.Errorf("orchestrator: spawn sidecar: %w", err)
 	}
 
-	// 3. Register in gossip tracker.
+	// 4. Register in gossip tracker.
 	caps := make([]gossip.AgentCapability, len(opts.Capabilities))
 	for i, c := range opts.Capabilities {
 		caps[i] = gossip.AgentCapability{Name: c}
@@ -160,10 +195,10 @@ func (l *BotLifecycle) SpawnBot(ctx context.Context, opts SpawnOpts) error {
 		return fmt.Errorf("orchestrator: register in tracker: %w", err)
 	}
 
-	// 4. Subscribe to gossip router.
+	// 5. Subscribe to gossip router.
 	l.router.Subscribe(opts.BotID)
 
-	// 5. Create agent git branch.
+	// 6. Create agent git branch.
 	if l.gitManager != nil {
 		repo, _ := l.gitManager.GetOrInit(opts.SpaceID)
 		if repo != nil {
@@ -178,13 +213,13 @@ func (l *BotLifecycle) SpawnBot(ctx context.Context, opts SpawnOpts) error {
 		}
 	}
 
-	// 6. Start event pump.
+	// 7. Start event pump.
 	l.mu.Lock()
 	cancel := l.startEventPump(ctx, sidecar, opts.SpaceID, opts.BotID, opts.Name)
 	l.pumps[opts.BotID] = cancel
 	l.mu.Unlock()
 
-	// 7. Publish AgentJoinedSpace.
+	// 8. Publish AgentJoinedSpace.
 	l.eventBus.Publish(events.AgentEvent{
 		Type:      events.AgentJoinedSpace,
 		SpaceID:   opts.SpaceID,
@@ -192,10 +227,11 @@ func (l *BotLifecycle) SpawnBot(ctx context.Context, opts SpawnOpts) error {
 		AgentName: opts.Name,
 		Timestamp: time.Now(),
 		Data: map[string]interface{}{
-			"model":    opts.Model,
-			"preset":   opts.Preset,
-			"emoji":    opts.Emoji,
-			"color":    opts.Color,
+			"model":   opts.Model,
+			"preset":  opts.Preset,
+			"runtime": opts.Runtime,
+			"emoji":   opts.Emoji,
+			"color":   opts.Color,
 		},
 	})
 
@@ -347,6 +383,66 @@ func (l *BotLifecycle) ActiveBots(spaceID string) []string {
 		}
 	}
 	return ids
+}
+
+// buildRuntimeEnv returns environment variable strings for the sidecar process
+// based on the bot's runtime. hanzo-dev (the default) auto-injects the server's
+// API key so bots work with zero user configuration. Other runtimes require the
+// user to store their API key in KMS via the playground settings UI.
+func (l *BotLifecycle) buildRuntimeEnv(ctx context.Context, opts SpawnOpts) []string {
+	var env []string
+
+	runtime := opts.Runtime
+	if runtime == "" {
+		runtime = "hanzo-dev"
+	}
+	env = append(env, "AGENT_RUNTIME="+runtime)
+
+	switch runtime {
+	case "hanzo-dev":
+		if l.serverAPIKey != "" {
+			env = append(env, "HANZO_API_KEY="+l.serverAPIKey)
+		}
+	case "claude":
+		if key := l.getSpaceSecret(ctx, opts.SpaceID, "ANTHROPIC_API_KEY"); key != "" {
+			env = append(env, "ANTHROPIC_API_KEY="+key)
+		}
+	case "gemini":
+		if key := l.getSpaceSecret(ctx, opts.SpaceID, "GOOGLE_API_KEY"); key != "" {
+			env = append(env, "GOOGLE_API_KEY="+key)
+		}
+	case "openai":
+		if key := l.getSpaceSecret(ctx, opts.SpaceID, "OPENAI_API_KEY"); key != "" {
+			env = append(env, "OPENAI_API_KEY="+key)
+		}
+	default:
+		// Unknown runtime -- attempt a generic key lookup keyed by runtime name.
+		upperRuntime := strings.ToUpper(strings.ReplaceAll(runtime, "-", "_"))
+		secretKey := upperRuntime + "_API_KEY"
+		if key := l.getSpaceSecret(ctx, opts.SpaceID, secretKey); key != "" {
+			env = append(env, secretKey+"="+key)
+		}
+	}
+
+	return env
+}
+
+// getSpaceSecret fetches an encrypted secret for a space from KMS.
+// Returns "" if KMS is not configured or the key does not exist.
+func (l *BotLifecycle) getSpaceSecret(ctx context.Context, spaceID, key string) string {
+	if l.secretsClient == nil {
+		return ""
+	}
+	secret, err := l.secretsClient.GetSecret(ctx, spaceID, key)
+	if err != nil {
+		logger.Logger.Warn().
+			Str("space_id", spaceID).
+			Str("key", key).
+			Err(err).
+			Msg("[orchestrator] failed to fetch space secret from KMS")
+		return ""
+	}
+	return string(secret)
 }
 
 // buildSandboxPolicy converts a sandbox mode string to a zap.SandboxPolicy.
