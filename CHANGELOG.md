@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.250] - 2026-03-19
+
+
+### Added
+
+- Feat(voice): replace browser Speech API with cloud ASR (Whisper)
+
+Voice input now works on ALL browsers via server-side transcription:
+- New cloudAsr.ts service calling api.hanzo.ai/v1/audio/transcriptions
+- useSpeechRecognition hook rewritten to use MediaRecorder + cloud ASR
+- VoiceSettings STT_SUPPORTED now checks MediaRecorder (universal on HTTPS)
+- Configurable endpoint via VITE_ASR_ENDPOINT
+- API key from localStorage or VITE_HANZO_API_KEY env var (23214d2)
+
 ## [0.1.41-rc.249] - 2026-03-19
 
 
