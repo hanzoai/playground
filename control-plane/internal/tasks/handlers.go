@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,11 +14,19 @@ import (
 type Handlers struct {
 	store     *Store
 	scheduler *Scheduler
+	temporal  *TemporalStore // nil if Temporal not configured
 }
 
 // NewHandlers creates a new Handlers instance.
 func NewHandlers(store *Store, scheduler *Scheduler) *Handlers {
 	return &Handlers{store: store, scheduler: scheduler}
+}
+
+// SetTemporal attaches a Temporal store for durable task execution.
+// When set, CreateTask and CancelTask will attempt Temporal first,
+// falling back to the in-memory store on failure.
+func (h *Handlers) SetTemporal(ts *TemporalStore) {
+	h.temporal = ts
 }
 
 // --- Request / Response types ---
@@ -109,6 +118,14 @@ func (h *Handlers) CreateTask(c *gin.Context) {
 	if err := h.store.CreateTask(task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// If Temporal is connected, submit the task as a durable workflow.
+	if h.temporal != nil && h.temporal.IsConnected() {
+		if err := h.temporal.SubmitTask(c.Request.Context(), task); err != nil {
+			// Log warning and continue with in-memory only.
+			log.Printf("Temporal submit failed, using in-memory: %v", err)
+		}
 	}
 
 	h.emitEvent("created", task)
@@ -298,6 +315,13 @@ func (h *Handlers) CancelTask(c *gin.Context) {
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Also cancel the Temporal workflow if connected.
+	if h.temporal != nil && h.temporal.IsConnected() {
+		if err := h.temporal.CancelTask(c.Request.Context(), taskID); err != nil {
+			log.Printf("Temporal cancel failed for task %s: %v", taskID, err)
+		}
 	}
 
 	task, _ := h.store.GetTask(taskID)

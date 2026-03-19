@@ -420,12 +420,7 @@ func (h *Handlers) Push(c *gin.Context) {
 		return
 	}
 
-	opts := PushOpts{
-		Remote: req.Remote,
-		Branch: req.Branch,
-		Auth:   req.Auth,
-		Force:  req.Force,
-	}
+	opts := PushOpts(req)
 
 	if err := r.Push(c.Request.Context(), opts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -456,11 +451,7 @@ func (h *Handlers) Pull(c *gin.Context) {
 		return
 	}
 
-	opts := PullOpts{
-		Remote: req.Remote,
-		Branch: req.Branch,
-		Auth:   req.Auth,
-	}
+	opts := PullOpts(req)
 
 	if err := r.Pull(c.Request.Context(), opts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -230,10 +230,8 @@ func (s *Scheduler) emitEvent(eventType, taskID, spaceID, agentID string, data m
 		"task_event_type": eventType,
 		"task_id":         taskID,
 	}
-	if data != nil {
-		for k, v := range data {
-			eventData[k] = v
-		}
+	for k, v := range data {
+		eventData[k] = v
 	}
 
 	s.eventBus.Publish(events.AgentEvent{

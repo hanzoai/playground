@@ -88,6 +88,8 @@ type PlaygroundServer struct {
 	rateLimiter              *middleware.RateLimiter
 	taskStore                *tasks.Store
 	taskScheduler            *tasks.Scheduler
+	temporalStore            *tasks.TemporalStore
+	temporalWorker           *tasks.TaskWorker
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -368,6 +370,30 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	taskStore := tasks.NewStore()
 	taskScheduler := tasks.NewScheduler(taskStore, gossipTracker, agentEventBus)
 
+	// Temporal durable tasks (optional -- falls back to in-memory)
+	var temporalStore *tasks.TemporalStore
+	var temporalWorker *tasks.TaskWorker
+	temporalCfg := tasks.DefaultTemporalConfig()
+	if temporalCfg.Enabled {
+		ts, err := tasks.NewTemporalStore(temporalCfg.Address, temporalCfg.Namespace)
+		if err != nil {
+			logger.Logger.Warn().Err(err).Msg("Temporal not available, using in-memory tasks")
+		} else {
+			temporalStore = ts
+			// Start a default worker for the "default" queue.
+			w := tasks.NewTaskWorker(ts.Client, "default")
+			if err := w.Start(); err != nil {
+				logger.Logger.Warn().Err(err).Msg("Failed to start Temporal worker")
+			} else {
+				temporalWorker = w
+				logger.Logger.Info().
+					Str("address", temporalCfg.Address).
+					Str("namespace", temporalCfg.Namespace).
+					Msg("Temporal durable task store connected")
+			}
+		}
+	}
+
 	// KMS MPC client (if configured via env)
 	kmsCfg := kms.DefaultConfig()
 	kmsCfg.ApplyEnvOverrides()
@@ -420,6 +446,8 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		policyEngine:             policyEngine,
 		taskStore:                taskStore,
 		taskScheduler:            taskScheduler,
+		temporalStore:            temporalStore,
+		temporalWorker:           temporalWorker,
 	}, nil
 }
 
@@ -555,6 +583,14 @@ func (s *PlaygroundServer) Stop() error {
 	// Stop task scheduler
 	if s.taskScheduler != nil {
 		s.taskScheduler.Stop()
+	}
+
+	// Stop Temporal worker and close client
+	if s.temporalWorker != nil {
+		s.temporalWorker.Stop()
+	}
+	if s.temporalStore != nil {
+		s.temporalStore.Close()
 	}
 
 	// Stop space presence expiry goroutine.
@@ -1421,6 +1457,9 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 
 	// Task management endpoints
 	taskHandlers := tasks.NewHandlers(s.taskStore, s.taskScheduler)
+	if s.temporalStore != nil {
+		taskHandlers.SetTemporal(s.temporalStore)
+	}
 	spacesAPI.POST("/:id/tasks", taskHandlers.CreateTask)
 	spacesAPI.GET("/:id/tasks", taskHandlers.ListTasks)
 	spacesAPI.GET("/:id/tasks/:taskId", taskHandlers.GetTask)
