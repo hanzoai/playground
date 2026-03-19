@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.244] - 2026-03-19
+
+
+### Fixed
+
+- Fix(ci): update Go 1.24→1.26 in all workflows + Dockerfile, implement ZapDB locks
+
+- Update GO_VERSION to 1.26.0 in release.yml, deploy.yml, control-plane.yml
+- Fix Dockerfile golang:1.26.0-bookworm base image
+- Implement real ZapDB lock operations (AcquireLock, ReleaseLock, RenewLock, GetLockStatus)
+  with TTL support — no more stubs (16d9657)
+
 ## [0.1.41-rc.243] - 2026-03-19
 
 
