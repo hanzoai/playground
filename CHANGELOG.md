@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.253] - 2026-03-19
+
+
+### Added
+
+- Feat(orchestrator): runtime-based auto-login with IAM + KMS secret injection
+
+hanzo-dev bots auto-login via server API key (zero config):
+- buildRuntimeEnv() dispatches by runtime: hanzo-dev/claude/gemini/openai/generic
+- hanzo-dev: injects HANZO_API_KEY from server config (IAM auto-auth)
+- claude: fetches ANTHROPIC_API_KEY from KMS secrets
+- gemini: fetches GOOGLE_API_KEY from KMS secrets
+- All presets default to runtime: "hanzo-dev"
+- SecretsGetter interface for testable KMS integration
+- 11 new tests (28 total in orchestrator, all passing) (8a85857)
+
 ## [0.1.41-rc.252] - 2026-03-19
 
 
