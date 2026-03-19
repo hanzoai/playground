@@ -47,14 +47,15 @@ export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter
   return (
     <>
       {/* Zoom controls — bottom center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-xl border border-border/50 bg-card/90 px-2 py-1.5 shadow-lg backdrop-blur-sm">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 rounded-full border border-border/40 bg-card/90 px-1.5 py-1 shadow-xl backdrop-blur-md">
+        {/* Zoom group */}
         <ControlButton onClick={handleZoomOut} label="Zoom out">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 7h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </ControlButton>
 
-        <span className="min-w-[3rem] text-center text-xs text-muted-foreground tabular-nums select-none">
+        <span className="min-w-[3rem] text-center text-[11px] text-muted-foreground tabular-nums select-none font-medium">
           {zoomPercent}%
         </span>
 
@@ -64,8 +65,9 @@ export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter
           </svg>
         </ControlButton>
 
-        <div className="mx-1 h-4 w-px bg-border/50" />
+        <div className="mx-0.5 h-4 w-px bg-border/30" />
 
+        {/* Layout group */}
         <ControlButton onClick={onFitView} label="Fit to view">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
@@ -74,22 +76,20 @@ export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter
         </ControlButton>
 
         {onAutoLayout && (
-          <>
-            <div className="mx-1 h-4 w-px bg-border/50" />
-            <ControlButton onClick={onAutoLayout} label="Auto layout">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-            </ControlButton>
-          </>
+          <ControlButton onClick={onAutoLayout} label="Auto layout">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          </ControlButton>
         )}
 
         {onToggleChat && (
           <>
-            <div className="mx-1 h-4 w-px bg-border/50" />
+            <div className="mx-0.5 h-4 w-px bg-border/30" />
+            {/* View group */}
             <div className="relative">
               <ControlButton onClick={onToggleChat} label="Toggle chat">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -97,7 +97,7 @@ export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter
                 </svg>
               </ControlButton>
               {(chatUnread ?? 0) > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground animate-in fade-in zoom-in-75 duration-200">
                   {chatUnread! > 99 ? '99+' : chatUnread}
                 </span>
               )}
@@ -111,22 +111,21 @@ export function CanvasControls({ onFitView, onAutoLayout, onAddBot, onAddStarter
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          title="Add"
           aria-label="Add bot or service"
           className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg',
+            'flex h-11 w-11 items-center justify-center rounded-full shadow-lg',
             'bg-primary text-primary-foreground',
-            'transition-all hover:scale-105 hover:shadow-xl active:scale-95',
-            menuOpen && 'rotate-45'
+            'transition-all duration-200 hover:scale-110 hover:shadow-xl hover:shadow-primary/25 active:scale-95',
+            menuOpen && 'rotate-45 bg-primary/90'
           )}
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
         </button>
 
         {menuOpen && (
-          <div className="absolute bottom-full mb-2 left-0 min-w-[200px] rounded-xl border border-border/60 bg-card/95 py-1.5 shadow-xl backdrop-blur-sm">
+          <div className="absolute bottom-full mb-2 left-0 min-w-[220px] rounded-xl border border-border/40 bg-card/95 py-1.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-150">
             {onLaunchCloud && (
               <>
                 <MenuItem
@@ -188,21 +187,32 @@ function ControlButton({
   children: React.ReactNode;
   className?: string;
 }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      aria-label={label}
-      className={cn(
-        'flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground',
-        'transition-colors hover:bg-accent hover:text-foreground',
-        'active:scale-95 touch-manipulation',
-        className
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className={cn(
+          'flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground',
+          'transition-all duration-150 hover:bg-accent hover:text-foreground hover:scale-110',
+          'active:scale-95 touch-manipulation',
+          className
+        )}
+      >
+        {children}
+      </button>
+      {showTooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
+          <div className="whitespace-nowrap rounded-md bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-md border border-border/40 animate-in fade-in zoom-in-95 duration-150">
+            {label}
+          </div>
+        </div>
       )}
-    >
-      {children}
-    </button>
+    </div>
   );
 }
 

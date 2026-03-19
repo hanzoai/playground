@@ -32,6 +32,10 @@ import {
   Receipt,
   Coins,
   BuildingOffice,
+  Cognitive,
+  Analytics,
+  Terminal,
+  Gauge,
 } from "@/components/ui/icon-bridge";
 import type { IconComponent, IconWeight } from "@/components/ui/icon-bridge";
 
@@ -68,6 +72,10 @@ const icons = {
   receipt: Receipt,
   coins: Coins,
   organization: BuildingOffice,
+  playground: Cognitive,
+  analytics: Analytics,
+  terminal: Terminal,
+  gauge: Gauge,
 } as const;
 
 export interface IconProps {

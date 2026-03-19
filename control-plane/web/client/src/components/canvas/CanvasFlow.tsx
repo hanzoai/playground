@@ -292,8 +292,8 @@ export function CanvasFlow({ className }: { className?: string }) {
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
-          size={1.2}
-          color="color-mix(in oklch, var(--muted-foreground) 25%, transparent)"
+          size={0.8}
+          color="color-mix(in oklch, var(--muted-foreground) 10%, transparent)"
           className="!bg-background"
         />
         {nodes.filter(n => n.type === 'bot').length >= 2 && (

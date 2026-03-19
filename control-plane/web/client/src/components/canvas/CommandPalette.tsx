@@ -50,7 +50,28 @@ export function CommandPalette() {
       });
     }
 
-    // Global actions
+    // Canvas actions
+    cmds.push({
+      id: 'auto-layout',
+      label: 'Auto Layout',
+      description: 'Arrange all nodes in a grid',
+      icon: '📐',
+      action: () => {
+        const store = useCanvasStore.getState();
+        store.autoLayout();
+      },
+      keywords: ['layout', 'arrange', 'grid', 'organize'],
+    });
+
+    cmds.push({
+      id: 'fit-view',
+      label: 'Fit to View',
+      description: 'Zoom to fit all nodes',
+      icon: '🔍',
+      action: () => {}, // handled by CanvasFlow fitView
+      keywords: ['fit', 'zoom', 'view', 'center'],
+    });
+
     cmds.push({
       id: 'cycle-permission',
       label: `Permission: ${globalMode}`,
@@ -127,15 +148,15 @@ export function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] animate-in fade-in duration-100">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
 
       {/* Palette */}
-      <div className="relative w-[90vw] max-w-md rounded-xl border border-border/60 bg-card shadow-2xl overflow-hidden">
+      <div className="relative w-[90vw] max-w-md rounded-2xl border border-border/40 bg-card/95 shadow-2xl overflow-hidden backdrop-blur-md animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-150">
         {/* Search */}
         <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
           <span className="text-muted-foreground text-sm">⌘</span>

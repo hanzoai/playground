@@ -25,13 +25,13 @@ const FileViewer = lazy(() => import('../drill-down/FileViewer').then(m => ({ de
 // Status Config
 // ---------------------------------------------------------------------------
 
-const STATUS: Record<string, { color: string; label: string; pulse?: boolean }> = {
-  idle:         { color: 'bg-blue-500',   label: 'Idle' },
-  busy:         { color: 'bg-green-500',  label: 'Working', pulse: true },
-  waiting:      { color: 'bg-yellow-500', label: 'Waiting' },
-  error:        { color: 'bg-red-500',    label: 'Error' },
-  offline:      { color: 'bg-gray-400',   label: 'Offline' },
-  provisioning: { color: 'bg-purple-500', label: 'Provisioning', pulse: true },
+const STATUS: Record<string, { color: string; ring: string; label: string; pulse?: boolean }> = {
+  idle:         { color: 'bg-blue-500',    ring: 'ring-blue-500/30',    label: 'Idle' },
+  busy:         { color: 'bg-emerald-400', ring: 'ring-emerald-400/30', label: 'Working', pulse: true },
+  waiting:      { color: 'bg-amber-400',   ring: 'ring-amber-400/30',  label: 'Waiting' },
+  error:        { color: 'bg-red-500',     ring: 'ring-red-500/30',    label: 'Error' },
+  offline:      { color: 'bg-zinc-500',    ring: 'ring-zinc-500/20',   label: 'Offline' },
+  provisioning: { color: 'bg-purple-500',  ring: 'ring-purple-500/30', label: 'Provisioning', pulse: true },
 };
 
 const VIEW_TABS: { key: BotView; label: string; icon: string }[] = [
@@ -71,17 +71,18 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        'group relative rounded-xl bg-zinc-800/90 transition-all touch-manipulation',
+        'group relative rounded-2xl bg-zinc-900/95 transition-all duration-200 touch-manipulation',
         'w-full h-full flex flex-col',
         selected
-          ? 'ring-2 ring-primary/60 shadow-[0_0_24px_-2px] shadow-primary/30'
-          : 'ring-1 ring-white/[0.10] hover:ring-white/[0.20]',
+          ? 'ring-2 ring-primary/50 shadow-[0_0_32px_-4px] shadow-primary/20'
+          : 'ring-1 ring-white/[0.08] hover:ring-white/[0.16] hover:shadow-[0_8px_32px_-8px] hover:shadow-black/40',
         'shadow-2xl',
       )}
       style={{
-        ...(bot.color && selected ? { boxShadow: `0 0 24px -2px ${bot.color}40` } : {}),
-        ...(bot.color && !selected && (bot.status === 'busy') ? { boxShadow: `0 0 16px -4px ${bot.color}30` } : {}),
-        ...(bot.color ? { borderColor: selected ? `${bot.color}60` : undefined } : {}),
+        borderRadius: '16px',
+        ...(bot.color && selected ? { boxShadow: `0 0 32px -4px ${bot.color}30, 0 0 64px -8px ${bot.color}15` } : {}),
+        ...(bot.color && !selected && (bot.status === 'busy') ? { boxShadow: `0 0 20px -6px ${bot.color}25` } : {}),
+        ...(bot.color ? { borderColor: selected ? `${bot.color}50` : undefined } : {}),
       }}
     >
       {/* Resize handles */}
@@ -89,33 +90,43 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
         minWidth={BOT_NODE_MIN_WIDTH}
         minHeight={collapsed ? 52 : BOT_NODE_MIN_HEIGHT}
         isVisible={selected ?? false}
-        lineClassName="!border-primary/30"
-        handleClassName="!w-2.5 !h-2.5 !bg-primary/60 !border-2 !border-zinc-800"
+        lineClassName="!border-primary/20"
+        handleClassName="!w-2 !h-2 !bg-primary/50 !border-[1.5px] !border-zinc-900 !rounded-full"
       />
 
       {/* Connection handles - hidden by default, shown on hover */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
+        className="!w-2.5 !h-2.5 !bg-primary/50 !border-[1.5px] !border-zinc-900 !rounded-full !opacity-0 group-hover:!opacity-100 !transition-all !duration-200"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-primary/60 !border-2 !border-card !opacity-0 group-hover:!opacity-100 !transition-opacity"
+        className="!w-2.5 !h-2.5 !bg-primary/50 !border-[1.5px] !border-zinc-900 !rounded-full !opacity-0 group-hover:!opacity-100 !transition-all !duration-200"
       />
 
       {/* Header - always visible, prominent */}
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none shrink-0"
+        className="flex items-center gap-2.5 px-4 py-3 cursor-pointer select-none shrink-0"
         onClick={handleToggleCollapse}
       >
-        {/* Status dot */}
+        {/* Status indicator */}
         <span className={cn(
-          'h-3 w-3 rounded-full shrink-0',
+          'relative h-2.5 w-2.5 rounded-full shrink-0',
           status.color,
-          status.pulse && 'animate-pulse'
-        )} />
+          status.pulse && 'animate-pulse',
+          'ring-2',
+          status.ring,
+        )}>
+          {status.pulse && (
+            <span className={cn(
+              'absolute inset-0 rounded-full animate-ping',
+              status.color,
+              'opacity-40',
+            )} />
+          )}
+        </span>
 
         {/* Avatar / Emoji */}
         {bot.avatar ? (
@@ -172,9 +183,9 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
       {/* Content area (collapsible) */}
       {!collapsed && (
-        <div className="flex-1 flex flex-col border-t border-white/[0.08] min-h-0 overflow-hidden">
-          {/* Toolbar: view tabs + actions */}
-          <div className="flex items-center border-b border-white/[0.08] shrink-0">
+        <div className="flex-1 flex flex-col border-t border-white/[0.06] min-h-0 overflow-hidden transition-all duration-200">
+          {/* Tab bar — window-style header */}
+          <div className="flex items-center bg-zinc-800/50 shrink-0">
             <div className="flex flex-1 overflow-x-auto scrollbar-none">
               {VIEW_TABS.map((tab) => (
                 <button
@@ -182,40 +193,43 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
                   type="button"
                   onClick={() => handleViewChange(tab.key)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap transition-colors shrink-0',
+                    'flex items-center gap-1.5 px-3 py-2 text-[11px] whitespace-nowrap transition-all duration-150 shrink-0 relative',
                     bot.activeView === tab.key
-                      ? 'text-foreground border-b-2 border-primary'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-foreground bg-zinc-900/80'
+                      : 'text-muted-foreground/70 hover:text-muted-foreground hover:bg-zinc-800/60'
                   )}
                 >
-                  <span className="text-sm">{tab.icon}</span>
-                  <span>{tab.label}</span>
+                  <span className="text-xs">{tab.icon}</span>
+                  <span className="font-medium">{tab.label}</span>
+                  {bot.activeView === tab.key && (
+                    <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-full" />
+                  )}
                 </button>
               ))}
             </div>
 
-            {/* Mini toolbar actions */}
-            <div className="flex items-center gap-0.5 px-2 shrink-0">
-              {/* Collapse button */}
+            {/* Window controls */}
+            <div className="flex items-center gap-1 px-2 shrink-0">
+              {/* Collapse */}
               <button
                 type="button"
                 onClick={handleToggleCollapse}
                 title="Collapse"
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.08] transition-all duration-150"
               >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              {/* Close button */}
+              {/* Close */}
               <button
                 type="button"
                 onClick={handleClose}
                 title="Remove from canvas"
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
               >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </button>
             </div>

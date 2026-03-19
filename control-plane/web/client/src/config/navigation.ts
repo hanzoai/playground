@@ -9,14 +9,14 @@ export const navigationSections: NavigationSection[] = [
         id: 'nodes',
         label: 'My Bots',
         href: '/nodes',
-        icon: 'function',
+        icon: 'bot',
         description: 'Running bots and connected nodes'
       },
       {
         id: 'playground',
         label: 'Playground',
         href: '/playground',
-        icon: 'bot',
+        icon: 'playground',
         description: 'Visual bot orchestration canvas'
       },
     ]
@@ -36,7 +36,7 @@ export const navigationSections: NavigationSection[] = [
         id: 'executions',
         label: 'Executions',
         href: '/executions',
-        icon: 'run',
+        icon: 'terminal',
         description: 'Bot executions and runtime calls'
       },
     ]
@@ -49,7 +49,7 @@ export const navigationSections: NavigationSection[] = [
         id: 'metrics',
         label: 'Metrics',
         href: '/metrics',
-        icon: 'dashboard',
+        icon: 'analytics',
         description: 'System overview and operational metrics'
       },
       {

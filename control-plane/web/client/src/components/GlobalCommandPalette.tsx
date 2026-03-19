@@ -90,6 +90,16 @@ export function GlobalCommandPalette() {
       keywords: ['deploy', 'cloud', 'provision', 'launch'],
     });
 
+    cmds.push({
+      id: 'action-new-workflow',
+      label: 'New Workflow',
+      description: 'Create a new bot workflow',
+      icon: '🔀',
+      section: 'Actions',
+      action: () => navigate('/playground'),
+      keywords: ['workflow', 'new', 'create', 'flow'],
+    });
+
     return cmds;
   }, [agents, navigate]);
 
@@ -165,9 +175,9 @@ export function GlobalCommandPalette() {
   let flatIndex = 0;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-      <div className="relative w-[90vw] max-w-lg rounded-xl border border-border/60 bg-card shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] animate-in fade-in duration-100">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+      <div className="relative w-[90vw] max-w-lg rounded-2xl border border-border/40 bg-card/95 shadow-2xl overflow-hidden backdrop-blur-md animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-150">
         {/* Search */}
         <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
           <span className="text-muted-foreground text-sm">⌘K</span>
