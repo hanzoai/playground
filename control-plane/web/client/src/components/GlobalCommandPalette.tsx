@@ -36,10 +36,9 @@ export function GlobalCommandPalette() {
 
     // Navigation commands
     const nav = [
-      { id: 'nav-bots',          label: 'My Bots',        icon: '🖥️', href: '/nodes',          desc: 'Running bots and connected nodes' },
       { id: 'nav-playground',    label: 'Playground',     icon: '🤖', href: '/playground',     desc: 'Visual canvas' },
-      { id: 'nav-control-plane', label: 'Control Plane',  icon: '🎛️', href: '/bots/all',      desc: 'Bot orchestration' },
-      { id: 'nav-executions',    label: 'Executions',     icon: '▶️', href: '/executions',     desc: 'Execution history' },
+      { id: 'nav-bots',          label: 'Bots',           icon: '🖥️', href: '/bots',           desc: 'Your bots and connected agents' },
+      { id: 'nav-tasks',         label: 'Tasks',          icon: '▶️', href: '/tasks',           desc: 'Bot tasks and activity' },
       { id: 'nav-metrics',       label: 'Metrics',        icon: '📊', href: '/metrics',        desc: 'System overview' },
       { id: 'nav-settings',      label: 'Settings',       icon: '⚙️', href: '/settings',       desc: 'Connection config' },
     ];
@@ -76,7 +75,7 @@ export function GlobalCommandPalette() {
       description: 'Connect a local machine as a bot node',
       icon: '+',
       section: 'Actions',
-      action: () => navigate('/nodes'),
+      action: () => navigate('/bots'),
       keywords: ['register', 'local', 'bot', 'connect', 'add'],
     });
 
@@ -86,7 +85,7 @@ export function GlobalCommandPalette() {
       description: 'Provision a cloud bot',
       icon: '☁️',
       section: 'Actions',
-      action: () => navigate('/nodes'),
+      action: () => navigate('/bots'),
       keywords: ['deploy', 'cloud', 'provision', 'launch'],
     });
 

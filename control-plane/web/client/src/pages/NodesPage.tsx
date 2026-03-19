@@ -226,12 +226,12 @@ export function NodesPage() {
           // Don't show error — gateway provided the nodes
         } else {
           setError(
-            "Failed to load hanzo nodes. Please ensure the Playground server is running and accessible."
+            "Failed to load bots. Please ensure the Playground server is running and accessible."
           );
         }
       } catch {
         setError(
-          "Failed to load hanzo nodes. Please ensure the Playground server is running and accessible."
+          "Failed to load bots. Please ensure the Playground server is running and accessible."
         );
       }
     } finally {
@@ -623,7 +623,7 @@ export function NodesPage() {
     ? `Showing ${filteredNodes.length} result${
         filteredNodes.length === 1 ? "" : "s"
       } for "${searchQuery}"`
-    : "Monitor and manage your AI hanzo nodes in the Playground orchestration platform.";
+    : "Your running bots and connected agents.";
 
   const connectionBadgeVariant = connected
     ? "success"
@@ -707,7 +707,7 @@ export function NodesPage() {
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-6">
         <PageHeader
-          title="Nodes"
+          title="Bots"
           description={headerSubtitle}
           actions={pageHeaderActions}
           aside={
@@ -812,7 +812,7 @@ export function NodesPage() {
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search nodes, teams, bots, or skills..."
+              placeholder="Search bots, teams, or skills..."
               wrapperClassName="w-full lg:max-w-md"
               inputClassName="border-border bg-background focus-visible:ring-0 focus-visible:outline-none"
             />

@@ -113,7 +113,7 @@ export function LaunchPage() {
         memory: `${preset.memoryGB * 1024}Mi`,
       };
       await cloudProvision(params);
-      navigate("/nodes");
+      navigate("/bots");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Launch failed");
     } finally {

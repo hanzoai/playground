@@ -61,7 +61,7 @@ export function WorkflowDetailPage() {
 
   useEffect(() => {
     if (!runId) {
-      navigate("/executions");
+      navigate("/tasks");
       return;
     }
 

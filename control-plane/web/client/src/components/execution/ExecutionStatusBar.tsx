@@ -81,7 +81,7 @@ export function ExecutionStatusBar({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onBack || (() => navigate("/executions"))}
+              onClick={onBack || (() => navigate("/tasks"))}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="w-4 h-4" />

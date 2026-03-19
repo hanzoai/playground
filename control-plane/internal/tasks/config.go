@@ -3,6 +3,7 @@ package tasks
 import "os"
 
 // TemporalConfig holds Temporal connection settings.
+// In production, tasks are executed durably via tasks.hanzo.ai (Temporal Cloud).
 type TemporalConfig struct {
 	Enabled   bool   `json:"enabled" yaml:"enabled" mapstructure:"enabled"`
 	Address   string `json:"address" yaml:"address" mapstructure:"address"`
@@ -10,11 +11,12 @@ type TemporalConfig struct {
 }
 
 // DefaultTemporalConfig returns sensible defaults.
-// Temporal is disabled unless explicitly opted in via env.
+// When enabled, connects to tasks.hanzo.ai for durable cloud task execution.
+// Override with PLAYGROUND_TEMPORAL_ADDRESS for local dev (e.g. localhost:7233).
 func DefaultTemporalConfig() TemporalConfig {
 	cfg := TemporalConfig{
 		Enabled:   false,
-		Address:   "localhost:7233",
+		Address:   "tasks.hanzo.ai:7233",
 		Namespace: "hanzo",
 	}
 

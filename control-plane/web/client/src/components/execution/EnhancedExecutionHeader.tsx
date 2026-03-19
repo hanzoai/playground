@@ -244,7 +244,7 @@ export function EnhancedExecutionHeader({
     if (onClose) {
       onClose();
     } else {
-      navigate("/executions");
+      navigate("/tasks");
     }
   };
 

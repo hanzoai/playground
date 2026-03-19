@@ -479,7 +479,7 @@ function NodeDetailPageContent() {
     try {
       await cloudDeprovision(nodeId);
       showSuccess(`Bot ${nodeId} deleted`);
-      navigate('/nodes');
+      navigate('/bots');
     } catch (error: any) {
       showError(error.message || `Failed to delete bot ${nodeId}`);
       setConfirmDelete(false);

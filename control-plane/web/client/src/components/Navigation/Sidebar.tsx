@@ -60,7 +60,7 @@ export function Sidebar({ sections, isCollapsed = false }: SidebarProps) {
                   typography["helper-text"],
                   "text-muted-foreground/70"
                 )}>
-                  Open Control Plane
+                  Bot Playground
                 </p>
               </div>
             )}

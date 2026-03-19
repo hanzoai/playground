@@ -129,7 +129,7 @@ export function ExecutionDetailPage() {
     fetchVCStatus();
   }, [executionId]);
 
-  const handleNavigateBack = () => navigate("/executions");
+  const handleNavigateBack = () => navigate("/tasks");
 
   if (loading) {
     return (

@@ -107,10 +107,9 @@ function EnvironmentSelector() {
 
 const ROUTE_TITLES: Record<string, string> = {
   dashboard: "Dashboard",
-  "bots/all": "Control Plane",
-  nodes: "My Bots",
+  bots: "Bots",
   playground: "Playground",
-  executions: "Executions",
+  tasks: "Tasks",
   metrics: "Metrics",
   settings: "Settings",
 };

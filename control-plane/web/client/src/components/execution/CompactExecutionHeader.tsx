@@ -75,7 +75,7 @@ export function CompactExecutionHeader({
     if (onClose) {
       onClose();
     } else {
-      navigate("/executions");
+      navigate("/tasks");
     }
   };
 

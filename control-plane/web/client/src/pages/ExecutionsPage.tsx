@@ -184,8 +184,8 @@ export function ExecutionsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Executions"
-        description="Individual bot calls and execution history"
+        title="Tasks"
+        description="Bot tasks and runtime activity"
         filters={[
           {
             label: "Time Range",

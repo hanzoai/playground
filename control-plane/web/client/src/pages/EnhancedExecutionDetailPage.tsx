@@ -167,7 +167,7 @@ export function EnhancedExecutionDetailPage() {
       }
 
       if (event.key === "Escape") {
-        navigate("/executions");
+        navigate("/tasks");
       }
     };
 
@@ -187,7 +187,7 @@ export function EnhancedExecutionDetailPage() {
             {error || "Execution not found"}
           </h2>
           <button
-            onClick={() => navigate("/executions")}
+            onClick={() => navigate("/tasks")}
             className="text-body-small text-muted-foreground hover:text-foreground underline"
           >
             ← Back to executions
@@ -262,7 +262,7 @@ export function EnhancedExecutionDetailPage() {
           execution={execution}
           vcStatus={vcStatus}
           vcLoading={vcLoading}
-          onClose={() => navigate("/executions")}
+          onClose={() => navigate("/tasks")}
         />
 
         {/* Tab Navigation */}

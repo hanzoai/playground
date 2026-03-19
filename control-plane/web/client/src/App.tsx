@@ -8,7 +8,6 @@ import { ThemeProvider } from "./components/theme-provider";
 import { useFocusManagement } from "./hooks/useFocusManagement";
 import { useGateway } from "./hooks/useGateway";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
-import { ControlPlanePage } from "./pages/ControlPlanePage";
 import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
 import { ExecutionsPage } from "./pages/ExecutionsPage";
 import { EnhancedExecutionDetailPage } from "./pages/EnhancedExecutionDetailPage";
@@ -90,16 +89,11 @@ function AppContent() {
               <Route path="/launch" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
               <Route path="/metrics" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/dashboard" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
-              <Route path="/nodes" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
-              <Route path="/nodes/:nodeId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodeDetailPage /></div>} />
-              <Route path="/bots/all" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ControlPlanePage /></div>} />
+              <Route path="/bots" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
+              <Route path="/bots/:fullBotId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BotDetailPage /></div>} />
+              <Route path="/tasks" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ExecutionsPage /></div>} />
               <Route
-                path="/bots/:fullBotId"
-                element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BotDetailPage /></div>}
-              />
-              <Route path="/executions" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ExecutionsPage /></div>} />
-              <Route
-                path="/executions/:executionId"
+                path="/tasks/:taskId"
                 element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedExecutionDetailPage /></div>}
               />
               <Route path="/workflows" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowsPage /></div>} />
@@ -116,7 +110,7 @@ function AppContent() {
               <Route path="/marketplace/listing/:listingId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ListingDetailPage /></div>} />
               <Route path="/marketplace/create" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CreateListingPage /></div>} />
               <Route path="/marketplace/seller" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SellerDashboardPage /></div>} />
-              <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
+
               <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
               <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
               <Route path="/settings/observability-webhook" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ObservabilityWebhookSettingsPage /></div>} />

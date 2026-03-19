@@ -138,7 +138,7 @@ export function ExecutionHeader({
     if (onNavigateBack) {
       onNavigateBack();
     } else {
-      navigate("/executions");
+      navigate("/tasks");
     }
   };
 

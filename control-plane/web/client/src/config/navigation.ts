@@ -6,38 +6,25 @@ export const navigationSections: NavigationSection[] = [
     title: '',
     items: [
       {
-        id: 'nodes',
-        label: 'My Bots',
-        href: '/nodes',
-        icon: 'bot',
-        description: 'Running bots and connected nodes'
-      },
-      {
         id: 'playground',
         label: 'Playground',
         href: '/playground',
         icon: 'playground',
         description: 'Visual bot orchestration canvas'
       },
-    ]
-  },
-  {
-    id: 'work',
-    title: '',
-    items: [
       {
-        id: 'control-plane',
-        label: 'Control Plane',
-        href: '/bots/all',
-        icon: 'data-center',
-        description: 'Orchestrate distributed bots'
+        id: 'bots',
+        label: 'Bots',
+        href: '/bots',
+        icon: 'bot',
+        description: 'Your bots and connected agents'
       },
       {
-        id: 'executions',
-        label: 'Executions',
-        href: '/executions',
+        id: 'tasks',
+        label: 'Tasks',
+        href: '/tasks',
         icon: 'terminal',
-        description: 'Bot executions and runtime calls'
+        description: 'Bot tasks and runtime activity'
       },
     ]
   },
