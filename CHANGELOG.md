@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.246] - 2026-03-19
+
+
+### Fixed
+
+- Fix(security): patch 11 vulnerabilities from red team audit
+
+Critical:
+- C-2: Path traversal via symlinks in gitops ReadFile/WriteFile — now uses
+  filepath.EvalSymlinks + repo root prefix check
+- C-3: Unbounded body read in WriteFile — 10MB limit via io.LimitReader
+
+High:
+- H-2: Bot self-escalation — policy mutations require IAM admin role
+- H-3: Bypass toggle — requires admin auth check
+- H-4: Wildcard CORS on SSE — removed hardcoded Access-Control-Allow-Origin: *
+- H-5: Anonymous approval — reject with 401 when no authenticated user
+
+Medium:
+- M-2: SSRF via git clone — block file://, http://, private IPs, link-local
+- M-6: DNSManager race — added sync.RWMutex
+- M-7: KMS error body — limited to 4KB via io.LimitReader
+- M-8: ZAP client timeout — 30s deadline on request() (8447e89)
+
 ## [0.1.41-rc.245] - 2026-03-19
 
 
