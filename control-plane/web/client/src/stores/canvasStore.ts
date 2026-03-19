@@ -102,7 +102,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             agentId,
             name: data.name ?? 'Bot',
             status: data.status ?? 'idle',
-            activeView: 'overview' as BotView,
+            activeView: 'terminal' as BotView,
             source: data.source ?? 'cloud',
             ...data,
           },

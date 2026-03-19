@@ -23,6 +23,9 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/infrastructure/communication"
 	"github.com/hanzoai/playground/control-plane/internal/infrastructure/process"
 	infrastorage "github.com/hanzoai/playground/control-plane/internal/infrastructure/storage"
+	"github.com/hanzoai/playground/control-plane/internal/gitops"
+	"github.com/hanzoai/playground/control-plane/internal/gossip"
+	"github.com/hanzoai/playground/control-plane/internal/kms"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"github.com/hanzoai/playground/control-plane/internal/proxy"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
@@ -30,6 +33,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/spaces"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/internal/utils"
+	zappool "github.com/hanzoai/playground/control-plane/internal/zap"
 	client "github.com/hanzoai/playground/control-plane/web/client"
 
 	"github.com/gin-contrib/cors" // CORS middleware
@@ -70,6 +74,14 @@ type PlaygroundServer struct {
 	spaceStore               spaces.Store
 	spaceEventBus            *events.SpaceEventBus
 	spacePresenceHandler     *handlers.PresenceHandler
+	gitManager               *gitops.Manager
+	agentEventBus            *events.AgentEventBus
+	gossipTracker            *gossip.Tracker
+	gossipRouter             *gossip.Router
+	gossipConsensus          *gossip.Consensus
+	kmsClient                *kms.Client
+	secretsClient            *kms.SecretsClient
+	zapPool                  *zappool.Pool
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -332,6 +344,32 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		spaceStore = sqliteStore
 	}
 
+	// Agent event bus for real-time agent SSE streaming
+	agentEventBus := events.NewAgentEventBus()
+
+	// Gossip layer for agent discovery and inter-agent messaging
+	gossipTracker := gossip.NewTracker()
+	gossipRouter := gossip.NewRouter(gossipTracker)
+	gossipConsensus := gossip.NewConsensus(gossipTracker, gossipRouter)
+
+	// ZAP sidecar pool
+	zapPool := zappool.NewPool()
+
+	// KMS MPC client (if configured via env)
+	kmsCfg := kms.DefaultConfig()
+	kmsCfg.ApplyEnvOverrides()
+	var kmsClient *kms.Client
+	var secretsClient *kms.SecretsClient
+	if kmsCfg.Enabled {
+		kmsClient = kms.NewClient(kmsCfg.Endpoint, kmsCfg.Token)
+		secretsClient = kms.NewSecretsClient(kmsCfg.Endpoint, kmsCfg.Token, "")
+		logger.Logger.Info().Str("endpoint", kmsCfg.Endpoint).Msg("KMS MPC client initialized")
+	}
+
+	// Git manager for space workspaces
+	gitBasePath := filepath.Join(playgroundHome, "data", "spaces")
+	gitManager := gitops.NewManager(gitBasePath)
+
 	return &PlaygroundServer{
 		storage:               storageProvider,
 		cache:                 cacheProvider,
@@ -358,6 +396,14 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		cloudProvisioner:         cloudProvisioner,
 		spaceStore:               spaceStore,
 		spaceEventBus:            events.GlobalSpaceEventBus,
+		gitManager:               gitManager,
+		agentEventBus:            agentEventBus,
+		gossipTracker:            gossipTracker,
+		gossipRouter:             gossipRouter,
+		gossipConsensus:          gossipConsensus,
+		kmsClient:                kmsClient,
+		secretsClient:            secretsClient,
+		zapPool:                  zapPool,
 	}, nil
 }
 
@@ -487,6 +533,11 @@ func (s *PlaygroundServer) Stop() error {
 	// Stop space presence expiry goroutine.
 	if s.spacePresenceHandler != nil {
 		s.spacePresenceHandler.Stop()
+	}
+
+	// Stop ZAP sidecar pool
+	if s.zapPool != nil {
+		s.zapPool.StopAll(context.Background())
 	}
 
 	// HTTP server shutdown is handled by the caller (gin.Engine.Run blocks until killed).
@@ -1153,6 +1204,18 @@ func (s *PlaygroundServer) setupRoutes() {
 			settings.GET("/observability-webhook/dlq", obsHandler.GetDeadLetterQueueHandler)
 			settings.DELETE("/observability-webhook/dlq", obsHandler.ClearDeadLetterQueueHandler)
 		}
+
+		// KMS MPC cluster status (if enabled)
+		if s.kmsClient != nil {
+			agentAPI.GET("/kms/status", func(c *gin.Context) {
+				status, err := s.kmsClient.Status(c.Request.Context())
+				if err != nil {
+					c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(http.StatusOK, status)
+			})
+		}
 	}
 
 
@@ -1211,6 +1274,40 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 	// Space real-time event stream (SSE)
 	spaceEventsHandler := handlers.NewSpaceEventsHandler(s.spaceEventBus)
 	spacesAPI.GET("/:id/events", spaceEventsHandler.StreamEvents)
+
+	// Agent events (SSE streaming for agent activity within spaces)
+	agentEventsHandler := handlers.NewSpaceAgentEventsHandler(s.agentEventBus)
+	agentInjectHandler := handlers.NewSpaceAgentInjectHandler(s.agentEventBus)
+	spacesAPI.GET("/:id/agents/events", agentEventsHandler.HandleSSE)
+	spacesAPI.GET("/:id/agents/:agentId/events", agentEventsHandler.HandleAgentSSE)
+	spacesAPI.POST("/:id/agents/:agentId/inject", agentInjectHandler.InjectMessage)
+	spacesAPI.POST("/:id/agents/broadcast", agentInjectHandler.BroadcastMessage)
+
+	// Gossip / agent discovery
+	spacesAPI.GET("/:id/agents/discover", func(c *gin.Context) {
+		spaceID := c.Param("id")
+		agents := s.gossipTracker.FindInSpace(spaceID)
+		c.JSON(200, gin.H{"agents": agents})
+	})
+
+	// Git operations for space workspaces
+	gitHandlers := gitops.NewHandlers(s.gitManager)
+	gitAPI := spacesAPI.Group("/:id/git")
+	{
+		gitAPI.GET("/status", gitHandlers.Status)
+		gitAPI.GET("/log", gitHandlers.Log)
+		gitAPI.POST("/commit", gitHandlers.Commit)
+		gitAPI.GET("/branches", gitHandlers.ListBranches)
+		gitAPI.POST("/branches", gitHandlers.CreateBranch)
+		gitAPI.POST("/checkout", gitHandlers.Checkout)
+		gitAPI.GET("/diff", gitHandlers.Diff)
+		gitAPI.GET("/files", gitHandlers.ListFiles)
+		gitAPI.GET("/files/*filepath", gitHandlers.ReadFile)
+		gitAPI.PUT("/files/*filepath", gitHandlers.WriteFile)
+		gitAPI.POST("/clone", gitHandlers.Clone)
+		gitAPI.POST("/push", gitHandlers.Push)
+		gitAPI.POST("/pull", gitHandlers.Pull)
+	}
 
 	nodeProxy := proxy.NewNodeProxy(s.spaceStore)
 	spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)

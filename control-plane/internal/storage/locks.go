@@ -8,12 +8,12 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
-	"github.com/boltdb/bolt"
+	badger "github.com/luxfi/zapdb/v4"
 	"github.com/google/uuid"
 )
 
 const (
-	locksBucket = "locks" //nolint:unused // Reserved for future use
+	locksPrefix = "locks:" //nolint:unused // Reserved for future use
 )
 
 // AcquireLock attempts to acquire a distributed lock.
@@ -28,8 +28,9 @@ func (ls *LocalStorage) AcquireLock(ctx context.Context, key string, timeout tim
 	}
 
 	var lock *types.DistributedLock
-	err := ls.kvStore.Update(func(tx *bolt.Tx) error {
+	err := ls.kvStore.Update(func(txn *badger.Txn) error {
 		// Implementation will be added here
+		_ = txn
 		return nil
 	})
 	if err != nil {
@@ -49,8 +50,9 @@ func (ls *LocalStorage) ReleaseLock(ctx context.Context, lockID string) error {
 		return err
 	}
 
-	return ls.kvStore.Update(func(tx *bolt.Tx) error {
+	return ls.kvStore.Update(func(txn *badger.Txn) error {
 		// Implementation will be added here
+		_ = txn
 		return nil
 	})
 }
@@ -67,8 +69,9 @@ func (ls *LocalStorage) RenewLock(ctx context.Context, lockID string) (*types.Di
 	}
 
 	var lock *types.DistributedLock
-	err := ls.kvStore.Update(func(tx *bolt.Tx) error {
+	err := ls.kvStore.Update(func(txn *badger.Txn) error {
 		// Implementation will be added here
+		_ = txn
 		return nil
 	})
 	if err != nil {
@@ -89,8 +92,9 @@ func (ls *LocalStorage) GetLockStatus(ctx context.Context, key string) (*types.D
 	}
 
 	var lock *types.DistributedLock
-	err := ls.kvStore.View(func(tx *bolt.Tx) error {
+	err := ls.kvStore.View(func(txn *badger.Txn) error {
 		// Implementation will be added here
+		_ = txn
 		return nil
 	})
 	if err != nil {

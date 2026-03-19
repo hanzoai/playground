@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -21,7 +20,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/events"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
-	"github.com/boltdb/bolt"
+	badger "github.com/luxfi/zapdb/v4"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib" // Import pgx driver for PostgreSQL
 	_ "github.com/mattn/go-sqlite3"    // Import sqlite3 driver
@@ -423,7 +422,7 @@ type DBTX interface {
 }
 
 // LocalStorage implements the StorageProvider and CacheProvider interfaces
-// using SQLite for structured data and BoltDB for key-value data (memory).
+// using SQLite for structured data and ZapDB for key-value data (memory).
 //
 // CONCURRENCY MODEL:
 // - SQLite is configured with WAL (Write-Ahead Logging) mode for optimal concurrency
@@ -434,7 +433,7 @@ type DBTX interface {
 type LocalStorage struct {
 	db                        *sqlDatabase
 	gormDB                    *gorm.DB                                  // GORM handle for ORM operations
-	kvStore                   *bolt.DB                                  // BoltDB for key-value (memory)
+	kvStore                   *badger.DB                                // ZapDB for key-value (memory)
 	cache                     *sync.Map                                 // In-memory cache for hot data
 	subscribers               map[string][]chan types.MemoryChangeEvent // Local pub/sub
 	mu                        sync.RWMutex
@@ -474,7 +473,7 @@ func NewPostgresStorage(config PostgresStorageConfig) *LocalStorage {
 	}
 }
 
-// Initialize sets up the SQLite and BoltDB databases.
+// Initialize sets up the SQLite and ZapDB databases.
 func (ls *LocalStorage) Initialize(ctx context.Context, config StorageConfig) error {
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during initialization: %w", err)
@@ -572,9 +571,12 @@ func (ls *LocalStorage) initializeSQLite(ctx context.Context) error {
 
 	go ls.periodicWALCheckpoint()
 
-	kvStore, err := bolt.Open(ls.config.KVStorePath, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	kvOpts := badger.DefaultOptions(ls.config.KVStorePath).
+		WithLogger(nil).
+		WithNumVersionsToKeep(1)
+	kvStore, err := badger.Open(kvOpts)
 	if err != nil {
-		return fmt.Errorf("failed to open BoltDB database: %w", err)
+		return fmt.Errorf("failed to open ZapDB database: %w", err)
 	}
 	ls.kvStore = kvStore
 
@@ -899,17 +901,7 @@ func (ls *LocalStorage) createSchema(ctx context.Context) error {
 }
 
 func (ls *LocalStorage) initializeMemoryBuckets() error {
-	if err := ls.kvStore.Update(func(tx *bolt.Tx) error {
-		scopes := []string{"workflow", "session", "actor", "bot", "global"}
-		for _, scope := range scopes {
-			if _, err := tx.CreateBucketIfNotExists([]byte(scope)); err != nil {
-				return fmt.Errorf("failed to create BoltDB bucket '%s': %w", scope, err)
-			}
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
+	// ZapDB uses flat key-value with prefix-based namespacing; no bucket creation needed.
 	return nil
 }
 
@@ -1684,7 +1676,7 @@ func sanitizeFTS5Query(query string) string {
 	return `"` + sanitized + `"`
 }
 
-// Close closes the SQLite and BoltDB connections.
+// Close closes the SQLite and ZapDB connections.
 func (ls *LocalStorage) Close(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("context cancelled during close: %w", err)
@@ -1698,7 +1690,7 @@ func (ls *LocalStorage) Close(ctx context.Context) error {
 	ls.gormDB = nil
 	if ls.kvStore != nil {
 		if err := ls.kvStore.Close(); err != nil {
-			return fmt.Errorf("failed to close BoltDB database: %w", err)
+			return fmt.Errorf("failed to close ZapDB database: %w", err)
 		}
 	}
 	return nil
@@ -1735,15 +1727,12 @@ func (ls *LocalStorage) HealthCheck(ctx context.Context) error {
 
 	if ls.kvStore != nil {
 		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("context cancelled before BoltDB health check: %w", err)
+			return fmt.Errorf("context cancelled before ZapDB health check: %w", err)
 		}
-		if err := ls.kvStore.View(func(tx *bolt.Tx) error {
-			if tx == nil {
-				return fmt.Errorf("BoltDB transaction is nil")
-			}
+		if err := ls.kvStore.View(func(txn *badger.Txn) error {
 			return nil
 		}); err != nil {
-			return fmt.Errorf("BoltDB health check failed: %w", err)
+			return fmt.Errorf("ZapDB health check failed: %w", err)
 		}
 	}
 	return nil
@@ -3819,53 +3808,44 @@ func (ls *LocalStorage) QuerySessions(ctx context.Context, filters types.Session
 	return sessions, nil
 }
 
-// SetMemory stores a memory record in BoltDB.
+// SetMemory stores a memory record in ZapDB.
 func (ls *LocalStorage) SetMemory(ctx context.Context, memory *types.Memory) error {
 	if ls.mode == "postgres" {
 		return ls.setMemoryPostgres(ctx, memory)
 	}
 
-	// Fast-fail check for BoltDB operations since BoltDB doesn't support mid-flight cancellation
 	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("context cancelled before BoltDB SetMemory operation: %w", err)
+		return fmt.Errorf("context cancelled before ZapDB SetMemory operation: %w", err)
 	}
 
-	return ls.kvStore.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(memory.Scope))
-		if bucket == nil {
-			return fmt.Errorf("BoltDB bucket '%s' not found", memory.Scope)
-		}
-
-		key := fmt.Sprintf("%s:%s", memory.ScopeID, memory.Key)
+	return ls.kvStore.Update(func(txn *badger.Txn) error {
+		key := fmt.Sprintf("%s:%s:%s", memory.Scope, memory.ScopeID, memory.Key)
 		data, err := json.Marshal(memory)
 		if err != nil {
 			return fmt.Errorf("failed to marshal memory: %w", err)
 		}
 
-		// Store in BoltDB
-		if err := bucket.Put([]byte(key), data); err != nil {
-			return fmt.Errorf("failed to put memory in BoltDB: %w", err)
+		if err := txn.Set([]byte(key), data); err != nil {
+			return fmt.Errorf("failed to set memory in ZapDB: %w", err)
 		}
 
-		// Update cache
-		ls.cache.Store(fmt.Sprintf("%s:%s", memory.Scope, key), memory)
+		ls.cache.Store(key, memory)
 
 		return nil
 	})
 }
 
-// GetMemory retrieves a memory record from BoltDB or cache.
-func (ls *LocalStorage) GetMemory(ctx context.Context, scope, scopeID, key string) (*types.Memory, error) {
+// GetMemory retrieves a memory record from ZapDB or cache.
+func (ls *LocalStorage) GetMemory(ctx context.Context, scope, scopeID, memKey string) (*types.Memory, error) {
 	if ls.mode == "postgres" {
-		return ls.getMemoryPostgres(ctx, scope, scopeID, key)
+		return ls.getMemoryPostgres(ctx, scope, scopeID, memKey)
 	}
 
-	// Fast-fail check for BoltDB operations since BoltDB doesn't support mid-flight cancellation
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("context cancelled before BoltDB GetMemory operation: %w", err)
+		return nil, fmt.Errorf("context cancelled before ZapDB GetMemory operation: %w", err)
 	}
 
-	cacheKey := fmt.Sprintf("%s:%s:%s", scope, scopeID, key)
+	cacheKey := fmt.Sprintf("%s:%s:%s", scope, scopeID, memKey)
 	if val, ok := ls.cache.Load(cacheKey); ok {
 		if memory, ok := val.(*types.Memory); ok {
 			return memory, nil
@@ -3873,92 +3853,81 @@ func (ls *LocalStorage) GetMemory(ctx context.Context, scope, scopeID, key strin
 	}
 
 	var memory *types.Memory
-	err := ls.kvStore.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(scope))
-		if bucket == nil {
-			return fmt.Errorf("BoltDB bucket '%s' not found", scope)
+	err := ls.kvStore.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(cacheKey))
+		if err == badger.ErrKeyNotFound {
+			return fmt.Errorf("memory with key '%s' not found in scope '%s' for ID '%s'", memKey, scope, scopeID)
 		}
-
-		boltKey := fmt.Sprintf("%s:%s", scopeID, key)
-		data := bucket.Get([]byte(boltKey))
-		if data == nil {
-			return fmt.Errorf("memory with key '%s' not found in scope '%s' for ID '%s'", key, scope, scopeID)
+		if err != nil {
+			return err
 		}
-
-		memory = &types.Memory{}
-		if err := json.Unmarshal(data, memory); err != nil {
-			return fmt.Errorf("failed to unmarshal memory from BoltDB: %w", err)
-		}
-		return nil
+		return item.Value(func(val []byte) error {
+			memory = &types.Memory{}
+			return json.Unmarshal(val, memory)
+		})
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	// Store in cache
 	ls.cache.Store(cacheKey, memory)
 
 	return memory, nil
 }
 
-// DeleteMemory deletes a memory record from BoltDB and cache.
-func (ls *LocalStorage) DeleteMemory(ctx context.Context, scope, scopeID, key string) error {
+// DeleteMemory deletes a memory record from ZapDB and cache.
+func (ls *LocalStorage) DeleteMemory(ctx context.Context, scope, scopeID, memKey string) error {
 	if ls.mode == "postgres" {
-		return ls.deleteMemoryPostgres(ctx, scope, scopeID, key)
+		return ls.deleteMemoryPostgres(ctx, scope, scopeID, memKey)
 	}
 
-	// Fast-fail check for BoltDB operations since BoltDB doesn't support mid-flight cancellation
 	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("context cancelled before BoltDB DeleteMemory operation: %w", err)
+		return fmt.Errorf("context cancelled before ZapDB DeleteMemory operation: %w", err)
 	}
 
-	return ls.kvStore.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(scope))
-		if bucket == nil {
-			return fmt.Errorf("BoltDB bucket '%s' not found", scope)
+	return ls.kvStore.Update(func(txn *badger.Txn) error {
+		key := fmt.Sprintf("%s:%s:%s", scope, scopeID, memKey)
+		if err := txn.Delete([]byte(key)); err != nil {
+			return fmt.Errorf("failed to delete memory from ZapDB: %w", err)
 		}
 
-		boltKey := fmt.Sprintf("%s:%s", scopeID, key)
-		if err := bucket.Delete([]byte(boltKey)); err != nil {
-			return fmt.Errorf("failed to delete memory from BoltDB: %w", err)
-		}
-
-		// Delete from cache
-		cacheKey := fmt.Sprintf("%s:%s:%s", scope, scopeID, key)
-		ls.cache.Delete(cacheKey)
+		ls.cache.Delete(key)
 
 		return nil
 	})
 }
 
-// ListMemory retrieves all memory records for a given scope and scope ID from BoltDB.
+// ListMemory retrieves all memory records for a given scope and scope ID from ZapDB.
 func (ls *LocalStorage) ListMemory(ctx context.Context, scope, scopeID string) ([]*types.Memory, error) {
 	if ls.mode == "postgres" {
 		return ls.listMemoryPostgres(ctx, scope, scopeID)
 	}
 
-	// Fast-fail check for BoltDB operations since BoltDB doesn't support mid-flight cancellation
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("context cancelled before BoltDB ListMemory operation: %w", err)
+		return nil, fmt.Errorf("context cancelled before ZapDB ListMemory operation: %w", err)
 	}
 
 	memories := []*types.Memory{}
-	err := ls.kvStore.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(scope))
-		if bucket == nil {
-			return fmt.Errorf("BoltDB bucket '%s' not found", scope)
-		}
+	err := ls.kvStore.View(func(txn *badger.Txn) error {
+		prefix := []byte(fmt.Sprintf("%s:%s:", scope, scopeID))
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+		it := txn.NewIterator(opts)
+		defer it.Close()
 
-		c := bucket.Cursor()
-
-		prefix := []byte(scopeID + ":")
-		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-			memory := &types.Memory{}
-			if err := json.Unmarshal(v, memory); err != nil {
-				return fmt.Errorf("failed to unmarshal memory from BoltDB: %w", err)
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			if err := item.Value(func(val []byte) error {
+				m := &types.Memory{}
+				if err := json.Unmarshal(val, m); err != nil {
+					return fmt.Errorf("failed to unmarshal memory from ZapDB: %w", err)
+				}
+				memories = append(memories, m)
+				return nil
+			}); err != nil {
+				return err
 			}
-			memories = append(memories, memory)
 		}
 		return nil
 	})

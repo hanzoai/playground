@@ -12,7 +12,7 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
-	"github.com/boltdb/bolt"
+	badger "github.com/luxfi/zapdb/v4"
 )
 
 const (
@@ -40,33 +40,21 @@ func (ls *LocalStorage) StoreEvent(ctx context.Context, event *types.MemoryChang
 		go ls.startEventCleanup()
 	})
 
-	return ls.kvStore.Update(func(tx *bolt.Tx) error {
-		// Check context cancellation during transaction
+	return ls.kvStore.Update(func(txn *badger.Txn) error {
 		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("context cancelled during event transaction: %w", err)
 		}
 
-		b, err := tx.CreateBucketIfNotExists([]byte(eventsBucket))
-		if err != nil {
-			return fmt.Errorf("failed to create events bucket: %w", err)
-		}
-
-		// Generate a unique ID for the event
-		id, err := b.NextSequence()
-		if err != nil {
-			return fmt.Errorf("failed to generate event ID: %w", err)
-		}
-		event.ID = fmt.Sprintf("%d", id)
+		event.ID = fmt.Sprintf("%d", time.Now().UnixNano())
 		event.Timestamp = time.Now().UTC()
 
-		// Marshal the event to JSON
 		eventJSON, err := json.Marshal(event)
 		if err != nil {
 			return fmt.Errorf("failed to marshal event: %w", err)
 		}
 
-		// Store the event
-		return b.Put([]byte(event.ID), eventJSON)
+		key := fmt.Sprintf("events:%s", event.ID)
+		return txn.Set([]byte(key), eventJSON)
 	})
 }
 
@@ -92,32 +80,32 @@ func (ls *LocalStorage) cleanupExpiredEvents() {
 
 	cutoff := time.Now().UTC().Add(-defaultEventTTL)
 
-	err := ls.kvStore.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(eventsBucket))
-		if b == nil {
-			return nil // No events bucket
-		}
+	err := ls.kvStore.Update(func(txn *badger.Txn) error {
+		prefix := []byte("events:")
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+		it := txn.NewIterator(opts)
+		defer it.Close()
 
-		c := b.Cursor()
 		var keysToDelete [][]byte
-
-		// Find events to delete
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			var event types.MemoryChangeEvent
-			if err := json.Unmarshal(v, &event); err != nil {
-				// Delete corrupted events
-				keysToDelete = append(keysToDelete, k)
-				continue
-			}
-
-			if event.Timestamp.Before(cutoff) {
-				keysToDelete = append(keysToDelete, k)
-			}
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			_ = item.Value(func(val []byte) error {
+				var event types.MemoryChangeEvent
+				if err := json.Unmarshal(val, &event); err != nil {
+					keysToDelete = append(keysToDelete, append([]byte{}, item.Key()...))
+					return nil
+				}
+				if event.Timestamp.Before(cutoff) {
+					keysToDelete = append(keysToDelete, append([]byte{}, item.Key()...))
+				}
+				return nil
+			})
 		}
+		it.Close()
 
-		// Delete expired events
 		for _, key := range keysToDelete {
-			if err := b.Delete(key); err != nil {
+			if err := txn.Delete(key); err != nil {
 				return fmt.Errorf("failed to delete expired event: %w", err)
 			}
 		}
@@ -126,8 +114,6 @@ func (ls *LocalStorage) cleanupExpiredEvents() {
 	})
 
 	if err != nil {
-		// Log error but don't crash the application
-		// In a production system, you might want to use a proper logger
 		fmt.Printf("Error cleaning up expired events: %v\n", err)
 	}
 }
@@ -144,53 +130,53 @@ func (ls *LocalStorage) GetEventHistory(ctx context.Context, filter types.EventF
 	}
 
 	var events []*types.MemoryChangeEvent
-	err := ls.kvStore.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(eventsBucket))
-		if b == nil {
-			return nil // No events bucket, so no history
-		}
+	err := ls.kvStore.View(func(txn *badger.Txn) error {
+		prefix := []byte("events:")
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+		it := txn.NewIterator(opts)
+		defer it.Close()
 
-		c := b.Cursor()
-
-		// Iterate over all events and apply filters
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			// Check context cancellation during iteration
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			if err := ctx.Err(); err != nil {
 				return fmt.Errorf("context cancelled during event iteration: %w", err)
 			}
 
-			var event types.MemoryChangeEvent
-			if err := json.Unmarshal(v, &event); err != nil {
-				// Skip corrupted events
-				continue
-			}
+			item := it.Item()
+			if err := item.Value(func(val []byte) error {
+				var event types.MemoryChangeEvent
+				if err := json.Unmarshal(val, &event); err != nil {
+					return nil // skip corrupted events
+				}
 
-			// Apply filters
-			if filter.Scope != nil && event.Scope != *filter.Scope {
-				continue
-			}
-			if filter.ScopeID != nil && event.ScopeID != *filter.ScopeID {
-				continue
-			}
-			if filter.Since != nil && event.Timestamp.Before(*filter.Since) {
-				continue
-			}
+				if filter.Scope != nil && event.Scope != *filter.Scope {
+					return nil
+				}
+				if filter.ScopeID != nil && event.ScopeID != *filter.ScopeID {
+					return nil
+				}
+				if filter.Since != nil && event.Timestamp.Before(*filter.Since) {
+					return nil
+				}
 
-			// Apply pattern matching
-			if len(filter.Patterns) > 0 {
-				match := false
-				for _, pattern := range filter.Patterns {
-					if matched, _ := filepath.Match(pattern, event.Key); matched {
-						match = true
-						break
+				if len(filter.Patterns) > 0 {
+					match := false
+					for _, pattern := range filter.Patterns {
+						if matched, _ := filepath.Match(pattern, event.Key); matched {
+							match = true
+							break
+						}
+					}
+					if !match {
+						return nil
 					}
 				}
-				if !match {
-					continue
-				}
-			}
 
-			events = append(events, &event)
+				events = append(events, &event)
+				return nil
+			}); err != nil {
+				return err
+			}
 		}
 
 		return nil

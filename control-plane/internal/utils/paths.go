@@ -119,7 +119,7 @@ func GetKVStorePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dirs.DatabaseDir, "agents.bolt"), nil
+	return filepath.Join(dirs.DatabaseDir, "agents.zapdb"), nil
 }
 
 // GetNodeRegistryPath returns the path to the agent registry file

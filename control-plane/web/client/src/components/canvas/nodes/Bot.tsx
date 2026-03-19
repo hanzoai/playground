@@ -147,9 +147,6 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
         {/* Name + Role + Status */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            {bot.emoji && bot.avatar && (
-              <span className="text-sm leading-none">{bot.emoji}</span>
-            )}
             <span className="text-base font-semibold truncate">{bot.name}</span>
           </div>
           <div className="text-xs text-muted-foreground leading-tight flex items-center gap-1.5">
