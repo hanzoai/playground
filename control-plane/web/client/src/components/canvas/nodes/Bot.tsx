@@ -12,7 +12,9 @@ import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import { useCallback, useState, lazy, Suspense } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
 import type { Bot as BotType, BotView } from '@/types/canvas';
+import { AGENT_RUNTIMES } from '@/types/canvas';
 import { cn } from '@/lib/utils';
+import { RuntimeSelector } from '../RuntimeSelector';
 import { BOT_NODE_MIN_WIDTH, BOT_NODE_MIN_HEIGHT } from './registry';
 
 // Lazy load drill-down panels for code splitting
@@ -50,7 +52,9 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
   const bot = data as unknown as BotType;
   const setBotView = useCanvasStore((s) => s.setBotView);
   const removeBot = useCanvasStore((s) => s.removeBot);
+  const upsertBot = useCanvasStore((s) => s.upsertBot);
   const [collapsed, setCollapsed] = useState(false);
+  const [showRuntimeSelector, setShowRuntimeSelector] = useState(false);
   const status = STATUS[bot.status] ?? STATUS.idle;
 
   const handleToggleCollapse = useCallback(() => {
@@ -170,6 +174,20 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
           {bot.source === 'local' ? 'local' : 'cloud'}
         </span>
 
+        {/* Runtime badge */}
+        <RuntimeSelector
+          currentRuntime={bot.runtime ?? 'hanzo-dev'}
+          onSelect={(runtime) => {
+            const rt = AGENT_RUNTIMES.find((r) => r.key === runtime);
+            upsertBot(bot.agentId, {
+              runtime,
+              authMode: rt?.auth ?? 'custom',
+            });
+            setShowRuntimeSelector(false);
+          }}
+          compact
+        />
+
         {/* Model tag */}
         {bot.model && (
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground shrink-0">
@@ -234,21 +252,36 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
 
           {/* Drill-down content - fills remaining space */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            <Suspense fallback={<Loading />}>
-              {bot.activeView === 'overview' && <BotOverview bot={bot} />}
-              {bot.activeView === 'terminal' && (
-                <TerminalPanel agentId={bot.agentId} sessionKey={bot.sessionKey} />
-              )}
-              {bot.activeView === 'chat' && (
-                <ChatPanel agentId={bot.agentId} sessionKey={bot.sessionKey} />
-              )}
-              {bot.activeView === 'operative' && (
-                <OperativePanel agentId={bot.agentId} nodeId={bot.agentId} />
-              )}
-              {bot.activeView === 'files' && (
-                <FileViewer agentId={bot.agentId} />
-              )}
-            </Suspense>
+            {/* First-boot runtime selector overlay */}
+            {(!bot.runtime || showRuntimeSelector) ? (
+              <RuntimeSelector
+                currentRuntime={bot.runtime}
+                onSelect={(runtime) => {
+                  const rt = AGENT_RUNTIMES.find((r) => r.key === runtime);
+                  upsertBot(bot.agentId, {
+                    runtime,
+                    authMode: rt?.auth ?? 'custom',
+                  });
+                  setShowRuntimeSelector(false);
+                }}
+              />
+            ) : (
+              <Suspense fallback={<Loading />}>
+                {bot.activeView === 'overview' && <BotOverview bot={bot} />}
+                {bot.activeView === 'terminal' && (
+                  <TerminalPanel agentId={bot.agentId} sessionKey={bot.sessionKey} />
+                )}
+                {bot.activeView === 'chat' && (
+                  <ChatPanel agentId={bot.agentId} sessionKey={bot.sessionKey} />
+                )}
+                {bot.activeView === 'operative' && (
+                  <OperativePanel agentId={bot.agentId} nodeId={bot.agentId} />
+                )}
+                {bot.activeView === 'files' && (
+                  <FileViewer agentId={bot.agentId} />
+                )}
+              </Suspense>
+            )}
           </div>
         </div>
       )}

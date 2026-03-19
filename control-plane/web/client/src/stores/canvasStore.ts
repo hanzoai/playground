@@ -104,6 +104,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             status: data.status ?? 'idle',
             activeView: 'terminal' as BotView,
             source: data.source ?? 'cloud',
+            runtime: data.runtime ?? undefined,
+            authMode: data.authMode ?? undefined,
             ...data,
           },
         }],
