@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.254] - 2026-03-19
+
+
+### Added
+
+- Feat(ui): rename routes — nodes→bots, executions→tasks, default to /playground
+
+Simplify navigation: /bots and /tasks are the primary routes now,
+old paths kept as back-compat redirects. Root redirect changed from
+/nodes to /playground. Temporal default address updated to tasks.hanzo.ai. (2a3790c)
+
 ## [0.1.41-rc.253] - 2026-03-19
 
 
