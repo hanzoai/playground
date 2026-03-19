@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.242] - 2026-03-19
+
+
+### Added
+
+- Feat(canvas): polish bot playground for Figma-like feel
+
+- Fix nav icons: add playground/analytics/terminal/gauge to icon registry,
+  update navigation.ts to use semantic icon names (bot, playground, analytics, terminal)
+- Polish canvas toolbar: pill-shaped controls, hover tooltips, subtle scale
+  animations, tighter grouping with thin dividers
+- Polish bot nodes: 16px rounded corners, double-ring status indicator with
+  ping animation, window-style tab bar, softer selection glow, refined resize
+  and connection handles
+- Refine canvas background: smaller dot size (0.8), lower opacity (10%) for
+  subtle Figma-style grid
+- Enhance command palettes: add auto-layout/fit-to-view/new-workflow commands,
+  slide-in animations, rounder containers, stronger backdrop blur (866d33c)
+
 ## [0.1.41-rc.241] - 2026-03-18
 
 
