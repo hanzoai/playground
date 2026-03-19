@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.252] - 2026-03-19
+
+
+### Added
+
+- Feat(agents): multi-runtime support with IAM auto-login for hanzo-dev
+
+Container + backend for multi-runtime agent support:
+- Dockerfile.agent: pre-installs hanzo-dev, claude, gemini, hanzo-mcp
+- agent-entrypoint.sh: runtime selector (AGENT_RUNTIME env var)
+- Provisioner: passes AGENT_RUNTIME + API keys to bot pods
+- Orchestrator: IAM auto-login for hanzo-dev (server API key injection)
+- Orchestrator: KMS secret fetch for other runtimes (claude/gemini/etc)
+- Presets: all default to hanzo-dev runtime
+- hanzo-dev = zero config (IAM + ZAP + payments native)
+- Other runtimes = user provides API key (stored in KMS) (49e9284)
+
 ## [0.1.41-rc.251] - 2026-03-19
 
 
