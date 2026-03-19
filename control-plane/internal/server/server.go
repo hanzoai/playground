@@ -33,6 +33,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/services" // Services
 	"github.com/hanzoai/playground/control-plane/internal/spaces"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
+	"github.com/hanzoai/playground/control-plane/internal/tasks"
 	"github.com/hanzoai/playground/control-plane/internal/utils"
 	zappool "github.com/hanzoai/playground/control-plane/internal/zap"
 	client "github.com/hanzoai/playground/control-plane/web/client"
@@ -85,6 +86,8 @@ type PlaygroundServer struct {
 	zapPool                  *zappool.Pool
 	policyEngine             *policy.Engine
 	rateLimiter              *middleware.RateLimiter
+	taskStore                *tasks.Store
+	taskScheduler            *tasks.Scheduler
 	// HTTPServer is the underlying net/http server, exposed so callers
 	// can call Shutdown() for graceful drain of in-flight requests.
 	HTTPServer *http.Server
@@ -361,6 +364,10 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	// Policy engine for approval / sandbox governance
 	policyEngine := policy.NewEngine()
 
+	// Task store and scheduler for durable workflow execution
+	taskStore := tasks.NewStore()
+	taskScheduler := tasks.NewScheduler(taskStore, gossipTracker, agentEventBus)
+
 	// KMS MPC client (if configured via env)
 	kmsCfg := kms.DefaultConfig()
 	kmsCfg.ApplyEnvOverrides()
@@ -411,6 +418,8 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		secretsClient:            secretsClient,
 		zapPool:                  zapPool,
 		policyEngine:             policyEngine,
+		taskStore:                taskStore,
+		taskScheduler:            taskScheduler,
 	}, nil
 }
 
@@ -450,6 +459,12 @@ func (s *PlaygroundServer) Start() error {
 	if err := s.cleanupService.Start(ctx); err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to start execution cleanup service")
 		// Don't fail server startup if cleanup service fails to start
+	}
+
+	// Start task scheduler for durable workflow execution
+	if s.taskScheduler != nil {
+		s.taskScheduler.Start()
+		logger.Logger.Info().Msg("Task scheduler started")
 	}
 
 	// Start bot event heartbeat (30 second intervals)
@@ -535,6 +550,11 @@ func (s *PlaygroundServer) Stop() error {
 		if err := s.observabilityForwarder.Stop(ctx); err != nil {
 			logger.Logger.Error().Err(err).Msg("Failed to stop observability forwarder")
 		}
+	}
+
+	// Stop task scheduler
+	if s.taskScheduler != nil {
+		s.taskScheduler.Stop()
 	}
 
 	// Stop space presence expiry goroutine.
@@ -1398,6 +1418,24 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 		gitAPI.POST("/push", gitHandlers.Push)
 		gitAPI.POST("/pull", gitHandlers.Pull)
 	}
+
+	// Task management endpoints
+	taskHandlers := tasks.NewHandlers(s.taskStore, s.taskScheduler)
+	spacesAPI.POST("/:id/tasks", taskHandlers.CreateTask)
+	spacesAPI.GET("/:id/tasks", taskHandlers.ListTasks)
+	spacesAPI.GET("/:id/tasks/:taskId", taskHandlers.GetTask)
+	spacesAPI.PUT("/:id/tasks/:taskId", taskHandlers.UpdateTask)
+	spacesAPI.POST("/:id/tasks/:taskId/claim", taskHandlers.ClaimTask)
+	spacesAPI.POST("/:id/tasks/:taskId/complete", taskHandlers.CompleteTask)
+	spacesAPI.POST("/:id/tasks/:taskId/fail", taskHandlers.FailTask)
+	spacesAPI.POST("/:id/tasks/:taskId/progress", taskHandlers.UpdateProgress)
+	spacesAPI.DELETE("/:id/tasks/:taskId", taskHandlers.CancelTask)
+	spacesAPI.POST("/:id/tasks/next", taskHandlers.NextTask)
+
+	// Workflow endpoints
+	spacesAPI.POST("/:id/workflows", taskHandlers.CreateWorkflow)
+	spacesAPI.GET("/:id/workflows", taskHandlers.ListWorkflows)
+	spacesAPI.GET("/:id/workflows/:workflowId", taskHandlers.GetWorkflow)
 
 	nodeProxy := proxy.NewNodeProxy(s.spaceStore)
 	spacesAPI.Any("/:id/nodes/:nid/v2/*path", nodeProxy.ProxyToNodeV2)
