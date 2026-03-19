@@ -1,8 +1,11 @@
 package gitops
 
 import (
+	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -321,9 +324,14 @@ func (h *Handlers) WriteFile(c *gin.Context) {
 	}
 	fp = strings.TrimPrefix(fp, "/")
 
-	body, err := io.ReadAll(c.Request.Body)
+	const maxBodySize = 10 * 1024 * 1024 // 10 MB
+	body, err := io.ReadAll(io.LimitReader(c.Request.Body, maxBodySize))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "reading body: " + err.Error()})
+		return
+	}
+	if int64(len(body)) >= maxBodySize {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "request body exceeds 10MB limit"})
 		return
 	}
 
@@ -362,6 +370,11 @@ func (h *Handlers) Clone(c *gin.Context) {
 
 	var req cloneRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := validateCloneURL(req.URL); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -455,4 +468,62 @@ func (h *Handlers) Pull(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"pulled": true})
+}
+
+// validateCloneURL ensures the clone URL is a safe remote URL.
+// Only https:// and git@ (SSH) schemes are allowed.
+// Internal/private IP ranges are blocked to prevent SSRF.
+func validateCloneURL(raw string) error {
+	// Allow SSH-style URLs (git@host:path).
+	if strings.HasPrefix(raw, "git@") {
+		// Extract hostname from git@host:path format.
+		hostPart := strings.TrimPrefix(raw, "git@")
+		colonIdx := strings.Index(hostPart, ":")
+		if colonIdx <= 0 {
+			return fmt.Errorf("invalid git SSH URL format")
+		}
+		host := hostPart[:colonIdx]
+		return validateHost(host)
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid clone URL: %w", err)
+	}
+
+	if parsed.Scheme != "https" {
+		return fmt.Errorf("only https:// and git@ clone URLs are allowed")
+	}
+
+	host := parsed.Hostname()
+	if host == "" {
+		return fmt.Errorf("clone URL must include a hostname")
+	}
+
+	return validateHost(host)
+}
+
+// validateHost blocks localhost, private, and link-local addresses.
+func validateHost(host string) error {
+	if host == "localhost" {
+		return fmt.Errorf("clone URL must not target localhost")
+	}
+
+	ips, err := net.LookupHost(host)
+	if err != nil {
+		// If DNS resolution fails, allow the request to fail naturally at clone time
+		// rather than blocking it here -- the host may be resolvable from a different resolver.
+		return nil
+	}
+
+	for _, ipStr := range ips {
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			continue
+		}
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Errorf("clone URL must not target private or internal addresses")
+		}
+	}
+	return nil
 }

@@ -174,6 +174,8 @@ func (c *Client) request(method string, params interface{}) (json.RawMessage, er
 		return json.RawMessage("{}"), nil
 	case <-c.done:
 		return nil, ErrClosed
+	case <-time.After(30 * time.Second):
+		return nil, fmt.Errorf("zap: request %q timed out after 30s", method)
 	}
 }
 

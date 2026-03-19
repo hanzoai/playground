@@ -183,7 +183,7 @@ func (c *Client) do(ctx context.Context, method, url string, body []byte) (*http
 
 // readError extracts an APIError from a non-success HTTP response.
 func readError(resp *http.Response) error {
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	var errResp struct {
 		Error string `json:"error"`
 	}

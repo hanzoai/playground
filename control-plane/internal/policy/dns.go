@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -33,6 +34,7 @@ type DNSManager struct {
 	token    string
 	// In-memory store for records. In production this would be backed
 	// by the DNS provider API, but we keep a local index for lookups.
+	mu      sync.RWMutex
 	records map[string]*DNSRecord // recordID -> record
 }
 
@@ -47,6 +49,9 @@ func NewDNSManager(endpoint, token string) *DNSManager {
 
 // ListRecords returns DNS records for a space.
 func (d *DNSManager) ListRecords(_ context.Context, spaceID string) ([]DNSRecord, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	var result []DNSRecord
 	for _, r := range d.records {
 		if r.SpaceID == spaceID {
@@ -74,12 +79,17 @@ func (d *DNSManager) CreateRecord(_ context.Context, record DNSRecord) error {
 		record.TTL = 300 // 5 minute default
 	}
 
+	d.mu.Lock()
 	d.records[record.ID] = &record
+	d.mu.Unlock()
 	return nil
 }
 
 // DeleteRecord removes a DNS record.
 func (d *DNSManager) DeleteRecord(_ context.Context, recordID string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	if _, ok := d.records[recordID]; !ok {
 		return fmt.Errorf("dns record %s not found", recordID)
 	}
@@ -99,11 +109,14 @@ func (d *DNSManager) EnsureBotDNS(ctx context.Context, spaceID, botID, botName s
 	fqdn := fmt.Sprintf("%s.%s.hanzo.bot", safeName, spaceID)
 
 	// Check if a record already exists for this bot.
+	d.mu.RLock()
 	for _, r := range d.records {
 		if r.SpaceID == spaceID && r.Name == fqdn && r.Managed {
+			d.mu.RUnlock()
 			return fqdn, nil
 		}
 	}
+	d.mu.RUnlock()
 
 	record := DNSRecord{
 		ID:      uuid.New().String(),

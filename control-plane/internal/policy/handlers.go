@@ -41,6 +41,11 @@ type UpdateSpacePolicyRequest struct {
 // UpdateSpacePolicy updates the space policy.
 // PUT /api/v1/spaces/:id/policy
 func (h *Handlers) UpdateSpacePolicy(c *gin.Context) {
+	if !isAdmin(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "admin role required to update space policy"})
+		return
+	}
+
 	spaceID := c.Param("id")
 
 	var req UpdateSpacePolicyRequest
@@ -96,6 +101,11 @@ type UpdateBotPolicyRequest struct {
 // UpdateBotPolicy updates a bot's policy.
 // PUT /api/v1/spaces/:id/bots/:botId/policy
 func (h *Handlers) UpdateBotPolicy(c *gin.Context) {
+	if !isAdmin(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "admin role required to update bot policy"})
+		return
+	}
+
 	spaceID := c.Param("id")
 	botID := c.Param("botId")
 
@@ -137,6 +147,11 @@ type ToggleBypassRequest struct {
 // ToggleBypass toggles bypass mode for a space.
 // POST /api/v1/spaces/:id/policy/bypass
 func (h *Handlers) ToggleBypass(c *gin.Context) {
+	if !isAdmin(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "admin role required to toggle bypass mode"})
+		return
+	}
+
 	spaceID := c.Param("id")
 
 	var req ToggleBypassRequest
@@ -178,10 +193,11 @@ func (h *Handlers) ResolveApproval(c *gin.Context) {
 		return
 	}
 
-	// In production, resolvedBy comes from IAM JWT claims.
+	// resolvedBy comes from IAM JWT claims. Anonymous approvals are not allowed.
 	resolvedBy := c.GetString("user_id")
 	if resolvedBy == "" {
-		resolvedBy = "anonymous"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required to resolve approvals"})
+		return
 	}
 
 	if err := h.engine.ResolveApproval(requestID, req.Approved, resolvedBy); err != nil {
@@ -250,4 +266,15 @@ func isValidApprovalMode(mode ApprovalMode) bool {
 	default:
 		return false
 	}
+}
+
+// isAdmin checks whether the request context indicates an IAM admin.
+func isAdmin(c *gin.Context) bool {
+	if c.GetString("iam_is_admin") == "true" {
+		return true
+	}
+	if c.GetString("iam_role") == "admin" {
+		return true
+	}
+	return false
 }

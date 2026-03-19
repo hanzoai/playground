@@ -216,7 +216,7 @@ func (s *SecretsClient) doJSON(ctx context.Context, method, reqURL string, body 
 
 // readError extracts an error from a non-success HTTP response.
 func (s *SecretsClient) readError(resp *http.Response, op, key string) error {
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	var errResp struct {
 		Error string `json:"error"`
 	}

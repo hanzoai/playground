@@ -30,8 +30,6 @@ func (h *SpaceAgentEventsHandler) HandleSSE(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Headers", "Cache-Control")
 
 	ch, unsub := h.eventBus.Subscribe(spaceID)
 	defer unsub()
@@ -95,8 +93,6 @@ func (h *SpaceAgentEventsHandler) HandleAgentSSE(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Headers", "Cache-Control")
 
 	ch, unsub := h.eventBus.SubscribeAgent(spaceID, agentID)
 	defer unsub()

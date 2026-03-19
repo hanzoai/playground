@@ -476,7 +476,21 @@ func (r *Repo) ReadFile(path string) ([]byte, error) {
 		return nil, fmt.Errorf("path traversal not allowed")
 	}
 	fullPath := filepath.Join(r.path, clean)
-	data, err := os.ReadFile(fullPath)
+
+	// Resolve symlinks and verify the real path is within the repo.
+	resolved, err := filepath.EvalSymlinks(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("read %q: %w", path, err)
+	}
+	repoRoot, err := filepath.EvalSymlinks(r.path)
+	if err != nil {
+		return nil, fmt.Errorf("read %q: %w", path, err)
+	}
+	if !strings.HasPrefix(resolved, repoRoot) {
+		return nil, fmt.Errorf("path traversal not allowed")
+	}
+
+	data, err := os.ReadFile(resolved)
 	if err != nil {
 		return nil, fmt.Errorf("read %q: %w", path, err)
 	}
@@ -493,6 +507,19 @@ func (r *Repo) WriteFile(path string, content []byte) error {
 
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
+	}
+
+	// Resolve symlinks on the parent directory to ensure we stay within the repo.
+	resolvedDir, err := filepath.EvalSymlinks(filepath.Dir(fullPath))
+	if err != nil {
+		return fmt.Errorf("write %q: %w", path, err)
+	}
+	repoRoot, err := filepath.EvalSymlinks(r.path)
+	if err != nil {
+		return fmt.Errorf("write %q: %w", path, err)
+	}
+	if !strings.HasPrefix(resolvedDir, repoRoot) {
+		return fmt.Errorf("path traversal not allowed")
 	}
 
 	if err := os.WriteFile(fullPath, content, 0644); err != nil {
