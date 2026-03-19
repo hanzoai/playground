@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.248] - 2026-03-19
+
+
+### Added
+
+- Feat(tasks): integrate Temporal SDK for durable task execution
+
+Wire go.temporal.io/sdk into playground tasks for production durability:
+- TemporalStore: submit/get/cancel/signal via Temporal client
+- AgentTaskWorkflow: single durable task with retries + timeout
+- PipelineWorkflow: sequential task chain
+- FanOutWorkflow: parallel execution with fan-in
+- ExecuteAgentTaskActivity: pluggable AgentExecutor with heartbeat
+- TaskWorker: polls Temporal queue, executes workflows/activities
+- Config: PLAYGROUND_TEMPORAL_ENABLED/ADDRESS/NAMESPACE env vars
+- Graceful fallback to in-memory when Temporal unavailable
+- Server wires temporal store + worker into lifecycle
+
+All 39 existing tests pass. go.temporal.io/sdk v1.41.1 added. (ffa65f9)
+
 ## [0.1.41-rc.247] - 2026-03-19
 
 
