@@ -217,7 +217,7 @@ func (s *PGStore) FailTask(taskID string, errMsg string) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck
 
 	var state string
 	var retryCount, maxRetries int
@@ -340,8 +340,8 @@ func (s *PGStore) GetWorkflow(id string) (*Workflow, error) {
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(tasksJSON, &wf.Tasks)
-	json.Unmarshal(metadataJSON, &wf.Metadata)
+	_ = json.Unmarshal(tasksJSON, &wf.Tasks)
+	_ = json.Unmarshal(metadataJSON, &wf.Metadata)
 	if completedAt.Valid {
 		wf.CompletedAt = &completedAt.Time
 	}
@@ -364,8 +364,8 @@ func (s *PGStore) ListWorkflows(spaceID string) []*Workflow {
 		if err := rows.Scan(&wf.ID, &wf.SpaceID, &wf.Name, &wf.Description, &wf.State, &tasksJSON, &wf.CreatedBy, &metadataJSON, &completedAt, &wf.CreatedAt, &wf.UpdatedAt); err != nil {
 			continue
 		}
-		json.Unmarshal(tasksJSON, &wf.Tasks)
-		json.Unmarshal(metadataJSON, &wf.Metadata)
+		_ = json.Unmarshal(tasksJSON, &wf.Tasks)
+		_ = json.Unmarshal(metadataJSON, &wf.Metadata)
 		if completedAt.Valid {
 			wf.CompletedAt = &completedAt.Time
 		}
@@ -441,8 +441,8 @@ func (s *PGStore) ListActiveWorkflows() []*Workflow {
 		if err := rows.Scan(&wf.ID, &wf.SpaceID, &wf.Name, &wf.Description, &wf.State, &tasksJSON, &wf.CreatedBy, &metadataJSON, &completedAt, &wf.CreatedAt, &wf.UpdatedAt); err != nil {
 			continue
 		}
-		json.Unmarshal(tasksJSON, &wf.Tasks)
-		json.Unmarshal(metadataJSON, &wf.Metadata)
+		_ = json.Unmarshal(tasksJSON, &wf.Tasks)
+		_ = json.Unmarshal(metadataJSON, &wf.Metadata)
 		if completedAt.Valid {
 			wf.CompletedAt = &completedAt.Time
 		}
@@ -466,11 +466,11 @@ func scanTask(row *sql.Row) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(dependsOn, &t.DependsOn)
-	json.Unmarshal(labels, &t.Labels)
-	json.Unmarshal(input, &t.Input)
-	json.Unmarshal(output, &t.Output)
-	json.Unmarshal(metadata, &t.Metadata)
+	_ = json.Unmarshal(dependsOn, &t.DependsOn)
+	_ = json.Unmarshal(labels, &t.Labels)
+	_ = json.Unmarshal(input, &t.Input)
+	_ = json.Unmarshal(output, &t.Output)
+	_ = json.Unmarshal(metadata, &t.Metadata)
 	t.Timeout = time.Duration(timeoutNs)
 	if startedAt.Valid {
 		t.StartedAt = &startedAt.Time
@@ -494,11 +494,11 @@ func scanTaskRows(rows *sql.Rows) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(dependsOn, &t.DependsOn)
-	json.Unmarshal(labels, &t.Labels)
-	json.Unmarshal(input, &t.Input)
-	json.Unmarshal(output, &t.Output)
-	json.Unmarshal(metadata, &t.Metadata)
+	_ = json.Unmarshal(dependsOn, &t.DependsOn)
+	_ = json.Unmarshal(labels, &t.Labels)
+	_ = json.Unmarshal(input, &t.Input)
+	_ = json.Unmarshal(output, &t.Output)
+	_ = json.Unmarshal(metadata, &t.Metadata)
 	t.Timeout = time.Duration(timeoutNs)
 	if startedAt.Valid {
 		t.StartedAt = &startedAt.Time
