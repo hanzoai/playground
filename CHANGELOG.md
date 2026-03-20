@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.256] - 2026-03-20
+
+
+### Fixed
+
+- Fix(ci): use published base@v0.29.4, remove unused NodeDetailPage import
+
+- Replace local go.mod replace directive with github.com/hanzoai/base@v0.29.4
+- Remove unused NodeDetailPage import (old /nodes/:nodeId route removed) (a71f4fe)
+
 ## [0.1.41-rc.255] - 2026-03-20
 
 
