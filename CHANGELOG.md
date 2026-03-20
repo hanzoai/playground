@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.259] - 2026-03-20
+
+
+### Added
+
+- Feat(tasks): PostgreSQL-backed task store, fix multi-replica split-brain
+
+- Add PGStore: full PostgreSQL implementation of TaskStore interface
+- Add TaskStore interface so handlers/scheduler work with either backend
+- Auto-select: PostgreSQL when DB available, in-memory fallback
+- Migration 021: tasks + workflows tables with proper indexes
+- Scheduler rewritten to use interface (no more internal field access)
+- Auto-promote claimed→running on complete/fail for ergonomic API
+- Fixes: 2-replica split-brain where create/list hit different pods (5329d7e)
+
 ## [0.1.41-rc.258] - 2026-03-20
 
 
