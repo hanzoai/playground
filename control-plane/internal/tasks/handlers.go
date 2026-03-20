@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 )
 
 // Handlers provides Gin HTTP handlers for the task system.
@@ -86,8 +87,11 @@ func (h *Handlers) CreateTask(c *gin.Context) {
 		return
 	}
 
+	orgID := orgFromContext(c)
+
 	task := &Task{
 		ID:           uuid.New().String(),
+		OrgID:        orgID,
 		SpaceID:      spaceID,
 		Title:        req.Title,
 		Description:  req.Description,
@@ -122,7 +126,8 @@ func (h *Handlers) ListTasks(c *gin.Context) {
 	}
 
 	spaceID := c.Param("id")
-	tasks, err := h.durable.ListTasks(c.Request.Context(), spaceID)
+	orgID := orgFromContext(c)
+	tasks, err := h.durable.ListTasks(c.Request.Context(), spaceID, orgID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -141,7 +146,8 @@ func (h *Handlers) GetTask(c *gin.Context) {
 	}
 
 	taskID := c.Param("taskId")
-	state, errMsg, err := h.durable.GetTaskStatus(c.Request.Context(), taskID)
+	orgID := orgFromContext(c)
+	state, errMsg, err := h.durable.GetTaskStatus(c.Request.Context(), taskID, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -163,7 +169,7 @@ func (h *Handlers) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.durable.SignalTask(c.Request.Context(), taskID, "update", req); err != nil {
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "update", req, orgFromContext(c)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -184,7 +190,7 @@ func (h *Handlers) ClaimTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.durable.SignalTask(c.Request.Context(), taskID, "claim", map[string]string{"agent_id": req.AgentID}); err != nil {
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "claim", map[string]string{"agent_id": req.AgentID}, orgFromContext(c)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -202,7 +208,7 @@ func (h *Handlers) CompleteTask(c *gin.Context) {
 	var req completeTaskRequest
 	_ = c.ShouldBindJSON(&req) // allow empty body
 
-	if err := h.durable.SignalTask(c.Request.Context(), taskID, "complete", req.Output); err != nil {
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "complete", req.Output, orgFromContext(c)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -223,7 +229,7 @@ func (h *Handlers) FailTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.durable.SignalTask(c.Request.Context(), taskID, "fail", map[string]string{"error": req.Error}); err != nil {
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "fail", map[string]string{"error": req.Error}, orgFromContext(c)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -238,7 +244,7 @@ func (h *Handlers) CancelTask(c *gin.Context) {
 	}
 
 	taskID := c.Param("taskId")
-	if err := h.durable.CancelTask(c.Request.Context(), taskID); err != nil {
+	if err := h.durable.CancelTask(c.Request.Context(), taskID, orgFromContext(c)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -259,7 +265,7 @@ func (h *Handlers) UpdateProgress(c *gin.Context) {
 		return
 	}
 
-	if err := h.durable.SignalTask(c.Request.Context(), taskID, "progress", req); err != nil {
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "progress", req, orgFromContext(c)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -280,7 +286,7 @@ func (h *Handlers) NextTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.durable.GetNextTask(c.Request.Context(), spaceID, req.AgentID)
+	task, err := h.durable.GetNextTask(c.Request.Context(), spaceID, req.AgentID, orgFromContext(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -322,10 +328,13 @@ func (h *Handlers) CreateWorkflow(c *gin.Context) {
 	wfID := uuid.New().String()
 	createdBy := extractCreatedBy(c)
 
+	orgID := orgFromContext(c)
+
 	var taskList []*Task
 	for i, td := range req.Tasks {
 		task := &Task{
 			ID:          uuid.New().String(),
+			OrgID:       orgID,
 			SpaceID:     spaceID,
 			Title:       td.Title,
 			Description: td.Description,
@@ -351,6 +360,7 @@ func (h *Handlers) CreateWorkflow(c *gin.Context) {
 
 	wf := &Workflow{
 		ID:          wfID,
+		OrgID:       orgID,
 		SpaceID:     spaceID,
 		Name:        req.Name,
 		Description: req.Description,
@@ -378,7 +388,7 @@ func (h *Handlers) ListWorkflows(c *gin.Context) {
 	}
 
 	spaceID := c.Param("id")
-	workflows, err := h.durable.ListWorkflows(c.Request.Context(), spaceID)
+	workflows, err := h.durable.ListWorkflows(c.Request.Context(), spaceID, orgFromContext(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -397,7 +407,7 @@ func (h *Handlers) GetWorkflow(c *gin.Context) {
 	}
 
 	wfID := c.Param("workflowId")
-	state, errMsg, err := h.durable.GetTaskStatus(c.Request.Context(), wfID)
+	state, errMsg, err := h.durable.GetTaskStatus(c.Request.Context(), wfID, orgFromContext(c))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -420,6 +430,15 @@ func (h *Handlers) requireDurable(c *gin.Context) bool {
 		return false
 	}
 	return true
+}
+
+// orgFromContext extracts the IAM org from the request context.
+// Falls back to "hanzo" if no IAM context is present.
+func orgFromContext(c *gin.Context) string {
+	if org := middleware.GetOrganization(c); org != "" {
+		return org
+	}
+	return "hanzo"
 }
 
 func extractCreatedBy(c *gin.Context) string {
