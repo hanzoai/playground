@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.264] - 2026-03-20
+
+
+### Changed
+
+- Refactor(tasks): single source of truth — tasks.hanzo.ai only
+
+Remove redundant PostgreSQL task store, in-memory store, scheduler,
+and migration. All task state now lives exclusively in tasks.hanzo.ai
+(github.com/hanzoai/tasks). Playground handlers are thin API proxies
+to the durable task service via Temporal visibility API.
+
+Deleted:
+- pgstore.go, store.go, iface.go, scheduler.go (2,287 lines)
+- store_test.go, scheduler_test.go (827 lines)
+- migration 021_create_tasks.sql
+
+Architecture:
+  app.hanzo.bot → tasks.hanzo.svc:7233 → postgres (tasks' own DB)
+  No separate task tables in playground's postgres. (c2eef8f)
+
 ## [0.1.41-rc.263] - 2026-03-20
 
 
