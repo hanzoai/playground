@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.261] - 2026-03-20
+
+
+### Fixed
+
+- Fix(tasks): rename workflows→task_workflows to avoid collision with existing table (39922ca)
+
 ## [0.1.41-rc.260] - 2026-03-20
 
 
