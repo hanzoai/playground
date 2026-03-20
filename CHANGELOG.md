@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.262] - 2026-03-20
+
+
+### Fixed
+
+- Fix(tasks): handle empty depends_on in GetNextPendingTask SQL (eaa532a)
+
 ## [0.1.41-rc.261] - 2026-03-20
 
 
