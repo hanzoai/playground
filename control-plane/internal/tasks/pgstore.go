@@ -321,7 +321,7 @@ func (s *PGStore) CreateWorkflow(wf *Workflow) error {
 	}
 	tasksJSON, _ := json.Marshal(wf.Tasks)
 	metadata, _ := json.Marshal(wf.Metadata)
-	_, err := s.db.Exec(`INSERT INTO workflows (id, space_id, name, description, state, tasks, created_by, metadata, created_at, updated_at)
+	_, err := s.db.Exec(`INSERT INTO task_workflows (id, space_id, name, description, state, tasks, created_by, metadata, created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 		wf.ID, wf.SpaceID, wf.Name, wf.Description, wf.State, tasksJSON, wf.CreatedBy, metadata, wf.CreatedAt, wf.UpdatedAt)
 	return err
@@ -332,7 +332,7 @@ func (s *PGStore) GetWorkflow(id string) (*Workflow, error) {
 	var tasksJSON, metadataJSON []byte
 	var completedAt sql.NullTime
 	err := s.db.QueryRow(`SELECT id, space_id, name, description, state, tasks, created_by, metadata, completed_at, created_at, updated_at
-		FROM workflows WHERE id=$1`, id).
+		FROM task_workflows WHERE id=$1`, id).
 		Scan(&wf.ID, &wf.SpaceID, &wf.Name, &wf.Description, &wf.State, &tasksJSON, &wf.CreatedBy, &metadataJSON, &completedAt, &wf.CreatedAt, &wf.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrWorkflowNotFound
@@ -350,7 +350,7 @@ func (s *PGStore) GetWorkflow(id string) (*Workflow, error) {
 
 func (s *PGStore) ListWorkflows(spaceID string) []*Workflow {
 	rows, err := s.db.Query(`SELECT id, space_id, name, description, state, tasks, created_by, metadata, completed_at, created_at, updated_at
-		FROM workflows WHERE space_id=$1 ORDER BY created_at ASC`, spaceID)
+		FROM task_workflows WHERE space_id=$1 ORDER BY created_at ASC`, spaceID)
 	if err != nil {
 		return nil
 	}
@@ -428,7 +428,7 @@ func (s *PGStore) ListActiveTasks() []*Task {
 
 func (s *PGStore) ListActiveWorkflows() []*Workflow {
 	rows, err := s.db.Query(`SELECT id, space_id, name, description, state, tasks, created_by, metadata, completed_at, created_at, updated_at
-		FROM workflows WHERE state NOT IN ('completed','failed','cancelled')`)
+		FROM task_workflows WHERE state NOT IN ('completed','failed','cancelled')`)
 	if err != nil {
 		return nil
 	}
