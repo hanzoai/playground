@@ -1,9 +1,7 @@
 package tasks
 
 import (
-	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,22 +9,20 @@ import (
 )
 
 // Handlers provides Gin HTTP handlers for the task system.
+// All operations proxy to tasks.hanzo.ai via the DurableStore.
 type Handlers struct {
-	store     TaskStore
-	scheduler *Scheduler
-	durable   *DurableStore // nil if durable tasks not configured
+	durable  *DurableStore
+	eventBus interface{ Publish(event interface{}) } // optional SSE bus
 }
 
-// NewHandlers creates a new Handlers instance.
-func NewHandlers(store TaskStore, scheduler *Scheduler) *Handlers {
-	return &Handlers{store: store, scheduler: scheduler}
+// NewHandlers creates task handlers backed by the durable task service.
+func NewHandlers(durable *DurableStore) *Handlers {
+	return &Handlers{durable: durable}
 }
 
-// SetDurable attaches a durable store (tasks.hanzo.ai) for cloud task execution.
-// When set, CreateTask and CancelTask will attempt durable execution first,
-// falling back to the in-memory store on failure.
-func (h *Handlers) SetDurable(ds *DurableStore) {
-	h.durable = ds
+// SetEventBus attaches an event bus for SSE task events.
+func (h *Handlers) SetEventBus(bus interface{ Publish(event interface{}) }) {
+	h.eventBus = bus
 }
 
 // --- Request / Response types ---
@@ -67,24 +63,21 @@ type failTaskRequest struct {
 }
 
 type progressRequest struct {
-	Progress int `json:"progress" binding:"required"`
+	Progress int `json:"progress"`
 }
 
 type nextTaskRequest struct {
 	AgentID string `json:"agent_id" binding:"required"`
 }
 
-type createWorkflowRequest struct {
-	Name        string            `json:"name" binding:"required"`
-	Description string            `json:"description"`
-	Tasks       []createTaskRequest `json:"tasks" binding:"required"`
-	Metadata    map[string]string `json:"metadata"`
-}
-
 // --- Task Handlers ---
 
 // CreateTask handles POST /api/v1/spaces/:id/tasks
 func (h *Handlers) CreateTask(c *gin.Context) {
+	if !h.requireDurable(c) {
+		return
+	}
+
 	spaceID := c.Param("id")
 
 	var req createTaskRequest
@@ -110,35 +103,32 @@ func (h *Handlers) CreateTask(c *gin.Context) {
 		MaxRetries:   req.MaxRetries,
 		Metadata:     req.Metadata,
 	}
-
 	if req.TimeoutSecs > 0 {
 		task.Timeout = time.Duration(req.TimeoutSecs) * time.Second
 	}
 
-	if err := h.store.CreateTask(task); err != nil {
+	if err := h.durable.SubmitTask(c.Request.Context(), task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// If durable task service is connected, submit as a durable workflow.
-	if h.durable != nil && h.durable.IsConnected() {
-		if err := h.durable.SubmitTask(c.Request.Context(), task); err != nil {
-			log.Printf("Durable task submit failed, using in-memory: %v", err)
-		}
-	}
-
-	h.emitEvent("created", task)
 	c.JSON(http.StatusCreated, task)
 }
 
 // ListTasks handles GET /api/v1/spaces/:id/tasks
 func (h *Handlers) ListTasks(c *gin.Context) {
-	spaceID := c.Param("id")
-	filters := parseTaskFilters(c)
+	if !h.requireDurable(c) {
+		return
+	}
 
-	tasks := h.store.ListTasks(spaceID, filters)
+	spaceID := c.Param("id")
+	tasks, err := h.durable.ListTasks(c.Request.Context(), spaceID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	if tasks == nil {
-		tasks = make([]*Task, 0)
+		tasks = []*Task{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"tasks": tasks, "count": len(tasks)})
@@ -146,209 +136,151 @@ func (h *Handlers) ListTasks(c *gin.Context) {
 
 // GetTask handles GET /api/v1/spaces/:id/tasks/:taskId
 func (h *Handlers) GetTask(c *gin.Context) {
-	taskID := c.Param("taskId")
+	if !h.requireDurable(c) {
+		return
+	}
 
-	task, err := h.store.GetTask(taskID)
+	taskID := c.Param("taskId")
+	state, errMsg, err := h.durable.GetTaskStatus(c.Request.Context(), taskID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, gin.H{"id": taskID, "state": state, "error": errMsg})
 }
 
 // UpdateTask handles PUT /api/v1/spaces/:id/tasks/:taskId
 func (h *Handlers) UpdateTask(c *gin.Context) {
-	taskID := c.Param("taskId")
-
-	task, err := h.store.GetTask(taskID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	if !h.requireDurable(c) {
 		return
 	}
 
+	taskID := c.Param("taskId")
 	var req updateTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if req.Title != nil {
-		task.Title = *req.Title
-	}
-	if req.Description != nil {
-		task.Description = *req.Description
-	}
-	if req.Priority != nil {
-		task.Priority = *req.Priority
-	}
-	if req.Labels != nil {
-		task.Labels = req.Labels
-	}
-	if req.Metadata != nil {
-		task.Metadata = req.Metadata
-	}
-
-	if err := h.store.UpdateTask(task); err != nil {
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "update", req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, gin.H{"updated": true, "task_id": taskID})
 }
 
 // ClaimTask handles POST /api/v1/spaces/:id/tasks/:taskId/claim
 func (h *Handlers) ClaimTask(c *gin.Context) {
-	taskID := c.Param("taskId")
+	if !h.requireDurable(c) {
+		return
+	}
 
+	taskID := c.Param("taskId")
 	var req claimTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.store.ClaimTask(taskID, req.AgentID); err != nil {
-		status := http.StatusInternalServerError
-		if err == ErrTaskNotFound {
-			status = http.StatusNotFound
-		} else if err == ErrAlreadyClaimed || err == ErrInvalidTransition {
-			status = http.StatusConflict
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "claim", map[string]string{"agent_id": req.AgentID}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	task, _ := h.store.GetTask(taskID)
-	h.emitEvent("claimed", task)
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, gin.H{"claimed": true, "task_id": taskID, "agent_id": req.AgentID})
 }
 
 // CompleteTask handles POST /api/v1/spaces/:id/tasks/:taskId/complete
 func (h *Handlers) CompleteTask(c *gin.Context) {
-	taskID := c.Param("taskId")
-
-	var req completeTaskRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// Allow empty body for tasks with no output.
-		req = completeTaskRequest{}
-	}
-
-	// Auto-promote claimed → running so agents can claim+complete in one step.
-	if t, err := h.store.GetTask(taskID); err == nil && t.State == TaskClaimed {
-		_ = h.store.StartTask(taskID)
-	}
-
-	if err := h.store.CompleteTask(taskID, req.Output); err != nil {
-		status := http.StatusInternalServerError
-		if err == ErrTaskNotFound {
-			status = http.StatusNotFound
-		} else if err == ErrInvalidTransition {
-			status = http.StatusConflict
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
+	if !h.requireDurable(c) {
 		return
 	}
 
-	task, _ := h.store.GetTask(taskID)
-	h.emitEvent("completed", task)
-	c.JSON(http.StatusOK, task)
+	taskID := c.Param("taskId")
+	var req completeTaskRequest
+	_ = c.ShouldBindJSON(&req) // allow empty body
+
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "complete", req.Output); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"completed": true, "task_id": taskID})
 }
 
 // FailTask handles POST /api/v1/spaces/:id/tasks/:taskId/fail
 func (h *Handlers) FailTask(c *gin.Context) {
-	taskID := c.Param("taskId")
+	if !h.requireDurable(c) {
+		return
+	}
 
+	taskID := c.Param("taskId")
 	var req failTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Auto-promote claimed → running so fail works after claim.
-	if t, err := h.store.GetTask(taskID); err == nil && t.State == TaskClaimed {
-		_ = h.store.StartTask(taskID)
-	}
-
-	if err := h.store.FailTask(taskID, req.Error); err != nil {
-		status := http.StatusInternalServerError
-		if err == ErrTaskNotFound {
-			status = http.StatusNotFound
-		} else if err == ErrInvalidTransition {
-			status = http.StatusConflict
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "fail", map[string]string{"error": req.Error}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	task, _ := h.store.GetTask(taskID)
-	h.emitEvent("failed", task)
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, gin.H{"failed": true, "task_id": taskID})
+}
+
+// CancelTask handles DELETE /api/v1/spaces/:id/tasks/:taskId
+func (h *Handlers) CancelTask(c *gin.Context) {
+	if !h.requireDurable(c) {
+		return
+	}
+
+	taskID := c.Param("taskId")
+	if err := h.durable.CancelTask(c.Request.Context(), taskID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cancelled": true, "task_id": taskID})
 }
 
 // UpdateProgress handles POST /api/v1/spaces/:id/tasks/:taskId/progress
 func (h *Handlers) UpdateProgress(c *gin.Context) {
-	taskID := c.Param("taskId")
+	if !h.requireDurable(c) {
+		return
+	}
 
+	taskID := c.Param("taskId")
 	var req progressRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.store.UpdateProgress(taskID, req.Progress); err != nil {
-		status := http.StatusInternalServerError
-		if err == ErrTaskNotFound {
-			status = http.StatusNotFound
-		} else if err == ErrInvalidTransition {
-			status = http.StatusConflict
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
+	if err := h.durable.SignalTask(c.Request.Context(), taskID, "progress", req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	task, _ := h.store.GetTask(taskID)
-	h.emitEvent("progress", task)
-	c.JSON(http.StatusOK, task)
-}
-
-// CancelTask handles DELETE /api/v1/spaces/:id/tasks/:taskId
-func (h *Handlers) CancelTask(c *gin.Context) {
-	taskID := c.Param("taskId")
-
-	if err := h.store.CancelTask(taskID); err != nil {
-		status := http.StatusInternalServerError
-		if err == ErrTaskNotFound {
-			status = http.StatusNotFound
-		} else if err == ErrInvalidTransition {
-			status = http.StatusConflict
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Also cancel the durable workflow if connected.
-	if h.durable != nil && h.durable.IsConnected() {
-		if err := h.durable.CancelTask(c.Request.Context(), taskID); err != nil {
-			log.Printf("Durable task cancel failed for task %s: %v", taskID, err)
-		}
-	}
-
-	task, _ := h.store.GetTask(taskID)
-	h.emitEvent("cancelled", task)
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, gin.H{"progress": req.Progress, "task_id": taskID})
 }
 
 // NextTask handles POST /api/v1/spaces/:id/tasks/next
 func (h *Handlers) NextTask(c *gin.Context) {
-	spaceID := c.Param("id")
+	if !h.requireDurable(c) {
+		return
+	}
 
+	spaceID := c.Param("id")
 	var req nextTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	task, err := h.store.GetNextPendingTask(spaceID, req.AgentID)
+	task, err := h.durable.GetNextTask(c.Request.Context(), spaceID, req.AgentID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -358,7 +290,6 @@ func (h *Handlers) NextTask(c *gin.Context) {
 		return
 	}
 
-	h.emitEvent("claimed", task)
 	c.JSON(http.StatusOK, task)
 }
 
@@ -366,49 +297,56 @@ func (h *Handlers) NextTask(c *gin.Context) {
 
 // CreateWorkflow handles POST /api/v1/spaces/:id/workflows
 func (h *Handlers) CreateWorkflow(c *gin.Context) {
+	if !h.requireDurable(c) {
+		return
+	}
+
 	spaceID := c.Param("id")
 
-	var req createWorkflowRequest
+	var req struct {
+		Name        string            `json:"name" binding:"required"`
+		Description string            `json:"description"`
+		Tasks       []createTaskRequest `json:"tasks"`
+		Parallel    bool              `json:"parallel"`
+		Metadata    map[string]string `json:"metadata"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if len(req.Tasks) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "workflow must have at least one task"})
 		return
 	}
 
 	wfID := uuid.New().String()
 	createdBy := extractCreatedBy(c)
 
-	// Create all tasks first, linking them to the workflow.
-	taskIDs := make([]string, 0, len(req.Tasks))
-	for i, tr := range req.Tasks {
+	var taskList []*Task
+	for i, td := range req.Tasks {
 		task := &Task{
 			ID:          uuid.New().String(),
 			SpaceID:     spaceID,
-			Title:       tr.Title,
-			Description: tr.Description,
+			Title:       td.Title,
+			Description: td.Description,
 			State:       TaskPending,
-			Priority:    tr.Priority,
+			Priority:    td.Priority,
 			CreatedBy:   createdBy,
 			WorkflowID:  wfID,
-			DependsOn:   tr.DependsOn,
-			Labels:      tr.Labels,
-			Input:       tr.Input,
-			MaxRetries:  tr.MaxRetries,
-			Metadata:    tr.Metadata,
+			DependsOn:   td.DependsOn,
+			Labels:      td.Labels,
+			Input:       td.Input,
+			MaxRetries:  td.MaxRetries,
+			Metadata:    td.Metadata,
 		}
-		if tr.TimeoutSecs > 0 {
-			task.Timeout = time.Duration(tr.TimeoutSecs) * time.Second
+		if td.TimeoutSecs > 0 {
+			task.Timeout = time.Duration(td.TimeoutSecs) * time.Second
 		}
-
-		// Chain dependency: each task depends on the previous unless explicit deps are set.
-		if len(task.DependsOn) == 0 && i > 0 {
-			task.DependsOn = []string{taskIDs[i-1]}
+		// Auto-chain sequential tasks.
+		if !req.Parallel && len(task.DependsOn) == 0 && i > 0 {
+			task.DependsOn = []string{taskList[i-1].ID}
 		}
-
-		if err := h.store.CreateTask(task); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		taskIDs = append(taskIDs, task.ID)
+		taskList = append(taskList, task)
 	}
 
 	wf := &Workflow{
@@ -417,26 +355,36 @@ func (h *Handlers) CreateWorkflow(c *gin.Context) {
 		Name:        req.Name,
 		Description: req.Description,
 		State:       TaskPending,
-		Tasks:       taskIDs,
 		CreatedBy:   createdBy,
 		Metadata:    req.Metadata,
 	}
+	for _, t := range taskList {
+		wf.Tasks = append(wf.Tasks, t.ID)
+	}
 
-	if err := h.store.CreateWorkflow(wf); err != nil {
+	// Submit workflow to durable backend.
+	if err := h.durable.SubmitWorkflow(c.Request.Context(), wf, taskList, req.Parallel); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, wf)
+	c.JSON(http.StatusCreated, gin.H{"workflow": wf, "tasks": taskList})
 }
 
 // ListWorkflows handles GET /api/v1/spaces/:id/workflows
 func (h *Handlers) ListWorkflows(c *gin.Context) {
-	spaceID := c.Param("id")
+	if !h.requireDurable(c) {
+		return
+	}
 
-	workflows := h.store.ListWorkflows(spaceID)
+	spaceID := c.Param("id")
+	workflows, err := h.durable.ListWorkflows(c.Request.Context(), spaceID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	if workflows == nil {
-		workflows = make([]*Workflow, 0)
+		workflows = []*Workflow{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"workflows": workflows, "count": len(workflows)})
@@ -444,79 +392,42 @@ func (h *Handlers) ListWorkflows(c *gin.Context) {
 
 // GetWorkflow handles GET /api/v1/spaces/:id/workflows/:workflowId
 func (h *Handlers) GetWorkflow(c *gin.Context) {
-	wfID := c.Param("workflowId")
+	if !h.requireDurable(c) {
+		return
+	}
 
-	wf, err := h.store.GetWorkflow(wfID)
+	wfID := c.Param("workflowId")
+	state, errMsg, err := h.durable.GetTaskStatus(c.Request.Context(), wfID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Attach task details.
-	var tasks []*Task
-	for _, tid := range wf.Tasks {
-		t, terr := h.store.GetTask(tid)
-		if terr == nil {
-			tasks = append(tasks, t)
-		}
-	}
-	if tasks == nil {
-		tasks = make([]*Task, 0)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"workflow": wf, "tasks": tasks})
+	c.JSON(http.StatusOK, gin.H{
+		"id":    wfID,
+		"state": state,
+		"error": errMsg,
+	})
 }
 
 // --- Helpers ---
 
-func extractCreatedBy(c *gin.Context) string {
-	// Try agent_id header, then fallback.
-	if agentID := c.GetHeader("X-Agent-ID"); agentID != "" {
-		return agentID
+func (h *Handlers) requireDurable(c *gin.Context) bool {
+	if h.durable == nil || !h.durable.IsConnected() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Task service not available. Ensure tasks.hanzo.ai is reachable.",
+		})
+		return false
 	}
-	if userID := c.GetHeader("X-User-ID"); userID != "" {
-		return userID
+	return true
+}
+
+func extractCreatedBy(c *gin.Context) string {
+	if v := c.GetHeader("X-Agent-ID"); v != "" {
+		return v
+	}
+	if v := c.GetHeader("X-User-ID"); v != "" {
+		return v
 	}
 	return "anonymous"
-}
-
-func parseTaskFilters(c *gin.Context) TaskFilters {
-	var f TaskFilters
-
-	if s := c.Query("state"); s != "" {
-		state := TaskState(s)
-		f.State = &state
-	}
-	if a := c.Query("assigned_to"); a != "" {
-		f.AssignedTo = &a
-	}
-	if p := c.Query("priority"); p != "" {
-		if pv, err := strconv.Atoi(p); err == nil {
-			priority := TaskPriority(pv)
-			f.Priority = &priority
-		}
-	}
-	if w := c.Query("workflow_id"); w != "" {
-		f.WorkflowID = &w
-	}
-	if l := c.Query("limit"); l != "" {
-		if lv, err := strconv.Atoi(l); err == nil {
-			f.Limit = lv
-		}
-	}
-	if o := c.Query("offset"); o != "" {
-		if ov, err := strconv.Atoi(o); err == nil {
-			f.Offset = ov
-		}
-	}
-
-	return f
-}
-
-// emitEvent emits a task event via the scheduler's event bus.
-func (h *Handlers) emitEvent(eventType string, task *Task) {
-	if h.scheduler == nil {
-		return
-	}
-	h.scheduler.emitEvent(eventType, task.ID, task.SpaceID, task.AssignedTo, nil)
 }

@@ -86,8 +86,6 @@ type PlaygroundServer struct {
 	zapPool                  *zappool.Pool
 	policyEngine             *policy.Engine
 	rateLimiter              *middleware.RateLimiter
-	taskStore                tasks.TaskStore
-	taskScheduler            *tasks.Scheduler
 	durableStore             *tasks.DurableStore
 	durableWorker            *tasks.TaskWorker
 	// serverAPIKey is the Hanzo API key for hanzo-dev runtime auto-login.
@@ -369,21 +367,7 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	// Policy engine for approval / sandbox governance
 	policyEngine := policy.NewEngine()
 
-	// Task store — PostgreSQL when available, in-memory fallback.
-	var taskStore tasks.TaskStore
-	if ls, ok := storageProvider.(*storage.LocalStorage); ok {
-		if rawDB := ls.RawDB(); rawDB != nil {
-			taskStore = tasks.NewPGStore(rawDB)
-			logger.Logger.Info().Msg("Task store: PostgreSQL")
-		}
-	}
-	if taskStore == nil {
-		taskStore = tasks.NewStore()
-		logger.Logger.Info().Msg("Task store: in-memory")
-	}
-	taskScheduler := tasks.NewScheduler(taskStore, gossipTracker, agentEventBus)
-
-	// Durable task execution — auto-discover tasks service.
+	// Durable task execution — auto-discover tasks.hanzo.ai.
 	// Tries TASKS_ADDRESS env, then K8s internal (tasks.hanzo.svc:7233),
 	// then localhost:7233. Connects silently if reachable, falls back to
 	// in-memory if not. Explicit TASKS_ENABLED=false disables discovery.
@@ -486,8 +470,6 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		secretsClient:            secretsClient,
 		zapPool:                  zapPool,
 		policyEngine:             policyEngine,
-		taskStore:                taskStore,
-		taskScheduler:            taskScheduler,
 		durableStore:             durableStore,
 		durableWorker:            durableWorker,
 		serverAPIKey:             serverAPIKey,
@@ -530,12 +512,6 @@ func (s *PlaygroundServer) Start() error {
 	if err := s.cleanupService.Start(ctx); err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to start execution cleanup service")
 		// Don't fail server startup if cleanup service fails to start
-	}
-
-	// Start task scheduler for durable workflow execution
-	if s.taskScheduler != nil {
-		s.taskScheduler.Start()
-		logger.Logger.Info().Msg("Task scheduler started")
 	}
 
 	// Start bot event heartbeat (30 second intervals)
@@ -621,11 +597,6 @@ func (s *PlaygroundServer) Stop() error {
 		if err := s.observabilityForwarder.Stop(ctx); err != nil {
 			logger.Logger.Error().Err(err).Msg("Failed to stop observability forwarder")
 		}
-	}
-
-	// Stop task scheduler
-	if s.taskScheduler != nil {
-		s.taskScheduler.Stop()
 	}
 
 	// Stop durable task worker and close connection
@@ -1498,11 +1469,8 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 		gitAPI.POST("/pull", gitHandlers.Pull)
 	}
 
-	// Task management endpoints
-	taskHandlers := tasks.NewHandlers(s.taskStore, s.taskScheduler)
-	if s.durableStore != nil {
-		taskHandlers.SetDurable(s.durableStore)
-	}
+	// Task management endpoints — all operations proxy to tasks.hanzo.ai
+	taskHandlers := tasks.NewHandlers(s.durableStore)
 	spacesAPI.POST("/:id/tasks", taskHandlers.CreateTask)
 	spacesAPI.GET("/:id/tasks", taskHandlers.ListTasks)
 	spacesAPI.GET("/:id/tasks/:taskId", taskHandlers.GetTask)
