@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.257] - 2026-03-20
+
+
+### Added
+
+- Feat(tasks): auto-discover durable task service like IAM
+
+Tasks service is now auto-discovered at startup:
+1. TASKS_ADDRESS env (explicit)
+2. tasks.hanzo.svc:7233 (K8s internal)
+3. localhost:7233 (local dev)
+
+If reachable, connects automatically. If not, falls back to in-memory.
+Set TASKS_ENABLED=false to explicitly disable. No flag needed to enable. (8c7cebc)
+
+
+
+### Changed
+
+- Refactor(ci): deploy via universe dispatch, not direct kubectl
+
+Replace direct kubectl set-image deploy with repository_dispatch to
+hanzoai/universe. Flow: build image → push GHCR → dispatch image-update
+→ universe image-receiver → dev branch → staging deploy → E2E → PR →
+production.
+
+No more direct cluster access from service repos. Universe owns all
+K8s deployments through manifests/production.yml. (7cde234)
+
 ## [0.1.41-rc.256] - 2026-03-20
 
 
