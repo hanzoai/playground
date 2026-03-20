@@ -12,7 +12,7 @@ import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
 import { ExecutionsPage } from "./pages/ExecutionsPage";
 import { EnhancedExecutionDetailPage } from "./pages/EnhancedExecutionDetailPage";
 import { EnhancedWorkflowDetailPage } from "./pages/EnhancedWorkflowDetailPage";
-import { NodeDetailPage } from "./pages/NodeDetailPage";
+
 import { NodesPage } from "./pages/NodesPage";
 import { PackagesPage } from "./pages/PackagesPage";
 import { BotDetailPage } from "./pages/BotDetailPage.tsx";
