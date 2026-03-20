@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.260] - 2026-03-20
+
+
+### Fixed
+
+- Fix(lint): check json.Unmarshal and tx.Rollback returns (813b871)
+
 ## [0.1.41-rc.259] - 2026-03-20
 
 
