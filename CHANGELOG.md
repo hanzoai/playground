@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.255] - 2026-03-20
+
+
+### Changed
+
+- Refactor(tasks): import types and durable execution from github.com/hanzoai/base
+
+Replace 6 duplicated files (types, durable store, worker, workflows,
+activities, config) with imports from github.com/hanzoai/base/plugins/tasks.
+
+- Zero go.temporal.io/sdk imports in playground code (transitive via base)
+- Env vars: PLAYGROUND_TASKS_ENABLED/ADDRESS/NAMESPACE
+- Default durable endpoint: tasks.hanzo.ai:7233
+- Rename TemporalStore→DurableStore, SetTemporal→SetDurable throughout
+- Keep playground-specific: in-memory Store, gossip Scheduler, Gin Handlers
+- Thin re-export layer in tasks.go for clean internal imports
+- All tests pass, net -337 lines (b47cdd1)
+
 ## [0.1.41-rc.254] - 2026-03-19
 
 
