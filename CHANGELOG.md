@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.258] - 2026-03-20
+
+
+### Fixed
+
+- Fix(tasks): auto-promote claimed→running on complete/fail for ergonomic claim+complete (9d5a285)
+
 ## [0.1.41-rc.257] - 2026-03-20
 
 
