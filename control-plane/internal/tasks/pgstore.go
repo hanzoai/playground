@@ -286,7 +286,7 @@ func (s *PGStore) GetNextPendingTask(spaceID string, agentID string) (*Task, err
 		WHERE id = (
 			SELECT id FROM tasks
 			WHERE space_id=$3 AND state='pending'
-			AND (tasks.depends_on IS NULL OR tasks.depends_on = '[]'::jsonb OR NOT EXISTS (
+			AND (jsonb_typeof(tasks.depends_on) != 'array' OR jsonb_array_length(tasks.depends_on) = 0 OR NOT EXISTS (
 				SELECT 1 FROM jsonb_array_elements_text(tasks.depends_on) dep_id
 				JOIN tasks d ON d.id = dep_id
 				WHERE d.state != 'completed'
