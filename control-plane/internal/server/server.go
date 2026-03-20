@@ -86,7 +86,7 @@ type PlaygroundServer struct {
 	zapPool                  *zappool.Pool
 	policyEngine             *policy.Engine
 	rateLimiter              *middleware.RateLimiter
-	taskStore                *tasks.Store
+	taskStore                tasks.TaskStore
 	taskScheduler            *tasks.Scheduler
 	durableStore             *tasks.DurableStore
 	durableWorker            *tasks.TaskWorker
@@ -369,8 +369,18 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	// Policy engine for approval / sandbox governance
 	policyEngine := policy.NewEngine()
 
-	// Task store and scheduler for durable workflow execution
-	taskStore := tasks.NewStore()
+	// Task store — PostgreSQL when available, in-memory fallback.
+	var taskStore tasks.TaskStore
+	if ls, ok := storageProvider.(*storage.LocalStorage); ok {
+		if rawDB := ls.RawDB(); rawDB != nil {
+			taskStore = tasks.NewPGStore(rawDB)
+			logger.Logger.Info().Msg("Task store: PostgreSQL")
+		}
+	}
+	if taskStore == nil {
+		taskStore = tasks.NewStore()
+		logger.Logger.Info().Msg("Task store: in-memory")
+	}
 	taskScheduler := tasks.NewScheduler(taskStore, gossipTracker, agentEventBus)
 
 	// Durable task execution — auto-discover tasks service.

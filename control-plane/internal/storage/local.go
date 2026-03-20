@@ -2353,6 +2353,15 @@ func (ls *LocalStorage) requireSQLDB() *sqlDatabase {
 	return ls.db
 }
 
+// RawDB returns the underlying *sql.DB, or nil if not initialized.
+// Used by subsystems that need direct DB access (e.g. task store).
+func (ls *LocalStorage) RawDB() *sql.DB {
+	if ls.db == nil {
+		return nil
+	}
+	return ls.db.DB
+}
+
 // NewUnitOfWork creates a new unit of work instance for this storage
 func (ls *LocalStorage) NewUnitOfWork() UnitOfWork {
 	return NewUnitOfWork(ls.requireSQLDB(), ls)

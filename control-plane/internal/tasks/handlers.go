@@ -12,13 +12,13 @@ import (
 
 // Handlers provides Gin HTTP handlers for the task system.
 type Handlers struct {
-	store    *Store
+	store     TaskStore
 	scheduler *Scheduler
-	durable  *DurableStore // nil if durable tasks not configured
+	durable   *DurableStore // nil if durable tasks not configured
 }
 
 // NewHandlers creates a new Handlers instance.
-func NewHandlers(store *Store, scheduler *Scheduler) *Handlers {
+func NewHandlers(store TaskStore, scheduler *Scheduler) *Handlers {
 	return &Handlers{store: store, scheduler: scheduler}
 }
 

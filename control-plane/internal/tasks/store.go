@@ -434,6 +434,45 @@ func (s *Store) UpdateWorkflow(wf *Workflow) error {
 	return nil
 }
 
+// ListSpaceIDs returns all space IDs that have tasks.
+func (s *Store) ListSpaceIDs() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ids := make([]string, 0, len(s.bySpace))
+	for sid := range s.bySpace {
+		ids = append(ids, sid)
+	}
+	return ids
+}
+
+// ListActiveTasks returns all tasks in non-terminal states (pending, claimed, running).
+func (s *Store) ListActiveTasks() []*Task {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []*Task
+	for _, t := range s.tasks {
+		if t.State == TaskPending || t.State == TaskClaimed || t.State == TaskRunning || t.State == TaskRetrying {
+			cp := *t
+			result = append(result, &cp)
+		}
+	}
+	return result
+}
+
+// ListActiveWorkflows returns all workflows in non-terminal states.
+func (s *Store) ListActiveWorkflows() []*Workflow {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []*Workflow
+	for _, wf := range s.workflows {
+		if wf.State != TaskCompleted && wf.State != TaskFailed && wf.State != TaskCancelled {
+			cp := *wf
+			result = append(result, &cp)
+		}
+	}
+	return result
+}
+
 // matchesFilters checks whether a task passes all specified filters.
 func matchesFilters(t *Task, f TaskFilters) bool {
 	if f.State != nil && t.State != *f.State {

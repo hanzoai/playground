@@ -14,7 +14,7 @@ import (
 //   - Cancels tasks that exceeded their timeout.
 //   - Advances workflows by unblocking tasks whose dependencies are met.
 type Scheduler struct {
-	store    *Store
+	store    TaskStore
 	tracker  *gossip.Tracker
 	eventBus *events.AgentEventBus
 	interval time.Duration
@@ -23,7 +23,7 @@ type Scheduler struct {
 }
 
 // NewScheduler creates a scheduler that ticks every 2 seconds by default.
-func NewScheduler(store *Store, tracker *gossip.Tracker, eventBus *events.AgentEventBus) *Scheduler {
+func NewScheduler(store TaskStore, tracker *gossip.Tracker, eventBus *events.AgentEventBus) *Scheduler {
 	return &Scheduler{
 		store:    store,
 		tracker:  tracker,
@@ -39,7 +39,7 @@ func (s *Scheduler) Start() {
 	go s.run()
 }
 
-// Stop gracefully stops the scheduler and waits for the loop to exit.
+// Stop halts the scheduler and waits for it to finish.
 func (s *Scheduler) Stop() {
 	close(s.stopCh)
 	<-s.doneCh
@@ -65,13 +65,7 @@ func (s *Scheduler) run() {
 
 // schedule finds idle agents and assigns pending tasks by work-stealing.
 func (s *Scheduler) schedule() {
-	// Get all spaces that have pending tasks.
-	s.store.mu.RLock()
-	spaceIDs := make([]string, 0, len(s.store.bySpace))
-	for sid := range s.store.bySpace {
-		spaceIDs = append(spaceIDs, sid)
-	}
-	s.store.mu.RUnlock()
+	spaceIDs := s.store.ListSpaceIDs()
 
 	for _, spaceID := range spaceIDs {
 		agents := s.tracker.FindInSpace(spaceID)
@@ -80,12 +74,10 @@ func (s *Scheduler) schedule() {
 				continue
 			}
 
-			// Check if this agent already has a claimed or running task.
 			if s.agentHasActiveTask(agent.AgentID) {
 				continue
 			}
 
-			// Work-steal: get highest priority pending task with met dependencies.
 			task, err := s.store.GetNextPendingTask(spaceID, agent.AgentID)
 			if err != nil {
 				logger.Logger.Error().Err(err).
@@ -94,7 +86,7 @@ func (s *Scheduler) schedule() {
 				continue
 			}
 			if task == nil {
-				break // no more pending tasks in this space
+				break
 			}
 
 			logger.Logger.Info().
@@ -110,10 +102,8 @@ func (s *Scheduler) schedule() {
 
 // agentHasActiveTask checks if the agent has a task in claimed or running state.
 func (s *Scheduler) agentHasActiveTask(agentID string) bool {
-	s.store.mu.RLock()
-	defer s.store.mu.RUnlock()
-
-	for _, t := range s.store.tasks {
+	active := s.store.ListActiveTasks()
+	for _, t := range active {
 		if t.AssignedTo == agentID && (t.State == TaskClaimed || t.State == TaskRunning) {
 			return true
 		}
@@ -124,18 +114,10 @@ func (s *Scheduler) agentHasActiveTask(agentID string) bool {
 // checkTimeouts cancels tasks that have exceeded their configured timeout.
 func (s *Scheduler) checkTimeouts() {
 	now := time.Now()
+	active := s.store.ListActiveTasks()
 
-	s.store.mu.Lock()
-	defer s.store.mu.Unlock()
-
-	for _, t := range s.store.tasks {
-		if t.State != TaskRunning {
-			continue
-		}
-		if t.Timeout <= 0 {
-			continue
-		}
-		if t.StartedAt == nil {
+	for _, t := range active {
+		if t.State != TaskRunning || t.Timeout <= 0 || t.StartedAt == nil {
 			continue
 		}
 		if now.Sub(*t.StartedAt) <= t.Timeout {
@@ -148,44 +130,27 @@ func (s *Scheduler) checkTimeouts() {
 			Dur("timeout", t.Timeout).
 			Msg("[TaskScheduler] task timed out")
 
-		t.Error = "task timed out"
-		t.UpdatedAt = now
-
-		if t.RetryCount < t.MaxRetries {
-			t.State = TaskRetrying
-			t.RetryCount++
-			t.State = TaskPending
-			t.AssignedTo = ""
-			t.StartedAt = nil
-			t.Progress = 0
-			s.emitEvent("retrying", t.ID, t.SpaceID, "", nil)
+		if err := s.store.FailTask(t.ID, "task timed out"); err != nil {
+			logger.Logger.Error().Err(err).Str("task_id", t.ID).Msg("[TaskScheduler] failed to timeout task")
 		} else {
-			t.State = TaskFailed
-			t.CompletedAt = &now
 			s.emitEvent("failed", t.ID, t.SpaceID, "", map[string]any{"error": "task timed out"})
 		}
 	}
 }
 
-// advanceWorkflows checks workflows for tasks that are now unblocked.
+// advanceWorkflows checks workflows for completion or failure.
 func (s *Scheduler) advanceWorkflows() {
-	s.store.mu.Lock()
-	defer s.store.mu.Unlock()
+	workflows := s.store.ListActiveWorkflows()
 
-	for _, wf := range s.store.workflows {
-		if wf.State == TaskCompleted || wf.State == TaskFailed || wf.State == TaskCancelled {
-			continue
-		}
-
+	for _, wf := range workflows {
 		allCompleted := true
 		anyFailed := false
 
 		for _, taskID := range wf.Tasks {
-			t, ok := s.store.tasks[taskID]
-			if !ok {
+			t, err := s.store.GetTask(taskID)
+			if err != nil {
 				continue
 			}
-
 			switch t.State {
 			case TaskCompleted:
 				// good
@@ -201,27 +166,24 @@ func (s *Scheduler) advanceWorkflows() {
 		if allCompleted && len(wf.Tasks) > 0 {
 			wf.State = TaskCompleted
 			wf.CompletedAt = &now
-			wf.UpdatedAt = now
-			logger.Logger.Info().
-				Str("workflow_id", wf.ID).
-				Msg("[TaskScheduler] workflow completed")
+			if err := s.store.UpdateWorkflow(wf); err == nil {
+				logger.Logger.Info().Str("workflow_id", wf.ID).Msg("[TaskScheduler] workflow completed")
+			}
 		} else if anyFailed {
 			wf.State = TaskFailed
 			wf.CompletedAt = &now
-			wf.UpdatedAt = now
-			logger.Logger.Warn().
-				Str("workflow_id", wf.ID).
-				Msg("[TaskScheduler] workflow failed")
+			if err := s.store.UpdateWorkflow(wf); err == nil {
+				logger.Logger.Warn().Str("workflow_id", wf.ID).Msg("[TaskScheduler] workflow failed")
+			}
 		} else if wf.State == TaskPending {
-			// Start the workflow if it has tasks.
 			wf.State = TaskRunning
-			wf.UpdatedAt = now
+			_ = s.store.UpdateWorkflow(wf)
 		}
 	}
 }
 
 // emitEvent publishes a task event to the agent event bus.
-func (s *Scheduler) emitEvent(eventType, taskID, spaceID, agentID string, data map[string]any) {
+func (s *Scheduler) emitEvent(eventType, taskID, spaceID, agentID string, data map[string]interface{}) {
 	if s.eventBus == nil {
 		return
 	}
