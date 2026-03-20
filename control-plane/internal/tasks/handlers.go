@@ -233,6 +233,11 @@ func (h *Handlers) CompleteTask(c *gin.Context) {
 		req = completeTaskRequest{}
 	}
 
+	// Auto-promote claimed → running so agents can claim+complete in one step.
+	if t, err := h.store.GetTask(taskID); err == nil && t.State == TaskClaimed {
+		_ = h.store.StartTask(taskID)
+	}
+
 	if err := h.store.CompleteTask(taskID, req.Output); err != nil {
 		status := http.StatusInternalServerError
 		if err == ErrTaskNotFound {
@@ -257,6 +262,11 @@ func (h *Handlers) FailTask(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Auto-promote claimed → running so fail works after claim.
+	if t, err := h.store.GetTask(taskID); err == nil && t.State == TaskClaimed {
+		_ = h.store.StartTask(taskID)
 	}
 
 	if err := h.store.FailTask(taskID, req.Error); err != nil {
