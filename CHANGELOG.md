@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.263] - 2026-03-20
+
+
+### Fixed
+
+- Fix(tasks): guard jsonb_array_elements_text against non-array depends_on (16ba58f)
+
 ## [0.1.41-rc.262] - 2026-03-20
 
 
