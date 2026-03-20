@@ -7,16 +7,14 @@ import (
 	"time"
 )
 
+// Playground-specific sentinel errors (not in base).
 var (
-	ErrTaskNotFound       = errors.New("task not found")
-	ErrWorkflowNotFound   = errors.New("workflow not found")
-	ErrTaskAlreadyExists  = errors.New("task already exists")
-	ErrInvalidTransition  = errors.New("invalid state transition")
-	ErrTaskAlreadyClaimed = errors.New("task already claimed by another agent")
-	ErrEmptyTaskID        = errors.New("task id is required")
-	ErrEmptySpaceID       = errors.New("space_id is required")
-	ErrEmptyTitle         = errors.New("title is required")
-	ErrDependencyNotMet   = errors.New("task dependencies not met")
+	ErrTaskAlreadyExists = errors.New("task already exists")
+	ErrEmptyTaskID       = errors.New("task id is required")
+	ErrEmptySpaceID      = errors.New("space_id is required")
+	ErrEmptyTitle        = errors.New("title is required")
+	ErrDependencyNotMet  = errors.New("task dependencies not met")
+	ErrWorkflowNotFound  = errors.New("workflow not found")
 )
 
 // Store is an in-memory task store with proper indexing.
@@ -37,7 +35,7 @@ func NewStore() *Store {
 	}
 }
 
-// CreateTask adds a new task to the store. The task must have ID and SpaceID set.
+// CreateTask adds a new task to the store.
 func (s *Store) CreateTask(task *Task) error {
 	if task.ID == "" {
 		return ErrEmptyTaskID
@@ -63,14 +61,13 @@ func (s *Store) CreateTask(task *Task) error {
 		task.State = TaskPending
 	}
 
-	// Copy to avoid aliasing.
 	stored := *task
 	s.tasks[stored.ID] = &stored
 	s.bySpace[stored.SpaceID] = append(s.bySpace[stored.SpaceID], stored.ID)
 	return nil
 }
 
-// GetTask returns a task by ID, or ErrTaskNotFound.
+// GetTask returns a task by ID.
 func (s *Store) GetTask(id string) (*Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -83,7 +80,7 @@ func (s *Store) GetTask(id string) (*Task, error) {
 	return &cp, nil
 }
 
-// UpdateTask replaces a task in the store. The task must already exist.
+// UpdateTask replaces a task in the store.
 func (s *Store) UpdateTask(task *Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -108,7 +105,6 @@ func (s *Store) DeleteTask(id string) error {
 		return ErrTaskNotFound
 	}
 
-	// Remove from space index.
 	spaceIDs := s.bySpace[t.SpaceID]
 	for i, tid := range spaceIDs {
 		if tid == id {
@@ -124,7 +120,7 @@ func (s *Store) DeleteTask(id string) error {
 	return nil
 }
 
-// ListTasks returns tasks for a space, filtered and sorted by priority descending.
+// ListTasks returns tasks for a space, sorted by priority descending.
 func (s *Store) ListTasks(spaceID string, filters TaskFilters) []*Task {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -144,7 +140,6 @@ func (s *Store) ListTasks(spaceID string, filters TaskFilters) []*Task {
 		result = append(result, &cp)
 	}
 
-	// Sort by priority descending, then by created_at ascending.
 	sort.Slice(result, func(i, j int) bool {
 		if result[i].Priority != result[j].Priority {
 			return result[i].Priority > result[j].Priority
@@ -152,7 +147,6 @@ func (s *Store) ListTasks(spaceID string, filters TaskFilters) []*Task {
 		return result[i].CreatedAt.Before(result[j].CreatedAt)
 	})
 
-	// Apply offset and limit.
 	if filters.Offset > 0 {
 		if filters.Offset >= len(result) {
 			return nil
@@ -166,7 +160,7 @@ func (s *Store) ListTasks(spaceID string, filters TaskFilters) []*Task {
 	return result
 }
 
-// ClaimTask atomically transitions a task from pending to claimed for the given agent.
+// ClaimTask atomically transitions a task from pending to claimed.
 func (s *Store) ClaimTask(taskID, agentID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -176,9 +170,9 @@ func (s *Store) ClaimTask(taskID, agentID string) error {
 		return ErrTaskNotFound
 	}
 	if t.State != TaskPending {
-		return ErrTaskAlreadyClaimed
+		return ErrAlreadyClaimed
 	}
-	if !canTransition(t.State, TaskClaimed) {
+	if !CanTransition(t.State, TaskClaimed) {
 		return ErrInvalidTransition
 	}
 
@@ -197,7 +191,7 @@ func (s *Store) StartTask(taskID string) error {
 	if !ok {
 		return ErrTaskNotFound
 	}
-	if !canTransition(t.State, TaskRunning) {
+	if !CanTransition(t.State, TaskRunning) {
 		return ErrInvalidTransition
 	}
 
@@ -208,7 +202,7 @@ func (s *Store) StartTask(taskID string) error {
 	return nil
 }
 
-// CompleteTask transitions a running task to completed with output.
+// CompleteTask transitions a running task to completed.
 func (s *Store) CompleteTask(taskID string, output map[string]any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -217,7 +211,7 @@ func (s *Store) CompleteTask(taskID string, output map[string]any) error {
 	if !ok {
 		return ErrTaskNotFound
 	}
-	if !canTransition(t.State, TaskCompleted) {
+	if !CanTransition(t.State, TaskCompleted) {
 		return ErrInvalidTransition
 	}
 
@@ -230,8 +224,7 @@ func (s *Store) CompleteTask(taskID string, output map[string]any) error {
 	return nil
 }
 
-// FailTask transitions a running task to failed. If retries remain, sets state to retrying
-// and re-queues as pending.
+// FailTask transitions a running task to failed, with optional retry.
 func (s *Store) FailTask(taskID string, errMsg string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -240,7 +233,7 @@ func (s *Store) FailTask(taskID string, errMsg string) error {
 	if !ok {
 		return ErrTaskNotFound
 	}
-	if !canTransition(t.State, TaskFailed) {
+	if !CanTransition(t.State, TaskFailed) {
 		return ErrInvalidTransition
 	}
 
@@ -251,7 +244,6 @@ func (s *Store) FailTask(taskID string, errMsg string) error {
 	if t.RetryCount < t.MaxRetries {
 		t.State = TaskRetrying
 		t.RetryCount++
-		// Re-queue: retrying -> pending is allowed, do it inline.
 		t.State = TaskPending
 		t.AssignedTo = ""
 		t.StartedAt = nil
@@ -272,7 +264,7 @@ func (s *Store) CancelTask(taskID string) error {
 	if !ok {
 		return ErrTaskNotFound
 	}
-	if !canTransition(t.State, TaskCancelled) {
+	if !CanTransition(t.State, TaskCancelled) {
 		return ErrInvalidTransition
 	}
 
@@ -283,7 +275,7 @@ func (s *Store) CancelTask(taskID string) error {
 	return nil
 }
 
-// UpdateProgress sets the progress percentage (0-100) on a running task.
+// UpdateProgress sets progress percentage (0-100).
 func (s *Store) UpdateProgress(taskID string, progress int) error {
 	if progress < 0 {
 		progress = 0
@@ -308,8 +300,7 @@ func (s *Store) UpdateProgress(taskID string, progress int) error {
 	return nil
 }
 
-// GetNextPendingTask returns the highest-priority pending task in the space
-// whose dependencies are all completed. This is the work-stealing primitive.
+// GetNextPendingTask returns the highest-priority pending task with met dependencies.
 func (s *Store) GetNextPendingTask(spaceID string, agentID string) (*Task, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -319,7 +310,6 @@ func (s *Store) GetNextPendingTask(spaceID string, agentID string) (*Task, error
 		return nil, nil
 	}
 
-	// Collect eligible tasks.
 	type candidate struct {
 		task *Task
 	}
@@ -339,7 +329,6 @@ func (s *Store) GetNextPendingTask(spaceID string, agentID string) (*Task, error
 		return nil, nil
 	}
 
-	// Sort: highest priority first, oldest first within same priority.
 	sort.Slice(candidates, func(i, j int) bool {
 		if candidates[i].task.Priority != candidates[j].task.Priority {
 			return candidates[i].task.Priority > candidates[j].task.Priority
@@ -347,7 +336,6 @@ func (s *Store) GetNextPendingTask(spaceID string, agentID string) (*Task, error
 		return candidates[i].task.CreatedAt.Before(candidates[j].task.CreatedAt)
 	})
 
-	// Claim the best one atomically.
 	best := candidates[0].task
 	best.State = TaskClaimed
 	best.AssignedTo = agentID
@@ -358,7 +346,6 @@ func (s *Store) GetNextPendingTask(spaceID string, agentID string) (*Task, error
 }
 
 // dependenciesMet returns true if all tasks in DependsOn are completed.
-// Must be called with s.mu held.
 func (s *Store) dependenciesMet(t *Task) bool {
 	for _, depID := range t.DependsOn {
 		dep, ok := s.tasks[depID]

@@ -12,9 +12,9 @@ import (
 
 // Handlers provides Gin HTTP handlers for the task system.
 type Handlers struct {
-	store     *Store
+	store    *Store
 	scheduler *Scheduler
-	temporal  *TemporalStore // nil if Temporal not configured
+	durable  *DurableStore // nil if durable tasks not configured
 }
 
 // NewHandlers creates a new Handlers instance.
@@ -22,11 +22,11 @@ func NewHandlers(store *Store, scheduler *Scheduler) *Handlers {
 	return &Handlers{store: store, scheduler: scheduler}
 }
 
-// SetTemporal attaches a Temporal store for durable task execution.
-// When set, CreateTask and CancelTask will attempt Temporal first,
+// SetDurable attaches a durable store (tasks.hanzo.ai) for cloud task execution.
+// When set, CreateTask and CancelTask will attempt durable execution first,
 // falling back to the in-memory store on failure.
-func (h *Handlers) SetTemporal(ts *TemporalStore) {
-	h.temporal = ts
+func (h *Handlers) SetDurable(ds *DurableStore) {
+	h.durable = ds
 }
 
 // --- Request / Response types ---
@@ -120,11 +120,10 @@ func (h *Handlers) CreateTask(c *gin.Context) {
 		return
 	}
 
-	// If Temporal is connected, submit the task as a durable workflow.
-	if h.temporal != nil && h.temporal.IsConnected() {
-		if err := h.temporal.SubmitTask(c.Request.Context(), task); err != nil {
-			// Log warning and continue with in-memory only.
-			log.Printf("Temporal submit failed, using in-memory: %v", err)
+	// If durable task service is connected, submit as a durable workflow.
+	if h.durable != nil && h.durable.IsConnected() {
+		if err := h.durable.SubmitTask(c.Request.Context(), task); err != nil {
+			log.Printf("Durable task submit failed, using in-memory: %v", err)
 		}
 	}
 
@@ -212,7 +211,7 @@ func (h *Handlers) ClaimTask(c *gin.Context) {
 		status := http.StatusInternalServerError
 		if err == ErrTaskNotFound {
 			status = http.StatusNotFound
-		} else if err == ErrTaskAlreadyClaimed || err == ErrInvalidTransition {
+		} else if err == ErrAlreadyClaimed || err == ErrInvalidTransition {
 			status = http.StatusConflict
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -317,10 +316,10 @@ func (h *Handlers) CancelTask(c *gin.Context) {
 		return
 	}
 
-	// Also cancel the Temporal workflow if connected.
-	if h.temporal != nil && h.temporal.IsConnected() {
-		if err := h.temporal.CancelTask(c.Request.Context(), taskID); err != nil {
-			log.Printf("Temporal cancel failed for task %s: %v", taskID, err)
+	// Also cancel the durable workflow if connected.
+	if h.durable != nil && h.durable.IsConnected() {
+		if err := h.durable.CancelTask(c.Request.Context(), taskID); err != nil {
+			log.Printf("Durable task cancel failed for task %s: %v", taskID, err)
 		}
 	}
 

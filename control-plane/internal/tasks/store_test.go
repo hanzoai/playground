@@ -295,14 +295,18 @@ func TestInvalidTransitions(t *testing.T) {
 	task := newTestTask("s1")
 	require.NoError(t, s.CreateTask(task))
 
-	// Cannot start a pending task (must claim first).
-	assert.Equal(t, ErrInvalidTransition, s.StartTask(task.ID))
+	// Pending → Running is allowed (skip claim).
+	assert.NoError(t, s.StartTask(task.ID))
 
-	// Cannot complete a pending task.
-	assert.Equal(t, ErrInvalidTransition, s.CompleteTask(task.ID, nil))
+	// Cannot complete a pending task (now running, so complete is valid).
+	assert.NoError(t, s.CompleteTask(task.ID, nil))
+
+	// Create another task for fail test.
+	task2 := newTestTask("s1")
+	require.NoError(t, s.CreateTask(task2))
 
 	// Cannot fail a pending task.
-	assert.Equal(t, ErrInvalidTransition, s.FailTask(task.ID, "x"))
+	assert.Equal(t, ErrInvalidTransition, s.FailTask(task2.ID, "x"))
 }
 
 func TestClaimTask_OnlyOnePending(t *testing.T) {
@@ -316,7 +320,7 @@ func TestClaimTask_OnlyOnePending(t *testing.T) {
 
 	// Second claim fails.
 	err := s.ClaimTask(task.ID, "agent-2")
-	assert.Equal(t, ErrTaskAlreadyClaimed, err)
+	assert.Equal(t, ErrAlreadyClaimed, err)
 }
 
 func TestConcurrentClaim(t *testing.T) {

@@ -88,8 +88,8 @@ type PlaygroundServer struct {
 	rateLimiter              *middleware.RateLimiter
 	taskStore                *tasks.Store
 	taskScheduler            *tasks.Scheduler
-	temporalStore            *tasks.TemporalStore
-	temporalWorker           *tasks.TaskWorker
+	durableStore             *tasks.DurableStore
+	durableWorker            *tasks.TaskWorker
 	// serverAPIKey is the Hanzo API key for hanzo-dev runtime auto-login.
 	// When set, bots using the hanzo-dev runtime get this key automatically.
 	serverAPIKey string
@@ -373,26 +373,26 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	taskStore := tasks.NewStore()
 	taskScheduler := tasks.NewScheduler(taskStore, gossipTracker, agentEventBus)
 
-	// Temporal durable tasks (optional -- falls back to in-memory)
-	var temporalStore *tasks.TemporalStore
-	var temporalWorker *tasks.TaskWorker
-	temporalCfg := tasks.DefaultTemporalConfig()
-	if temporalCfg.Enabled {
-		ts, err := tasks.NewTemporalStore(temporalCfg.Address, temporalCfg.Namespace)
+	// Durable task execution via tasks.hanzo.ai (optional -- falls back to in-memory)
+	var durableStore *tasks.DurableStore
+	var durableWorker *tasks.TaskWorker
+	durableCfg := tasks.DefaultDurableConfig()
+	if durableCfg.Enabled {
+		ds, err := tasks.NewDurableStore(durableCfg.Address, durableCfg.Namespace)
 		if err != nil {
-			logger.Logger.Warn().Err(err).Msg("Temporal not available, using in-memory tasks")
+			logger.Logger.Warn().Err(err).Msg("Durable task service not available, using in-memory tasks")
 		} else {
-			temporalStore = ts
+			durableStore = ds
 			// Start a default worker for the "default" queue.
-			w := tasks.NewTaskWorker(ts.Client, "default")
+			w := tasks.NewTaskWorker(ds.Client, "default")
 			if err := w.Start(); err != nil {
-				logger.Logger.Warn().Err(err).Msg("Failed to start Temporal worker")
+				logger.Logger.Warn().Err(err).Msg("Failed to start task worker")
 			} else {
-				temporalWorker = w
+				durableWorker = w
 				logger.Logger.Info().
-					Str("address", temporalCfg.Address).
-					Str("namespace", temporalCfg.Namespace).
-					Msg("Temporal durable task store connected")
+					Str("address", durableCfg.Address).
+					Str("namespace", durableCfg.Namespace).
+					Msg("Durable task service connected")
 			}
 		}
 	}
@@ -459,8 +459,8 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		policyEngine:             policyEngine,
 		taskStore:                taskStore,
 		taskScheduler:            taskScheduler,
-		temporalStore:            temporalStore,
-		temporalWorker:           temporalWorker,
+		durableStore:             durableStore,
+		durableWorker:            durableWorker,
 		serverAPIKey:             serverAPIKey,
 	}, nil
 }
@@ -599,12 +599,12 @@ func (s *PlaygroundServer) Stop() error {
 		s.taskScheduler.Stop()
 	}
 
-	// Stop Temporal worker and close client
-	if s.temporalWorker != nil {
-		s.temporalWorker.Stop()
+	// Stop durable task worker and close connection
+	if s.durableWorker != nil {
+		s.durableWorker.Stop()
 	}
-	if s.temporalStore != nil {
-		s.temporalStore.Close()
+	if s.durableStore != nil {
+		s.durableStore.Close()
 	}
 
 	// Stop space presence expiry goroutine.
@@ -1471,8 +1471,8 @@ func (s *PlaygroundServer) registerSpaceRoutes(spacesAPI *gin.RouterGroup) {
 
 	// Task management endpoints
 	taskHandlers := tasks.NewHandlers(s.taskStore, s.taskScheduler)
-	if s.temporalStore != nil {
-		taskHandlers.SetTemporal(s.temporalStore)
+	if s.durableStore != nil {
+		taskHandlers.SetDurable(s.durableStore)
 	}
 	spacesAPI.POST("/:id/tasks", taskHandlers.CreateTask)
 	spacesAPI.GET("/:id/tasks", taskHandlers.ListTasks)
