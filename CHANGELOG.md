@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.265] - 2026-03-20
+
+
+### Added
+
+- Feat(tasks): multi-tenant org isolation via IAM
+
+Extract org from IAM JWT context on every task API call.
+IAM org ID maps directly to Temporal namespace (hanzo, lux, zoo, pars).
+Each org's tasks are fully isolated — no cross-org visibility.
+
+- base@v0.29.6: DurableStore.ClientForOrg() caches per-namespace connections
+- Task/Workflow types gain OrgID field
+- All handlers call orgFromContext(c) → middleware.GetOrganization()
+- Namespaces created on tasks.hanzo.svc: hanzo, lux, zoo, pars
+- Backward compat: falls back to "hanzo" if no IAM context (2c314d1)
+
 ## [0.1.41-rc.264] - 2026-03-20
 
 
