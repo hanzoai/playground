@@ -14,10 +14,6 @@ on:
 permissions:
   contents: read
   packages: write
-  id-token: write
-
-env:
-  HANZO_CLUSTER_ID: 1a153000-90a6-48ad-9375-7ef901a9bf7f
 
 jobs:
   test:
@@ -69,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
+      image: ${{ steps.meta.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,18 +75,16 @@ jobs:
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
-            echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
-            echo "tags<<EOF" >> "$GITHUB_OUTPUT"
-            echo "ghcr.io/${{ github.repository_owner }}/playground:${TAG}" >> "$GITHUB_OUTPUT"
-            echo "ghcr.io/${{ github.repository_owner }}/playground:latest" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
           else
-            echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-            echo "tags<<EOF" >> "$GITHUB_OUTPUT"
-            echo "ghcr.io/${{ github.repository_owner }}/playground:latest" >> "$GITHUB_OUTPUT"
-            echo "ghcr.io/${{ github.repository_owner }}/playground:${{ github.sha }}" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
+            TAG="${GITHUB_SHA}"
           fi
+          IMAGE="ghcr.io/${{ github.repository_owner }}/playground"
+          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}:${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tags<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${IMAGE}:${TAG}" >> "$GITHUB_OUTPUT"
+          echo "${IMAGE}:latest" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -112,67 +107,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
+  # Dispatch to universe for staging → E2E → production promotion.
+  # No direct kubectl here — universe owns all cluster deployments.
+  dispatch-to-universe:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: production
     steps:
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+      - name: Dispatch image update to universe
+        uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ secrets.UNIVERSE_DISPATCH_TOKEN }}
+          repository: hanzoai/universe
+          event-type: image-update
+          client-payload: |
+            {
+              "service": "hanzo-playground",
+              "image": "${{ needs.build-and-push.outputs.image }}",
+              "sha": "${{ github.sha }}",
+              "repo": "${{ github.repository }}"
+            }
 
-      - name: Configure kubectl
-        run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
-
-      - name: Pre-deploy snapshot
-        id: snapshot
+      - name: Summary
         run: |
-          SVC="hanzo-playground"
-          NS="hanzo"
-          CURRENT_IMAGE=$(kubectl get deployment "$SVC" -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "none")
-          echo "current_image=$CURRENT_IMAGE" >> "$GITHUB_OUTPUT"
-          echo "### Pre-deploy: $SVC" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Current image: \`$CURRENT_IMAGE\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Target image: \`ghcr.io/hanzoai/playground:${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Rolling update
-        run: |
-          SVC="hanzo-playground"
-          NS="hanzo"
-          IMAGE="ghcr.io/hanzoai/playground:${{ github.sha }}"
-          CONTAINER=$(kubectl get deployment "$SVC" -n "$NS" -o jsonpath='{.spec.template.spec.containers[0].name}')
-          echo "Updating $SVC container=$CONTAINER to $IMAGE"
-          kubectl set image "deployment/$SVC" "$CONTAINER=$IMAGE" -n "$NS"
-
-      - name: Monitor rollout
-        id: rollout
-        run: |
-          SVC="hanzo-playground"
-          NS="hanzo"
-          if kubectl rollout status "deployment/$SVC" -n "$NS" --timeout=600s; then
-            echo "status=success" >> "$GITHUB_OUTPUT"
-          else
-            echo "status=failed" >> "$GITHUB_OUTPUT"
-            exit 1
-          fi
-
-      - name: Verify pods ready
-        if: steps.rollout.outputs.status == 'success'
-        run: |
-          SVC="hanzo-playground"
-          NS="hanzo"
-          kubectl wait --for=condition=available "deployment/$SVC" -n "$NS" --timeout=120s
-          echo "### Post-deploy: $SVC" >> "$GITHUB_STEP_SUMMARY"
-          kubectl get pods -l "app=$SVC" -n "$NS" --no-headers | while read line; do
-            echo "- \`$line\`" >> "$GITHUB_STEP_SUMMARY"
-          done
-
-      - name: Auto-rollback on failure
-        if: failure()
-        run: |
-          SVC="hanzo-playground"
-          NS="hanzo"
-          echo "::warning::Rolling back $SVC to previous version"
-          kubectl rollout undo "deployment/$SVC" -n "$NS"
-          kubectl rollout status "deployment/$SVC" -n "$NS" --timeout=300s
+          echo "### Deploy dispatched to universe" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image:** ${{ needs.build-and-push.outputs.image }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Flow:** image-receiver → dev branch → staging deploy → E2E → PR to main → production" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Track progress: https://github.com/hanzoai/universe/actions" >> "$GITHUB_STEP_SUMMARY"
