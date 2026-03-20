@@ -373,28 +373,47 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	taskStore := tasks.NewStore()
 	taskScheduler := tasks.NewScheduler(taskStore, gossipTracker, agentEventBus)
 
-	// Durable task execution via tasks.hanzo.ai (optional -- falls back to in-memory)
+	// Durable task execution — auto-discover tasks service.
+	// Tries TASKS_ADDRESS env, then K8s internal (tasks.hanzo.svc:7233),
+	// then localhost:7233. Connects silently if reachable, falls back to
+	// in-memory if not. Explicit TASKS_ENABLED=false disables discovery.
 	var durableStore *tasks.DurableStore
 	var durableWorker *tasks.TaskWorker
 	durableCfg := tasks.DefaultDurableConfig()
-	if durableCfg.Enabled {
+	if !durableCfg.Enabled {
+		// Auto-discover: try common addresses unless explicitly disabled.
+		if os.Getenv("TASKS_ENABLED") != "false" && os.Getenv("HANZO_TASKS_ENABLED") != "false" {
+			for _, addr := range []string{durableCfg.Address, "tasks.hanzo.svc:7233", "localhost:7233"} {
+				ds, err := tasks.NewDurableStore(addr, durableCfg.Namespace)
+				if err == nil {
+					durableStore = ds
+					durableCfg.Address = addr
+					durableCfg.Enabled = true
+					break
+				}
+			}
+		}
+	} else {
 		ds, err := tasks.NewDurableStore(durableCfg.Address, durableCfg.Namespace)
 		if err != nil {
 			logger.Logger.Warn().Err(err).Msg("Durable task service not available, using in-memory tasks")
 		} else {
 			durableStore = ds
-			// Start a default worker for the "default" queue.
-			w := tasks.NewTaskWorker(ds.Client, "default")
-			if err := w.Start(); err != nil {
-				logger.Logger.Warn().Err(err).Msg("Failed to start task worker")
-			} else {
-				durableWorker = w
-				logger.Logger.Info().
-					Str("address", durableCfg.Address).
-					Str("namespace", durableCfg.Namespace).
-					Msg("Durable task service connected")
-			}
 		}
+	}
+	if durableStore != nil {
+		w := tasks.NewTaskWorker(durableStore.Client, "default")
+		if err := w.Start(); err != nil {
+			logger.Logger.Warn().Err(err).Msg("Failed to start task worker")
+		} else {
+			durableWorker = w
+			logger.Logger.Info().
+				Str("address", durableCfg.Address).
+				Str("namespace", durableCfg.Namespace).
+				Msg("Durable task service connected")
+		}
+	} else {
+		logger.Logger.Info().Msg("Task scheduler running (in-memory, no durable backend)")
 	}
 
 	// KMS MPC client (if configured via env)
