@@ -446,7 +446,7 @@ func (h *Handlers) requireDurable(c *gin.Context) bool {
 var validOrgPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
 // orgFromContext extracts the IAM org from the request context.
-// Returns empty string if no valid org — callers must check via requireOrg.
+// Returns empty string if no valid org — callers must check the return value.
 func orgFromContext(c *gin.Context) string {
 	if org := middleware.GetOrganization(c); org != "" {
 		if validOrgPattern.MatchString(org) {
@@ -456,15 +456,6 @@ func orgFromContext(c *gin.Context) string {
 	return ""
 }
 
-// requireOrg returns the org from context or sends 403 if missing.
-func requireOrg(c *gin.Context) (string, bool) {
-	org := orgFromContext(c)
-	if org == "" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Organization context required. Authenticate via IAM."})
-		return "", false
-	}
-	return org, true
-}
 
 func extractCreatedBy(c *gin.Context) string {
 	// Prefer verified IAM identity over unverified headers.
