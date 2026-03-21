@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.274] - 2026-03-21
+
+
+### Fixed
+
+- Fix: resolve TypeScript errors from recharts and React 19.2 upgrades
+
+EarningsChart: handle optional value in recharts Tooltip formatter
+auto-expanding-textarea: use React.InputEvent for onInput handler (611a959)
+
 ## [0.1.41-rc.273] - 2026-03-21
 
 
