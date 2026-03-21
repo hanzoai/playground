@@ -182,7 +182,7 @@ export function BotDetailPage() {
     setIsExecuting(true);
 
     // Add execution to queue
-    const executionId = executionQueueRef.current.addExecution(
+    executionQueueRef.current.addExecution(
       formData.input || {}
     );
     // Reset executing state after a brief delay

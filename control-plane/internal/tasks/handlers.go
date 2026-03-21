@@ -424,10 +424,17 @@ func (h *Handlers) GetWorkflow(c *gin.Context) {
 
 // --- Helpers ---
 
+// requireDurableAndOrg gates all handlers — checks durable connection and org context.
 func (h *Handlers) requireDurable(c *gin.Context) bool {
 	if h.durable == nil || !h.durable.IsConnected() {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"error": "Task service not available. Ensure tasks.hanzo.ai is reachable.",
+		})
+		return false
+	}
+	if org := orgFromContext(c); org == "" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Organization context required. Authenticate via IAM.",
 		})
 		return false
 	}
@@ -439,15 +446,24 @@ func (h *Handlers) requireDurable(c *gin.Context) bool {
 var validOrgPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
 // orgFromContext extracts the IAM org from the request context.
-// Falls back to "hanzo" if no IAM context is present or the org is invalid.
+// Returns empty string if no valid org — callers must check via requireOrg.
 func orgFromContext(c *gin.Context) string {
 	if org := middleware.GetOrganization(c); org != "" {
 		if validOrgPattern.MatchString(org) {
 			return org
 		}
-		// Invalid org format, fall back to default
 	}
-	return "hanzo"
+	return ""
+}
+
+// requireOrg returns the org from context or sends 403 if missing.
+func requireOrg(c *gin.Context) (string, bool) {
+	org := orgFromContext(c)
+	if org == "" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Organization context required. Authenticate via IAM."})
+		return "", false
+	}
+	return org, true
 }
 
 func extractCreatedBy(c *gin.Context) string {
