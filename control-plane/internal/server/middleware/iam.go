@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +23,7 @@ type IAMConfig struct {
 	Organization   string
 	Application    string
 	SkipPaths      []string
+	FallbackAPIKey string // When IAM disabled, require this API key to be configured
 }
 
 // IAMUserInfo represents the user identity extracted from an IAM token.
@@ -88,11 +88,6 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	return func(c *gin.Context) {
-		if !config.Enabled {
-			c.Next()
-			return
-		}
-
 		// Skip explicit paths
 		if _, ok := skipPathSet[c.Request.URL.Path]; ok {
 			c.Next()
@@ -107,6 +102,19 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 		}
 		// Allow UI static files and SPA routes (everything not under /v1/ or /api/)
 		if !strings.HasPrefix(path, "/v1/") && !strings.HasPrefix(path, "/api/") {
+			c.Next()
+			return
+		}
+
+		if !config.Enabled {
+			// When IAM is disabled, require API key auth as fallback.
+			// If neither IAM nor API key is configured, refuse to serve API routes.
+			if config.FallbackAPIKey == "" {
+				c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
+					"error": "No authentication configured. Set IAM_ENABLED=true or configure an API key.",
+				})
+				return
+			}
 			c.Next()
 			return
 		}
@@ -151,26 +159,9 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			logger.Logger.Warn().Err(err).Str("endpoint", userinfoURL).Msg("IAM: userinfo request failed, attempting local JWT decode")
-			// Fallback: decode JWT claims locally when IAM service is unreachable.
-			// This extracts user identity from the token payload without signature
-			// verification. The token was issued by our IAM (hanzo.id) and transmitted
-			// over HTTPS, so this is an acceptable degraded-auth mode.
-			if user := decodeJWTClaims(token); user != nil {
-				cache.set(token, user)
-				c.Set(ContextKeyUser, user)
-				c.Set(ContextKeyOrg, user.Organization)
-				logger.Logger.Warn().
-					Str("sub", user.Sub).
-					Str("email", user.Email).
-					Str("org", user.Organization).
-					Msg("IAM: using local JWT decode (degraded mode, no signature verification)")
-				c.Next()
-				return
-			}
+			logger.Logger.Error().Err(err).Str("endpoint", userinfoURL).Msg("IAM: userinfo request failed")
 			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
-				"error":   "iam_unavailable",
-				"message": "IAM service is unreachable",
+				"error": "Authentication service unavailable",
 			})
 			return
 		}
@@ -222,58 +213,6 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 			Msg("IAM: token validated")
 
 		c.Next()
-	}
-}
-
-// decodeJWTClaims attempts to extract user info from a JWT token's payload
-// without verifying the signature. Used as a fallback when the IAM service is
-// unreachable. Returns nil if the token is malformed or missing required fields.
-func decodeJWTClaims(token string) *IAMUserInfo {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return nil
-	}
-	// JWT payload is base64url-encoded (no padding)
-	payload := parts[1]
-	// Add padding if needed
-	switch len(payload) % 4 {
-	case 2:
-		payload += "=="
-	case 3:
-		payload += "="
-	}
-	decoded, err := base64.URLEncoding.DecodeString(payload)
-	if err != nil {
-		return nil
-	}
-
-	// Parse claims — JWT standard + IAM custom fields
-	var claims struct {
-		Sub          string `json:"sub"`
-		Name         string `json:"name"`
-		Email        string `json:"email"`
-		Organization string `json:"organization"`
-		Org          string `json:"org"` // alternate claim name
-		IsAdmin      bool   `json:"isAdmin"`
-		Type         string `json:"type"`
-	}
-	if err := json.Unmarshal(decoded, &claims); err != nil {
-		return nil
-	}
-	if claims.Sub == "" {
-		return nil
-	}
-	org := claims.Organization
-	if org == "" {
-		org = claims.Org
-	}
-	return &IAMUserInfo{
-		Sub:          claims.Sub,
-		Name:         claims.Name,
-		Email:        claims.Email,
-		Organization: org,
-		IsAdmin:      claims.IsAdmin,
-		Type:         claims.Type,
 	}
 }
 

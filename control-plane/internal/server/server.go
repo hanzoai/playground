@@ -938,6 +938,7 @@ func (s *PlaygroundServer) setupRoutes() {
 		Organization:   s.config.IAM.Organization,
 		Application:    s.config.IAM.Application,
 		SkipPaths:      s.config.API.Auth.SkipPaths,
+		FallbackAPIKey: s.config.API.Auth.APIKey,
 	}))
 	if s.config.IAM.Enabled {
 		logger.Logger.Info().
