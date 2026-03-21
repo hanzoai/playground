@@ -91,14 +91,16 @@ class ConnectionManager:
     - Thread-safe operations for concurrent access
     """
 
-    def __init__(self, config: Optional[AsyncConfig] = None):
+    def __init__(self, config: Optional[AsyncConfig] = None, api_key: Optional[str] = None):
         """
         Initialize the connection manager.
 
         Args:
             config: AsyncConfig instance for configuration parameters
+            api_key: Optional API key for authenticating with the control plane
         """
         self.config = config or AsyncConfig()
+        self._api_key = api_key
         self._session: Optional[aiohttp.ClientSession] = None
         self._connector: Optional[aiohttp.TCPConnector] = None
         self._lock = asyncio.Lock()
@@ -157,14 +159,18 @@ class ConnectionManager:
                 sock_read=self.config.polling_timeout,
             )
 
+            default_headers = {
+                "User-Agent": "Playground-SDK-AsyncClient/1.0",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+            if self._api_key:
+                default_headers["X-API-Key"] = self._api_key
+
             self._session = aiohttp.ClientSession(
                 connector=self._connector,
                 timeout=timeout,
-                headers={
-                    "User-Agent": "Playground-SDK-AsyncClient/1.0",
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                },
+                headers=default_headers,
             )
 
             # Update metrics

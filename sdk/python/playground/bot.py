@@ -3321,7 +3321,8 @@ class Bot(FastAPI):
         if self._async_execution_manager is None:
             # Create async execution manager with the same base URL as the client
             self._async_execution_manager = AsyncExecutionManager(
-                base_url=self.agents_server, config=self.async_config
+                base_url=self.agents_server, config=self.async_config,
+                api_key=self.api_key,
             )
             # Start the manager
             await self._async_execution_manager.start()

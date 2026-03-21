@@ -178,6 +178,7 @@ class AsyncExecutionManager:
         config: Optional[AsyncConfig] = None,
         connection_manager: Optional[ConnectionManager] = None,
         result_cache: Optional[ResultCache] = None,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize the async execution manager.
@@ -187,6 +188,7 @@ class AsyncExecutionManager:
             config: AsyncConfig instance for configuration parameters
             connection_manager: Optional ConnectionManager instance
             result_cache: Optional ResultCache instance
+            api_key: Optional API key for control plane authentication
         """
         self.base_url = base_url.rstrip("/")
         self.config = config or AsyncConfig()
@@ -195,7 +197,7 @@ class AsyncExecutionManager:
         self.config.validate()
 
         # Initialize components
-        self.connection_manager = connection_manager or ConnectionManager(self.config)
+        self.connection_manager = connection_manager or ConnectionManager(self.config, api_key=api_key)
         self.result_cache = result_cache or ResultCache(self.config)
 
         # Execution tracking
