@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.272] - 2026-03-21
+
+
+### Fixed
+
+- Fix(sdk): propagate API key to async execution polling
+
+The AsyncExecutionManager and its ConnectionManager make direct HTTP
+requests to the control plane for execution status polling. These
+requests bypassed the PlaygroundClient's auth header injection,
+causing 401s when API key auth is enforced.
+
+- ConnectionManager now accepts api_key and includes X-API-Key in
+  default aiohttp session headers
+- AsyncExecutionManager passes api_key through to ConnectionManager
+- Bot passes self.api_key when creating AsyncExecutionManager (4ec4b40)
+
 ## [0.1.41-rc.271] - 2026-03-21
 
 
