@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.270] - 2026-03-21
+
+
+### Fixed
+
+- Fix(ci): remove unused requireOrg func and bump test-runner Go to 1.26
+
+Control Plane CI failed: golangci-lint flagged requireOrg as unused
+(all callers use orgFromContext directly). Functional Tests failed:
+Dockerfile.test-runner used golang:1.24 but go.mod requires go 1.26. (b5d29ad)
+
 ## [0.1.41-rc.269] - 2026-03-21
 
 
