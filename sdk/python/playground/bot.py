@@ -518,7 +518,9 @@ class Bot(FastAPI):
         # Initialize async configuration
         self.async_config = async_config or AsyncConfig.from_environment()
 
-        # Store API key for authentication
+        # Store API key for authentication (env fallback for container/CI envs)
+        if api_key is None:
+            api_key = os.environ.get("PLAYGROUND_API_KEY", os.environ.get("AGENTS_API_KEY", "")) or None
         self.api_key = api_key
 
         # Initialize PlaygroundClient with async configuration and API key

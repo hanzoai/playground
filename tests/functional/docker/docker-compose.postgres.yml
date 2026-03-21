@@ -30,6 +30,7 @@ services:
       AGENTS_STORAGE_POSTGRES_URL: postgres://playground:playground_test_pass@postgres:5432/playground_test?sslmode=disable
       AGENTS_DATABASE_URL: postgres://playground:playground_test_pass@postgres:5432/playground_test?sslmode=disable
       PLAYGROUND_PORT: 8080
+      PLAYGROUND_API_KEY: test-functional-key
       AGENTS_CONFIG_FILE: /etc/playground/agents-test.yaml
       AGENTS_HOME: /data/playground
     ports:
@@ -51,6 +52,10 @@ services:
     container_name: playground-test-runner-postgres
     environment:
       AGENTS_SERVER: http://control-plane:8080
+      PLAYGROUND_API_KEY: test-functional-key
+      AGENTS_API_KEY: test-functional-key
+      AGENTS_TOKEN: test-functional-key
+      HANZO_TOKEN: test-functional-key
       HANZO_API_KEY: ${HANZO_API_KEY}
       HANZO_AI_BASE_URL: ${HANZO_AI_BASE_URL:-https://api.hanzo.ai/v1}
       AI_MODEL: ${AI_MODEL:-openai/llama-3.1-8b}

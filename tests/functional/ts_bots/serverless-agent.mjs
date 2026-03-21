@@ -28,11 +28,14 @@ const nodeId = process.env.TS_AGENT_ID ?? 'ts-serverless-agent';
 const port = Number(process.env.TS_AGENT_PORT ?? 8097);
 const host = process.env.TS_AGENT_BIND_HOST ?? '0.0.0.0';
 
+const apiKey = process.env.PLAYGROUND_API_KEY ?? process.env.AGENTS_API_KEY ?? '';
+
 const agent = new Agent({
   nodeId,
   playgroundUrl,
   deploymentType: 'serverless',
-  devMode: true
+  devMode: true,
+  ...(apiKey ? { apiKey } : {})
 });
 
 agent.bot('hello', async (ctx) => ({

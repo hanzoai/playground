@@ -202,11 +202,22 @@ async def async_http_client(
     control_plane_url: str,
     functional_logger: FunctionalTestLogger,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
-    """Provide an async HTTP client configured for the control plane."""
+    """Provide an async HTTP client configured for the control plane.
+
+    Automatically injects ``X-API-Key`` from the ``PLAYGROUND_API_KEY``
+    environment variable so requests authenticate against the control plane's
+    API-key middleware.
+    """
+    headers = {}
+    api_key = os.environ.get("PLAYGROUND_API_KEY", os.environ.get("AGENTS_API_KEY", ""))
+    if api_key:
+        headers["X-API-Key"] = api_key
+
     if HTTP_LOGGING_ENABLED:
         async with InstrumentedAsyncClient(
             logger=functional_logger,
             base_url=control_plane_url,
+            headers=headers,
             timeout=30.0,
             follow_redirects=True,
         ) as client:
@@ -214,6 +225,7 @@ async def async_http_client(
     else:  # pragma: no cover - fallback path for disabling verbose logging
         async with httpx.AsyncClient(
             base_url=control_plane_url,
+            headers=headers,
             timeout=30.0,
             follow_redirects=True,
         ) as client:

@@ -29,6 +29,8 @@ const host = process.env.TS_AGENT_BIND_HOST ?? '0.0.0.0';
 const publicUrl =
   process.env.TS_AGENT_PUBLIC_URL ?? `http://${process.env.TEST_AGENT_CALLBACK_HOST ?? 'localhost'}:${port}`;
 
+const apiKey = process.env.PLAYGROUND_API_KEY ?? process.env.AGENTS_API_KEY ?? '';
+
 const agent = new Agent({
   nodeId,
   port,
@@ -36,7 +38,8 @@ const agent = new Agent({
   publicUrl,
   playgroundUrl,
   heartbeatIntervalMs: 1000,
-  devMode: false
+  devMode: false,
+  ...(apiKey ? { apiKey } : {})
 });
 
 agent.bot('echo', async (ctx) => ({
