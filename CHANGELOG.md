@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.271] - 2026-03-21
+
+
+### Fixed
+
+- Fix(tests): configure API key auth for functional test environment
+
+The security hardening commit (f3ecfc6a) blocks zero-auth mode: when
+IAM is disabled and no API key is configured, the control plane returns
+503 on all API routes. Functional tests had neither configured.
+
+- Set PLAYGROUND_API_KEY on control-plane and test-runner in both
+  compose files (local + postgres)
+- Inject X-API-Key header into conftest async_http_client
+- Python SDK Bot now reads PLAYGROUND_API_KEY from env as fallback
+- TS test bots pass apiKey from env to Agent constructor
+- Go test bots already read AGENTS_TOKEN from env (set in compose) (fef87c8)
+
 ## [0.1.41-rc.270] - 2026-03-21
 
 
