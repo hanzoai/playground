@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.267] - 2026-03-21
+
+
+### Testing
+
+- Test: add org isolation tests, minor UI fixes (fb62b60)
+
 ## [0.1.41-rc.266] - 2026-03-21
 
 
