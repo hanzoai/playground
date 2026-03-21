@@ -45,7 +45,7 @@ const AutoExpandingTextarea = React.forwardRef<HTMLTextAreaElement, AutoExpandin
     }, [props.value, props.defaultValue, adjustHeight]);
 
     // Adjust height on input
-    const handleInput = React.useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+    const handleInput = React.useCallback((e: React.InputEvent<HTMLTextAreaElement>) => {
       adjustHeight();
       if (props.onInput) {
         props.onInput(e);

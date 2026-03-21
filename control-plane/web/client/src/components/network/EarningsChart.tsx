@@ -70,7 +70,7 @@ export function EarningsChart({ records }: EarningsChartProps) {
             borderRadius: 8,
             fontSize: 12,
           }}
-          formatter={(value: number) => [`${value.toFixed(2)} AI`, 'Earned']}
+          formatter={(value) => [`${Number(value ?? 0).toFixed(2)} AI`, 'Earned']}
         />
         <Area
           type="monotone"
