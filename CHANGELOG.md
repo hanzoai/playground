@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.266] - 2026-03-21
+
+
+### Chores
+
+- Chore: ignore .claude/ agent workspace directory (4fcc40f)
+
+
+
+### Other
+
+- Security: fix critical and high findings from red team review
+
+- C3: Remove decodeJWTClaims — no more unverified JWT fallback when IAM
+  is unreachable. Returns 503 instead of accepting unsigned tokens.
+- C4: Block zero-auth mode — when IAM disabled and no API key configured,
+  API routes return 503 instead of passing through unauthenticated.
+- C5: Validate orgID with regex pattern before passing to Temporal
+  namespace, preventing namespace injection via crafted org strings.
+- H4: extractCreatedBy prefers verified IAM user (sub/email) over
+  unverified X-Agent-ID header.
+- H-err: All DurableStore errors wrapped via taskError() helper to
+  prevent Temporal internals from leaking in HTTP responses. (f3ecfc6)
+
 ## [0.1.41-rc.265] - 2026-03-20
 
 
