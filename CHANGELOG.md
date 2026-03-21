@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.273] - 2026-03-21
+
+
+### Chores
+
+- Chore: update dependencies to latest (0e54cb6)
+
 ## [0.1.41-rc.272] - 2026-03-21
 
 
