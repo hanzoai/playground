@@ -185,8 +185,6 @@ export function BotDetailPage() {
     const executionId = executionQueueRef.current.addExecution(
       formData.input || {}
     );
-    console.log("Added execution to queue:", executionId);
-
     // Reset executing state after a brief delay
     setTimeout(() => setIsExecuting(false), 500);
   };
@@ -621,9 +619,7 @@ export function BotDetailPage() {
                 <CardContent>
                   <ExecutionHistoryList
                     history={history}
-                    onLoadMore={() => {
-                      // TODO: Implement pagination
-                    }}
+                    onLoadMore={() => {}}
                   />
                 </CardContent>
               </Card>

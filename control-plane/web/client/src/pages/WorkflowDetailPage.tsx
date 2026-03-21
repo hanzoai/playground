@@ -123,19 +123,12 @@ export function WorkflowDetailPage() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleExecutionClick = (execution: WorkflowDAGNode) => {
-    console.log("Execution clicked:", execution);
-  };
+  const handleExecutionClick = (_execution: WorkflowDAGNode) => {};
 
-  const handleNodeSelect = (node: WorkflowDAGNode) => {
-    // TODO: Highlight node in DAG
-    console.log("Node selected:", node);
-  };
+  const handleNodeSelect = (_node: WorkflowDAGNode) => {};
 
   const handleTagFilter = (tags: string[]) => {
     setTimelineSelectedTags(tags);
-    // TODO: Apply tag filter to DAG visualization
-    console.log("Tag filter changed:", tags);
   };
 
   // Timeline state handlers

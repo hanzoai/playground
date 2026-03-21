@@ -106,10 +106,7 @@ const PackagesPageContent: React.FC = () => {
         `${pkg.name} is now starting up`,
         {
           label: "View Logs",
-          onClick: () => {
-            // TODO: Navigate to logs or node detail page
-            console.log(`Navigate to logs for ${pkg.id}`);
-          }
+          onClick: () => {}
         }
       );
     } catch (err) {
