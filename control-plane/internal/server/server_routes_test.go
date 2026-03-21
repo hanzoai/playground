@@ -472,13 +472,14 @@ func TestSetupRoutesRegistersWorkflowCleanupUIRoute(t *testing.T) {
 		webhookDispatcher: &stubWebhookDispatcher{},
 		config: &config.Config{
 			UI:  config.UIConfig{Enabled: true, Mode: "embedded"},
-			API: config.APIConfig{},
+			API: config.APIConfig{Auth: config.AuthConfig{APIKey: "test-key"}},
 		},
 	}
 
 	srv.setupRoutes()
 
 	req, _ := http.NewRequest(http.MethodDelete, "/v1/workflows/run_test_123/cleanup?confirm=true", nil)
+	req.Header.Set("X-API-Key", "test-key")
 	w := httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
 
