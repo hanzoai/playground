@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.268] - 2026-03-21
+
+
+### Fixed
+
+- Fix(ci): remove unused variable and complete org isolation hardening
+
+- BotDetailPage.tsx: drop unused executionId capture (TS6133 build error)
+- handlers.go: requireDurable now also checks org context; orgFromContext
+  no longer falls back to "hanzo" default — returns empty for callers to
+  handle explicitly via requireOrg (7733b41)
+
 ## [0.1.41-rc.267] - 2026-03-21
 
 
