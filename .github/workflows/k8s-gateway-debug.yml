@@ -86,7 +86,7 @@ jobs:
                 -H "Connection: Upgrade" \
                 -H "Sec-WebSocket-Version: 13" \
                 -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
-                -H "Origin: https://app.hanzo.bot" \
+                -H "Origin: https://hanzo.bot" \
                 "http://localhost:18789/" 2>&1 || echo "curl failed"
             else
               echo "curl not available"

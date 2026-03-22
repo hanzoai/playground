@@ -2,7 +2,7 @@
  * GatewaySettings Component
  *
  * Allows users to configure a custom gateway URL and token,
- * enabling the cloud playground (app.hanzo.bot) to connect to
+ * enabling the cloud playground (hanzo.bot) to connect to
  * a user's local bot gateway via a tunnel.
  */
 

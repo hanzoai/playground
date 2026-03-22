@@ -87,7 +87,7 @@ export async function ensureTestAccount(): Promise<{ created: boolean }> {
  */
 export async function performBrowserLogin(page: Page): Promise<void> {
   const cfg = getConfig();
-  const baseURL = process.env.E2E_BASE_URL || 'https://app.hanzo.bot';
+  const baseURL = process.env.E2E_BASE_URL || 'https://hanzo.bot';
 
   // Capture browser console for diagnostics
   page.on('console', (msg) => {

@@ -846,7 +846,7 @@ func (s *PlaygroundServer) setupRoutes() {
 	if !hasWildcard {
 		corsConfig.AllowOrigins = append(corsConfig.AllowOrigins,
 			"https://api.hanzo.bot",
-			"https://app.hanzo.bot",
+			"https://hanzo.bot",
 			"https://playground.hanzo.bot",
 		)
 	}

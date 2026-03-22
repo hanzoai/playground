@@ -2,7 +2,7 @@
  * Commerce API helper for E2E billing/credits tests.
  *
  * All Hanzo apps/services use IAM auth — the JWT access token from hanzo.id
- * works across everything (commerce at api.hanzo.ai, app.hanzo.bot, etc.).
+ * works across everything (commerce at api.hanzo.ai, hanzo.bot, etc.).
  */
 
 interface Balance {

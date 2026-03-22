@@ -58,7 +58,7 @@ jobs:
         timeout-minutes: 30
         env:
           CI: true
-          E2E_BASE_URL: https://app.hanzo.bot
+          E2E_BASE_URL: https://hanzo.bot
           E2E_IAM_SERVER_URL: https://hanzo.id
           E2E_IAM_CLIENT_ID: ${{ secrets.E2E_IAM_CLIENT_ID }}
           E2E_IAM_USER_EMAIL: ${{ secrets.E2E_IAM_USER_EMAIL }}

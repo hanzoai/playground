@@ -356,7 +356,7 @@ All secrets managed via KMS (kms.hanzo.ai) using KMSSecret CRD:
 - IAM auth: clientId/clientSecret from app-hanzo-vm
 
 ### Production Deployment
-- Domain: `playground.hanzo.bot` (alias: `app.hanzo.bot`)
+- Domain: `hanzo.bot` (alias: `playground.hanzo.bot`)
 - Image: `ghcr.io/hanzoai/playground:latest`
 - K8s: 2 replicas, hanzo namespace
 - Dockerfile: `deployments/docker/Dockerfile.control-plane`
@@ -366,7 +366,7 @@ All secrets managed via KMS (kms.hanzo.ai) using KMSSecret CRD:
 
 ### Issue: agent-cloud-58b82c78 — Terminal, Chat, Desktop all broken
 
-**Symptoms (from app.hanzo.bot UI):**
+**Symptoms (from hanzo.bot UI):**
 1. Terminal: Connected but commands fail with `SYSTEM_RUN_DENIED: approval required`
 2. Chat: "No session connected"
 3. Desktop VNC: Displays blue desktop but user reports can't interact

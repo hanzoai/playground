@@ -6,7 +6,7 @@ import { type Page, type Locator, expect } from '@playwright/test';
 export class LoginPage {
   readonly page: Page;
 
-  // AuthGuard elements (app.hanzo.bot)
+  // AuthGuard elements (hanzo.bot)
   readonly signInWithHanzoButton: Locator;
   readonly useApiKeyLink: Locator;
   readonly apiKeyInput: Locator;
@@ -74,7 +74,7 @@ export class LoginPage {
   }
 
   async waitForAuthCallback() {
-    const baseURL = process.env.E2E_BASE_URL || 'https://app.hanzo.bot';
+    const baseURL = process.env.E2E_BASE_URL || 'https://hanzo.bot';
     await this.page.waitForURL(`${baseURL}/**`, { timeout: 30_000 });
   }
 
