@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.275] - 2026-03-22
+
+
+### Fixed
+
+- Fix: migrate primary domain from app.hanzo.bot to hanzo.bot
+
+app.hanzo.bot now 301-redirects to hanzo.bot at the gateway level.
+Update CORS origins, deployment config, E2E targets, and docs to
+reference hanzo.bot as the canonical domain. (2d9c458)
+
 ## [0.1.41-rc.274] - 2026-03-21
 
 
