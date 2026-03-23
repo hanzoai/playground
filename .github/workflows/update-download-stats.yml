@@ -23,7 +23,7 @@ jobs:
           PEPY_API_KEY: ${{ secrets.PEPY_API_KEY }}
           GIST_ID: ${{ secrets.GIST_ID }}
         with:
-          github-token: ${{ secrets.GIST_TOKEN }}
+          github-token: ${{ secrets.GIST_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             // Fetch GitHub releases (handle pagination for repos with many releases)
             let allReleases = [];
