@@ -22,121 +22,47 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Find IAM service endpoint
+      - name: Fix console IAM config to hanzo-cloud
         run: |
-          echo "=== IAM service ==="
-          kubectl get svc -n hanzo | grep iam
-          echo ""
-          echo "=== IAM endpoints ==="
-          kubectl get endpoints -n hanzo | grep iam
-          echo ""
-          echo "=== Test IAM connectivity ==="
-          kubectl run --rm -it --restart=Never --image=curlimages/curl:latest test-curl -- \
-            curl -sf --max-time 5 "http://iam.hanzo.svc.cluster.local:8000/api/health" 2>&1 || \
-          kubectl run --rm -it --restart=Never --image=curlimages/curl:latest test-curl2 -- \
-            curl -sf --max-time 5 "http://iam.hanzo.svc:8000/api/health" 2>&1 || \
-          echo "IAM not reachable internally, using external URL"
+          echo "=== Force set IAM_CLIENT_ID=hanzo-cloud ==="
+          kubectl set env deploy/console -n hanzo \
+            IAM_CLIENT_ID=hanzo-cloud \
+            IAM_CLIENT_SECRET=62484ae37fb49bc602f204c035b001c5fe8a2034dc7d54f0
 
-      - name: Create hanzo-console app in IAM via external API
-        run: |
-          CLIENT_SECRET=$(openssl rand -hex 24)
-          echo "::add-mask::${CLIENT_SECRET}"
-          echo "client_secret=${CLIENT_SECRET}" >> "$GITHUB_OUTPUT"
+          echo "=== Waiting for rollout ==="
+          kubectl rollout status deploy/console -n hanzo --timeout=180s
 
-          echo "=== Creating hanzo-console application ==="
-          RESULT=$(curl -sf --max-time 10 -X POST "https://iam.hanzo.ai/api/add-application" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "owner": "admin",
-              "name": "hanzo-console",
-              "displayName": "Hanzo Console",
-              "organization": "hanzo",
-              "clientId": "hanzo-console",
-              "clientSecret": "'"${CLIENT_SECRET}"'",
-              "redirectUris": [
-                "https://console.hanzo.ai/api/auth/callback/iam",
-                "http://localhost:3000/api/auth/callback/iam",
-                "http://localhost:3001/api/auth/callback/iam"
-              ],
-              "homepageUrl": "https://console.hanzo.ai",
-              "logo": "/img/hanzo-logo.svg",
-              "enablePassword": true,
-              "enableSignUp": true,
-              "enableCodeSignin": true,
-              "cert": "cert-built-in",
-              "tokenFormat": "JWT",
-              "expireInHours": 168,
-              "signinMethods": [
-                {"name": "Password", "displayName": "Password", "rule": "All"},
-                {"name": "Verification code", "displayName": "Verification code", "rule": "All"},
-                {"name": "WebAuthn", "displayName": "WebAuthn", "rule": "None"},
-                {"name": "Face ID", "displayName": "Face ID", "rule": "None"}
-              ],
-              "providers": [
-                {"name": "provider_captcha_default", "canSignUp": false, "canSignIn": false, "canUnlink": false, "prompted": false, "signupGroup": "", "rule": "None", "provider": null}
-              ]
-            }' 2>&1) || true
-          echo "API response: $RESULT"
-
-          # If unauthorized, try with basic auth
-          if echo "$RESULT" | grep -qi "unauthorized\|Unauthorized"; then
-            echo "=== Trying with admin credentials ==="
-            # Get admin token first via IAM login
-            TOKEN=$(curl -sf --max-time 10 -X POST "https://iam.hanzo.ai/api/login" \
-              -H "Content-Type: application/json" \
-              -d '{"type":"code","username":"admin/admin","password":"123","application":"app-built-in"}' \
-              | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',''))" 2>/dev/null) || true
-
-            if [ -z "$TOKEN" ]; then
-              echo "Admin login failed, trying via kubectl port-forward..."
-              # Port forward IAM and create app
-              kubectl port-forward -n hanzo svc/iam 18000:8000 &
-              PF_PID=$!
-              sleep 3
-
-              RESULT=$(curl -sf --max-time 10 -X POST "http://localhost:18000/api/add-application" \
-                -H "Content-Type: application/json" \
-                -d '{
-                  "owner": "admin",
-                  "name": "hanzo-console",
-                  "displayName": "Hanzo Console",
-                  "organization": "hanzo",
-                  "clientId": "hanzo-console",
-                  "clientSecret": "'"${CLIENT_SECRET}"'",
-                  "redirectUris": [
-                    "https://console.hanzo.ai/api/auth/callback/iam",
-                    "http://localhost:3000/api/auth/callback/iam",
-                    "http://localhost:3001/api/auth/callback/iam"
-                  ],
-                  "homepageUrl": "https://console.hanzo.ai",
-                  "logo": "/img/hanzo-logo.svg",
-                  "enablePassword": true,
-                  "enableSignUp": true,
-                  "enableCodeSignin": true,
-                  "cert": "cert-built-in",
-                  "tokenFormat": "JWT",
-                  "expireInHours": 168
-                }' 2>&1) || true
-              echo "Port-forward API response: $RESULT"
-              kill $PF_PID 2>/dev/null || true
-            fi
-          fi
-
-          # Check if app was created successfully
-          if echo "$RESULT" | grep -q '"status":"ok"'; then
-            echo "=== App created! Updating console deployment ==="
-            kubectl set env deploy/console -n hanzo \
-              IAM_CLIENT_ID=hanzo-console \
-              IAM_CLIENT_SECRET="${CLIENT_SECRET}"
-            kubectl rollout status deploy/console -n hanzo --timeout=180s
-          else
-            echo "=== App creation may have failed. Reverting to hanzo-cloud ==="
-            kubectl set env deploy/console -n hanzo \
-              IAM_CLIENT_ID=hanzo-cloud \
-              IAM_CLIENT_SECRET=62484ae37fb49bc602f204c035b001c5fe8a2034dc7d54f0
-            kubectl rollout status deploy/console -n hanzo --timeout=180s
-          fi
-
-          echo ""
-          echo "=== Final console IAM config ==="
+          echo "=== Verify ==="
           kubectl get deploy console -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -iE 'IAM_CLIENT|NEXTAUTH'
+
+      - name: Try sign in and capture logs
+        run: |
+          echo "=== Tail logs while trying OAuth flow ==="
+          # Start log tail in background
+          kubectl logs -f deploy/console -n hanzo --since=5s > /tmp/console-logs.txt 2>&1 &
+          LOG_PID=$!
+
+          # Trigger the OAuth flow programmatically
+          echo "=== Step 1: Get CSRF token and cookies ==="
+          curl -v -c /tmp/cookies.txt "https://console.hanzo.ai/api/auth/csrf" 2>/tmp/csrf-headers.txt
+          CSRF=$(cat /tmp/cookies.txt | grep -v "^#" | awk '{print $NF}' | tail -1)
+          echo "CSRF: $CSRF"
+          cat /tmp/csrf-headers.txt 2>/dev/null | grep -i "set-cookie" || true
+
+          echo ""
+          echo "=== Step 2: Initiate OAuth signin ==="
+          curl -v -L --max-redirs 0 -b /tmp/cookies.txt -c /tmp/cookies.txt \
+            "https://console.hanzo.ai/api/auth/signin/iam" 2>/tmp/signin-headers.txt || true
+          echo "Redirect location:"
+          cat /tmp/signin-headers.txt | grep -i "location" || true
+
+          sleep 5
+          kill $LOG_PID 2>/dev/null || true
+
+          echo ""
+          echo "=== Console logs during OAuth attempt ==="
+          cat /tmp/console-logs.txt | grep -iE "error|oauth|callback|iam|auth|token|sign|debug|warn|OAuthCallback" | tail -30
+
+          echo ""
+          echo "=== Full logs ==="
+          cat /tmp/console-logs.txt | tail -20
