@@ -22,16 +22,79 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Enable NextAuth debug and tail logs
+      - name: Create hanzo-console app in IAM
         run: |
-          echo "=== Enable NEXTAUTH_DEBUG ==="
-          kubectl set env deploy/console -n hanzo NEXTAUTH_DEBUG=true
+          # Generate a client secret for the new app
+          CLIENT_SECRET=$(openssl rand -hex 24)
+          echo "::add-mask::${CLIENT_SECRET}"
+
+          echo "=== Creating hanzo-console application via IAM internal API ==="
+          # Use kubectl exec to call IAM API internally
+          RESULT=$(kubectl exec -n hanzo deploy/iam -- wget -q -O - \
+            --header="Content-Type: application/json" \
+            --post-data='{
+              "owner": "admin",
+              "name": "hanzo-console",
+              "displayName": "Hanzo Console",
+              "organization": "hanzo",
+              "clientId": "hanzo-console",
+              "clientSecret": "'"${CLIENT_SECRET}"'",
+              "redirectUris": [
+                "https://console.hanzo.ai/api/auth/callback/iam",
+                "http://localhost:3000/api/auth/callback/iam",
+                "http://localhost:3001/api/auth/callback/iam"
+              ],
+              "homepageUrl": "https://console.hanzo.ai",
+              "logo": "/img/hanzo-logo.svg",
+              "enablePassword": true,
+              "enableSignUp": true,
+              "enableCodeSignin": true,
+              "cert": "cert-built-in",
+              "tokenFormat": "JWT",
+              "expireInHours": 168,
+              "signinMethods": [
+                {"name": "Password", "displayName": "Password", "rule": "All"},
+                {"name": "Verification code", "displayName": "Verification code", "rule": "All"},
+                {"name": "WebAuthn", "displayName": "WebAuthn", "rule": "None"},
+                {"name": "Face ID", "displayName": "Face ID", "rule": "None"}
+              ],
+              "providers": [
+                {"name": "provider_captcha_default", "canSignUp": false, "canSignIn": false, "canUnlink": false, "prompted": false, "signupGroup": "", "rule": "None", "provider": null}
+              ]
+            }' \
+            "http://iam.hanzo.svc:8000/api/add-application" 2>&1) || true
+          echo "API response: $RESULT"
+
+          # If the app already exists, try to get its client_id/secret
+          if echo "$RESULT" | grep -q "already exists"; then
+            echo "App already exists, fetching current config..."
+            EXISTING=$(kubectl exec -n hanzo deploy/iam -- wget -q -O - \
+              "http://iam.hanzo.svc:8000/api/get-application?id=admin/hanzo-console" 2>&1) || true
+            echo "Existing app: $EXISTING"
+            # Extract client_secret from existing app
+            CLIENT_SECRET=$(echo "$EXISTING" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('clientSecret',''))" 2>/dev/null) || true
+          fi
+
+          echo "CLIENT_SECRET=${CLIENT_SECRET}" >> "$GITHUB_OUTPUT"
+
+          # Now update the console deployment
+          echo ""
+          echo "=== Updating console deployment with hanzo-console credentials ==="
+          kubectl set env deploy/console -n hanzo \
+            IAM_CLIENT_ID=hanzo-console \
+            IAM_CLIENT_SECRET="${CLIENT_SECRET}"
+
+          echo "=== Waiting for rollout ==="
           kubectl rollout status deploy/console -n hanzo --timeout=180s
 
           echo ""
-          echo "=== Now tailing console logs for 60s - USER SHOULD TRY SIGNING IN ==="
-          timeout 60 kubectl logs -f deploy/console -n hanzo --since=10s 2>&1 | grep -iE 'error|oauth|callback|iam|auth|token|sign|debug|warn' || true
+          echo "=== Verify ==="
+          kubectl get deploy console -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -iE 'IAM_CLIENT|NEXTAUTH'
 
+      - name: Tail console logs for 60s
+        run: |
+          echo "=== Tailing console logs - try signing in at console.hanzo.ai ==="
+          timeout 60 kubectl logs -f deploy/console -n hanzo --since=10s 2>&1 | grep -iE 'error|oauth|callback|iam|auth|token|sign|debug|warn' || true
           echo ""
-          echo "=== Full recent logs ==="
-          kubectl logs deploy/console -n hanzo --tail=50 2>&1
+          echo "=== Recent logs ==="
+          kubectl logs deploy/console -n hanzo --tail=30 2>&1
