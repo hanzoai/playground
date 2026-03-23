@@ -22,24 +22,16 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Generate and set NEXTAUTH_SECRET
+      - name: Enable NextAuth debug and tail logs
         run: |
-          # Generate a secure random NEXTAUTH_SECRET
-          NEXTAUTH_SECRET=$(openssl rand -base64 32)
-          echo "::add-mask::${NEXTAUTH_SECRET}"
-
-          echo "=== Setting NEXTAUTH_SECRET and SALT on console deployment ==="
-          kubectl set env deploy/console -n hanzo \
-            NEXTAUTH_SECRET="${NEXTAUTH_SECRET}" \
-            SALT="${NEXTAUTH_SECRET}"
-
-          echo "=== Setting NEXTAUTH_SECRET and SALT on console-worker deployment ==="
-          kubectl set env deploy/console-worker -n hanzo \
-            NEXTAUTH_SECRET="${NEXTAUTH_SECRET}" \
-            SALT="${NEXTAUTH_SECRET}" 2>/dev/null || echo "console-worker not found or no change needed"
-
-          echo "=== Waiting for console rollout ==="
+          echo "=== Enable NEXTAUTH_DEBUG ==="
+          kubectl set env deploy/console -n hanzo NEXTAUTH_DEBUG=true
           kubectl rollout status deploy/console -n hanzo --timeout=180s
 
-          echo "=== Verify NEXTAUTH env vars ==="
-          kubectl get deploy console -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -iE 'NEXTAUTH|SALT|IAM_CLIENT'
+          echo ""
+          echo "=== Now tailing console logs for 60s - USER SHOULD TRY SIGNING IN ==="
+          timeout 60 kubectl logs -f deploy/console -n hanzo --since=10s 2>&1 | grep -iE 'error|oauth|callback|iam|auth|token|sign|debug|warn' || true
+
+          echo ""
+          echo "=== Full recent logs ==="
+          kubectl logs deploy/console -n hanzo --tail=50 2>&1
