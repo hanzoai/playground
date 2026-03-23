@@ -22,42 +22,58 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Show current console IAM env vars
+      - name: Check console pod status and logs
         run: |
-          echo "=== Current console deployment IAM env vars ==="
-          kubectl get deploy -n hanzo -o name | grep -i console || kubectl get deploy -n hanzo -o name | grep -i cloud
+          echo "=== Console pods ==="
+          kubectl get pods -n hanzo -l app=console -o wide 2>/dev/null || kubectl get pods -n hanzo | grep console
           echo ""
-          echo "=== All deployments in hanzo namespace ==="
-          kubectl get deploy -n hanzo -o name
-          echo ""
-          echo "=== Looking for IAM env vars ==="
-          for deploy in $(kubectl get deploy -n hanzo -o name); do
-            IAM_VARS=$(kubectl get "$deploy" -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' 2>/dev/null | grep -i IAM || true)
-            if [ -n "$IAM_VARS" ]; then
-              echo "--- $deploy ---"
-              echo "$IAM_VARS"
-              echo ""
-            fi
-          done
 
-      - name: Update console IAM config
-        run: |
-          # Find the console/cloud deployment
-          DEPLOY=$(kubectl get deploy -n hanzo -o name | grep -E '(console|cloud-web)' | head -1)
-          if [ -z "$DEPLOY" ]; then
-            echo "ERROR: Could not find console/cloud deployment"
-            kubectl get deploy -n hanzo
-            exit 1
+          echo "=== Console deployment env vars ==="
+          kubectl get deploy console -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -iE 'IAM|AUTH|NEXTAUTH|CLIENT'
+          echo ""
+
+          echo "=== Console pod logs (last 100 lines) ==="
+          POD=$(kubectl get pods -n hanzo -l app=console --field-selector status.phase=Running -o name 2>/dev/null | head -1)
+          if [ -z "$POD" ]; then
+            POD=$(kubectl get pods -n hanzo | grep console | grep Running | head -1 | awk '{print "pod/"$1}')
           fi
-          echo "Found deployment: $DEPLOY"
+          if [ -n "$POD" ]; then
+            echo "Reading logs from: $POD"
+            kubectl logs "$POD" -n hanzo --tail=100 2>&1 || true
+          else
+            echo "No running console pod found"
+            kubectl get pods -n hanzo | grep console
+          fi
 
-          # Update IAM_CLIENT_ID and IAM_CLIENT_SECRET
-          kubectl set env "$DEPLOY" -n hanzo \
-            IAM_CLIENT_ID=hanzo-cloud \
-            IAM_CLIENT_SECRET=62484ae37fb49bc602f204c035b001c5fe8a2034dc7d54f0
+          echo ""
+          echo "=== Console worker pod logs ==="
+          WPOD=$(kubectl get pods -n hanzo | grep console-worker | grep Running | head -1 | awk '{print "pod/"$1}')
+          if [ -n "$WPOD" ]; then
+            kubectl logs "$WPOD" -n hanzo --tail=50 2>&1 || true
+          fi
 
-          echo "Updated IAM env vars. Waiting for rollout..."
-          kubectl rollout status "$DEPLOY" -n hanzo --timeout=120s
+      - name: Check envFrom and secrets
+        run: |
+          echo "=== Console deployment envFrom ==="
+          kubectl get deploy console -n hanzo -o jsonpath='{.spec.template.spec.containers[*].envFrom}' 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "No envFrom"
+          echo ""
 
-          echo "=== Verify new env vars ==="
-          kubectl get "$DEPLOY" -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -i IAM
+          echo "=== Check if IAM vars come from a secret/configmap ==="
+          # Check for secretRef or configMapRef
+          kubectl get deploy console -n hanzo -o json | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          containers = d['spec']['template']['spec']['containers']
+          for c in containers:
+            print(f'Container: {c[\"name\"]}')
+            for ef in c.get('envFrom', []):
+              print(f'  envFrom: {json.dumps(ef)}')
+            for e in c.get('env', []):
+              if 'IAM' in e.get('name','') or 'CLIENT' in e.get('name','') or 'AUTH' in e.get('name','') or 'NEXTAUTH' in e.get('name',''):
+                val = e.get('value', '')
+                vf = e.get('valueFrom', '')
+                if vf:
+                  print(f'  {e[\"name\"]} = (from: {json.dumps(vf)})')
+                else:
+                  print(f'  {e[\"name\"]} = {val}')
+          " 2>&1
