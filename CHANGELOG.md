@@ -6,6 +6,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.277] - 2026-03-23
+
+
+### Fixed
+
+- Fix: gracefully handle missing GIST_TOKEN/GIST_ID secrets
+
+Use GITHUB_TOKEN for the github-script action input (always available)
+and GIST_TOKEN via env var for the actual gist update. Skip gist update
+with a log message when GIST_TOKEN or GIST_ID is not configured instead
+of crashing with a 404 from the API. (c205f53)
+
+- Fix: fall back to GITHUB_TOKEN when GIST_TOKEN is not configured
+
+actions/github-script requires a non-empty github-token input.
+When GIST_TOKEN secret is not set, the workflow fails with:
+  Error: Input required and not supplied: github-token
+
+Fall back to GITHUB_TOKEN so the action starts. Gist updates will
+still fail without GIST_TOKEN but the workflow won't crash on input
+validation. (db6db0a)
+
+
+
+### Other
+
+- Debug OAuth callback: check IAM DB app config and NEXTAUTH secrets
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (168fc93)
+
+- Debug console IAM OAuth callback issue
+
+Check pod logs, env vars, and envFrom to diagnose
+why the OAuth callback fails after successful IAM login.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (e554e78)
+
+- Add workflow to update console IAM config in k8s
+
+Updates IAM_CLIENT_ID and IAM_CLIENT_SECRET on the console
+deployment to use the hanzo-cloud application credentials.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (f41f3df)
+
 ## [0.1.41-rc.276] - 2026-03-23
 
 
