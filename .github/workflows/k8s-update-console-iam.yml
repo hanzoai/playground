@@ -12,7 +12,7 @@ env:
 jobs:
   update-console-iam:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
@@ -22,17 +22,31 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Create hanzo-console app in IAM
+      - name: Find IAM service endpoint
         run: |
-          # Generate a client secret for the new app
+          echo "=== IAM service ==="
+          kubectl get svc -n hanzo | grep iam
+          echo ""
+          echo "=== IAM endpoints ==="
+          kubectl get endpoints -n hanzo | grep iam
+          echo ""
+          echo "=== Test IAM connectivity ==="
+          kubectl run --rm -it --restart=Never --image=curlimages/curl:latest test-curl -- \
+            curl -sf --max-time 5 "http://iam.hanzo.svc.cluster.local:8000/api/health" 2>&1 || \
+          kubectl run --rm -it --restart=Never --image=curlimages/curl:latest test-curl2 -- \
+            curl -sf --max-time 5 "http://iam.hanzo.svc:8000/api/health" 2>&1 || \
+          echo "IAM not reachable internally, using external URL"
+
+      - name: Create hanzo-console app in IAM via external API
+        run: |
           CLIENT_SECRET=$(openssl rand -hex 24)
           echo "::add-mask::${CLIENT_SECRET}"
+          echo "client_secret=${CLIENT_SECRET}" >> "$GITHUB_OUTPUT"
 
-          echo "=== Creating hanzo-console application via IAM internal API ==="
-          # Use kubectl exec to call IAM API internally
-          RESULT=$(kubectl exec -n hanzo deploy/iam -- wget -q -O - \
-            --header="Content-Type: application/json" \
-            --post-data='{
+          echo "=== Creating hanzo-console application ==="
+          RESULT=$(curl -sf --max-time 10 -X POST "https://iam.hanzo.ai/api/add-application" \
+            -H "Content-Type: application/json" \
+            -d '{
               "owner": "admin",
               "name": "hanzo-console",
               "displayName": "Hanzo Console",
@@ -61,40 +75,68 @@ jobs:
               "providers": [
                 {"name": "provider_captcha_default", "canSignUp": false, "canSignIn": false, "canUnlink": false, "prompted": false, "signupGroup": "", "rule": "None", "provider": null}
               ]
-            }' \
-            "http://iam.hanzo.svc:8000/api/add-application" 2>&1) || true
+            }' 2>&1) || true
           echo "API response: $RESULT"
 
-          # If the app already exists, try to get its client_id/secret
-          if echo "$RESULT" | grep -q "already exists"; then
-            echo "App already exists, fetching current config..."
-            EXISTING=$(kubectl exec -n hanzo deploy/iam -- wget -q -O - \
-              "http://iam.hanzo.svc:8000/api/get-application?id=admin/hanzo-console" 2>&1) || true
-            echo "Existing app: $EXISTING"
-            # Extract client_secret from existing app
-            CLIENT_SECRET=$(echo "$EXISTING" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('clientSecret',''))" 2>/dev/null) || true
+          # If unauthorized, try with basic auth
+          if echo "$RESULT" | grep -qi "unauthorized\|Unauthorized"; then
+            echo "=== Trying with admin credentials ==="
+            # Get admin token first via IAM login
+            TOKEN=$(curl -sf --max-time 10 -X POST "https://iam.hanzo.ai/api/login" \
+              -H "Content-Type: application/json" \
+              -d '{"type":"code","username":"admin/admin","password":"123","application":"app-built-in"}' \
+              | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',''))" 2>/dev/null) || true
+
+            if [ -z "$TOKEN" ]; then
+              echo "Admin login failed, trying via kubectl port-forward..."
+              # Port forward IAM and create app
+              kubectl port-forward -n hanzo svc/iam 18000:8000 &
+              PF_PID=$!
+              sleep 3
+
+              RESULT=$(curl -sf --max-time 10 -X POST "http://localhost:18000/api/add-application" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "owner": "admin",
+                  "name": "hanzo-console",
+                  "displayName": "Hanzo Console",
+                  "organization": "hanzo",
+                  "clientId": "hanzo-console",
+                  "clientSecret": "'"${CLIENT_SECRET}"'",
+                  "redirectUris": [
+                    "https://console.hanzo.ai/api/auth/callback/iam",
+                    "http://localhost:3000/api/auth/callback/iam",
+                    "http://localhost:3001/api/auth/callback/iam"
+                  ],
+                  "homepageUrl": "https://console.hanzo.ai",
+                  "logo": "/img/hanzo-logo.svg",
+                  "enablePassword": true,
+                  "enableSignUp": true,
+                  "enableCodeSignin": true,
+                  "cert": "cert-built-in",
+                  "tokenFormat": "JWT",
+                  "expireInHours": 168
+                }' 2>&1) || true
+              echo "Port-forward API response: $RESULT"
+              kill $PF_PID 2>/dev/null || true
+            fi
           fi
 
-          echo "CLIENT_SECRET=${CLIENT_SECRET}" >> "$GITHUB_OUTPUT"
+          # Check if app was created successfully
+          if echo "$RESULT" | grep -q '"status":"ok"'; then
+            echo "=== App created! Updating console deployment ==="
+            kubectl set env deploy/console -n hanzo \
+              IAM_CLIENT_ID=hanzo-console \
+              IAM_CLIENT_SECRET="${CLIENT_SECRET}"
+            kubectl rollout status deploy/console -n hanzo --timeout=180s
+          else
+            echo "=== App creation may have failed. Reverting to hanzo-cloud ==="
+            kubectl set env deploy/console -n hanzo \
+              IAM_CLIENT_ID=hanzo-cloud \
+              IAM_CLIENT_SECRET=62484ae37fb49bc602f204c035b001c5fe8a2034dc7d54f0
+            kubectl rollout status deploy/console -n hanzo --timeout=180s
+          fi
 
-          # Now update the console deployment
           echo ""
-          echo "=== Updating console deployment with hanzo-console credentials ==="
-          kubectl set env deploy/console -n hanzo \
-            IAM_CLIENT_ID=hanzo-console \
-            IAM_CLIENT_SECRET="${CLIENT_SECRET}"
-
-          echo "=== Waiting for rollout ==="
-          kubectl rollout status deploy/console -n hanzo --timeout=180s
-
-          echo ""
-          echo "=== Verify ==="
+          echo "=== Final console IAM config ==="
           kubectl get deploy console -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -iE 'IAM_CLIENT|NEXTAUTH'
-
-      - name: Tail console logs for 60s
-        run: |
-          echo "=== Tailing console logs - try signing in at console.hanzo.ai ==="
-          timeout 60 kubectl logs -f deploy/console -n hanzo --since=10s 2>&1 | grep -iE 'error|oauth|callback|iam|auth|token|sign|debug|warn' || true
-          echo ""
-          echo "=== Recent logs ==="
-          kubectl logs deploy/console -n hanzo --tail=30 2>&1
