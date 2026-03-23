@@ -22,47 +22,31 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Fix console IAM config to hanzo-cloud
+      - name: Test OIDC discovery from console pod
         run: |
-          echo "=== Force set IAM_CLIENT_ID=hanzo-cloud ==="
-          kubectl set env deploy/console -n hanzo \
-            IAM_CLIENT_ID=hanzo-cloud \
-            IAM_CLIENT_SECRET=62484ae37fb49bc602f204c035b001c5fe8a2034dc7d54f0
+          POD=$(kubectl get pods -n hanzo -l app=console --field-selector status.phase=Running -o name | head -1)
+          echo "Testing from: $POD"
 
-          echo "=== Waiting for rollout ==="
-          kubectl rollout status deploy/console -n hanzo --timeout=180s
-
-          echo "=== Verify ==="
-          kubectl get deploy console -n hanzo -o jsonpath='{range .spec.template.spec.containers[*].env[*]}{.name}={.value}{"\n"}{end}' | grep -iE 'IAM_CLIENT|NEXTAUTH'
-
-      - name: Try sign in and capture logs
-        run: |
-          echo "=== Tail logs while trying OAuth flow ==="
-          # Start log tail in background
-          kubectl logs -f deploy/console -n hanzo --since=5s > /tmp/console-logs.txt 2>&1 &
-          LOG_PID=$!
-
-          # Trigger the OAuth flow programmatically
-          echo "=== Step 1: Get CSRF token and cookies ==="
-          curl -v -c /tmp/cookies.txt "https://console.hanzo.ai/api/auth/csrf" 2>/tmp/csrf-headers.txt
-          CSRF=$(cat /tmp/cookies.txt | grep -v "^#" | awk '{print $NF}' | tail -1)
-          echo "CSRF: $CSRF"
-          cat /tmp/csrf-headers.txt 2>/dev/null | grep -i "set-cookie" || true
+          echo "=== Test DNS resolution ==="
+          kubectl exec -n hanzo "$POD" -- nslookup hanzo.id 2>&1 || \
+          kubectl exec -n hanzo "$POD" -- getent hosts hanzo.id 2>&1 || \
+          echo "DNS tools not available"
 
           echo ""
-          echo "=== Step 2: Initiate OAuth signin ==="
-          curl -v -L --max-redirs 0 -b /tmp/cookies.txt -c /tmp/cookies.txt \
-            "https://console.hanzo.ai/api/auth/signin/iam" 2>/tmp/signin-headers.txt || true
-          echo "Redirect location:"
-          cat /tmp/signin-headers.txt | grep -i "location" || true
-
-          sleep 5
-          kill $LOG_PID 2>/dev/null || true
+          echo "=== Test OIDC well-known from console pod ==="
+          kubectl exec -n hanzo "$POD" -- wget -q -O - --timeout=5 "https://hanzo.id/.well-known/openid-configuration" 2>&1 || \
+          kubectl exec -n hanzo "$POD" -- curl -sf --max-time 5 "https://hanzo.id/.well-known/openid-configuration" 2>&1 || \
+          echo "FAILED: Console pod cannot reach hanzo.id OIDC endpoint"
 
           echo ""
-          echo "=== Console logs during OAuth attempt ==="
-          cat /tmp/console-logs.txt | grep -iE "error|oauth|callback|iam|auth|token|sign|debug|warn|OAuthCallback" | tail -30
+          echo "=== Test IAM direct internal ==="
+          kubectl exec -n hanzo "$POD" -- wget -q -O - --timeout=5 "http://iam.hanzo.svc:8000/.well-known/openid-configuration" 2>&1 || \
+          echo "Internal IAM not reachable either"
 
           echo ""
-          echo "=== Full logs ==="
-          cat /tmp/console-logs.txt | tail -20
+          echo "=== Console env ==="
+          kubectl exec -n hanzo "$POD" -- env 2>&1 | grep -iE 'IAM|NEXTAUTH|NODE_TLS' || true
+
+          echo ""
+          echo "=== Check if NODE_TLS_REJECT_UNAUTHORIZED is needed ==="
+          kubectl exec -n hanzo "$POD" -- wget -q -O - --timeout=5 "https://iam.hanzo.ai/.well-known/openid-configuration" 2>&1 || echo "iam.hanzo.ai also unreachable"
