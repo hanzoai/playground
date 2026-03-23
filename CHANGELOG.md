@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.276] - 2026-03-23
+
+
+### Fixed
+
+- Fix: regenerate lockfile for typescript-eslint specifier update (ca02a3b)
+
 ## [0.1.41-rc.275] - 2026-03-22
 
 
