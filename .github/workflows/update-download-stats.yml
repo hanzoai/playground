@@ -22,8 +22,9 @@ jobs:
         env:
           PEPY_API_KEY: ${{ secrets.PEPY_API_KEY }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         with:
-          github-token: ${{ secrets.GIST_TOKEN || secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Fetch GitHub releases (handle pagination for repos with many releases)
             let allReleases = [];
@@ -101,18 +102,32 @@ jobs:
               lastUpdated: new Date().toISOString()
             };
 
-            // Update Gist with both files
-            await github.rest.gists.update({
-              gist_id: process.env.GIST_ID,
-              files: {
-                'badge.json': {
-                  content: JSON.stringify(badge, null, 2)
+            // Update Gist (requires GIST_TOKEN with gist scope)
+            const gistToken = process.env.GIST_TOKEN;
+            const gistId = process.env.GIST_ID;
+            if (gistToken && gistId) {
+              const gistRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `token ${gistToken}`,
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/vnd.github.v3+json'
                 },
-                'stats.json': {
-                  content: JSON.stringify(stats, null, 2)
-                }
+                body: JSON.stringify({
+                  files: {
+                    'badge.json': { content: JSON.stringify(badge, null, 2) },
+                    'stats.json': { content: JSON.stringify(stats, null, 2) }
+                  }
+                })
+              });
+              if (!gistRes.ok) {
+                console.error('Gist update failed:', gistRes.status, await gistRes.text());
+              } else {
+                console.log('Gist updated successfully');
               }
-            });
+            } else {
+              console.log('GIST_TOKEN or GIST_ID not set, skipping gist update');
+            }
 
             console.log('Badge:', JSON.stringify(badge, null, 2));
             console.log('Stats:', JSON.stringify(stats, null, 2));
