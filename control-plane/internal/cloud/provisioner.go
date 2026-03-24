@@ -305,6 +305,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		env["HANZO_API_KEY"] = apiKey
 		env["OPENAI_API_KEY"] = apiKey // backward compat
 	}
+	// Anthropic API key for Claude models (claude-sonnet-4-6, etc.)
+	if p.config.Kubernetes.AnthropicAPIKey != "" {
+		env["ANTHROPIC_API_KEY"] = p.config.Kubernetes.AnthropicAPIKey
+	}
 	if req.UserAPIKey != "" {
 		logger.Logger.Info().
 			Str("node_id", nodeID).

@@ -35,6 +35,8 @@ type KubernetesConfig struct {
 	// Hanzo Cloud AI backend for bot LLM calls
 	CloudAPIEndpoint string `yaml:"cloud_api_endpoint" mapstructure:"cloud_api_endpoint"`
 	CloudAPIKey      string `yaml:"cloud_api_key" mapstructure:"cloud_api_key"`
+	// Anthropic API key for Claude models (passed to bot pods as ANTHROPIC_API_KEY)
+	AnthropicAPIKey string `yaml:"anthropic_api_key" mapstructure:"anthropic_api_key"`
 	// Central gateway: cloud pods connect as nodes to the shared bot-gateway
 	// so all nodes (local Mac + cloud pods) appear in one unified gateway.
 	GatewayURL   string `yaml:"gateway_url" mapstructure:"gateway_url"`     // ws://bot-gateway.hanzo.svc:80
@@ -169,6 +171,12 @@ func applyCloudEnvOverrides(cfg *Config) {
 	}
 	if v := hanzoEnvWithFallback("CLOUD_API_KEY"); v != "" {
 		cfg.Cloud.Kubernetes.CloudAPIKey = v
+	}
+	if v := hanzoEnvWithFallback("CLOUD_ANTHROPIC_API_KEY"); v != "" {
+		cfg.Cloud.Kubernetes.AnthropicAPIKey = v
+	}
+	if v := os.Getenv("ANTHROPIC_API_KEY"); v != "" && cfg.Cloud.Kubernetes.AnthropicAPIKey == "" {
+		cfg.Cloud.Kubernetes.AnthropicAPIKey = v
 	}
 	if v := hanzoEnvWithFallback("CLOUD_GATEWAY_URL"); v != "" {
 		cfg.Cloud.Kubernetes.GatewayURL = v
