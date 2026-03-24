@@ -22,31 +22,27 @@ jobs:
       - name: Configure kubectl
         run: doctl kubernetes cluster kubeconfig save "${{ env.HANZO_CLUSTER_ID }}"
 
-      - name: Test OIDC discovery from console pod
+      - name: Fix NEXTAUTH_SECRET with hex-safe value
         run: |
-          POD=$(kubectl get pods -n hanzo -l app=console --field-selector status.phase=Running -o name | head -1)
-          echo "Testing from: $POD"
+          # Use hex-only secret (no +/= chars that might break env var)
+          SECRET=$(openssl rand -hex 32)
+          echo "::add-mask::${SECRET}"
 
-          echo "=== Test DNS resolution ==="
-          kubectl exec -n hanzo "$POD" -- nslookup hanzo.id 2>&1 || \
-          kubectl exec -n hanzo "$POD" -- getent hosts hanzo.id 2>&1 || \
-          echo "DNS tools not available"
+          echo "=== Setting clean NEXTAUTH_SECRET ==="
+          kubectl set env deploy/console -n hanzo \
+            "NEXTAUTH_SECRET=${SECRET}" \
+            "SALT=${SECRET}" \
+            "NEXTAUTH_DEBUG=true" \
+            "IAM_CLIENT_ID=hanzo-cloud" \
+            "IAM_CLIENT_SECRET=62484ae37fb49bc602f204c035b001c5fe8a2034dc7d54f0"
 
-          echo ""
-          echo "=== Test OIDC well-known from console pod ==="
-          kubectl exec -n hanzo "$POD" -- wget -q -O - --timeout=5 "https://hanzo.id/.well-known/openid-configuration" 2>&1 || \
-          kubectl exec -n hanzo "$POD" -- curl -sf --max-time 5 "https://hanzo.id/.well-known/openid-configuration" 2>&1 || \
-          echo "FAILED: Console pod cannot reach hanzo.id OIDC endpoint"
+          # Also set on worker
+          kubectl set env deploy/console-worker -n hanzo \
+            "NEXTAUTH_SECRET=${SECRET}" \
+            "SALT=${SECRET}" 2>/dev/null || true
 
-          echo ""
-          echo "=== Test IAM direct internal ==="
-          kubectl exec -n hanzo "$POD" -- wget -q -O - --timeout=5 "http://iam.hanzo.svc:8000/.well-known/openid-configuration" 2>&1 || \
-          echo "Internal IAM not reachable either"
+          echo "=== Waiting for rollout ==="
+          kubectl rollout status deploy/console -n hanzo --timeout=180s
 
-          echo ""
-          echo "=== Console env ==="
-          kubectl exec -n hanzo "$POD" -- env 2>&1 | grep -iE 'IAM|NEXTAUTH|NODE_TLS' || true
-
-          echo ""
-          echo "=== Check if NODE_TLS_REJECT_UNAUTHORIZED is needed ==="
-          kubectl exec -n hanzo "$POD" -- wget -q -O - --timeout=5 "https://iam.hanzo.ai/.well-known/openid-configuration" 2>&1 || echo "iam.hanzo.ai also unreachable"
+          echo "=== Verify env vars ==="
+          kubectl exec -n hanzo deploy/console -- env | grep -iE 'NEXTAUTH_SECRET|IAM_CLIENT|SALT' | sed 's/=.*/=***/'
