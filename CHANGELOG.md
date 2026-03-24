@@ -6,6 +6,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.278] - 2026-03-24
+
+
+### Fixed
+
+- Fix: pass ANTHROPIC_API_KEY to cloud bot pods
+
+Cloud bot pods need ANTHROPIC_API_KEY to use Claude models (claude-sonnet-4-6).
+Added AnthropicAPIKey config field, env override (HANZO_PLAYGROUND_CLOUD_ANTHROPIC_API_KEY
+or ANTHROPIC_API_KEY fallback), and env injection in provisioner.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ad25bcd)
+
+
+
+### Other
+
+- Remove console IAM workflow (moved to console repo)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (cbf7f62)
+
+- Use hex-safe NEXTAUTH_SECRET (avoid +/= chars)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (e751501)
+
+- Debug OIDC discovery from console pod
+
+Test if console pods can reach hanzo.id OIDC endpoint.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (82d3508)
+
+- Force hanzo-cloud and capture OAuth debug logs
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (106514f)
+
+- Fix IAM app creation: use external API and port-forward fallback
+
+Previous attempt timed out on internal k8s URL. Try external
+API first, then port-forward as fallback. Revert to hanzo-cloud
+if creation fails.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (5f45c9a)
+
+- Create dedicated hanzo-console IAM app and update console deployment
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (aa6368a)
+
+- Enable NextAuth debug logging to diagnose OAuthCallback error
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (dd1a8b4)
+
+- Add NEXTAUTH_SECRET to console deployment
+
+Root cause: OAuthCallback error because NEXTAUTH_SECRET
+was not set, preventing state/PKCE verification.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (7d28695)
+
 ## [0.1.41-rc.277] - 2026-03-23
 
 
