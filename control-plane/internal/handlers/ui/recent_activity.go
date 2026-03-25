@@ -89,7 +89,6 @@ func (c *RecentActivityCache) Set(data *RecentActivityResponse) {
 func (h *RecentActivityHandler) GetRecentActivityHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	org, _ := orgFromContext(c)
-	_ = org // TODO: pass org to getRecentExecutions for org-scoped cache
 
 	// Check cache first
 	if cachedData, found := h.cache.Get(); found {
@@ -101,7 +100,7 @@ func (h *RecentActivityHandler) GetRecentActivityHandler(c *gin.Context) {
 	logger.Logger.Debug().Msg("Generating fresh recent activity data")
 
 	// Get recent executions with agent information
-	recentExecutions, err := h.getRecentExecutions(ctx)
+	recentExecutions, err := h.getRecentExecutions(ctx, org)
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("Failed to get recent executions")
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get recent executions"})
@@ -121,9 +120,14 @@ func (h *RecentActivityHandler) GetRecentActivityHandler(c *gin.Context) {
 }
 
 // getRecentExecutions retrieves the last 20 executions with agent information
-func (h *RecentActivityHandler) getRecentExecutions(ctx context.Context) ([]ActivityExecution, error) {
-	// Query for the last 20 executions to support dashboard display
+func (h *RecentActivityHandler) getRecentExecutions(ctx context.Context, org string) ([]ActivityExecution, error) {
+	// Query for the last 20 executions, scoped by org
+	orgPtr := &org
+	if org == "" {
+		orgPtr = nil
+	}
 	filters := types.ExecutionFilter{
+		OrgID:          orgPtr,
 		Limit:          20,
 		Offset:         0,
 		SortBy:         "started_at",

@@ -63,12 +63,10 @@ export function ExecutionStatusBar({
   const theme = getStatusTheme(status);
 
   const handleRetry = () => {
-    // TODO: Implement retry functionality
-    console.log("Retry execution");
+    window.location.reload();
   };
 
   const handleShare = () => {
-    // TODO: Implement share functionality
     navigator.clipboard.writeText(window.location.href);
   };
 

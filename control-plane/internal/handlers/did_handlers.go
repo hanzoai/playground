@@ -434,7 +434,7 @@ func (h *DIDHandlers) GetDIDDocument(c *gin.Context) {
 			{
 				"id":              did + "#agents-service",
 				"type":            "AgentsBotService",
-				"serviceEndpoint": "https://agents.example.com/api/v1",
+				"serviceEndpoint": "https://" + c.Request.Host + "/api/v1",
 				"description":     "Playground Bot Platform Service",
 			},
 		},

@@ -73,7 +73,7 @@ func main() {
 // runServer contains the original server startup logic.
 // This function will be called by the Cobra command's Run field.
 func runServer(cmd *cobra.Command, args []string) {
-	fmt.Println("Playground server starting...")
+	log.Println("Playground server starting...")
 
 	// Load configuration
 	cfgFilePath, _ := cmd.Flags().GetString("config")
@@ -172,7 +172,7 @@ func runServer(cmd *cobra.Command, args []string) {
 			noVCFlag = true
 			cfg.Features.DID.VCRequirements.RequireVCForExecution = false
 			cfg.Features.DID.VCRequirements.PersistExecutionVC = false
-			fmt.Println("⚠️  Execution VC generation disabled via --no-vc-execution flag")
+			log.Println("Execution VC generation disabled via --no-vc-execution flag")
 		}
 	}
 
@@ -180,26 +180,26 @@ func runServer(cmd *cobra.Command, args []string) {
 	if flag := cmd.Flags().Lookup("vc-execution"); flag != nil && flag.Changed {
 		if vcOn, err := cmd.Flags().GetBool("vc-execution"); err == nil && vcOn {
 			if noVCFlag {
-				fmt.Println("⚠️  Ignoring --vc-execution because --no-vc-execution is also set")
+				log.Println("Ignoring --vc-execution because --no-vc-execution is also set")
 			} else {
 				cfg.Features.DID.Enabled = true
 				cfg.Features.DID.VCRequirements.RequireVCForExecution = true
 				cfg.Features.DID.VCRequirements.PersistExecutionVC = true
-				fmt.Println("✅ Execution VC generation enabled via --vc-execution flag")
+				log.Println("Execution VC generation enabled via --vc-execution flag")
 			}
 		}
 	}
 
 	// Build UI if in embedded mode and not in ui-dev mode and UI is not already embedded
 	if cfg.UI.Enabled && cfg.UI.Mode == "embedded" && !uiDev && !client.IsUIEmbedded() {
-		fmt.Println("Building UI for embedded mode...")
+		log.Println("Building UI for embedded mode...")
 		if err := buildUIFunc(cfg); err != nil {
 			log.Printf("Warning: Failed to build UI, UI might not be available: %v", err)
 		} else {
-			fmt.Println("UI build successful.")
+			log.Println("UI build successful.")
 		}
 	} else if cfg.UI.Enabled && cfg.UI.Mode == "embedded" && client.IsUIEmbedded() {
-		fmt.Println("UI is already embedded in binary, skipping build.")
+		log.Println("UI is already embedded in binary, skipping build.")
 	}
 
 	// Create Playground server instance
@@ -210,7 +210,7 @@ func runServer(cmd *cobra.Command, args []string) {
 
 	// Start the server in a goroutine so we can open the browser
 	go func() {
-		fmt.Printf("Playground server attempting to start on port %d...\n", cfg.Agents.Port)
+		log.Printf("Playground server attempting to start on port %d...", cfg.Agents.Port)
 		if err := startPlaygroundServerFunc(agentsServer); err != nil {
 			log.Fatalf("Failed to start Playground server: %v", err)
 		}
@@ -235,17 +235,17 @@ func runServer(cmd *cobra.Command, args []string) {
 			}
 			uiTargetURL = fmt.Sprintf("http://localhost:%d", devPort)
 		}
-		fmt.Printf("Opening browser to UI at %s...\n", uiTargetURL)
+		log.Printf("Opening browser to UI at %s...", uiTargetURL)
 		openBrowserFunc(uiTargetURL)
 	}
 
-	fmt.Printf("Playground server running. Press Ctrl+C to exit.\n")
+	log.Println("Playground server running. Press Ctrl+C to exit.")
 
 	// Wait for shutdown signal (overridable in tests).
 	waitForShutdownFunc()
 
 	// Graceful shutdown: drain in-flight requests, then stop background services.
-	fmt.Println("Shutting down gracefully (30s drain)...")
+	log.Println("Shutting down gracefully (30s drain)...")
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer drainCancel()
@@ -260,7 +260,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	if err := agentsServer.Stop(); err != nil {
 		log.Printf("Error during shutdown: %v", err)
 	}
-	fmt.Println("Server stopped.")
+	log.Println("Server stopped.")
 }
 
 // loadConfig loads configuration from file and environment variables.
@@ -298,13 +298,13 @@ func loadConfig(configFile string) (*config.Config, error) {
 
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-				fmt.Println("No config file found, using environment variables and defaults.")
+				log.Println("No config file found, using environment variables and defaults.")
 			} else {
 				return nil, fmt.Errorf("failed to read config file: %w", err)
 			}
 		}
 	} else {
-		fmt.Println("Skipping config file, using environment variables and defaults.")
+		log.Println("Skipping config file, using environment variables and defaults.")
 	}
 
 	var cfg config.Config
@@ -446,7 +446,7 @@ func loadConfig(configFile string) (*config.Config, error) {
 	// LoadConfig path; ensure it also runs for viper-based CLI config.
 	config.ApplyAllEnvOverrides(&cfg)
 
-	fmt.Printf("Loaded config - Storage mode: %s, Agents Port: %d, UI Mode: %s, UI Enabled: %t, DID Enabled: %t\n",
+	log.Printf("Loaded config - Storage mode: %s, Agents Port: %d, UI Mode: %s, UI Enabled: %t, DID Enabled: %t",
 		cfg.Storage.Mode, cfg.Agents.Port, cfg.UI.Mode, cfg.UI.Enabled, cfg.Features.DID.Enabled)
 
 	return &cfg, nil
@@ -464,7 +464,7 @@ func buildUI(cfg *config.Config) error {
 		return nil // Not an error if UI is optional or pre-built
 	}
 
-	fmt.Printf("Building UI in %s...\n", uiDir)
+	log.Printf("Building UI in %s...", uiDir)
 
 	// Set environment variables for the build process
 	buildEnv := os.Environ()
