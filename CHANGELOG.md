@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.280] - 2026-03-25
+
+
+### Fixed
+
+- Fix: use upsert for DID registration to prevent duplicate key race condition
+
+StoreNodeDID and StoreNodeDIDWithComponents used plain INSERT which
+caused hanzo_dids_pkey violations when a node re-registered during
+concurrent Go SDK tests. Changed to INSERT ... ON CONFLICT(did) DO
+UPDATE SET to make DID registration idempotent. (8a7635e)
+
 ## [0.1.41-rc.279] - 2026-03-25
 
 
