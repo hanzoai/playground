@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.279] - 2026-03-25
+
+
+### Chores
+
+- Chore: cleanup — remove docker-compose.yml (use compose.yml), delete dead files (88e7f0d)
+
+
+
+### Fixed
+
+- Fix: remove TODOs, replace fmt.Println with log, scope queries by org
+
+- Pass org to getRecentExecutions for org-scoped filtering (was a TODO)
+- Remove TODO stubs from ExecutionStatusBar retry/share handlers
+- Replace all fmt.Println/Printf with log.Println/Printf in main.go
+- Replace example.com placeholder in DID document with request host (2d55604)
+
 ## [0.1.41-rc.278] - 2026-03-24
 
 
