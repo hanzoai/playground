@@ -5842,22 +5842,22 @@ func (ls *LocalStorage) StoreNodeDIDWithComponents(ctx context.Context, agentID,
 		}
 	}()
 
-	// Store agent DID first
+	// Store agent DID (upsert: re-registration from same node is idempotent)
 	err = ls.retryOnConstraintFailure(ctx, func() error {
 		query := `
 			INSERT INTO hanzo_dids (
 				node_id, did, playground_server_id, public_key_jwk, derivation_path, registered_at, status
-			) VALUES (?, ?, ?, ?, ?, ?, ?)`
+			) VALUES (?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(did) DO UPDATE SET
+				node_id = EXCLUDED.node_id,
+				playground_server_id = EXCLUDED.playground_server_id,
+				public_key_jwk = EXCLUDED.public_key_jwk,
+				derivation_path = EXCLUDED.derivation_path,
+				status = EXCLUDED.status`
 
 		derivationPath := fmt.Sprintf("m/44'/0'/0'/%d", derivationIndex)
 		_, execErr := tx.ExecContext(ctx, query, agentID, agentDID, agentsServerDID, publicKeyJWK, derivationPath, time.Now(), "active")
 		if execErr != nil {
-			if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "hanzo_dids") {
-				return &DuplicateDIDError{
-					DID:  fmt.Sprintf("agent:%s@%s", agentID, agentsServerDID),
-					Type: "agent",
-				}
-			}
 			if strings.Contains(execErr.Error(), "FOREIGN KEY constraint failed") {
 				return &ForeignKeyConstraintError{
 					Table:           "hanzo_dids",
@@ -5873,10 +5873,6 @@ func (ls *LocalStorage) StoreNodeDIDWithComponents(ctx context.Context, agentID,
 	}, 3)
 
 	if err != nil {
-		var dupErr *DuplicateDIDError
-		if errors.As(err, &dupErr) {
-			return dupErr
-		}
 		return fmt.Errorf("failed to store agent DID: %w", err)
 	}
 
@@ -5886,17 +5882,17 @@ func (ls *LocalStorage) StoreNodeDIDWithComponents(ctx context.Context, agentID,
 			query := `
 				INSERT INTO component_dids (
 					did, agent_did, component_type, function_name, public_key_jwk, derivation_path
-				) VALUES (?, ?, ?, ?, ?, ?)`
+				) VALUES (?, ?, ?, ?, ?, ?)
+				ON CONFLICT(did) DO UPDATE SET
+					agent_did = EXCLUDED.agent_did,
+					component_type = EXCLUDED.component_type,
+					function_name = EXCLUDED.function_name,
+					public_key_jwk = EXCLUDED.public_key_jwk,
+					derivation_path = EXCLUDED.derivation_path`
 
 			derivationPath := fmt.Sprintf("m/44'/0'/0'/%d", component.DerivationIndex)
 			_, execErr := tx.ExecContext(ctx, query, component.ComponentDID, agentDID, component.ComponentType, component.ComponentName, component.PublicKeyJWK, derivationPath)
 			if execErr != nil {
-				if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "component_dids") {
-					return &DuplicateDIDError{
-						DID:  fmt.Sprintf("component:%s/%s@%s", component.ComponentType, component.ComponentName, agentDID),
-						Type: "component",
-					}
-				}
 				if strings.Contains(execErr.Error(), "FOREIGN KEY constraint failed") {
 					return &ForeignKeyConstraintError{
 						Table:           "component_dids",
@@ -5912,10 +5908,6 @@ func (ls *LocalStorage) StoreNodeDIDWithComponents(ctx context.Context, agentID,
 		}, 3)
 
 		if err != nil {
-			var dupErr *DuplicateDIDError
-			if errors.As(err, &dupErr) {
-				return dupErr
-			}
 			return fmt.Errorf("failed to store component DID %d (%s): %w", i, component.ComponentName, err)
 		}
 	}
@@ -6226,26 +6218,22 @@ func (ls *LocalStorage) StoreNodeDID(ctx context.Context, agentID, agentDID, age
 		}
 	}()
 
-	// Execute with retry logic
+	// Execute with retry logic (upsert: re-registration from same node is idempotent)
 	err = ls.retryOnConstraintFailure(ctx, func() error {
-		// INSERT-only query - no ON CONFLICT clause for security
 		query := `
 			INSERT INTO hanzo_dids (
 				node_id, did, playground_server_id, public_key_jwk, derivation_path, registered_at, status
-			) VALUES (?, ?, ?, ?, ?, ?, ?)`
+			) VALUES (?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(did) DO UPDATE SET
+				node_id = EXCLUDED.node_id,
+				playground_server_id = EXCLUDED.playground_server_id,
+				public_key_jwk = EXCLUDED.public_key_jwk,
+				derivation_path = EXCLUDED.derivation_path,
+				status = EXCLUDED.status`
 
 		derivationPath := fmt.Sprintf("m/44'/0'/0'/%d", derivationIndex)
 		_, execErr := tx.ExecContext(ctx, query, agentID, agentDID, agentsServerDID, publicKeyJWK, derivationPath, time.Now(), "active")
 		if execErr != nil {
-			// Check if this is a unique constraint violation (duplicate agent DID)
-			if strings.Contains(execErr.Error(), "UNIQUE constraint failed") || strings.Contains(execErr.Error(), "hanzo_dids") {
-				log.Printf("Duplicate agent DID entry detected: agent_id=%s, playground_server_id=%s", agentID, agentsServerDID)
-				return &DuplicateDIDError{
-					DID:  fmt.Sprintf("agent:%s@%s", agentID, agentsServerDID),
-					Type: "agent",
-				}
-			}
-			// Check for foreign key constraint violations
 			if strings.Contains(execErr.Error(), "FOREIGN KEY constraint failed") {
 				return &ForeignKeyConstraintError{
 					Table:           "hanzo_dids",
@@ -6258,7 +6246,7 @@ func (ls *LocalStorage) StoreNodeDID(ctx context.Context, agentID, agentDID, age
 			return fmt.Errorf("failed to store agent DID: %w", execErr)
 		}
 		return nil
-	}, 3) // Retry up to 3 times for transient errors
+	}, 3)
 
 	if err != nil {
 		return err
