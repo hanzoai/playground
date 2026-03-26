@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.285] - 2026-03-26
+
+
+### Fixed
+
+- Fix: bust Docker cache for frontend rebuild (612da52)
+
 ## [0.1.41-rc.284] - 2026-03-26
 
 
