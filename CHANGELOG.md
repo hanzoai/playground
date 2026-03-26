@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.289] - 2026-03-26
+
+
+### Fixed
+
+- Fix: use correct gateway canvas URL for Live Chat iframe (2b1ed8f)
+
 ## [0.1.41-rc.288] - 2026-03-26
 
 
