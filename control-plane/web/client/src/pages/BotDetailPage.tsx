@@ -333,7 +333,7 @@ export function BotDetailPage() {
           <CardContent className="p-0">
             <iframe
               ref={chatIframeRef}
-              src={`${gatewayOrigin}/?token=${encodeURIComponent(apiKey || "")}`}
+              src={`${gatewayOrigin}/__openclaw__/canvas/?token=${encodeURIComponent(apiKey || "")}`}
               onLoad={handleIframeLoad}
               style={{ width: "100%", height: "calc(100vh - 240px)", border: "none" }}
               allow="clipboard-write"
