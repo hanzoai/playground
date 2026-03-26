@@ -17,14 +17,14 @@ import { useBotBudget } from "../hooks/useBotBudget";
 import { useBotWallet } from "../hooks/useBotWallet";
 import { useNetworkStore } from "../stores/networkStore";
 import { getBalance } from "../services/billingApi";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 const ChatPanel = lazy(() =>
   import("../components/canvas/drill-down/ChatPanel").then((m) => ({
     default: m.ChatPanel,
   })),
 );
-import { useAuth } from "../contexts/AuthContext";
+// useAuth import removed — Live Chat no longer needs iframe token injection
 import { useParams } from "react-router-dom";
 import { DIDIdentityBadge } from "../components/did/DIDDisplay";
 import { Badge } from "../components/ui/badge";
@@ -82,7 +82,6 @@ export function BotDetailPage() {
   );
   const executionQueueRef = useRef<ExecutionQueueRef | null>(null);
   // chatIframeRef removed — Live Chat now uses inline ChatPanel
-  const { apiKey } = useAuth();
   const [activeView, setActiveView] = useState<"execute" | "chat">("execute");
 
   // History and metrics
@@ -105,9 +104,7 @@ export function BotDetailPage() {
     getBalance().then((r) => setUsdBalanceCents(r.available)).catch(() => {});
   }, []);
 
-  const gatewayOrigin = (import.meta.env.VITE_BOT_GATEWAY_URL as string) || "https://gw.hanzo.bot";
-
-  // handleIframeLoad removed — Live Chat now uses inline ChatPanel
+  // gatewayOrigin and handleIframeLoad removed — Live Chat now uses inline ChatPanel
 
   useEffect(() => {
     loadBotDetails();
@@ -330,7 +327,7 @@ export function BotDetailPage() {
         <Card className="card-elevated">
           <CardContent className="p-0" style={{ height: "calc(100vh - 240px)" }}>
             <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading chat...</div>}>
-              <ChatPanel agentId={botId} sessionKey={`${botId}:main`} className="h-full" />
+              <ChatPanel agentId={fullBotId!} sessionKey={`${fullBotId}:main`} className="h-full" />
             </Suspense>
           </CardContent>
         </Card>
