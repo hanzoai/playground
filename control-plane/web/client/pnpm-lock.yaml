@@ -27,8 +27,8 @@ importers:
         specifier: ^9.2.11
         version: 9.2.11(@deck.gl/core@9.2.11)(@deck.gl/widgets@9.2.8(@deck.gl/core@9.2.11)(@luma.gl/core@9.2.6))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@hanzo/iam':
-        specifier: github:hanzo-js/iam#main
-        version: https://codeload.github.com/hanzo-js/iam/tar.gz/599efa909205552cde16957798cdd81393f0e5a6(react@19.2.4)
+        specifier: ^0.4.2
+        version: 0.4.2(react@19.2.4)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -710,9 +710,8 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
-  '@hanzo/iam@https://codeload.github.com/hanzo-js/iam/tar.gz/599efa909205552cde16957798cdd81393f0e5a6':
-    resolution: {tarball: https://codeload.github.com/hanzo-js/iam/tar.gz/599efa909205552cde16957798cdd81393f0e5a6}
-    version: 0.5.0
+  '@hanzo/iam@0.4.2':
+    resolution: {integrity: sha512-1KqSsW6KUtAPh5iMIiyBEYFUGDqzDifllef37ZeqKbrfaFMdk2uyCbUtQaP78Je3PLjOjZTmAaEMZhvCTWLN2A==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=17'
@@ -3901,7 +3900,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@hanzo/iam@https://codeload.github.com/hanzo-js/iam/tar.gz/599efa909205552cde16957798cdd81393f0e5a6(react@19.2.4)':
+  '@hanzo/iam@0.4.2(react@19.2.4)':
     dependencies:
       jose: 6.2.2
     optionalDependencies:
