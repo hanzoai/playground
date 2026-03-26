@@ -335,6 +335,15 @@ type ExecutionTemplate struct {
 	CreatedAt   time.Time              `json:"created_at"`
 }
 
+// normalizeBotID ensures botID is in "node_id.bot_id" format.
+// If only a node_id is given (no dot), appends ".main".
+func normalizeBotID(botID string) string {
+	if !strings.Contains(botID, ".") {
+		return botID + ".main"
+	}
+	return botID
+}
+
 // GetPerformanceMetricsHandler handles requests for bot performance metrics
 func (h *BotsHandler) GetPerformanceMetricsHandler(c *gin.Context) {
 	botID := c.Param("botId")
@@ -342,6 +351,7 @@ func (h *BotsHandler) GetPerformanceMetricsHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
+	botID = normalizeBotID(botID)
 
 	// Get real performance metrics from storage
 	ctx := c.Request.Context()
@@ -365,6 +375,7 @@ func (h *BotsHandler) GetExecutionHistoryHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bot_id is required"})
 		return
 	}
+	botID = normalizeBotID(botID)
 
 	// Parse pagination parameters
 	pageStr := c.DefaultQuery("page", "1")

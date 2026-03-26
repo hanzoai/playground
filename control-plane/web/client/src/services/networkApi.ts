@@ -38,7 +38,7 @@ import type {
 const NETWORK_API =
   import.meta.env.VITE_NETWORK_API_URL ||
   import.meta.env.VITE_COMMERCE_API_URL ||
-  'https://commerce.hanzo.ai';
+  'https://commerce-api.hanzo.ai/api';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
