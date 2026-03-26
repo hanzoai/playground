@@ -212,13 +212,35 @@ export function CanvasFlow({ className }: { className?: string }) {
   }, [autoLayout, fitView, debouncedPersist]);
 
   const handleAddBot = useCallback(
-    (pos: { x: number; y: number }) => {
+    async (pos: { x: number; y: number }) => {
       const flowPos = screenToFlowPosition(pos);
-      upsertBot(`new-${Date.now()}`, {
-        name: 'New Bot',
-        status: 'idle',
+      const displayName = `bot-${Date.now().toString(36)}`;
+      // Show provisional placeholder
+      const tempId = `new-${Date.now()}`;
+      upsertBot(tempId, {
+        name: displayName,
+        status: 'provisioning',
         source: 'cloud',
       }, flowPos);
+      try {
+        const result = await spaceApi.provisionCloudNode({
+          display_name: displayName,
+          os: 'linux',
+        });
+        // Replace placeholder with real node
+        const removeBot = useCanvasStore.getState().removeBot;
+        removeBot(tempId);
+        upsertBot(result.node_id, {
+          name: displayName,
+          status: 'provisioning',
+          source: 'cloud',
+        }, flowPos);
+      } catch (err) {
+        // Remove placeholder on failure
+        const removeBot = useCanvasStore.getState().removeBot;
+        removeBot(tempId);
+        console.error(`[cloud] Add bot failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
     },
     [screenToFlowPosition, upsertBot]
   );

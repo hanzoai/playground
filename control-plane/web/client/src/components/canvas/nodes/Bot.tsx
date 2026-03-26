@@ -11,9 +11,11 @@
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import { useCallback, useState, lazy, Suspense } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useBotStore } from '@/stores/botStore';
 import type { Bot as BotType, BotView } from '@/types/canvas';
 import { AGENT_RUNTIMES } from '@/types/canvas';
 import { cn } from '@/lib/utils';
+import { agentsDelete, cloudDeprovision } from '@/services/gatewayApi';
 import { RuntimeSelector } from '../RuntimeSelector';
 import { BOT_NODE_MIN_WIDTH, BOT_NODE_MIN_HEIGHT } from './registry';
 
@@ -68,8 +70,15 @@ export function BotNodeComponent({ data, selected }: NodeProps) {
     [setBotView, bot.agentId]
   );
 
-  const handleClose = useCallback(() => {
+  const handleClose = useCallback(async () => {
+    // Delete from server (gateway + cloud deprovision)
+    try { await agentsDelete(bot.agentId); } catch { /* ignore */ }
+    if (bot.agentId.startsWith('cloud-')) {
+      try { await cloudDeprovision(bot.agentId); } catch { /* ignore */ }
+    }
+    // Remove from local state
     removeBot(bot.agentId);
+    useBotStore.getState().removeAgent(bot.agentId);
   }, [removeBot, bot.agentId]);
 
   return (
