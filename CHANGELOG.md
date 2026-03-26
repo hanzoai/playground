@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.286] - 2026-03-26
+
+
+### CI
+
+- Ci: restore Docker build cache (4cba32f)
+
+- Ci: disable Docker cache for fresh frontend build (5cd8658)
+
+
+
+### Fixed
+
+- Fix: update commerce API URL in .env.production, upgrade @hanzo/iam to 0.4.2 (36ed243)
+
 ## [0.1.41-rc.285] - 2026-03-26
 
 
