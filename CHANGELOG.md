@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.288] - 2026-03-26
+
+
+### Fixed
+
+- Fix: return default budget instead of 404 for unconfigured bots (a59dd65)
+
 ## [0.1.41-rc.287] - 2026-03-26
 
 
