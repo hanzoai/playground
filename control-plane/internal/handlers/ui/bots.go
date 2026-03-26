@@ -234,15 +234,13 @@ func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
 		return
 	}
 
-	// Parse bot ID (format: "node_id.bot_id")
+	// Parse bot ID (format: "node_id.bot_id" or just "node_id")
 	parts := strings.SplitN(botID, ".", 2)
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
-		return
-	}
-
 	nodeID := parts[0]
-	localBotID := parts[1]
+	localBotID := "main"
+	if len(parts) == 2 {
+		localBotID = parts[1]
+	}
 
 	// Get the node
 	ctx := c.Request.Context()
@@ -345,13 +343,6 @@ func (h *BotsHandler) GetPerformanceMetricsHandler(c *gin.Context) {
 		return
 	}
 
-	// Parse bot ID (format: "node_id.bot_id")
-	parts := strings.SplitN(botID, ".", 2)
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
-		return
-	}
-
 	// Get real performance metrics from storage
 	ctx := c.Request.Context()
 	metrics, err := h.storage.GetBotPerformanceMetrics(ctx, botID)
@@ -389,12 +380,7 @@ func (h *BotsHandler) GetExecutionHistoryHandler(c *gin.Context) {
 		limit = 20
 	}
 
-	// Parse bot ID (format: "node_id.bot_id")
-	parts := strings.SplitN(botID, ".", 2)
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
-		return
-	}
+
 
 	// Get real execution history from storage
 	ctx := c.Request.Context()
@@ -419,12 +405,7 @@ func (h *BotsHandler) GetExecutionTemplatesHandler(c *gin.Context) {
 		return
 	}
 
-	// Parse bot ID (format: "node_id.bot_id")
-	parts := strings.SplitN(botID, ".", 2)
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
-		return
-	}
+
 
 	// Return empty list — templates are stored per-bot on the gateway side
 	templates := []ExecutionTemplate{}
@@ -439,12 +420,7 @@ func (h *BotsHandler) SaveExecutionTemplateHandler(c *gin.Context) {
 		return
 	}
 
-	// Parse bot ID (format: "node_id.bot_id")
-	parts := strings.SplitN(botID, ".", 2)
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bot_id format, expected 'node_id.bot_id'"})
-		return
-	}
+
 
 	var template struct {
 		Name        string                 `json:"name"`
