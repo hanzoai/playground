@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.281] - 2026-03-26
+
+
+### Fixed
+
+- Fix: X button now deletes bots server-side, Add Bot provisions cloud node (b384241)
+
+- Fix(ci): update compose file references after docker-compose.yml rename
+
+The compose files in tests/functional/docker/ were renamed from
+docker-compose.{local,postgres}.yml to compose.{local,postgres}.yml
+but the workflow still referenced the old names, causing immediate
+failure with 'no such file or directory'. (21ba7f8)
+
 ## [0.1.41-rc.280] - 2026-03-25
 
 
