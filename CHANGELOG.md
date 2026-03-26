@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.291] - 2026-03-26
+
+
+### Fixed
+
+- Fix: TS errors - remove unused imports, fix botId -> fullBotId (69f41f1)
+
 ## [0.1.41-rc.290] - 2026-03-26
 
 
