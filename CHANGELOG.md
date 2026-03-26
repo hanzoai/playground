@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.282] - 2026-03-26
+
+
+### Fixed
+
+- Fix: redirect /nodes/:id to /bots/:id and fix NodeCard navigation (8877fe7)
+
 ## [0.1.41-rc.281] - 2026-03-26
 
 
