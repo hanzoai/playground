@@ -17,7 +17,13 @@ import { useBotBudget } from "../hooks/useBotBudget";
 import { useBotWallet } from "../hooks/useBotWallet";
 import { useNetworkStore } from "../stores/networkStore";
 import { getBalance } from "../services/billingApi";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+
+const ChatPanel = lazy(() =>
+  import("../components/canvas/drill-down/ChatPanel").then((m) => ({
+    default: m.ChatPanel,
+  })),
+);
 import { useAuth } from "../contexts/AuthContext";
 import { useParams } from "react-router-dom";
 import { DIDIdentityBadge } from "../components/did/DIDDisplay";
@@ -75,7 +81,7 @@ export function BotDetailPage() {
     "formatted"
   );
   const executionQueueRef = useRef<ExecutionQueueRef | null>(null);
-  const chatIframeRef = useRef<HTMLIFrameElement | null>(null);
+  // chatIframeRef removed — Live Chat now uses inline ChatPanel
   const { apiKey } = useAuth();
   const [activeView, setActiveView] = useState<"execute" | "chat">("execute");
 
@@ -101,15 +107,7 @@ export function BotDetailPage() {
 
   const gatewayOrigin = (import.meta.env.VITE_BOT_GATEWAY_URL as string) || "https://gw.hanzo.bot";
 
-  // Send IAM token to embedded Bot Control UI via postMessage
-  const handleIframeLoad = useCallback(() => {
-    const iframe = chatIframeRef.current;
-    if (!iframe?.contentWindow || !apiKey) return;
-    iframe.contentWindow.postMessage(
-      { type: "hanzo:iam-token", token: apiKey },
-      gatewayOrigin,
-    );
-  }, [apiKey, gatewayOrigin]);
+  // handleIframeLoad removed — Live Chat now uses inline ChatPanel
 
   useEffect(() => {
     loadBotDetails();
@@ -327,18 +325,13 @@ export function BotDetailPage() {
         )}
       </div>
 
-      {/* Chat View — Bot Control UI iframe */}
+      {/* Chat View — inline ChatPanel connected via gateway WS */}
       {activeView === "chat" && (
         <Card className="card-elevated">
-          <CardContent className="p-0">
-            <iframe
-              ref={chatIframeRef}
-              src={`${gatewayOrigin}/__openclaw__/canvas/?token=${encodeURIComponent(apiKey || "")}`}
-              onLoad={handleIframeLoad}
-              style={{ width: "100%", height: "calc(100vh - 240px)", border: "none" }}
-              allow="clipboard-write"
-              title="Bot Control UI"
-            />
+          <CardContent className="p-0" style={{ height: "calc(100vh - 240px)" }}>
+            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading chat...</div>}>
+              <ChatPanel agentId={botId} sessionKey={`${botId}:main`} className="h-full" />
+            </Suspense>
           </CardContent>
         </Card>
       )}
