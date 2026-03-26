@@ -104,7 +104,7 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
-          no-cache: true
+          cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # Dispatch to universe for staging → E2E → production promotion.
