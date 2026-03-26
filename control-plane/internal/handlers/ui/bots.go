@@ -255,7 +255,8 @@ func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
 		return
 	}
 
-	// Find the bot
+	// Find the bot — for cloud nodes that don't register explicit bot
+	// definitions, synthesize a bot entry from the node itself.
 	var foundBot *types.BotDefinition
 	for _, bot := range node.Bots {
 		if bot.ID == localBotID {
@@ -264,16 +265,22 @@ func (h *BotsHandler) GetBotDetailsHandler(c *gin.Context) {
 		}
 	}
 
+	// Synthesize a default bot from the node if none registered
 	if foundBot == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "bot not found"})
-		return
+		foundBot = &types.BotDefinition{
+			ID: localBotID,
+		}
 	}
 
 	// Create detailed response
+	botName := foundBot.ID
+	if botName == "main" {
+		botName = nodeID
+	}
 	botDetails := BotWithNode{
 		BotID:   botID,
-		Name:         foundBot.ID,
-		Description:  fmt.Sprintf("Bot %s from node %s", foundBot.ID, nodeID),
+		Name:         botName,
+		Description:  fmt.Sprintf("Cloud bot on node %s", nodeID),
 		NodeID:       nodeID,
 		NodeStatus:   node.HealthStatus,
 		NodeVersion:  node.Version,

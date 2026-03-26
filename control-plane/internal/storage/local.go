@@ -5383,7 +5383,7 @@ func (ls *LocalStorage) executeBotMetricsQuery(tx DBTX, nodeID, localBotID strin
 			COUNT(*) as total_executions,
 			COALESCE(AVG(duration_ms), 0) as avg_duration,
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful_executions,
-			COALESCE(SUM(CASE WHEN started_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END), 0) as executions_last_24h
+			COALESCE(SUM(CASE WHEN started_at >= NOW() - INTERVAL '24 hours' THEN 1 ELSE 0 END), 0) as executions_last_24h
 		FROM workflow_executions
 		WHERE node_id = ? AND bot_id = ?`
 
@@ -5456,7 +5456,7 @@ func (ls *LocalStorage) executeBotMetricsQueryDirect(ctx context.Context, nodeID
 			COUNT(*) as total_executions,
 			COALESCE(AVG(duration_ms), 0) as avg_duration,
 			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as successful_executions,
-			COALESCE(SUM(CASE WHEN started_at >= datetime('now', '-24 hours') THEN 1 ELSE 0 END), 0) as executions_last_24h
+			COALESCE(SUM(CASE WHEN started_at >= NOW() - INTERVAL '24 hours' THEN 1 ELSE 0 END), 0) as executions_last_24h
 		FROM workflow_executions
 		WHERE node_id = ? AND bot_id = ?`
 
