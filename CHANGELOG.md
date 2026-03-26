@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.290] - 2026-03-26
+
+
+### Fixed
+
+- Fix: replace canvas iframe with inline ChatPanel for Live Chat (f7c52b5)
+
 ## [0.1.41-rc.289] - 2026-03-26
 
 
