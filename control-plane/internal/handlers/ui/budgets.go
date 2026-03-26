@@ -52,8 +52,12 @@ func (h *BudgetHandler) GetBudget(c *gin.Context) {
 	}
 
 	if budget == nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no budget configured for this bot"})
-		return
+		// Return a default unconfigured budget instead of 404 so the
+		// frontend can render "no budget" gracefully.
+		budget = &storage.BotBudget{
+			BotID:   botID,
+			Enabled: false,
+		}
 	}
 
 	c.JSON(http.StatusOK, budget)
