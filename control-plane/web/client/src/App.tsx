@@ -1,4 +1,4 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes, useParams } from "react-router-dom";
 import { SidebarNew } from "./components/Navigation/SidebarNew";
 import { TopNavigation } from "./components/Navigation/TopNavigation";
 import { RootRedirect } from "./components/RootRedirect";
@@ -46,6 +46,12 @@ function SettingsPage() {
   return <GatewaySettings />;
 }
 
+/** Redirect legacy /nodes/:nodeId URLs to /bots/:nodeId */
+function NodeRedirect() {
+  const { nodeId } = useParams();
+  return <Navigate to={`/bots/${nodeId}`} replace />;
+}
+
 function PreferencesGate({ children }: { children: React.ReactNode }) {
   const onboardingComplete = usePreferencesStore((s) => s.onboardingComplete);
 
@@ -91,6 +97,7 @@ function AppContent() {
               <Route path="/dashboard" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/bots" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
               <Route path="/bots/:fullBotId" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BotDetailPage /></div>} />
+              <Route path="/nodes/:nodeId" element={<NodeRedirect />} />
               <Route path="/tasks" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ExecutionsPage /></div>} />
               <Route
                 path="/tasks/:taskId"

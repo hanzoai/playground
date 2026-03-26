@@ -156,7 +156,7 @@ const NodeCard = memo(
 
     // Handle navigation
     const handleNavigation = () => {
-      navigate(`/nodes/${nodeSummary.id}`);
+      navigate(`/bots/${encodeURIComponent(nodeSummary.id)}`);
     };
 
     // Handle keyboard navigation
