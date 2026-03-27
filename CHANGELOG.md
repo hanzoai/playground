@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.295] - 2026-03-27
+
+
+### Fixed
+
+- Fix: run init-workspace as node user with fsGroup, remove chown (8e32381)
+
 ## [0.1.41-rc.294] - 2026-03-27
 
 
