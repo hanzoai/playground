@@ -288,6 +288,15 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			"timeoutSeconds":      3,
 			"failureThreshold":    30,
 		},
+		// Ensure the workspace directory exists — the agent process
+		// calls chdir(workspace) on startup and fails with ENOENT if missing.
+		"lifecycle": map[string]interface{}{
+			"postStart": map[string]interface{}{
+				"exec": map[string]interface{}{
+					"command": []string{"sh", "-c", "mkdir -p /home/node/.openclaw/workspace"},
+				},
+			},
+		},
 	}
 
 	if len(spec.Args) > 0 {
