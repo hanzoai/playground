@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.292] - 2026-03-27
+
+
+### Fixed
+
+- Fix: load chat history on mount so messages persist across refresh (5f48565)
+
 ## [0.1.41-rc.291] - 2026-03-26
 
 
