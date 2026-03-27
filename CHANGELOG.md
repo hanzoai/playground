@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.297] - 2026-03-27
+
+
+### Fixed
+
+- Fix: share X11 socket between agent and operative for desktop control (61c816a)
+
 ## [0.1.41-rc.296] - 2026-03-27
 
 
