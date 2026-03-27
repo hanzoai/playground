@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.300] - 2026-03-27
+
+
+### Fixed
+
+- Fix: use combined bot-cloud image for desktop agents (no sidecar) (315de2b)
+
 ## [0.1.41-rc.299] - 2026-03-27
 
 
