@@ -255,7 +255,8 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 	// Share the operative sidecar's X11 display so exec commands
 	// (e.g. opening a browser) render on the VNC desktop.
 	if len(spec.Sidecars) > 0 {
-		envVars = append(envVars, map[string]string{"name": "DISPLAY", "value": ":0"})
+		envVars = append(envVars, map[string]string{"name": "DISPLAY", "value": ":1"})
+		envVars = append(envVars, map[string]string{"name": "DESKTOP_EXEC", "value": "/home/node/.openclaw/bin/desktop-exec"})
 	}
 
 	container := map[string]interface{}{
@@ -378,7 +379,29 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			"image": spec.Image,
 			"command": []string{
 				"sh", "-c",
-				"mkdir -p /home/node/.openclaw/workspace",
+				`mkdir -p /home/node/.openclaw/workspace /home/node/.openclaw/bin && cat > /home/node/.openclaw/bin/desktop-exec << 'SCRIPT'
+#!/bin/sh
+# Run a command inside the operative (desktop) container's mount namespace.
+# This allows the agent to launch GUI apps (firefox, chromium) that exist
+# only in the operative container.
+OPERATIVE_PID=$(cat /home/node/.openclaw/operative.pid 2>/dev/null)
+if [ -z "$OPERATIVE_PID" ]; then
+  # Find operative's init process via /proc
+  for p in /proc/[0-9]*/cmdline; do
+    if grep -q "operative\|Xvfb\|x11vnc\|startxfce" "$p" 2>/dev/null; then
+      OPERATIVE_PID=$(echo "$p" | cut -d/ -f3)
+      echo "$OPERATIVE_PID" > /home/node/.openclaw/operative.pid
+      break
+    fi
+  done
+fi
+if [ -z "$OPERATIVE_PID" ]; then
+  echo "Error: operative container not found" >&2
+  exit 1
+fi
+exec nsenter --target "$OPERATIVE_PID" --mount --pid -- env DISPLAY=:1 "$@"
+SCRIPT
+chmod +x /home/node/.openclaw/bin/desktop-exec`,
 			},
 			"securityContext": map[string]interface{}{
 				"runAsUser":  int64(1000),
@@ -397,9 +420,13 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		"securityContext": map[string]interface{}{
 			"fsGroup": int64(1000),
 		},
-		"initContainers": initContainers,
-		"containers":     containers,
-		"restartPolicy":  "Always",
+		// Share PID namespace so the agent container can use nsenter to
+		// execute GUI commands (firefox, chromium) inside the operative
+		// container's mount namespace where desktop apps are installed.
+		"shareProcessNamespace": len(spec.Sidecars) > 0,
+		"initContainers":       initContainers,
+		"containers":           containers,
+		"restartPolicy":        "Always",
 		"volumes": []map[string]interface{}{
 			{
 				"name":     "openclaw-data",
