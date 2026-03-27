@@ -364,7 +364,11 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			"image": spec.Image,
 			"command": []string{
 				"sh", "-c",
-				"mkdir -p /home/node/.openclaw/workspace && chown -R node:node /home/node/.openclaw",
+				"mkdir -p /home/node/.openclaw/workspace",
+			},
+			"securityContext": map[string]interface{}{
+				"runAsUser":  int64(1000),
+				"runAsGroup": int64(1000),
 			},
 			"volumeMounts": []map[string]interface{}{
 				{
@@ -376,6 +380,9 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 	}
 
 	podSpec := map[string]interface{}{
+		"securityContext": map[string]interface{}{
+			"fsGroup": int64(1000),
+		},
 		"initContainers": initContainers,
 		"containers":     containers,
 		"restartPolicy":  "Always",
