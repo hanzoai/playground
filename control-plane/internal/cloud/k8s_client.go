@@ -258,6 +258,7 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		"image":           spec.Image,
 		"imagePullPolicy": "Always",
 		"env":             envVars,
+		"workingDir":      "/home/node/.openclaw/workspace",
 		"resources": map[string]interface{}{
 			"requests": map[string]string{
 				"cpu":    spec.CPU,
@@ -266,6 +267,12 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			"limits": map[string]string{
 				"cpu":    spec.LimitCPU,
 				"memory": spec.LimitMemory,
+			},
+		},
+		"volumeMounts": []map[string]interface{}{
+			{
+				"name":      "openclaw-data",
+				"mountPath": "/home/node/.openclaw",
 			},
 		},
 		// In node mode the agent connects to the central gateway via WebSocket
@@ -348,9 +355,36 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		containers = append(containers, scContainer)
 	}
 
+	// Init container ensures workspace directory exists BEFORE the agent starts.
+	// The agent calls chdir(workspace) on boot and fails with ENOENT if missing.
+	// postStart lifecycle hooks race with the main process, so initContainers is required.
+	initContainers := []map[string]interface{}{
+		{
+			"name":  "init-workspace",
+			"image": spec.Image,
+			"command": []string{
+				"sh", "-c",
+				"mkdir -p /home/node/.openclaw/workspace && chown -R node:node /home/node/.openclaw",
+			},
+			"volumeMounts": []map[string]interface{}{
+				{
+					"name":      "openclaw-data",
+					"mountPath": "/home/node/.openclaw",
+				},
+			},
+		},
+	}
+
 	podSpec := map[string]interface{}{
-		"containers":    containers,
-		"restartPolicy": "Always",
+		"initContainers": initContainers,
+		"containers":     containers,
+		"restartPolicy":  "Always",
+		"volumes": []map[string]interface{}{
+			{
+				"name":     "openclaw-data",
+				"emptyDir": map[string]interface{}{},
+			},
+		},
 	}
 
 	if spec.ServiceAccount != "" {
