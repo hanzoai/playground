@@ -414,7 +414,7 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		Memory:          memory,
 		LimitCPU:        p.config.Kubernetes.LimitCPU,
 		LimitMemory:     p.config.Kubernetes.LimitMemory,
-		Args:            nodeArgs(p.config.Kubernetes.GatewayURL, nodeID),
+		Args:            cloudAgentArgs(p.config.Kubernetes.GatewayURL, nodeID, !terminalOnly && p.config.Kubernetes.OperativeEnabled),
 		ControlPlaneURL: fmt.Sprintf("http://hanzo-playground.%s.svc:8080", namespace),
 		Sidecars:        sidecars,
 		NodeSelector:    p.config.Kubernetes.NodeSelector,
@@ -1188,15 +1188,21 @@ func nodeOptionsForMemory(memLimit string) string {
 	return fmt.Sprintf("--max-old-space-size=%d", heapMB)
 }
 
-// nodeArgs builds the container args to run the bot in node mode.
-// Gateway URL is passed via BOT_NODE_GATEWAY_URL env var.
-// If no gateway URL is configured, falls back to standalone gateway mode.
-func nodeArgs(gatewayURL, nodeID string) []string {
+// cloudAgentArgs builds the container args for a cloud agent pod.
+// For combined desktop+bot images, returns nil to use the image's ENTRYPOINT
+// (cloud-entrypoint.sh) which starts the desktop then the bot.
+// For terminal-only or sidecar mode, returns explicit node-host args.
+func cloudAgentArgs(gatewayURL, nodeID string, combinedDesktop bool) []string {
 	if gatewayURL == "" {
 		return []string{
 			"node", "hanzo-bot.mjs", "gateway",
 			"--allow-unconfigured", "--bind", "lan",
 		}
+	}
+	if combinedDesktop {
+		// Use the image's ENTRYPOINT (cloud-entrypoint.sh).
+		// Bot config is passed via env vars: BOT_GATEWAY_URL, HANZO_NODE_ID, etc.
+		return nil
 	}
 	return []string{
 		"node", "hanzo-bot.mjs", "node", "run",
