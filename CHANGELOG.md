@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.296] - 2026-03-27
+
+
+### Fixed
+
+- Fix: remove workingDir from agent container - causes MODULE_NOT_FOUND (a9402cd)
+
 ## [0.1.41-rc.295] - 2026-03-27
 
 
