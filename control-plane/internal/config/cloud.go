@@ -29,9 +29,11 @@ type KubernetesConfig struct {
 	LimitMemory      string            `yaml:"limit_memory" mapstructure:"limit_memory"`
 	PodTTL           time.Duration     `yaml:"pod_ttl" mapstructure:"pod_ttl"`
 	GracefulShutdown time.Duration     `yaml:"graceful_shutdown" mapstructure:"graceful_shutdown"`
-	// Operative sidecar (full Linux desktop: noVNC + Xvfb)
+	// Operative desktop (full Linux desktop: noVNC + Xvfb)
 	OperativeEnabled bool   `yaml:"operative_enabled" mapstructure:"operative_enabled"`
 	OperativeImage   string `yaml:"operative_image" mapstructure:"operative_image"`
+	// Combined bot+desktop image (replaces separate agent + operative sidecar)
+	BotCloudImage string `yaml:"bot_cloud_image" mapstructure:"bot_cloud_image"`
 	// Hanzo Cloud AI backend for bot LLM calls
 	CloudAPIEndpoint string `yaml:"cloud_api_endpoint" mapstructure:"cloud_api_endpoint"`
 	CloudAPIKey      string `yaml:"cloud_api_key" mapstructure:"cloud_api_key"`
@@ -84,6 +86,7 @@ func DefaultCloudConfig() CloudConfig {
 			GracefulShutdown: 30 * time.Second,
 			OperativeEnabled: true,
 			OperativeImage:   "ghcr.io/hanzoai/operative:latest",
+			BotCloudImage:    "ghcr.io/hanzoai/bot-cloud:latest",
 			CloudAPIEndpoint: "https://api.hanzo.ai/v1",
 			GatewayURL:       "ws://bot-gateway.hanzo.svc:80",
 		},
@@ -165,6 +168,9 @@ func applyCloudEnvOverrides(cfg *Config) {
 	}
 	if v := hanzoEnvWithFallback("CLOUD_K8S_OPERATIVE_IMAGE"); v != "" {
 		cfg.Cloud.Kubernetes.OperativeImage = v
+	}
+	if v := hanzoEnvWithFallback("CLOUD_K8S_BOT_CLOUD_IMAGE"); v != "" {
+		cfg.Cloud.Kubernetes.BotCloudImage = v
 	}
 	if v := hanzoEnvWithFallback("CLOUD_API_ENDPOINT"); v != "" {
 		cfg.Cloud.Kubernetes.CloudAPIEndpoint = v

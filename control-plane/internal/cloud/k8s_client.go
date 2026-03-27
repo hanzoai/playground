@@ -246,6 +246,24 @@ func (c *InClusterK8sClient) GetPodLogs(ctx context.Context, namespace, podName 
 	return string(logBytes), nil
 }
 
+// agentVolumeMounts returns volume mounts for the agent container.
+// When sidecars are present, includes the shared X11 socket.
+func agentVolumeMounts(spec *PodSpec) []map[string]interface{} {
+	mounts := []map[string]interface{}{
+		{
+			"name":      "openclaw-data",
+			"mountPath": "/home/node/.openclaw",
+		},
+	}
+	if len(spec.Sidecars) > 0 {
+		mounts = append(mounts, map[string]interface{}{
+			"name":      "x11-socket",
+			"mountPath": "/tmp/.X11-unix",
+		})
+	}
+	return mounts
+}
+
 // buildPodManifest creates a K8s Pod JSON manifest from a PodSpec.
 func buildPodManifest(spec *PodSpec) map[string]interface{} {
 	envVars := make([]map[string]string, 0, len(spec.Env)+1)
@@ -274,16 +292,7 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 				"memory": spec.LimitMemory,
 			},
 		},
-		"volumeMounts": []map[string]interface{}{
-			{
-				"name":      "openclaw-data",
-				"mountPath": "/home/node/.openclaw",
-			},
-			{
-				"name":      "x11-socket",
-				"mountPath": "/tmp/.X11-unix",
-			},
-		},
+		"volumeMounts": agentVolumeMounts(spec),
 		// In node mode the agent connects to the central gateway via WebSocket
 		// and doesn't expose an HTTP server. Use exec probes to check process health.
 		"livenessProbe": map[string]interface{}{
@@ -416,27 +425,33 @@ chmod +x /home/node/.openclaw/bin/desktop-exec`,
 		},
 	}
 
+	volumes := []map[string]interface{}{
+		{
+			"name":     "openclaw-data",
+			"emptyDir": map[string]interface{}{},
+		},
+	}
+	// Only add X11 socket volume if using sidecar architecture
+	if len(spec.Sidecars) > 0 {
+		volumes = append(volumes, map[string]interface{}{
+			"name":     "x11-socket",
+			"emptyDir": map[string]interface{}{},
+		})
+	}
+
 	podSpec := map[string]interface{}{
 		"securityContext": map[string]interface{}{
 			"fsGroup": int64(1000),
 		},
-		// Share PID namespace so the agent container can use nsenter to
-		// execute GUI commands (firefox, chromium) inside the operative
-		// container's mount namespace where desktop apps are installed.
-		"shareProcessNamespace": true,
-		"initContainers":       initContainers,
-		"containers":           containers,
-		"restartPolicy":        "Always",
-		"volumes": []map[string]interface{}{
-			{
-				"name":     "openclaw-data",
-				"emptyDir": map[string]interface{}{},
-			},
-			{
-				"name":     "x11-socket",
-				"emptyDir": map[string]interface{}{},
-			},
-		},
+		"initContainers": initContainers,
+		"containers":     containers,
+		"restartPolicy":  "Always",
+		"volumes":        volumes,
+	}
+
+	// Share PID namespace only when using sidecar containers
+	if len(spec.Sidecars) > 0 {
+		podSpec["shareProcessNamespace"] = true
 	}
 
 	if spec.ServiceAccount != "" {

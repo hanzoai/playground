@@ -219,6 +219,13 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if req.Image != "" {
 		image = req.Image
 	}
+	// Desktop mode: use combined bot-cloud image that includes the
+	// operative desktop (Xvfb + VNC + Firefox + all GUI apps).
+	if req.OS != "terminal" && p.config.Kubernetes.OperativeEnabled {
+		if p.config.Kubernetes.BotCloudImage != "" {
+			image = p.config.Kubernetes.BotCloudImage
+		}
+	}
 
 	// Resource defaults — scale based on mode
 	cpu := p.config.Kubernetes.DefaultCPU
@@ -356,7 +363,12 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		env["AGENT_MODE"] = "terminal"
 		env["TTYD_URL"] = "http://localhost:7681"
 	} else if p.config.Kubernetes.OperativeEnabled {
-		// Wire operative desktop URL if sidecar is enabled
+		// Combined image: desktop environment runs in the same container
+		// as the bot agent. No sidecar needed.
+		env["DISPLAY"] = ":1"
+		env["DISPLAY_NUM"] = "1"
+		env["WIDTH"] = "1920"
+		env["HEIGHT"] = "1080"
 		env["OPERATIVE_URL"] = "http://localhost:8501"
 		env["OPERATIVE_VNC_URL"] = "http://localhost:6080"
 	}
@@ -382,28 +394,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 			LimitCPU: "500m",
 			LimitMem: "512Mi",
 		})
-	} else if p.config.Kubernetes.OperativeEnabled {
-		sidecars = append(sidecars, SidecarSpec{
-			Name:  "operative",
-			Image: p.config.Kubernetes.OperativeImage,
-			Env: map[string]string{
-				"DISPLAY":     ":1",
-				"DISPLAY_NUM": "1",
-				"RESOLUTION":  "1920x1080x24",
-				"WIDTH":       "1920",
-				"HEIGHT":      "1080",
-			},
-			Ports:    []int32{8080, 6080, 5900, 8501},
-			CPU:      "200m",
-			Memory:   "512Mi",
-			LimitCPU: "1000m",
-			LimitMem: "2Gi",
-			// NOTE: The operative image's x11vnc_startup.sh already prefers
-			// x0vncserver (TigerVNC) over x11vnc when available. The Dockerfile.xvfb
-			// base image installs both. No PostStart hook needed if the image
-			// is built from the current Dockerfile.xvfb.
-		})
 	}
+	// Desktop mode uses the combined bot-cloud image which includes the
+	// operative desktop environment. No sidecar needed — Xvfb, VNC, WM,
+	// and all GUI apps run in the same container as the bot agent.
 
 	spec := &PodSpec{
 		Name:            podName,
