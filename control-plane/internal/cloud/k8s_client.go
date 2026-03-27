@@ -423,7 +423,7 @@ chmod +x /home/node/.openclaw/bin/desktop-exec`,
 		// Share PID namespace so the agent container can use nsenter to
 		// execute GUI commands (firefox, chromium) inside the operative
 		// container's mount namespace where desktop apps are installed.
-		"shareProcessNamespace": len(spec.Sidecars) > 0,
+		"shareProcessNamespace": true,
 		"initContainers":       initContainers,
 		"containers":           containers,
 		"restartPolicy":        "Always",
