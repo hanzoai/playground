@@ -248,9 +248,14 @@ func (c *InClusterK8sClient) GetPodLogs(ctx context.Context, namespace, podName 
 
 // buildPodManifest creates a K8s Pod JSON manifest from a PodSpec.
 func buildPodManifest(spec *PodSpec) map[string]interface{} {
-	envVars := make([]map[string]string, 0, len(spec.Env))
+	envVars := make([]map[string]string, 0, len(spec.Env)+1)
 	for k, v := range spec.Env {
 		envVars = append(envVars, map[string]string{"name": k, "value": v})
+	}
+	// Share the operative sidecar's X11 display so exec commands
+	// (e.g. opening a browser) render on the VNC desktop.
+	if len(spec.Sidecars) > 0 {
+		envVars = append(envVars, map[string]string{"name": "DISPLAY", "value": ":0"})
 	}
 
 	container := map[string]interface{}{
@@ -272,6 +277,10 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			{
 				"name":      "openclaw-data",
 				"mountPath": "/home/node/.openclaw",
+			},
+			{
+				"name":      "x11-socket",
+				"mountPath": "/tmp/.X11-unix",
 			},
 		},
 		// In node mode the agent connects to the central gateway via WebSocket
@@ -330,6 +339,12 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 			"imagePullPolicy": "Always",
 			"env":             scEnv,
 			"ports": scPorts,
+			"volumeMounts": []map[string]interface{}{
+				{
+					"name":      "x11-socket",
+					"mountPath": "/tmp/.X11-unix",
+				},
+			},
 			"resources": map[string]interface{}{
 				"requests": map[string]string{
 					"cpu":    sc.CPU,
@@ -388,6 +403,10 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		"volumes": []map[string]interface{}{
 			{
 				"name":     "openclaw-data",
+				"emptyDir": map[string]interface{}{},
+			},
+			{
+				"name":     "x11-socket",
 				"emptyDir": map[string]interface{}{},
 			},
 		},
