@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.294] - 2026-03-27
+
+
+### Fixed
+
+- Fix: use initContainer + workingDir for agent workspace to prevent ENOENT uv_cwd (9f43fe0)
+
 ## [0.1.41-rc.293] - 2026-03-27
 
 
