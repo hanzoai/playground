@@ -258,7 +258,6 @@ func buildPodManifest(spec *PodSpec) map[string]interface{} {
 		"image":           spec.Image,
 		"imagePullPolicy": "Always",
 		"env":             envVars,
-		"workingDir":      "/home/node/.openclaw/workspace",
 		"resources": map[string]interface{}{
 			"requests": map[string]string{
 				"cpu":    spec.CPU,
