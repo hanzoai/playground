@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { gateway } from '@/services/gatewayClient';
-import { chatSend } from '@/services/gatewayApi';
+import { chatSend, chatHistory } from '@/services/gatewayApi';
 import type { ChatEvent } from '@/types/gateway';
 import { cn } from '@/lib/utils';
 import { MicButton } from './MicButton';
@@ -142,6 +142,36 @@ export function ChatPanel({ agentId, sessionKey, className }: ChatPanelProps) {
     });
 
     return unsub;
+  }, [sessionKey]);
+
+  // Load chat history on mount / session change
+  useEffect(() => {
+    if (!sessionKey) return;
+    let cancelled = false;
+
+    chatHistory({ sessionKey, limit: 200 })
+      .then((result) => {
+        if (cancelled) return;
+        const raw = (result as { messages?: unknown[] })?.messages ?? (Array.isArray(result) ? result : []);
+        const history: Message[] = (raw as Array<Record<string, unknown>>)
+          .filter((m) => m && typeof m === 'object')
+          .map((m, i) => ({
+            id: (m.id as string) ?? `hist-${i}`,
+            role: (m.role as 'user' | 'assistant') ?? 'assistant',
+            content: typeof m.content === 'string'
+              ? m.content
+              : Array.isArray(m.content)
+                ? (m.content as Array<Record<string, unknown>>).map((c) => c.text ?? '').join('')
+                : String(m.content ?? ''),
+            timestamp: typeof m.timestamp === 'number' ? m.timestamp : Date.now(),
+          }));
+        if (history.length > 0) setMessages(history);
+      })
+      .catch((err) => {
+        if (!cancelled) console.warn('[ChatPanel] Failed to load history:', err);
+      });
+
+    return () => { cancelled = true; };
   }, [sessionKey]);
 
   const send = useCallback(async () => {
