@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.298] - 2026-03-27
+
+
+### Fixed
+
+- Fix: shareProcessNamespace + desktop-exec wrapper for GUI control (7c123ad)
+
 ## [0.1.41-rc.297] - 2026-03-27
 
 
