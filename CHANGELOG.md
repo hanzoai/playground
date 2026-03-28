@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.305] - 2026-03-28
+
+
+### Fixed
+
+- Fix: use service key for HANZO_API_KEY in cloud agent pods
+
+The internal cloud-api only accepts the service account key for auth.
+Using the user's personal key (hk-*) causes 'Authentication failed:
+invalid API key' errors for every LLM call. Switch HANZO_API_KEY to
+always use the service key, and preserve the user's key in HANZO_USER_KEY
+for billing reference.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (8008517)
+
 ## [0.1.41-rc.304] - 2026-03-28
 
 
