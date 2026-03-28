@@ -328,11 +328,11 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if p.config.Kubernetes.AnthropicAPIKey != "" {
 		env["ANTHROPIC_API_KEY"] = p.config.Kubernetes.AnthropicAPIKey
 	}
-	if req.UserAPIKey != "" {
+	if req.UserAPIKey != "" && !strings.HasPrefix(req.UserAPIKey, "eyJ") {
 		logger.Logger.Info().
 			Str("node_id", nodeID).
 			Str("owner", req.Owner).
-			Msg("using per-user API key for billing")
+			Msg("user API key stored in HANZO_USER_KEY for billing reference")
 	}
 
 	// Cloud pods connect as nodes to the central bot-gateway so all nodes
@@ -350,8 +350,8 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	gatewayToken := p.config.Kubernetes.GatewayToken
 	if gatewayToken != "" {
 		env["BOT_GATEWAY_TOKEN"] = gatewayToken
-	} else if apiKey != "" {
-		env["BOT_GATEWAY_TOKEN"] = apiKey
+	} else if serviceKey != "" {
+		env["BOT_GATEWAY_TOKEN"] = serviceKey
 	} else {
 		env["BOT_GATEWAY_TOKEN"] = nodeID
 	}
