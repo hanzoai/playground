@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.303] - 2026-03-28
+
+
+### Other
+
+- Provisioner: use allowlist security for terminal-only pods too
+
+Changed default exec security from "full" to "allowlist" for
+non-combined-desktop pods. The "full" mode blocks all exec requiring
+manual approval, which breaks cloud agent functionality.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ace0dad)
+
 ## [0.1.41-rc.302] - 2026-03-28
 
 
