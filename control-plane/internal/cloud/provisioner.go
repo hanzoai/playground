@@ -1204,14 +1204,14 @@ func cloudAgentArgs(gatewayURL, nodeID string, combinedDesktop bool) []string {
 		}
 	}
 	if combinedDesktop {
-		// Use the image's ENTRYPOINT (cloud-entrypoint.sh).
-		// Bot config is passed via env vars: BOT_GATEWAY_URL, HANZO_NODE_ID, etc.
+		// Combined desktop: image ENTRYPOINT is `openclaw` binary.
+		// Pass security=allowlist so the bot can execute desktop commands.
 		return nil
 	}
 	return []string{
 		"node", "hanzo-bot.mjs", "node", "run",
 		"--node-id", nodeID,
-		"--security", "full",
+		"--security", "allowlist",
 		"--ask", "off",
 	}
 }
