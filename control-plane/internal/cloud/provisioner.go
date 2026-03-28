@@ -304,6 +304,12 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if p.config.Kubernetes.CloudAPIEndpoint != "" {
 		env["HANZO_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint
 		env["OPENAI_API_BASE"] = p.config.Kubernetes.CloudAPIEndpoint // backward compat
+		// The bot's hanzo provider reads LLM_BASE_URL (not HANZO_API_BASE).
+		// Derive the /v1 endpoint so LLM calls route through the internal
+		// cloud-api service instead of the public api.hanzo.ai.
+		llmURL := strings.TrimSuffix(p.config.Kubernetes.CloudAPIEndpoint, "/api")
+		llmURL = strings.TrimSuffix(llmURL, "/")
+		env["LLM_BASE_URL"] = llmURL + "/v1"
 	}
 	// Per-user billing: use the launching user's API key so usage is
 	// tracked and billed to their account. Fall back to shared service key.
