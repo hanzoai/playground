@@ -311,16 +311,18 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 		llmURL = strings.TrimSuffix(llmURL, "/")
 		env["LLM_BASE_URL"] = llmURL + "/v1"
 	}
-	// Per-user billing: use the launching user's API key so usage is
-	// tracked and billed to their account. Fall back to shared service key.
-	// Only use UserAPIKey if it looks like a real API key (hk-...), not a JWT token.
-	apiKey := req.UserAPIKey
-	if apiKey == "" || strings.HasPrefix(apiKey, "eyJ") {
-		apiKey = p.config.Kubernetes.CloudAPIKey
+	// LLM calls route through the internal cloud-api which only accepts the
+	// service account key. Always use the service key for HANZO_API_KEY so
+	// LLM requests authenticate successfully. Store the user's personal key
+	// separately (HANZO_USER_KEY) for billing reference without breaking auth.
+	serviceKey := p.config.Kubernetes.CloudAPIKey
+	if serviceKey != "" {
+		env["HANZO_API_KEY"] = serviceKey
+		env["OPENAI_API_KEY"] = serviceKey // backward compat
 	}
-	if apiKey != "" {
-		env["HANZO_API_KEY"] = apiKey
-		env["OPENAI_API_KEY"] = apiKey // backward compat
+	// Preserve the user's key for billing context (non-LLM use).
+	if req.UserAPIKey != "" && !strings.HasPrefix(req.UserAPIKey, "eyJ") {
+		env["HANZO_USER_KEY"] = req.UserAPIKey
 	}
 	// Anthropic API key for Claude models (claude-sonnet-4-6, etc.)
 	if p.config.Kubernetes.AnthropicAPIKey != "" {
