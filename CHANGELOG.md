@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.304] - 2026-03-28
+
+
+### Fixed
+
+- Fix: set LLM_BASE_URL so hanzo provider uses internal cloud-api
+
+The bot's hanzo provider reads LLM_BASE_URL (not HANZO_API_BASE) to
+determine the LLM endpoint. Without it, the provider defaults to the
+public api.hanzo.ai which times out from inside the cluster. Derive
+the /v1 endpoint from CloudAPIEndpoint so cloud agent LLM calls route
+through the internal cloud-api service.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (f4cb610)
+
 ## [0.1.41-rc.303] - 2026-03-28
 
 
