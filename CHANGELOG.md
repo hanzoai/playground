@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.302] - 2026-03-28
+
+
+### Other
+
+- Provisioner: set AGENT_SECURITY_MODE=allowlist for cloud pods
+
+Cloud agent pods need to execute desktop commands (firefox, ls, etc.)
+but the default --security full mode blocks all exec. Pass
+AGENT_SECURITY_MODE=allowlist env var so the bot-cloud entrypoint
+uses allowlist mode instead.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (abc088b)
+
 ## [0.1.41-rc.301] - 2026-03-27
 
 
