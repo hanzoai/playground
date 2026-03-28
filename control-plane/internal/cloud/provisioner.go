@@ -295,6 +295,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if req.DisplayName != "" {
 		env["AGENT_DISPLAY_NAME"] = req.DisplayName
 	}
+	// Exec security mode: cloud agents need to execute commands freely.
+	// "allowlist" permits known-safe commands; "full" requires approval.
+	env["AGENT_SECURITY_MODE"] = "allowlist"
+
 	// Inject Hanzo API env vars for bot LLM calls.
 	// Default: api.hanzo.ai; overridable via CLOUD_API_ENDPOINT env var.
 	if p.config.Kubernetes.CloudAPIEndpoint != "" {
