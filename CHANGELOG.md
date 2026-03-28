@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.306] - 2026-03-28
+
+
+### Fixed
+
+- Fix: resolve undefined apiKey compile error in provisioner
+
+Replace remaining references to the removed apiKey variable with
+serviceKey for gateway token fallback.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (5f333e8)
+
 ## [0.1.41-rc.305] - 2026-03-28
 
 
