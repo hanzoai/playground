@@ -15,6 +15,8 @@ import type {
   ExecutionViewFilters,
 } from "../types/workflows";
 import { getNextTimeRange } from "../lib/timeRanges";
+import { TaskSubmitDialog } from "../components/tasks/TaskSubmitDialog";
+import { createTask, listTasks, type Task, type CreateTaskParams } from "../services/tasksApi";
 
 const PAGE_SIZE = 100;
 
@@ -24,6 +26,20 @@ export function ExecutionsPage() {
   const [status, setStatus] = useState("all");
   const [sortBy, setSortBy] = useState("when");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  // Load tasks on mount
+  useEffect(() => {
+    listTasks().then(setTasks).catch(() => {});
+  }, []);
+
+  const handleSubmitTask = async (params: CreateTaskParams) => {
+    await createTask(params);
+    const updated = await listTasks();
+    setTasks(updated);
+  };
 
   const [executions, setExecutions] = useState<EnhancedExecution[]>([]);
   const [page, setPage] = useState(1);
@@ -186,6 +202,12 @@ export function ExecutionsPage() {
       <PageHeader
         title="Tasks"
         description="Bot tasks and runtime activity"
+        actions={[
+          {
+            label: "+ New Task",
+            onClick: () => setShowTaskDialog(true),
+          },
+        ]}
         filters={[
           {
             label: "Time Range",
@@ -232,6 +254,43 @@ export function ExecutionsPage() {
         </div>
       )}
 
+      {/* Task Queue — pending/running tasks from durable execution system */}
+      {tasks.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-[#111118] p-4 space-y-3">
+          <h3 className="text-sm font-medium text-white/60">Task Queue ({tasks.filter(t => t.status === 'pending' || t.status === 'running' || t.status === 'claimed').length} active)</h3>
+          <div className="space-y-2">
+            {tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').slice(0, 10).map(task => (
+              <div key={task.id} className="flex items-center justify-between py-2 px-3 rounded bg-white/5 border border-white/5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
+                    task.status === 'running' ? 'bg-blue-400 animate-pulse' :
+                    task.status === 'claimed' ? 'bg-yellow-400' :
+                    task.status === 'failed' ? 'bg-red-400' :
+                    'bg-white/30'
+                  }`} />
+                  <span className="text-sm text-white truncate">{task.title}</span>
+                  {task.assigned_to && (
+                    <span className="text-xs text-white/40">→ {task.assigned_to}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {task.progress != null && task.progress > 0 && (
+                    <span className="text-xs text-white/40">{task.progress}%</span>
+                  )}
+                  <span className={`text-xs px-2 py-0.5 rounded ${
+                    task.priority === 'critical' ? 'bg-red-500/20 text-red-400' :
+                    task.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                    task.priority === 'medium' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-white/10 text-white/40'
+                  }`}>{task.priority}</span>
+                  <span className="text-xs text-white/30">{task.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <CompactExecutionsTable
         executions={executions}
         loading={loading}
@@ -243,6 +302,12 @@ export function ExecutionsPage() {
         onLoadMore={handleLoadMore}
         onExecutionClick={handleExecutionClick}
         onRefresh={() => fetchExecutions(1, true)}
+      />
+
+      <TaskSubmitDialog
+        open={showTaskDialog}
+        onClose={() => setShowTaskDialog(false)}
+        onSubmit={handleSubmitTask}
       />
     </div>
   );

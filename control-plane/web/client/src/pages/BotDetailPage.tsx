@@ -34,6 +34,7 @@ const OperativePanel = lazy(() =>
     default: m.OperativePanel,
   })),
 );
+import { SessionManager, useSessionManager } from "../components/bots/SessionManager";
 import { useParams } from "react-router-dom";
 import { DIDIdentityBadge } from "../components/did/DIDDisplay";
 import { Badge } from "../components/ui/badge";
@@ -91,6 +92,7 @@ export function BotDetailPage() {
   );
   const executionQueueRef = useRef<ExecutionQueueRef | null>(null);
   const [activeView, setActiveView] = useState<"chat" | "terminal" | "desktop" | "execute">("chat");
+  const sessionMgr = useSessionManager(fullBotId || "");
 
   // History and metrics
   const [history, setHistory] = useState<ExecutionHistory | null>(null);
@@ -347,13 +349,20 @@ export function BotDetailPage() {
         ))}
       </div>
 
-      {/* Chat View — inline ChatPanel connected via gateway WS */}
+      {/* Chat View — inline ChatPanel with session sidebar */}
       {activeView === "chat" && (
         <Card className="card-elevated">
-          <CardContent className="p-0" style={{ height: "calc(100vh - 280px)" }}>
-            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading chat...</div>}>
-              <ChatPanel agentId={fullBotId!} sessionKey={`${fullBotId}:main`} className="h-full" />
-            </Suspense>
+          <CardContent className="p-0 flex" style={{ height: "calc(100vh - 280px)" }}>
+            <SessionManager
+              botId={fullBotId!}
+              activeSessionKey={sessionMgr.activeSessionKey}
+              onSessionSelect={sessionMgr.selectSession}
+            />
+            <div className="flex-1 min-w-0">
+              <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading chat...</div>}>
+                <ChatPanel agentId={fullBotId!} sessionKey={sessionMgr.activeSessionKey} className="h-full" />
+              </Suspense>
+            </div>
           </CardContent>
         </Card>
       )}
