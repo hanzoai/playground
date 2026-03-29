@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.316] - 2026-03-29
+
+
+### Added
+
+- Feat: auto-reload budget system (backend + UI)
+
+Phase 7: Auto-reload for bot budgets:
+- Backend: auto_reload_enabled, auto_reload_threshold_usd,
+  auto_reload_amount_usd fields on BotBudget
+- GORM model migration for new columns
+- Execution pipeline checks threshold after spend recording
+- Budget settings dialog with auto-reload toggle, threshold, amount
+- budgetApi type updated with new fields
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (8bea098)
+
 ## [0.1.41-rc.315] - 2026-03-29
 
 
