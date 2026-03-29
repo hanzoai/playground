@@ -572,7 +572,7 @@ func (p *Provisioner) registerAndHeartbeat(nodeID, controlPlaneURL, org, display
 	if org != "" {
 		teamField = fmt.Sprintf(`,"team_id":"%s"`, org)
 	}
-	regBody := fmt.Sprintf(`{"id":"%s","deployment_type":"long_running","health_status":"active","lifecycle_status":"ready","version":"cloud"%s,"bots":[{"id":"%s","name":"%s","description":"Cloud agent with chat, terminal, and desktop access","input_schema":{"type":"object","properties":{"input":{"type":"object","description":"Input data for the bot"}}}}],"skills":[{"id":"chat","name":"Chat","description":"Interactive AI chat"},{"id":"terminal","name":"Terminal","description":"Shell command execution"},{"id":"desktop","name":"Desktop","description":"Remote desktop access via VNC"}],"metadata":{"platform":"linux"}}`, nodeID, teamField, botName, botName)
+	regBody := fmt.Sprintf(`{"id":"%s","deployment_type":"long_running","health_status":"active","lifecycle_status":"ready","version":"cloud"%s,"bots":[{"id":"main","name":"%s","description":"Cloud agent with chat, terminal, and desktop access","input_schema":{"type":"object","properties":{"input":{"type":"object","description":"Input data for the bot"}}}}],"skills":[{"id":"chat","name":"Chat","description":"Interactive AI chat"},{"id":"terminal","name":"Terminal","description":"Shell command execution"},{"id":"desktop","name":"Desktop","description":"Remote desktop access via VNC"}],"metadata":{"platform":"linux"}}`, nodeID, teamField, botName)
 	regURL := fmt.Sprintf("%s/api/v1/nodes/register", controlPlaneURL)
 	regReq, err := http.NewRequestWithContext(ctx, "POST", regURL, strings.NewReader(regBody))
 	if err != nil {
