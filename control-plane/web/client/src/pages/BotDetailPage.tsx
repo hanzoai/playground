@@ -486,12 +486,45 @@ export function BotDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <ExecutionForm
-                schema={bot.input_schema}
-                formData={formData}
-                onChange={setFormData}
-                validationErrors={validationErrors}
-              />
+              {/* Cloud bots get a simple prompt + model selector */}
+              {fullBotId?.startsWith("cloud-") ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/80">Model</label>
+                    <select
+                      value={formData._model || "claude-sonnet-4"}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, _model: e.target.value }))}
+                      className="w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white"
+                    >
+                      <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                      <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+                      <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                      <option value="claude-opus-4">Claude Opus 4</option>
+                      <option value="claude-opus-4-5">Claude Opus 4.5</option>
+                      <option value="claude-opus-4-6">Claude Opus 4.6</option>
+                      <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+                      <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/80">Prompt</label>
+                    <textarea
+                      value={formData._prompt || ""}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, _prompt: e.target.value, input: { prompt: e.target.value, model: prev._model || "claude-sonnet-4" } }))}
+                      placeholder="Enter your prompt or task for the AI agent..."
+                      rows={5}
+                      className="w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder:text-white/30 resize-y"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <ExecutionForm
+                  schema={bot.input_schema}
+                  formData={formData}
+                  onChange={setFormData}
+                  validationErrors={validationErrors}
+                />
+              )}
 
               <Button
                 onClick={handleExecute}
