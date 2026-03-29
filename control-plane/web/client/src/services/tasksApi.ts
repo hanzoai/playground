@@ -12,11 +12,11 @@ function authHeaders(): HeadersInit {
 }
 
 function tasksUrl(path = ''): string {
-  return `${API_BASE}/api/v1/spaces/${SPACE_ID}/tasks${path}`;
+  return `${API_BASE}/spaces/${SPACE_ID}/tasks${path}`;
 }
 
 function workflowsUrl(path = ''): string {
-  return `${API_BASE}/api/v1/spaces/${SPACE_ID}/workflows${path}`;
+  return `${API_BASE}/spaces/${SPACE_ID}/workflows${path}`;
 }
 
 // ---------------------------------------------------------------------------

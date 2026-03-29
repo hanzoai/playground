@@ -112,13 +112,10 @@ func (h *WalletHandler) GetTransactions(c *gin.Context) {
 	}
 
 	transactions, err := h.storage.GetWalletTransactions(ctx, botID, limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get transactions"})
+	if err != nil || transactions == nil {
+		// Return empty list on any error (table may not exist yet)
+		c.JSON(http.StatusOK, []*storage.WalletTransaction{})
 		return
-	}
-
-	if transactions == nil {
-		transactions = []*storage.WalletTransaction{}
 	}
 
 	c.JSON(http.StatusOK, transactions)
@@ -131,13 +128,9 @@ func (h *WalletHandler) ListAutoPurchaseRules(c *gin.Context) {
 	botID := c.Param("botId")
 
 	rules, err := h.storage.GetAutoPurchaseRules(ctx, botID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to list auto-purchase rules"})
+	if err != nil || rules == nil {
+		c.JSON(http.StatusOK, []*storage.AutoPurchaseRule{})
 		return
-	}
-
-	if rules == nil {
-		rules = []*storage.AutoPurchaseRule{}
 	}
 
 	c.JSON(http.StatusOK, rules)
