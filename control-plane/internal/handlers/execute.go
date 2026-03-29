@@ -43,7 +43,7 @@ type ExecutionStore interface {
 
 // ExecuteRequest represents an execution request from an agent client.
 type ExecuteRequest struct {
-	Input   map[string]interface{} `json:"input" binding:"required"`
+	Input   map[string]interface{} `json:"input"`
 	Context map[string]interface{} `json:"context,omitempty"`
 	Webhook *WebhookRequest        `json:"webhook,omitempty"`
 }
