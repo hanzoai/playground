@@ -78,7 +78,7 @@ func (h *BillingProxyHandler) ProxyGet(c *gin.Context) {
 	}
 
 	c.Writer.WriteHeader(resp.StatusCode)
-	io.Copy(c.Writer, resp.Body)
+	_, _ = io.Copy(c.Writer, resp.Body)
 }
 
 // ProxyPost handles POST requests by forwarding to Commerce.
@@ -117,7 +117,7 @@ func (h *BillingProxyHandler) ProxyPost(c *gin.Context) {
 	}
 
 	c.Writer.WriteHeader(resp.StatusCode)
-	io.Copy(c.Writer, resp.Body)
+	_, _ = io.Copy(c.Writer, resp.Body)
 }
 
 // setHeaders adds auth and forwarding headers to the Commerce request.
