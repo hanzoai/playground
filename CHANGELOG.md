@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.322] - 2026-03-29
+
+
+### Fixed
+
+- Fix: allow cloud bot execution without dot-separated target format (0b858ea)
+
 ## [0.1.41-rc.321] - 2026-03-29
 
 
