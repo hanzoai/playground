@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.314] - 2026-03-29
+
+
+### Added
+
+- Feat: multi-session chat manager + task queue dashboard
+
+Phase 5B: SessionManager with localStorage-persisted sessions,
+inline sidebar for switching between chat sessions per bot.
+
+Phase 6: Task queue on ExecutionsPage with submit dialog,
+priority badges, live status, and tasksApi client for the
+Hanzo durable execution system.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (3f6426a)
+
 ## [0.1.41-rc.313] - 2026-03-29
 
 
