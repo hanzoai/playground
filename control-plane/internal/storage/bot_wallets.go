@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -65,7 +66,7 @@ func (ls *LocalStorage) GetBotWallet(ctx context.Context, botID string) (*BotWal
 		&w.BotID, &w.Address, &w.AiCoinBalance, &w.UsdBalanceCents,
 		&w.ChainID, &w.Enabled, &w.CreatedAt, &w.UpdatedAt,
 	); err != nil {
-		if err == sql.ErrNoRows {
+		if err == sql.ErrNoRows || strings.Contains(err.Error(), "no such table") {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get bot wallet: %w", err)
@@ -258,6 +259,10 @@ func (ls *LocalStorage) GetWalletTransactions(ctx context.Context, botID string,
 		LIMIT ?`,
 		botID, limit)
 	if err != nil {
+		// Table may not exist yet on older schemas — return empty
+		if strings.Contains(err.Error(), "no such table") {
+			return []*WalletTransaction{}, nil
+		}
 		return nil, fmt.Errorf("get wallet transactions: %w", err)
 	}
 	defer rows.Close()
@@ -290,6 +295,9 @@ func (ls *LocalStorage) GetAutoPurchaseRules(ctx context.Context, botID string) 
 		WHERE bot_id = ?
 		ORDER BY created_at DESC`, botID)
 	if err != nil {
+		if strings.Contains(err.Error(), "no such table") {
+			return []*AutoPurchaseRule{}, nil
+		}
 		return nil, fmt.Errorf("get auto purchase rules: %w", err)
 	}
 	defer rows.Close()
