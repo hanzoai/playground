@@ -108,8 +108,55 @@ func (ls *LocalStorage) CreateOrUpdateBotWallet(ctx context.Context, wallet *Bot
 	return nil
 }
 
+// ensureWalletTables creates wallet tables if they don't exist.
+func (ls *LocalStorage) ensureWalletTables(ctx context.Context) {
+	db := ls.requireSQLDB()
+	for _, ddl := range []string{
+		`CREATE TABLE IF NOT EXISTS bot_wallets (
+			bot_id TEXT PRIMARY KEY,
+			address TEXT NOT NULL DEFAULT '',
+			ai_coin_balance REAL NOT NULL DEFAULT 0,
+			usd_balance_cents INTEGER NOT NULL DEFAULT 0,
+			chain_id INTEGER NOT NULL DEFAULT 0,
+			enabled INTEGER NOT NULL DEFAULT 1,
+			created_at TEXT NOT NULL DEFAULT '',
+			updated_at TEXT NOT NULL DEFAULT ''
+		)`,
+		`CREATE TABLE IF NOT EXISTS wallet_transactions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			bot_id TEXT NOT NULL,
+			type TEXT NOT NULL DEFAULT '',
+			amount_ai_coin REAL NOT NULL DEFAULT 0,
+			amount_usd_cents INTEGER NOT NULL DEFAULT 0,
+			source TEXT NOT NULL DEFAULT '',
+			status TEXT NOT NULL DEFAULT 'pending',
+			reference_id TEXT NOT NULL DEFAULT '',
+			description TEXT NOT NULL DEFAULT '',
+			tx_hash TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL DEFAULT '',
+			confirmed_at TEXT NOT NULL DEFAULT ''
+		)`,
+		`CREATE TABLE IF NOT EXISTS auto_purchase_rules (
+			id TEXT PRIMARY KEY,
+			bot_id TEXT NOT NULL,
+			capacity_type TEXT NOT NULL DEFAULT '',
+			preferred_provider TEXT NOT NULL DEFAULT '',
+			preferred_model TEXT NOT NULL DEFAULT '',
+			max_cents_per_unit INTEGER NOT NULL DEFAULT 0,
+			default_quantity INTEGER NOT NULL DEFAULT 1,
+			enabled INTEGER NOT NULL DEFAULT 1,
+			min_balance_trigger INTEGER NOT NULL DEFAULT 0,
+			created_at TEXT NOT NULL DEFAULT '',
+			updated_at TEXT NOT NULL DEFAULT ''
+		)`,
+	} {
+		_, _ = db.ExecContext(ctx, ddl)
+	}
+}
+
 // FundBotWallet adds funds to a bot wallet and creates a transaction record.
 func (ls *LocalStorage) FundBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, source, description string) (*WalletTransaction, error) {
+	ls.ensureWalletTables(ctx)
 	db := ls.requireSQLDB()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -118,6 +165,11 @@ func (ls *LocalStorage) FundBotWallet(ctx context.Context, botID string, amountA
 		return nil, fmt.Errorf("begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	// Ensure wallet exists (auto-create if needed)
+	_, _ = tx.ExecContext(ctx, `
+		INSERT OR IGNORE INTO bot_wallets (bot_id, enabled, created_at, updated_at)
+		VALUES (?, 1, ?, ?)`, botID, now, now)
 
 	// Update wallet balances
 	result, err := tx.ExecContext(ctx, `
