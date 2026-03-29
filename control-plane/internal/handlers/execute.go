@@ -42,8 +42,9 @@ type ExecutionStore interface {
 }
 
 // ExecuteRequest represents an execution request from an agent client.
+// Input can be a map, string, or any JSON value — cloud bots accept plain text prompts.
 type ExecuteRequest struct {
-	Input   map[string]interface{} `json:"input"`
+	Input   interface{}            `json:"input"`
 	Context map[string]interface{} `json:"context,omitempty"`
 	Webhook *WebhookRequest        `json:"webhook,omitempty"`
 }
@@ -796,8 +797,8 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 	if err := ginCtx.ShouldBindJSON(&req); err != nil {
 		return nil, fmt.Errorf("invalid request body: %w", err)
 	}
-	if len(req.Input) == 0 {
-		return nil, errors.New("input is required")
+	if req.Input == nil {
+		req.Input = map[string]interface{}{}
 	}
 
 	var (
@@ -880,9 +881,15 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 		UpdatedAt:         now,
 	}
 
-	agentPayload := make(map[string]interface{}, len(req.Input))
-	for key, value := range req.Input {
-		agentPayload[key] = value
+	// Build agent payload — Input can be a map or a scalar (string, number, etc.)
+	agentPayload := map[string]interface{}{}
+	if inputMap, ok := req.Input.(map[string]interface{}); ok {
+		for key, value := range inputMap {
+			agentPayload[key] = value
+		}
+	} else {
+		// Scalar input (e.g. plain text prompt) — wrap as {"input": value}
+		agentPayload["input"] = req.Input
 	}
 
 	var agentPayloadBytes []byte
