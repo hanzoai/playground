@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.307] - 2026-03-29
+
+
+### Added
+
+- Feat: add wallet backend, billing proxy, and budget spend recording
+
+Phase 2 of billing integration:
+- Bot wallet storage (SQLite) with fund/withdraw/transactions/auto-purchase
+- Billing proxy to Commerce API (avoids CORS, centralizes auth)
+- Budget spend recording in execution completion pipeline
+- Wallet and billing routes registered in server
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (4d52e2c)
+
 ## [0.1.41-rc.306] - 2026-03-28
 
 
