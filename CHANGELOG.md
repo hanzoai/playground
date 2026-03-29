@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.315] - 2026-03-29
+
+
+### Fixed
+
+- Fix: remove unused React import, fix TaskSubmitDialog default import (0f8f08c)
+
 ## [0.1.41-rc.314] - 2026-03-29
 
 
