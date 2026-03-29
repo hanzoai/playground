@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.319] - 2026-03-29
+
+
+### Fixed
+
+- Fix: tasks API double /v1 prefix + wallet handlers return empty on error (cf1e7fa)
+
 ## [0.1.41-rc.318] - 2026-03-29
 
 
