@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.308] - 2026-03-29
+
+
+### Added
+
+- Feat: wire billing and wallet UI to real backends
+
+Phase 3 of billing integration:
+- billingApi: route through /v1/billing proxy instead of direct Commerce
+- botWalletApi: flip mock default from always-mock to opt-in mock
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (36c1b25)
+
 ## [0.1.41-rc.307] - 2026-03-29
 
 
