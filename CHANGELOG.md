@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.310] - 2026-03-29
+
+
+### Fixed
+
+- Fix: check io.Copy return values (errcheck lint) (2a5b2b4)
+
 ## [0.1.41-rc.309] - 2026-03-29
 
 
