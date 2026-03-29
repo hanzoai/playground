@@ -13,6 +13,9 @@ export interface BotBudget {
   last_reset_date: string;
   updated_at: string;
   created_at: string;
+  auto_reload_enabled?: boolean;
+  auto_reload_threshold_usd?: number;
+  auto_reload_amount_usd?: number;
 }
 
 export interface BudgetStatus {

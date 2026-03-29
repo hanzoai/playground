@@ -19,6 +19,11 @@ type BotBudget struct {
 	LastResetDate   string   `json:"last_reset_date"`
 	UpdatedAt       string   `json:"updated_at"`
 	CreatedAt       string   `json:"created_at"`
+
+	// Auto-reload: when balance drops below threshold, top up automatically
+	AutoReloadEnabled       bool    `json:"auto_reload_enabled"`
+	AutoReloadThresholdUSD  float64 `json:"auto_reload_threshold_usd"`  // trigger when balance below this
+	AutoReloadAmountUSD     float64 `json:"auto_reload_amount_usd"`     // amount to add
 }
 
 // BotSpendRecord represents a single spend event for a bot.
@@ -49,7 +54,8 @@ func (ls *LocalStorage) GetBotBudget(ctx context.Context, botID string) (*BotBud
 	row := db.QueryRowContext(ctx, `
 		SELECT bot_id, monthly_limit_usd, daily_limit_usd, alert_threshold,
 			enabled, current_month_usd, current_day_usd, last_reset_date,
-			updated_at, created_at
+			updated_at, created_at,
+			COALESCE(auto_reload_enabled, 0), COALESCE(auto_reload_threshold_usd, 0), COALESCE(auto_reload_amount_usd, 0)
 		FROM bot_budgets
 		WHERE bot_id = ?`, botID)
 
@@ -58,6 +64,7 @@ func (ls *LocalStorage) GetBotBudget(ctx context.Context, botID string) (*BotBud
 		&b.BotID, &b.MonthlyLimitUSD, &b.DailyLimitUSD, &b.AlertThreshold,
 		&b.Enabled, &b.CurrentMonthUSD, &b.CurrentDayUSD, &b.LastResetDate,
 		&b.UpdatedAt, &b.CreatedAt,
+		&b.AutoReloadEnabled, &b.AutoReloadThresholdUSD, &b.AutoReloadAmountUSD,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -84,16 +91,21 @@ func (ls *LocalStorage) SetBotBudget(ctx context.Context, b *BotBudget) error {
 		INSERT INTO bot_budgets (
 			bot_id, monthly_limit_usd, daily_limit_usd, alert_threshold,
 			enabled, current_month_usd, current_day_usd, last_reset_date,
-			updated_at, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			updated_at, created_at,
+			auto_reload_enabled, auto_reload_threshold_usd, auto_reload_amount_usd
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(bot_id) DO UPDATE SET
 			monthly_limit_usd = excluded.monthly_limit_usd,
 			daily_limit_usd = excluded.daily_limit_usd,
 			alert_threshold = excluded.alert_threshold,
 			enabled = excluded.enabled,
+			auto_reload_enabled = excluded.auto_reload_enabled,
+			auto_reload_threshold_usd = excluded.auto_reload_threshold_usd,
+			auto_reload_amount_usd = excluded.auto_reload_amount_usd,
 			updated_at = excluded.updated_at`,
 		b.BotID, b.MonthlyLimitUSD, b.DailyLimitUSD, b.AlertThreshold,
-		b.Enabled, 0.0, 0.0, now, now, now)
+		b.Enabled, 0.0, 0.0, now, now, now,
+		b.AutoReloadEnabled, b.AutoReloadThresholdUSD, b.AutoReloadAmountUSD)
 	if err != nil {
 		return fmt.Errorf("set bot budget: %w", err)
 	}
@@ -118,7 +130,8 @@ func (ls *LocalStorage) ListBotBudgets(ctx context.Context) ([]*BotBudget, error
 	rows, err := db.QueryContext(ctx, `
 		SELECT bot_id, monthly_limit_usd, daily_limit_usd, alert_threshold,
 			enabled, current_month_usd, current_day_usd, last_reset_date,
-			updated_at, created_at
+			updated_at, created_at,
+			COALESCE(auto_reload_enabled, 0), COALESCE(auto_reload_threshold_usd, 0), COALESCE(auto_reload_amount_usd, 0)
 		FROM bot_budgets
 		ORDER BY bot_id`)
 	if err != nil {
@@ -133,6 +146,7 @@ func (ls *LocalStorage) ListBotBudgets(ctx context.Context) ([]*BotBudget, error
 			&b.BotID, &b.MonthlyLimitUSD, &b.DailyLimitUSD, &b.AlertThreshold,
 			&b.Enabled, &b.CurrentMonthUSD, &b.CurrentDayUSD, &b.LastResetDate,
 			&b.UpdatedAt, &b.CreatedAt,
+			&b.AutoReloadEnabled, &b.AutoReloadThresholdUSD, &b.AutoReloadAmountUSD,
 		); err != nil {
 			return nil, fmt.Errorf("scan bot budget: %w", err)
 		}

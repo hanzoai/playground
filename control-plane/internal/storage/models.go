@@ -449,6 +449,10 @@ type BotBudgetModel struct {
 	LastResetDate   string    `gorm:"column:last_reset_date;not null;default:''"`
 	CreatedAt       time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt       time.Time `gorm:"column:updated_at;autoUpdateTime"`
+
+	AutoReloadEnabled      bool    `gorm:"column:auto_reload_enabled;not null;default:false"`
+	AutoReloadThresholdUSD float64 `gorm:"column:auto_reload_threshold_usd;not null;default:0"`
+	AutoReloadAmountUSD    float64 `gorm:"column:auto_reload_amount_usd;not null;default:0"`
 }
 
 func (BotBudgetModel) TableName() string { return "bot_budgets" }

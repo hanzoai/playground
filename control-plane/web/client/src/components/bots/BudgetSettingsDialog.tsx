@@ -39,6 +39,9 @@ export function BudgetSettingsDialog({
   const [dailyLimit, setDailyLimit] = useState('10');
   const [alertThreshold, setAlertThreshold] = useState('80');
   const [enabled, setEnabled] = useState(true);
+  const [autoReloadEnabled, setAutoReloadEnabled] = useState(false);
+  const [autoReloadThreshold, setAutoReloadThreshold] = useState('5');
+  const [autoReloadAmount, setAutoReloadAmount] = useState('25');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -51,11 +54,17 @@ export function BudgetSettingsDialog({
         setDailyLimit(String(budget.daily_limit_usd));
         setAlertThreshold(String(budget.alert_threshold * 100));
         setEnabled(budget.enabled);
+        setAutoReloadEnabled(budget.auto_reload_enabled ?? false);
+        setAutoReloadThreshold(String(budget.auto_reload_threshold_usd ?? 5));
+        setAutoReloadAmount(String(budget.auto_reload_amount_usd ?? 25));
       } else {
         setMonthlyLimit('100');
         setDailyLimit('10');
         setAlertThreshold('80');
         setEnabled(true);
+        setAutoReloadEnabled(false);
+        setAutoReloadThreshold('5');
+        setAutoReloadAmount('25');
       }
       setConfirmDelete(false);
     }
@@ -78,6 +87,9 @@ export function BudgetSettingsDialog({
         daily_limit_usd: daily,
         alert_threshold: alert,
         enabled,
+        auto_reload_enabled: autoReloadEnabled,
+        auto_reload_threshold_usd: parseFloat(autoReloadThreshold) || 5,
+        auto_reload_amount_usd: parseFloat(autoReloadAmount) || 25,
       });
       onOpenChange(false);
     } catch {
@@ -189,6 +201,64 @@ export function BudgetSettingsDialog({
             <p className="text-[11px] text-text-tertiary">
               A notification fires when spend crosses this percentage of the monthly limit
             </p>
+          </div>
+
+          {/* Auto-reload section */}
+          <div className="border-t border-border-secondary pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Auto-reload</Label>
+                <p className="text-[12px] text-text-tertiary mt-0.5">
+                  Automatically top up when balance gets low
+                </p>
+              </div>
+              <Switch checked={autoReloadEnabled} onCheckedChange={setAutoReloadEnabled} />
+            </div>
+
+            {autoReloadEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="reload-threshold" className="text-sm font-medium">
+                    Reload when below (USD)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm">$</span>
+                    <Input
+                      id="reload-threshold"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={autoReloadThreshold}
+                      onChange={(e) => setAutoReloadThreshold(e.target.value)}
+                      className="pl-7 font-mono tabular-nums"
+                      placeholder="5.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reload-amount" className="text-sm font-medium">
+                    Reload amount (USD)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm">$</span>
+                    <Input
+                      id="reload-amount"
+                      type="number"
+                      min="1"
+                      step="5"
+                      value={autoReloadAmount}
+                      onChange={(e) => setAutoReloadAmount(e.target.value)}
+                      className="pl-7 font-mono tabular-nums"
+                      placeholder="25.00"
+                    />
+                  </div>
+                  <p className="text-[11px] text-text-tertiary">
+                    Charged to your account at billing.hanzo.ai
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

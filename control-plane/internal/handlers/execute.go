@@ -115,6 +115,7 @@ type executionStatusUpdateRequest struct {
 // BudgetSpendRecorder records spend events for budget tracking.
 type BudgetSpendRecorder interface {
 	RecordBotSpend(ctx context.Context, record *storage.BotSpendRecord) error
+	GetBotBudget(ctx context.Context, botID string) (*storage.BotBudget, error)
 }
 
 type executionController struct {
@@ -1063,6 +1064,24 @@ func (c *executionController) completeExecution(ctx context.Context, plan *prepa
 					}
 					if err := c.budgetRecorder.RecordBotSpend(context.Background(), spendRecord); err != nil {
 						logger.Logger.Warn().Err(err).Str("bot_id", botID).Msg("failed to record execution spend")
+					}
+
+					// Auto-reload check: if budget has auto-reload enabled and
+					// current spend exceeds the threshold, log a reload trigger.
+					// Actual top-up goes through Commerce API (best-effort).
+					if budget, err := c.budgetRecorder.GetBotBudget(context.Background(), botID); err == nil && budget != nil {
+						if budget.AutoReloadEnabled && budget.AutoReloadThresholdUSD > 0 {
+							remaining := budget.MonthlyLimitUSD - budget.CurrentMonthUSD
+							if remaining <= budget.AutoReloadThresholdUSD {
+								logger.Logger.Info().
+									Str("bot_id", botID).
+									Float64("remaining_usd", remaining).
+									Float64("threshold_usd", budget.AutoReloadThresholdUSD).
+									Float64("reload_amount_usd", budget.AutoReloadAmountUSD).
+									Msg("auto-reload threshold reached — top-up needed")
+								// TODO: call Commerce POST /api/v1/billing/topup with reload amount
+							}
+						}
 					}
 				}()
 			}
