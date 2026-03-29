@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.326] - 2026-03-29
+
+
+### Added
+
+- Feat: clean execute form for cloud bots — prompt textarea + model selector (b9db2ca)
+
+
+
+### Fixed
+
+- Fix: accept any JSON type for execute input (string, object, array) (ec63c2c)
+
 ## [0.1.41-rc.325] - 2026-03-29
 
 
