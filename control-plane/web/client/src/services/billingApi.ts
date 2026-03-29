@@ -2,7 +2,8 @@
 
 import { getGlobalIamToken, getGlobalApiKey } from './api';
 
-const COMMERCE_API = import.meta.env.VITE_COMMERCE_API_URL || 'https://commerce-api.hanzo.ai/api';
+// Route billing calls through our backend proxy to avoid CORS issues and centralize auth.
+const BILLING_API = `${import.meta.env.VITE_API_BASE_URL || ''}/v1/billing`;
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export interface BalanceResult {
@@ -43,7 +44,7 @@ export async function getBalance(): Promise<BalanceResult> {
     throw new Error('Cannot determine user identity from token');
   }
 
-  const url = new URL(`${COMMERCE_API}/v1/billing/balance`);
+  const url = new URL(`${window.location.origin}${BILLING_API}/balance`);
   url.searchParams.set('user', userId);
   url.searchParams.set('currency', 'usd');
 

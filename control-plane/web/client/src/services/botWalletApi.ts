@@ -23,7 +23,7 @@ import type {
 import type { MarketplaceOrder } from '@/types/network';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
-const MOCK = import.meta.env.VITE_NETWORK_MOCK !== 'false';
+const MOCK = import.meta.env.VITE_NETWORK_MOCK === 'true';
 
 // ---------------------------------------------------------------------------
 // Auth
