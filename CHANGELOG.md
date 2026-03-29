@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.328] - 2026-03-29
+
+
+### Fixed
+
+- Fix: default target to 'main' for cloud bots without dot separator (21882fc)
+
 ## [0.1.41-rc.327] - 2026-03-29
 
 ## [0.1.41-rc.326] - 2026-03-29
