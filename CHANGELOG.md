@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.324] - 2026-03-29
+
+
+### Added
+
+- Feat: register cloud bots with skills (chat, terminal, desktop) and input schema (da0bdf2)
+
 ## [0.1.41-rc.323] - 2026-03-29
 
 
