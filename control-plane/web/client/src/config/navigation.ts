@@ -33,6 +33,13 @@ export const navigationSections: NavigationSection[] = [
     title: '',
     items: [
       {
+        id: 'billing',
+        label: 'Billing',
+        href: '/billing',
+        icon: 'wallet',
+        description: 'Balance, usage, and payment management'
+      },
+      {
         id: 'metrics',
         label: 'Metrics',
         href: '/metrics',

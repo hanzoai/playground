@@ -41,6 +41,7 @@ import { PreferencesOnboarding } from "./components/onboarding/PreferencesOnboar
 import { usePreferencesStore } from "./stores/preferencesStore";
 import { useNotificationSound } from "./hooks/useNotificationSound";
 import { OrgSettingsPage } from "./pages/OrgSettingsPage";
+import { BillingPage } from "./pages/BillingPage";
 
 function SettingsPage() {
   return <GatewaySettings />;
@@ -93,6 +94,7 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><RootRedirect /></div>} />
               <Route path="/launch" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><LaunchPage /></div>} />
+              <Route path="/billing" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><BillingPage /></div>} />
               <Route path="/metrics" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/dashboard" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedDashboardPage /></div>} />
               <Route path="/bots" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><NodesPage /></div>} />
