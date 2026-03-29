@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.309] - 2026-03-29
+
+
+### Fixed
+
+- Fix: add wallet stub methods to test stubStorage
+
+The StorageProvider interface now includes wallet methods.
+Test stubs need to implement them to compile.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (05a9d7b)
+
 ## [0.1.41-rc.308] - 2026-03-29
 
 
