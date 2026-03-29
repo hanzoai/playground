@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.325] - 2026-03-29
+
+
+### Fixed
+
+- Fix: register cloud bot with id=main to match details handler lookup (eb81e83)
+
 ## [0.1.41-rc.324] - 2026-03-29
 
 
