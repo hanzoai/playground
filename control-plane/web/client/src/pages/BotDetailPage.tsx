@@ -16,7 +16,7 @@ import { AutoPurchaseCard } from "../components/bots/AutoPurchaseCard";
 import { useBotBudget } from "../hooks/useBotBudget";
 import { useBotWallet } from "../hooks/useBotWallet";
 import { useNetworkStore } from "../stores/networkStore";
-import { getBalance } from "../services/billingApi";
+import { getBalance, TOP_UP_URL } from "../services/billingApi";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 const ChatPanel = lazy(() =>
@@ -24,7 +24,16 @@ const ChatPanel = lazy(() =>
     default: m.ChatPanel,
   })),
 );
-// useAuth import removed — Live Chat no longer needs iframe token injection
+const TerminalPanel = lazy(() =>
+  import("../components/canvas/drill-down/TerminalPanel").then((m) => ({
+    default: m.TerminalPanel,
+  })),
+);
+const OperativePanel = lazy(() =>
+  import("../components/canvas/drill-down/OperativePanel").then((m) => ({
+    default: m.OperativePanel,
+  })),
+);
 import { useParams } from "react-router-dom";
 import { DIDIdentityBadge } from "../components/did/DIDDisplay";
 import { Badge } from "../components/ui/badge";
@@ -81,8 +90,7 @@ export function BotDetailPage() {
     "formatted"
   );
   const executionQueueRef = useRef<ExecutionQueueRef | null>(null);
-  // chatIframeRef removed — Live Chat now uses inline ChatPanel
-  const [activeView, setActiveView] = useState<"execute" | "chat">("execute");
+  const [activeView, setActiveView] = useState<"chat" | "terminal" | "desktop" | "execute">("chat");
 
   // History and metrics
   const [history, setHistory] = useState<ExecutionHistory | null>(null);
@@ -269,26 +277,20 @@ export function BotDetailPage() {
                   : "unknown"
               }
             />
-            <div className="flex items-center gap-2">
-              <Button
-                variant={activeView === "execute" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveView("execute")}
-                className="flex items-center gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Execute
-              </Button>
-              <Button
-                variant={activeView === "chat" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveView("chat")}
-                className="flex items-center gap-2"
-              >
-                <Chat className="h-4 w-4" />
-                Live Chat
-              </Button>
-            </div>
+            {/* Balance badge */}
+            {usdBalanceCents > 0 && (
+              <a href={TOP_UP_URL} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm hover:bg-emerald-500/20 transition-colors">
+                <span className="font-mono font-medium">${(usdBalanceCents / 100).toFixed(2)}</span>
+              </a>
+            )}
+            {usdBalanceCents <= 0 && (
+              <a href={TOP_UP_URL} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-sm hover:bg-red-500/20 transition-colors">
+                <span className="font-mono font-medium">$0.00</span>
+                <span className="text-xs">Top up</span>
+              </a>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -322,12 +324,57 @@ export function BotDetailPage() {
         )}
       </div>
 
+      {/* Tab Bar — terminal multiplexer style */}
+      <div className="flex items-center gap-1 border-b border-border-secondary pb-0">
+        {([
+          { id: "chat" as const, label: "Chat", icon: Chat },
+          { id: "terminal" as const, label: "Terminal", icon: Code },
+          { id: "desktop" as const, label: "Desktop", icon: View },
+          { id: "execute" as const, label: "Execute", icon: Play },
+        ]).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveView(id)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeView === id
+                ? "border-white text-white"
+                : "border-transparent text-white/40 hover:text-white/70 hover:border-white/20"
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Chat View — inline ChatPanel connected via gateway WS */}
       {activeView === "chat" && (
         <Card className="card-elevated">
-          <CardContent className="p-0" style={{ height: "calc(100vh - 240px)" }}>
+          <CardContent className="p-0" style={{ height: "calc(100vh - 280px)" }}>
             <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading chat...</div>}>
               <ChatPanel agentId={fullBotId!} sessionKey={`${fullBotId}:main`} className="h-full" />
+            </Suspense>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Terminal View — xterm.js shell */}
+      {activeView === "terminal" && (
+        <Card className="card-elevated">
+          <CardContent className="p-0" style={{ height: "calc(100vh - 280px)" }}>
+            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading terminal...</div>}>
+              <TerminalPanel agentId={fullBotId!} sessionKey={`${fullBotId}:main`} className="h-full" />
+            </Suspense>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Desktop View — VNC remote desktop */}
+      {activeView === "desktop" && (
+        <Card className="card-elevated">
+          <CardContent className="p-0" style={{ height: "calc(100vh - 280px)" }}>
+            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading desktop...</div>}>
+              <OperativePanel agentId={fullBotId!} nodeId={bot.node_id} className="h-full" />
             </Suspense>
           </CardContent>
         </Card>
