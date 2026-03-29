@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.312] - 2026-03-29
+
+
+### Fixed
+
+- Fix: forward user IAM token to Commerce for org resolution
+
+The billing proxy was sending the service token which skips IAM
+validation in Commerce, causing org resolution to fail and
+returning empty billing data. Now forwards the user's IAM token
+so Commerce can resolve the org and return user-specific data.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (f4c6ac0)
+
 ## [0.1.41-rc.311] - 2026-03-29
 
 
