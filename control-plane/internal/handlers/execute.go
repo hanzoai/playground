@@ -1210,12 +1210,16 @@ func parseTarget(value string) (*parsedTarget, error) {
 		return nil, errors.New("target is required")
 	}
 	parts := strings.Split(value, ".")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("target must be in format 'node_id.bot_name'")
+	if len(parts) >= 2 {
+		return &parsedTarget{
+			NodeID:     parts[0],
+			TargetName: parts[1],
+		}, nil
 	}
+	// Cloud bots may not have a separate bot name — use node ID as both
 	return &parsedTarget{
-		NodeID:     parts[0],
-		TargetName: parts[1],
+		NodeID:     value,
+		TargetName: value,
 	}, nil
 }
 
