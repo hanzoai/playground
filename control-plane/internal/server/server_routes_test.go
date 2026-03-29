@@ -393,6 +393,35 @@ func (s *stubStorage) GetBotSpendHistory(ctx context.Context, botID string, sinc
 	return nil, nil
 }
 
+// Bot Wallet stubs
+func (s *stubStorage) GetBotWallet(ctx context.Context, botID string) (*storage.BotWallet, error) {
+	return nil, nil
+}
+func (s *stubStorage) CreateOrUpdateBotWallet(ctx context.Context, wallet *storage.BotWallet) error {
+	return nil
+}
+func (s *stubStorage) FundBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, source, description string) (*storage.WalletTransaction, error) {
+	return nil, nil
+}
+func (s *stubStorage) WithdrawFromBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, description string) (*storage.WalletTransaction, error) {
+	return nil, nil
+}
+func (s *stubStorage) GetWalletTransactions(ctx context.Context, botID string, limit int) ([]*storage.WalletTransaction, error) {
+	return nil, nil
+}
+func (s *stubStorage) GetAutoPurchaseRules(ctx context.Context, botID string) ([]*storage.AutoPurchaseRule, error) {
+	return nil, nil
+}
+func (s *stubStorage) SaveAutoPurchaseRule(ctx context.Context, rule *storage.AutoPurchaseRule) error {
+	return nil
+}
+func (s *stubStorage) DeleteAutoPurchaseRule(ctx context.Context, botID, ruleID string) error {
+	return nil
+}
+func (s *stubStorage) GetWalletsSummary(ctx context.Context) (int, float64, int64, error) {
+	return 0, 0, 0, nil
+}
+
 // stubPayloadStore implements services.PayloadStore
 type stubPayloadStore struct{}
 
