@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.317] - 2026-03-29
+
+
+### Fixed
+
+- Fix: double /v1 in billing URL + budget SQL resilience
+
+- billingApi/BillingPage: VITE_API_BASE_URL is already '/v1',
+  don't prepend another '/v1'
+- Budget SQL: don't query auto_reload columns that may not exist
+  on older schemas. GORM AutoMigrate adds them but raw SQL fails.
+- SetBotBudget: auto_reload update is best-effort (ignores if
+  columns don't exist yet)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (28811e8)
+
 ## [0.1.41-rc.316] - 2026-03-29
 
 
