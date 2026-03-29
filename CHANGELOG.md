@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.320] - 2026-03-29
+
+
+### Fixed
+
+- Fix: auto-create wallet tables and wallet row on fund (51032d8)
+
 ## [0.1.41-rc.319] - 2026-03-29
 
 
