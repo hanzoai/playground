@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.323] - 2026-03-29
+
+
+### Fixed
+
+- Fix: make execute input optional for cloud bots with no schema (f59ed8f)
+
 ## [0.1.41-rc.322] - 2026-03-29
 
 
