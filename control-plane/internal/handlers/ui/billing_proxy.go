@@ -122,14 +122,12 @@ func (h *BillingProxyHandler) ProxyPost(c *gin.Context) {
 
 // setHeaders adds auth and forwarding headers to the Commerce request.
 func (h *BillingProxyHandler) setHeaders(req *http.Request, c *gin.Context) {
-	// Use service token for Commerce auth
-	if h.serviceToken != "" {
-		req.Header.Set("Authorization", "Bearer "+h.serviceToken)
-	}
-
-	// Forward user identity from the incoming request
+	// Forward the user's IAM token so Commerce can resolve the org/identity.
+	// Fall back to service token for admin-only endpoints.
 	if userAuth := c.GetHeader("Authorization"); userAuth != "" {
-		req.Header.Set("X-Original-Authorization", userAuth)
+		req.Header.Set("Authorization", userAuth)
+	} else if h.serviceToken != "" {
+		req.Header.Set("Authorization", "Bearer "+h.serviceToken)
 	}
 
 	req.Header.Set("Accept", "application/json")
