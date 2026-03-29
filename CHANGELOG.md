@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.311] - 2026-03-29
+
+
+### Added
+
+- Feat: add billing/usage page to playground app
+
+Phase 4 of billing integration:
+- BillingPage with balance, usage summary, transactions, credits, plan
+- Navigation entry under 'manage' section
+- Route at /billing
+- VITE_NETWORK_MOCK=false for production
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (7228469)
+
 ## [0.1.41-rc.310] - 2026-03-29
 
 
