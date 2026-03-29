@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getBalance, TOP_UP_URL, type BalanceResult } from '@/services/billingApi';
 import { getGlobalIamToken, getGlobalApiKey } from '@/services/api';
 
-const BILLING_API = `${import.meta.env.VITE_API_BASE_URL || ''}/v1/billing`;
+const BILLING_API = `${import.meta.env.VITE_API_BASE_URL || '/v1'}/billing`;
 
 // ---------------------------------------------------------------------------
 // Helpers

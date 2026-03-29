@@ -3,7 +3,8 @@
 import { getGlobalIamToken, getGlobalApiKey } from './api';
 
 // Route billing calls through our backend proxy to avoid CORS issues and centralize auth.
-const BILLING_API = `${import.meta.env.VITE_API_BASE_URL || ''}/v1/billing`;
+// VITE_API_BASE_URL is already '/v1', so just append '/billing'.
+const BILLING_API = `${import.meta.env.VITE_API_BASE_URL || '/v1'}/billing`;
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export interface BalanceResult {
