@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.313] - 2026-03-29
+
+
+### Added
+
+- Feat: add Chat/Terminal/Desktop/Execute tabs to bot detail page
+
+Cloud terminal multiplexer experience:
+- Tab bar with Chat, Terminal, Desktop, Execute views
+- Terminal tab: xterm.js shell via gateway node.invoke
+- Desktop tab: VNC remote desktop via gateway tunnel
+- Balance badge in header showing Commerce credit with top-up link
+- Default view is Chat (primary interaction mode)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (458fa22)
+
 ## [0.1.41-rc.312] - 2026-03-29
 
 
