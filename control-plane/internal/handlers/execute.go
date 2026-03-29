@@ -1223,10 +1223,10 @@ func parseTarget(value string) (*parsedTarget, error) {
 			TargetName: parts[1],
 		}, nil
 	}
-	// Cloud bots may not have a separate bot name — use node ID as both
+	// Cloud bots may not have a separate bot name — default to "main"
 	return &parsedTarget{
 		NodeID:     value,
-		TargetName: value,
+		TargetName: "main",
 	}, nil
 }
 
