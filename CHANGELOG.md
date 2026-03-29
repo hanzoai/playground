@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.321] - 2026-03-29
+
+
+### Fixed
+
+- Fix: use Postgres-compatible DDL for wallet tables, ensure tables on all queries (ec4a354)
+
 ## [0.1.41-rc.320] - 2026-03-29
 
 
