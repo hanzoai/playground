@@ -15,7 +15,7 @@ import type {
   ExecutionViewFilters,
 } from "../types/workflows";
 import { getNextTimeRange } from "../lib/timeRanges";
-import { TaskSubmitDialog } from "../components/tasks/TaskSubmitDialog";
+import TaskSubmitDialog from "../components/tasks/TaskSubmitDialog";
 import { createTask, listTasks, type Task, type CreateTaskParams } from "../services/tasksApi";
 
 const PAGE_SIZE = 100;
