@@ -53,6 +53,7 @@ type AutoPurchaseRule struct {
 
 // GetBotWallet returns the wallet for a bot, or nil if none exists.
 func (ls *LocalStorage) GetBotWallet(ctx context.Context, botID string) (*BotWallet, error) {
+	ls.ensureWalletTables(ctx)
 	db := ls.requireSQLDB()
 
 	row := db.QueryRowContext(ctx, `
@@ -109,25 +110,26 @@ func (ls *LocalStorage) CreateOrUpdateBotWallet(ctx context.Context, wallet *Bot
 }
 
 // ensureWalletTables creates wallet tables if they don't exist.
+// Uses SQL compatible with both PostgreSQL and SQLite.
 func (ls *LocalStorage) ensureWalletTables(ctx context.Context) {
 	db := ls.requireSQLDB()
 	for _, ddl := range []string{
 		`CREATE TABLE IF NOT EXISTS bot_wallets (
 			bot_id TEXT PRIMARY KEY,
 			address TEXT NOT NULL DEFAULT '',
-			ai_coin_balance REAL NOT NULL DEFAULT 0,
-			usd_balance_cents INTEGER NOT NULL DEFAULT 0,
+			ai_coin_balance DOUBLE PRECISION NOT NULL DEFAULT 0,
+			usd_balance_cents BIGINT NOT NULL DEFAULT 0,
 			chain_id INTEGER NOT NULL DEFAULT 0,
-			enabled INTEGER NOT NULL DEFAULT 1,
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
 			created_at TEXT NOT NULL DEFAULT '',
 			updated_at TEXT NOT NULL DEFAULT ''
 		)`,
 		`CREATE TABLE IF NOT EXISTS wallet_transactions (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id BIGSERIAL PRIMARY KEY,
 			bot_id TEXT NOT NULL,
 			type TEXT NOT NULL DEFAULT '',
-			amount_ai_coin REAL NOT NULL DEFAULT 0,
-			amount_usd_cents INTEGER NOT NULL DEFAULT 0,
+			amount_ai_coin DOUBLE PRECISION NOT NULL DEFAULT 0,
+			amount_usd_cents BIGINT NOT NULL DEFAULT 0,
 			source TEXT NOT NULL DEFAULT '',
 			status TEXT NOT NULL DEFAULT 'pending',
 			reference_id TEXT NOT NULL DEFAULT '',
@@ -142,10 +144,10 @@ func (ls *LocalStorage) ensureWalletTables(ctx context.Context) {
 			capacity_type TEXT NOT NULL DEFAULT '',
 			preferred_provider TEXT NOT NULL DEFAULT '',
 			preferred_model TEXT NOT NULL DEFAULT '',
-			max_cents_per_unit INTEGER NOT NULL DEFAULT 0,
+			max_cents_per_unit BIGINT NOT NULL DEFAULT 0,
 			default_quantity INTEGER NOT NULL DEFAULT 1,
-			enabled INTEGER NOT NULL DEFAULT 1,
-			min_balance_trigger INTEGER NOT NULL DEFAULT 0,
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
+			min_balance_trigger BIGINT NOT NULL DEFAULT 0,
 			created_at TEXT NOT NULL DEFAULT '',
 			updated_at TEXT NOT NULL DEFAULT ''
 		)`,
@@ -168,8 +170,9 @@ func (ls *LocalStorage) FundBotWallet(ctx context.Context, botID string, amountA
 
 	// Ensure wallet exists (auto-create if needed)
 	_, _ = tx.ExecContext(ctx, `
-		INSERT OR IGNORE INTO bot_wallets (bot_id, enabled, created_at, updated_at)
-		VALUES (?, 1, ?, ?)`, botID, now, now)
+		INSERT INTO bot_wallets (bot_id, enabled, created_at, updated_at)
+		VALUES (?, TRUE, ?, ?)
+		ON CONFLICT (bot_id) DO NOTHING`, botID, now, now)
 
 	// Update wallet balances
 	result, err := tx.ExecContext(ctx, `
@@ -295,6 +298,7 @@ func (ls *LocalStorage) WithdrawFromBotWallet(ctx context.Context, botID string,
 
 // GetWalletTransactions returns recent transactions for a bot wallet.
 func (ls *LocalStorage) GetWalletTransactions(ctx context.Context, botID string, limit int) ([]*WalletTransaction, error) {
+	ls.ensureWalletTables(ctx)
 	db := ls.requireSQLDB()
 
 	if limit <= 0 {
@@ -337,6 +341,7 @@ func (ls *LocalStorage) GetWalletTransactions(ctx context.Context, botID string,
 
 // GetAutoPurchaseRules returns all auto-purchase rules for a bot.
 func (ls *LocalStorage) GetAutoPurchaseRules(ctx context.Context, botID string) ([]*AutoPurchaseRule, error) {
+	ls.ensureWalletTables(ctx)
 	db := ls.requireSQLDB()
 
 	rows, err := db.QueryContext(ctx, `
