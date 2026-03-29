@@ -202,6 +202,17 @@ type StorageProvider interface {
 	CheckBotBudget(ctx context.Context, botID string) (*BudgetStatus, error)
 	RecordBotSpend(ctx context.Context, record *BotSpendRecord) error
 	GetBotSpendHistory(ctx context.Context, botID string, since time.Time, limit int) ([]*BotSpendRecord, error)
+
+	// Bot Wallet Management
+	GetBotWallet(ctx context.Context, botID string) (*BotWallet, error)
+	CreateOrUpdateBotWallet(ctx context.Context, wallet *BotWallet) error
+	FundBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, source, description string) (*WalletTransaction, error)
+	WithdrawFromBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, description string) (*WalletTransaction, error)
+	GetWalletTransactions(ctx context.Context, botID string, limit int) ([]*WalletTransaction, error)
+	GetAutoPurchaseRules(ctx context.Context, botID string) ([]*AutoPurchaseRule, error)
+	SaveAutoPurchaseRule(ctx context.Context, rule *AutoPurchaseRule) error
+	DeleteAutoPurchaseRule(ctx context.Context, botID, ruleID string) error
+	GetWalletsSummary(ctx context.Context) (totalBots int, totalAiCoin float64, totalUsdCents int64, err error)
 }
 
 // ComponentDIDRequest represents a component DID to be stored

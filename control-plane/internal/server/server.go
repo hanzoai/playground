@@ -1123,8 +1123,8 @@ func (s *PlaygroundServer) setupRoutes() {
 		agentAPI.POST("/skills/:skill_id", handlers.ExecuteSkillHandler(s.storage))
 
 		// Unified execution endpoints (path-based)
-		agentAPI.POST("/execute/:target", handlers.ExecuteHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))
-		agentAPI.POST("/execute/async/:target", handlers.ExecuteAsyncHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))
+		agentAPI.POST("/execute/:target", handlers.ExecuteHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout, s.storage))
+		agentAPI.POST("/execute/async/:target", handlers.ExecuteAsyncHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout, s.storage))
 		agentAPI.GET("/executions/:execution_id", handlers.GetExecutionStatusHandler(s.storage))
 		agentAPI.POST("/executions/batch-status", handlers.BatchExecutionStatusHandler(s.storage))
 		agentAPI.POST("/executions/:execution_id/status", handlers.UpdateExecutionStatusHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))
@@ -1311,6 +1311,30 @@ func (s *PlaygroundServer) setupRoutes() {
 			budgets.DELETE("/:botId", budgetHandler.DeleteBudget)
 			budgets.GET("/:botId/check", budgetHandler.CheckBudget)
 			budgets.GET("/:botId/spend", budgetHandler.GetSpendHistory)
+		}
+
+		// Per-bot wallet management
+		walletHandler := ui.NewWalletHandler(s.storage)
+		botWallets := agentAPI.Group("/bots")
+		{
+			botWallets.GET("/:botId/wallet", walletHandler.GetWallet)
+			botWallets.POST("/:botId/wallet/fund", walletHandler.FundWallet)
+			botWallets.POST("/:botId/wallet/withdraw", walletHandler.WithdrawWallet)
+			botWallets.GET("/:botId/wallet/transactions", walletHandler.GetTransactions)
+			botWallets.GET("/:botId/wallet/auto-purchase", walletHandler.ListAutoPurchaseRules)
+			botWallets.POST("/:botId/wallet/auto-purchase", walletHandler.SaveAutoPurchaseRule)
+			botWallets.PUT("/:botId/wallet/auto-purchase/:ruleId", walletHandler.SaveAutoPurchaseRule)
+			botWallets.DELETE("/:botId/wallet/auto-purchase/:ruleId", walletHandler.DeleteAutoPurchaseRule)
+			botWallets.POST("/:botId/wallet/auto-purchase/:ruleId/execute", walletHandler.ExecuteAutoPurchaseRule)
+		}
+		agentAPI.GET("/bots/wallets/summary", walletHandler.GetWalletsSummary)
+
+		// Billing proxy to Commerce API
+		billingProxy := ui.NewBillingProxyHandler()
+		billing := agentAPI.Group("/billing")
+		{
+			billing.GET("/*path", billingProxy.ProxyGet)
+			billing.POST("/*path", billingProxy.ProxyPost)
 		}
 
 		// Cloud provisioning endpoints

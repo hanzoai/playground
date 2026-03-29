@@ -465,3 +465,55 @@ type BotSpendRecordModel struct {
 }
 
 func (BotSpendRecordModel) TableName() string { return "bot_spend_records" }
+
+// BotWalletModel stores per-bot wallet with AI coin and USD balances.
+type BotWalletModel struct {
+	BotID          string    `gorm:"column:bot_id;primaryKey"`
+	OrgID          string    `gorm:"column:org_id;not null;default:'';index"`
+	Address        string    `gorm:"column:address;not null;default:''"`
+	AiCoinBalance  float64   `gorm:"column:ai_coin_balance;not null;default:0"`
+	UsdBalanceCents int64    `gorm:"column:usd_balance_cents;not null;default:0"`
+	ChainID        int       `gorm:"column:chain_id;not null;default:0"`
+	Enabled        bool      `gorm:"column:enabled;not null;default:true"`
+	CreatedAt      time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt      time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (BotWalletModel) TableName() string { return "bot_wallets" }
+
+// WalletTransactionModel tracks individual wallet transactions per bot.
+type WalletTransactionModel struct {
+	ID             int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	OrgID          string     `gorm:"column:org_id;not null;default:'';index"`
+	BotID          string     `gorm:"column:bot_id;not null;index"`
+	Type           string     `gorm:"column:type;not null;index"`
+	AmountAiCoin   float64    `gorm:"column:amount_ai_coin;not null;default:0"`
+	AmountUsdCents int64      `gorm:"column:amount_usd_cents;not null;default:0"`
+	Source         string     `gorm:"column:source;not null;default:''"`
+	Status         string     `gorm:"column:status;not null;default:'pending';index"`
+	ReferenceID    string     `gorm:"column:reference_id;not null;default:'';uniqueIndex"`
+	Description    string     `gorm:"column:description;not null;default:''"`
+	TxHash         string     `gorm:"column:tx_hash;not null;default:''"`
+	CreatedAt      time.Time  `gorm:"column:created_at;autoCreateTime;index"`
+	ConfirmedAt    *time.Time `gorm:"column:confirmed_at"`
+}
+
+func (WalletTransactionModel) TableName() string { return "wallet_transactions" }
+
+// AutoPurchaseRuleModel stores automatic capacity purchase rules per bot.
+type AutoPurchaseRuleModel struct {
+	ID                string    `gorm:"column:id;primaryKey"`
+	OrgID             string    `gorm:"column:org_id;not null;default:'';index"`
+	BotID             string    `gorm:"column:bot_id;not null;index"`
+	CapacityType      string    `gorm:"column:capacity_type;not null;default:''"`
+	PreferredProvider string    `gorm:"column:preferred_provider;not null;default:''"`
+	PreferredModel    string    `gorm:"column:preferred_model;not null;default:''"`
+	MaxCentsPerUnit   int64     `gorm:"column:max_cents_per_unit;not null;default:0"`
+	DefaultQuantity   int       `gorm:"column:default_quantity;not null;default:1"`
+	Enabled           bool      `gorm:"column:enabled;not null;default:true"`
+	MinBalanceTrigger int64     `gorm:"column:min_balance_trigger;not null;default:0"`
+	CreatedAt         time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt         time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (AutoPurchaseRuleModel) TableName() string { return "auto_purchase_rules" }

@@ -20,6 +20,7 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/internal/utils"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -111,13 +112,19 @@ type executionStatusUpdateRequest struct {
 	Progress    *int                   `json:"progress,omitempty"`
 }
 
+// BudgetSpendRecorder records spend events for budget tracking.
+type BudgetSpendRecorder interface {
+	RecordBotSpend(ctx context.Context, record *storage.BotSpendRecord) error
+}
+
 type executionController struct {
-	store      ExecutionStore
-	httpClient *http.Client
-	payloads   services.PayloadStore
-	webhooks   services.WebhookDispatcher
-	eventBus   *events.ExecutionEventBus
-	timeout    time.Duration
+	store         ExecutionStore
+	httpClient    *http.Client
+	payloads      services.PayloadStore
+	webhooks      services.WebhookDispatcher
+	eventBus      *events.ExecutionEventBus
+	timeout       time.Duration
+	budgetRecorder BudgetSpendRecorder
 }
 
 type asyncExecutionJob struct {
@@ -153,14 +160,20 @@ const (
 )
 
 // ExecuteHandler handles synchronous execution requests.
-func ExecuteHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration) gin.HandlerFunc {
+func ExecuteHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, budgetRecorder ...BudgetSpendRecorder) gin.HandlerFunc {
 	controller := newExecutionController(store, payloads, webhooks, timeout)
+	if len(budgetRecorder) > 0 {
+		controller.budgetRecorder = budgetRecorder[0]
+	}
 	return controller.handleSync
 }
 
 // ExecuteAsyncHandler handles asynchronous execution requests.
-func ExecuteAsyncHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration) gin.HandlerFunc {
+func ExecuteAsyncHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, budgetRecorder ...BudgetSpendRecorder) gin.HandlerFunc {
 	controller := newExecutionController(store, payloads, webhooks, timeout)
+	if len(budgetRecorder) > 0 {
+		controller.budgetRecorder = budgetRecorder[0]
+	}
 	return controller.handleAsync
 }
 
@@ -1033,6 +1046,27 @@ func (c *executionController) completeExecution(ctx context.Context, plan *prepa
 				eventData["input"] = inputPayload
 			}
 			c.publishExecutionEventWithBotInfo(updated, string(types.ExecutionStatusSucceeded), eventData, plan.agent, &plan.target.TargetName)
+
+			// Record spend for budget tracking (best-effort, non-blocking)
+			if c.budgetRecorder != nil && updated != nil {
+				go func() {
+					costUSD := estimateExecutionCost(elapsed)
+					botID := updated.BotID
+					if botID == "" {
+						botID = plan.target.TargetName
+					}
+					spendRecord := &storage.BotSpendRecord{
+						BotID:       botID,
+						ExecutionID: updated.ExecutionID,
+						AmountUSD:   costUSD,
+						Description: fmt.Sprintf("execution %s (%dms)", updated.ExecutionID, elapsed.Milliseconds()),
+					}
+					if err := c.budgetRecorder.RecordBotSpend(context.Background(), spendRecord); err != nil {
+						logger.Logger.Warn().Err(err).Str("bot_id", botID).Msg("failed to record execution spend")
+					}
+				}()
+			}
+
 			return nil
 		}
 		lastErr = err
@@ -1673,4 +1707,15 @@ func enqueueCompletion(job completionJob) error {
 	default:
 		return fmt.Errorf("completion queue is full")
 	}
+}
+
+// estimateExecutionCost returns a rough cost estimate in USD based on duration.
+// This is a placeholder — in production, the actual cost comes from the LLM
+// provider's token usage. For now, estimate ~$0.01 per second of execution.
+func estimateExecutionCost(elapsed time.Duration) float64 {
+	seconds := elapsed.Seconds()
+	if seconds < 0.1 {
+		return 0.001 // minimum cost
+	}
+	return seconds * 0.01
 }

@@ -48,6 +48,9 @@ func (ls *LocalStorage) autoMigrateSchema(ctx context.Context) error {
 		&UserPreferencesModel{},
 		&BotBudgetModel{},
 		&BotSpendRecordModel{},
+		&BotWalletModel{},
+		&WalletTransactionModel{},
+		&AutoPurchaseRuleModel{},
 	}
 
 	if err := gormDB.WithContext(ctx).AutoMigrate(models...); err != nil {
