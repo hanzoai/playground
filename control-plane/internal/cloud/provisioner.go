@@ -295,9 +295,10 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	if req.DisplayName != "" {
 		env["AGENT_DISPLAY_NAME"] = req.DisplayName
 	}
-	// Exec security mode: cloud agents need to execute commands freely.
-	// "allowlist" permits known-safe commands; "full" requires approval.
-	env["AGENT_SECURITY_MODE"] = "allowlist"
+	// Exec security mode: cloud agents are user-owned terminals that need
+	// to execute commands freely (like a cloud shell). "off" disables the
+	// security policy so all commands run without approval.
+	env["AGENT_SECURITY_MODE"] = "off"
 
 	// Inject Hanzo API env vars for bot LLM calls.
 	// Default: api.hanzo.ai; overridable via CLOUD_API_ENDPOINT env var.
@@ -1213,13 +1214,13 @@ func cloudAgentArgs(gatewayURL, nodeID string, combinedDesktop bool) []string {
 	}
 	if combinedDesktop {
 		// Combined desktop: image ENTRYPOINT is `openclaw` binary.
-		// Pass security=allowlist so the bot can execute desktop commands.
+		// Combined desktop: ENTRYPOINT handles security via env vars.
 		return nil
 	}
 	return []string{
 		"node", "hanzo-bot.mjs", "node", "run",
 		"--node-id", nodeID,
-		"--security", "allowlist",
+		"--security", "off",
 		"--ask", "off",
 	}
 }
