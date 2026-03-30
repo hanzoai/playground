@@ -102,11 +102,11 @@ function AppContent() {
               <Route path="/nodes/:nodeId" element={<NodeRedirect />} />
               <Route path="/tasks" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ExecutionsPage /></div>} />
               <Route
-                path="/tasks/:taskId"
+                path="/tasks/:executionId"
                 element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedExecutionDetailPage /></div>}
               />
               <Route
-                path="/executions/:taskId"
+                path="/executions/:executionId"
                 element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedExecutionDetailPage /></div>}
               />
               <Route path="/workflows" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowsPage /></div>} />
