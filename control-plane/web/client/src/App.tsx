@@ -105,6 +105,10 @@ function AppContent() {
                 path="/tasks/:taskId"
                 element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedExecutionDetailPage /></div>}
               />
+              <Route
+                path="/executions/:taskId"
+                element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><EnhancedExecutionDetailPage /></div>}
+              />
               <Route path="/workflows" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowsPage /></div>} />
               <Route
                 path="/workflows/:workflowId"
