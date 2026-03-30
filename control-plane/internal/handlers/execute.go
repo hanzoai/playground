@@ -960,11 +960,47 @@ func (c *executionController) callAgent(ctx context.Context, plan *preparedExecu
 	start := time.Now()
 	url := buildAgentURL(plan.agent, plan.target)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(plan.requestBody))
+	// Cloud bot chat bridge: reformat payload for /api/v1/chat endpoint
+	requestBody := plan.requestBody
+	if strings.HasSuffix(url, "/api/v1/chat") {
+		// Extract prompt from the execution input
+		var input map[string]interface{}
+		if err := json.Unmarshal(plan.requestBody, &input); err == nil {
+			message := ""
+			if prompt, ok := input["prompt"].(string); ok {
+				message = prompt
+			} else if inp, ok := input["input"].(string); ok {
+				message = inp
+			} else if inp, ok := input["input"]; ok {
+				b, _ := json.Marshal(inp)
+				message = string(b)
+			}
+			model, _ := input["model"].(string)
+			sessionKey := plan.agent.ID + ":main"
+			chatPayload := map[string]interface{}{
+				"sessionKey": sessionKey,
+				"nodeId":     plan.agent.ID,
+				"message":    message,
+				"timeoutMs":  120000,
+			}
+			if model != "" {
+				chatPayload["model"] = model
+			}
+			requestBody, _ = json.Marshal(chatPayload)
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, 0, false, fmt.Errorf("create agent request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// Add gateway auth token for chat bridge calls
+	if strings.HasSuffix(url, "/api/v1/chat") {
+		if gwToken := os.Getenv("HANZO_AGENTS_CLOUD_GATEWAY_TOKEN"); gwToken != "" {
+			req.Header.Set("Authorization", "Bearer "+gwToken)
+		}
+	}
 	req.Header.Set("X-Run-ID", plan.exec.RunID)
 	req.Header.Set("X-Execution-ID", plan.exec.ExecutionID)
 	req.Header.Set("X-Workflow-ID", plan.exec.RunID)
@@ -1260,6 +1296,20 @@ func buildAgentURL(agent *types.Node, target *parsedTarget) string {
 	}
 
 	base := strings.TrimSuffix(agent.BaseURL, "/")
+
+	// Cloud bots without a base_url use the gateway's HTTP chat bridge.
+	// The gateway URL comes from HANZO_AGENTS_CLOUD_GATEWAY_URL env var.
+	if base == "" && strings.HasPrefix(agent.ID, "cloud-") {
+		gatewayURL := os.Getenv("HANZO_AGENTS_CLOUD_GATEWAY_URL")
+		if gatewayURL == "" {
+			gatewayURL = "http://bot-gateway.hanzo.svc:80"
+		}
+		// Convert ws:// to http:// for the HTTP bridge
+		gatewayURL = strings.Replace(gatewayURL, "ws://", "http://", 1)
+		gatewayURL = strings.Replace(gatewayURL, "wss://", "https://", 1)
+		return strings.TrimSuffix(gatewayURL, "/") + "/api/v1/chat"
+	}
+
 	if target.TargetType == "skill" {
 		return fmt.Sprintf("%s/skills/%s", base, target.TargetName)
 	}
