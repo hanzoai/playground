@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.333] - 2026-03-30
+
+
+### Fixed
+
+- Fix: use BOT_EXEC_SECURITY env var (correct name for bot runtime) (21fe11f)
+
 ## [0.1.41-rc.332] - 2026-03-30
 
 
