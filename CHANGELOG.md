@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.334] - 2026-03-30
+
+
+### Fixed
+
+- Fix(cloud): use valid exec security value "full" instead of "off"
+
+"off" is not a valid ExecSecurity enum value (valid: deny|allowlist|full).
+The bot's resolveExecSecurity() silently falls back to "allowlist" when
+it gets "off", which blocks shell wrappers (sh -c) used by both the
+terminal panel and AI chat dispatch. This caused all terminal commands
+to fail with "SYSTEM_RUN_DENIED: allowlist miss".
+
+Changed to "full" which, combined with ask=off in the entrypoint,
+allows all commands without approval — the intended behavior for
+cloud shell terminals.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (114ff29)
+
 ## [0.1.41-rc.333] - 2026-03-30
 
 
