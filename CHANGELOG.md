@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.330] - 2026-03-30
+
+
+### Added
+
+- Feat: route cloud bot execution through gateway HTTP chat bridge (d02d405)
+
 ## [0.1.41-rc.329] - 2026-03-30
 
 
