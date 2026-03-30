@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.332] - 2026-03-30
+
+
+### Fixed
+
+- Fix: set cloud bot security mode to 'off' for unrestricted terminal access (151a4b2)
+
 ## [0.1.41-rc.331] - 2026-03-30
 
 
