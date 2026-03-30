@@ -241,18 +241,21 @@ export interface ChatHistoryParams {
 }
 
 export interface ExecApprovalResolveParams {
-  approvalId: string;
-  decision: 'allow' | 'deny';
-  reason?: string;
+  id: string;
+  decision: 'allow-once' | 'allow-always' | 'deny';
 }
 
 export interface ExecApprovalRequestEvent {
-  approvalId: string;
-  agentId: string;
-  sessionKey: string;
-  toolName: string;
-  toolInput: Record<string, unknown>;
-  requestedAt: string;
+  id: string;
+  request: {
+    command: string;
+    ask?: string | null;
+    agentId?: string | null;
+    sessionKey?: string | null;
+    [key: string]: unknown;
+  };
+  createdAtMs: number;
+  expiresAtMs: number;
 }
 
 export interface TeamPresetsListResult {

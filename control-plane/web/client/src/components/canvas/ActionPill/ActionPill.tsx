@@ -26,8 +26,8 @@ export function ActionPill() {
     resolve(active.id, 'approved');
     try {
       await execApprovalResolve({
-        approvalId: active.id,
-        decision: 'allow',
+        id: active.id,
+        decision: 'allow-once',
       });
     } catch (e) {
       console.error('[ActionPill] Failed to send approval:', e);
@@ -40,7 +40,7 @@ export function ActionPill() {
     resolve(active.id, 'denied');
     try {
       await execApprovalResolve({
-        approvalId: active.id,
+        id: active.id,
         decision: 'deny',
       });
     } catch (e) {

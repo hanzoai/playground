@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 )
 
 // Handlers exposes HTTP endpoints for managing policies and approvals.
@@ -194,10 +195,14 @@ func (h *Handlers) ResolveApproval(c *gin.Context) {
 	}
 
 	// resolvedBy comes from IAM JWT claims. Anonymous approvals are not allowed.
-	resolvedBy := c.GetString("user_id")
-	if resolvedBy == "" {
+	iamUser := middleware.GetIAMUser(c)
+	if iamUser == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required to resolve approvals"})
 		return
+	}
+	resolvedBy := iamUser.Email
+	if resolvedBy == "" {
+		resolvedBy = iamUser.Sub
 	}
 
 	if err := h.engine.ResolveApproval(requestID, req.Approved, resolvedBy); err != nil {

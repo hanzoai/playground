@@ -47,12 +47,12 @@ export const useActionPillStore = create<ActionPillStore>((set, get) => ({
 
   add: (event) => {
     const action: ApprovalAction = {
-      id: event.approvalId,
-      agentId: event.agentId,
-      sessionKey: event.sessionKey,
-      toolName: event.toolName,
-      toolInput: event.toolInput,
-      requestedAt: event.requestedAt,
+      id: event.id,
+      agentId: event.request.agentId ?? '',
+      sessionKey: event.request.sessionKey ?? '',
+      toolName: event.request.ask ?? event.request.command ?? '',
+      toolInput: {},
+      requestedAt: new Date(event.createdAtMs).toISOString(),
       status: 'pending',
     };
     set({ actions: [...get().actions, action] });
