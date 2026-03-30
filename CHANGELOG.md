@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.335] - 2026-03-30
+
+
+### Fixed
+
+- Fix(approvals): align gateway event types and resolve params with bot protocol
+
+- ExecApprovalRequestEvent was typed as {approvalId,agentId,toolName,...}
+  but the bot gateway broadcasts {id, request:{command,agentId,...}, createdAtMs, expiresAtMs}
+  causing active.id to be undefined and approvals to silently fail
+- ExecApprovalResolveParams sent {approvalId, decision:'allow'} but gateway
+  requires {id, decision:'allow-once'|'allow-always'|'deny'}
+- Fix ResolveApproval REST handler to read IAM user from context key set by
+  IAM middleware instead of 'user_id' which was never populated (always 401)
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (aa89f32)
+
 ## [0.1.41-rc.334] - 2026-03-30
 
 
