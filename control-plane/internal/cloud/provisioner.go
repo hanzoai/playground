@@ -298,7 +298,8 @@ func (p *Provisioner) provisionK8sPod(ctx context.Context, req *ProvisionRequest
 	// Exec security mode: cloud agents are user-owned terminals that need
 	// to execute commands freely (like a cloud shell). "off" disables the
 	// security policy so all commands run without approval.
-	env["AGENT_SECURITY_MODE"] = "off"
+	env["BOT_EXEC_SECURITY"] = "off"
+	env["AGENT_SECURITY_MODE"] = "off" // legacy compat
 
 	// Inject Hanzo API env vars for bot LLM calls.
 	// Default: api.hanzo.ai; overridable via CLOUD_API_ENDPOINT env var.
