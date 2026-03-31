@@ -200,7 +200,9 @@ func (h *WalletHandler) FundWallet(c *gin.Context) {
 	}
 
 	// When funding from the user's USD (Commerce) balance, deduct it first.
-	if strings.EqualFold(req.Source, "usd") && req.AmountUsdCents > 0 {
+	// Accept both "usd" and "user_usd" — the frontend sends "user_usd".
+	isUsdSource := strings.EqualFold(req.Source, "usd") || strings.EqualFold(req.Source, "user_usd")
+	if isUsdSource && req.AmountUsdCents > 0 {
 		userID, rawToken := jwtUserID(c.GetHeader("Authorization"))
 		if userID == "" {
 			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "cannot determine user identity from token; re-login and try again"})
