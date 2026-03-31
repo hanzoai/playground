@@ -181,9 +181,19 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 			return
 		}
 
+		rawBody, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if readErr != nil {
+			logger.Logger.Error().Err(readErr).Msg("IAM: failed to read userinfo response body")
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error":   "auth_error",
+				"message": "failed to read user identity",
+			})
+			return
+		}
+
 		var user IAMUserInfo
-		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-			logger.Logger.Error().Err(err).Msg("IAM: failed to decode userinfo response")
+		if err := json.Unmarshal(rawBody, &user); err != nil {
+			logger.Logger.Error().Err(err).Str("body", string(rawBody)).Msg("IAM: failed to decode userinfo response")
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error":   "auth_error",
 				"message": "failed to parse user identity",
@@ -191,11 +201,25 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Casdoor returns the org/tenant as "owner"; fall back to it when
-		// the "organization" field is absent from the userinfo response.
+		// Casdoor may return the org/tenant under different field names depending
+		// on whether /api/userinfo or /oauth/userinfo is used. Try in order:
+		//   1. "organization" — standard OIDC claim (may be absent)
+		//   2. "owner"        — Casdoor full User object field
+		//   3. sub prefix     — Casdoor formats sub as "{owner}/{name}" (e.g. "hanzo/z")
 		if user.Organization == "" && user.Owner != "" {
 			user.Organization = user.Owner
 		}
+		if user.Organization == "" && strings.Contains(user.Sub, "/") {
+			user.Organization = strings.SplitN(user.Sub, "/", 2)[0]
+		}
+
+		logger.Logger.Info().
+			Str("sub", user.Sub).
+			Str("email", user.Email).
+			Str("org", user.Organization).
+			Str("owner", user.Owner).
+			Str("raw", string(rawBody)).
+			Msg("IAM: userinfo response")
 
 		// Enforce organization match if configured
 		if config.Organization != "" && user.Organization != "" && user.Organization != config.Organization {
