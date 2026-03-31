@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.344] - 2026-03-31
+
+
+### Added
+
+- Feat: deposit to bot service account when funding bot wallet from USD
+
+When users fund a bot wallet with source=usd, the flow is now:
+1. Withdraw from user's Commerce balance (hanzo/z)
+2. Deposit to bot service account (hanzo/cloud-agent-v2)
+3. Credit local bot wallet
+
+This means cloud-api's balance gate sees sufficient funds on the service
+account, allowing LLM requests. Usage is automatically deducted from
+the service account by cloud-api's billing queue. No bot-gateway changes
+needed.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (139bb84)
+
 ## [0.1.41-rc.343] - 2026-03-31
 
 
