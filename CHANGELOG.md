@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.337] - 2026-03-31
+
+
+### Fixed
+
+- Fix(iam): populate Organization from Casdoor owner field
+
+Casdoor's /api/userinfo returns the org/tenant as "owner", not
+"organization". When Organization is empty after decode, fall back to
+the Owner field. This fixes the empty-org -> 403 on /v1/spaces/*/tasks
+(requireDurable check).
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (0f60a76)
+
 ## [0.1.41-rc.336] - 2026-03-31
 
 
