@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.340] - 2026-03-31
+
+
+### Fixed
+
+- Fix(billing): context cancellation 502 + extract JWT owner claim
+
+billing_proxy: use context.Background() instead of c.Request.Context()
+so that browser navigation away does not cancel in-flight commerce
+requests and produce spurious 502s.
+
+iam: add jwtOwnerClaim() helper that decodes the JWT payload without
+verification to extract the Casdoor "owner" claim. This is step 4 in
+the org-resolution fallback chain, ahead of the config.Organization
+catch-all. Also remove verbose warn log now that org resolution is robust.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (3c27265)
+
 ## [0.1.41-rc.339] - 2026-03-31
 
 
