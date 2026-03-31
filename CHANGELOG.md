@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.338] - 2026-03-31
+
+
+### Fixed
+
+- Fix(iam): log raw userinfo + extract org from sub as fallback
+
+- Read full body before decode so we can log it at INFO level
+- Also extract org from Casdoor sub prefix (format: owner/name)
+- This handles all three possible Casdoor field locations
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (c634b34)
+
 ## [0.1.41-rc.337] - 2026-03-31
 
 
