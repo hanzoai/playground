@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -55,7 +56,11 @@ func (h *BillingProxyHandler) ProxyGet(c *gin.Context) {
 		targetURL += "?" + qs
 	}
 
-	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", targetURL, nil)
+	// Use a background context with timeout so browser navigation / tab close
+	// does NOT cancel the in-flight commerce request (which would cause a 502).
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create request"})
 		return
@@ -92,7 +97,9 @@ func (h *BillingProxyHandler) ProxyPost(c *gin.Context) {
 
 	targetURL := fmt.Sprintf("%s/api/v1/billing%s", h.commerceURL, subPath)
 
-	req, err := http.NewRequestWithContext(c.Request.Context(), "POST", targetURL, c.Request.Body)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create request"})
 		return

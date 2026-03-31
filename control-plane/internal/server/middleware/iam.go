@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -139,10 +140,6 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 
 		// Check cache
 		if user, ok := cache.get(token); ok {
-			logger.Logger.Warn().
-				Str("sub", user.Sub).
-				Str("org", user.Organization).
-				Msg("IAM: cache hit")
 			c.Set(ContextKeyUser, user)
 			c.Set(ContextKeyOrg, user.Organization)
 			c.Next()
@@ -205,30 +202,26 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Casdoor may return the org/tenant under different field names depending
-		// on whether /api/userinfo or /oauth/userinfo is used. Try in order:
-		//   1. "organization" — standard OIDC claim (may be absent)
-		//   2. "owner"        — Casdoor full User object field
-		//   3. sub prefix     — Casdoor formats sub as "{owner}/{name}" (e.g. "hanzo/z")
-		//   4. config.Organization — single-tenant fallback: if IAM is configured for
-		//      a specific org and the token is valid, the user is in that org.
+		// Resolve org from the userinfo response. Casdoor's /api/userinfo
+		// returns standard OIDC claims (no "owner"/"organization" fields).
+		// Try in order:
+		//   1. "organization" — standard OIDC claim
+		//   2. "owner"        — Casdoor full User object (if endpoint returns it)
+		//   3. sub prefix     — Casdoor formats sub as "{owner}/{name}"
+		//   4. JWT payload    — decode "owner" claim directly from the token
+		//   5. config.Organization — single-tenant fallback
 		if user.Organization == "" && user.Owner != "" {
 			user.Organization = user.Owner
 		}
 		if user.Organization == "" && strings.Contains(user.Sub, "/") {
 			user.Organization = strings.SplitN(user.Sub, "/", 2)[0]
 		}
+		if user.Organization == "" {
+			user.Organization = jwtOwnerClaim(token)
+		}
 		if user.Organization == "" && config.Organization != "" {
 			user.Organization = config.Organization
 		}
-
-		logger.Logger.Warn().
-			Str("sub", user.Sub).
-			Str("email", user.Email).
-			Str("org", user.Organization).
-			Str("owner", user.Owner).
-			Str("raw", string(rawBody)).
-			Msg("IAM: userinfo resolved")
 
 		// Enforce organization match if configured
 		if config.Organization != "" && user.Organization != "" && user.Organization != config.Organization {
@@ -308,4 +301,34 @@ func RequireIAMOrg(c *gin.Context) (string, bool) {
 		return "", false
 	}
 	return org, true
+}
+
+// jwtOwnerClaim decodes the JWT payload (without verification) and returns
+// the "owner" claim. Casdoor embeds the full user object in the token
+// including "owner":"hanzo", which /api/userinfo strips out.
+// Returns "" on any error — callers treat this as a soft fallback only.
+func jwtOwnerClaim(token string) string {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	payload := parts[1]
+	// Base64url padding
+	switch len(payload) % 4 {
+	case 2:
+		payload += "=="
+	case 3:
+		payload += "="
+	}
+	b, err := base64.URLEncoding.DecodeString(payload)
+	if err != nil {
+		return ""
+	}
+	var claims struct {
+		Owner string `json:"owner"`
+	}
+	if err := json.Unmarshal(b, &claims); err != nil {
+		return ""
+	}
+	return claims.Owner
 }
