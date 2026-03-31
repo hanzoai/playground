@@ -1,8 +1,16 @@
 package ui
 
 import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
@@ -11,11 +19,89 @@ import (
 // WalletHandler handles per-bot wallet CRUD operations.
 type WalletHandler struct {
 	storage storage.StorageProvider
+	billing *BillingProxyHandler
 }
 
 // NewWalletHandler creates a new WalletHandler.
 func NewWalletHandler(s storage.StorageProvider) *WalletHandler {
-	return &WalletHandler{storage: s}
+	return &WalletHandler{
+		storage: s,
+		billing: NewBillingProxyHandler(),
+	}
+}
+
+// commerceWithdraw calls Commerce's POST /api/v1/billing/withdraw endpoint
+// using the caller's own IAM token. Commerce enforces that non-admin users
+// can only withdraw from their own account, so the token must belong to userID.
+// Returns a non-nil error if the balance is insufficient or the call fails.
+func (h *WalletHandler) commerceWithdraw(ctx context.Context, userToken, userID string, amountCents int64, notes string) error {
+	body, _ := json.Marshal(map[string]interface{}{
+		"user":     userID,
+		"currency": "usd",
+		"amount":   amountCents,
+		"notes":    notes,
+		"tags":     "bot-wallet-fund",
+	})
+
+	targetURL := fmt.Sprintf("%s/api/v1/billing/withdraw", h.billing.commerceURL)
+
+	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, "POST", targetURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+userToken)
+
+	resp, err := h.billing.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("commerce unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("commerce withdraw failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	return nil
+}
+
+// jwtUserID extracts the "owner/name" Commerce user ID from a JWT Bearer header.
+// Returns ("", "") if the header is missing, malformed, or has no owner/name.
+func jwtUserID(authHeader string) (userID, rawToken string) {
+	rawToken = strings.TrimPrefix(authHeader, "Bearer ")
+	if rawToken == "" || rawToken == authHeader {
+		return "", ""
+	}
+	parts := strings.Split(rawToken, ".")
+	if len(parts) != 3 {
+		return "", rawToken
+	}
+	payload := parts[1]
+	switch len(payload) % 4 {
+	case 2:
+		payload += "=="
+	case 3:
+		payload += "="
+	}
+	b, err := base64.URLEncoding.DecodeString(payload)
+	if err != nil {
+		return "", rawToken
+	}
+	var claims struct {
+		Owner string `json:"owner"`
+		Name  string `json:"name"`
+	}
+	if err := json.Unmarshal(b, &claims); err != nil {
+		return "", rawToken
+	}
+	if claims.Owner == "" || claims.Name == "" {
+		return "", rawToken
+	}
+	return strings.ToLower(claims.Owner + "/" + claims.Name), rawToken
 }
 
 // GetWallet returns the wallet for a specific bot.
@@ -51,6 +137,12 @@ type fundRequest struct {
 
 // FundWallet adds funds to a bot wallet.
 // POST /api/v1/:botId/wallet/fund
+//
+// When Source == "usd", a withdrawal is first created in Commerce to deduct
+// the equivalent amount from the caller's IAM user balance. The local bot
+// wallet is only updated after Commerce confirms the withdrawal, so the two
+// ledgers stay in sync. If the user has insufficient balance Commerce returns
+// 402 and the bot wallet is NOT updated.
 func (h *WalletHandler) FundWallet(c *gin.Context) {
 	ctx := c.Request.Context()
 	botID := c.Param("botId")
@@ -59,6 +151,35 @@ func (h *WalletHandler) FundWallet(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
+	}
+
+	// When funding from the user's USD (Commerce) balance, deduct it first.
+	if strings.EqualFold(req.Source, "usd") && req.AmountUsdCents > 0 {
+		userID, rawToken := jwtUserID(c.GetHeader("Authorization"))
+		if userID == "" {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "cannot determine user identity from token; re-login and try again"})
+			return
+		}
+
+		notes := req.Description
+		if notes == "" {
+			notes = fmt.Sprintf("Bot wallet fund: %s", botID)
+		}
+
+		if err := h.commerceWithdraw(ctx, rawToken, userID, req.AmountUsdCents, notes); err != nil {
+			// Preserve the Commerce HTTP status when possible (402 = insufficient balance).
+			status := http.StatusPaymentRequired
+			msg := err.Error()
+			if strings.Contains(msg, "commerce withdraw failed (402)") {
+				status = http.StatusPaymentRequired
+			} else if strings.Contains(msg, "commerce withdraw failed (4") {
+				status = http.StatusBadRequest
+			} else if strings.Contains(msg, "commerce unreachable") {
+				status = http.StatusBadGateway
+			}
+			c.JSON(status, ErrorResponse{Error: "failed to deduct from USD balance: " + msg})
+			return
+		}
 	}
 
 	tx, err := h.storage.FundBotWallet(ctx, botID, req.AmountAiCoin, req.AmountUsdCents, req.Source, req.Description)
@@ -70,8 +191,8 @@ func (h *WalletHandler) FundWallet(c *gin.Context) {
 	c.JSON(http.StatusOK, tx)
 }
 
-// withdrawRequest is the JSON body for withdrawing from a wallet.
-type withdrawRequest struct {
+// walletWithdrawRequest is the JSON body for withdrawing from a wallet.
+type walletWithdrawRequest struct {
 	AmountAiCoin   float64 `json:"amount_ai_coin"`
 	AmountUsdCents int64   `json:"amount_usd_cents"`
 	Description    string  `json:"description"`
@@ -83,7 +204,7 @@ func (h *WalletHandler) WithdrawWallet(c *gin.Context) {
 	ctx := c.Request.Context()
 	botID := c.Param("botId")
 
-	var req withdrawRequest
+	var req walletWithdrawRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
@@ -197,9 +318,9 @@ func (h *WalletHandler) ExecuteAutoPurchaseRule(c *gin.Context) {
 
 // walletsSummaryResponse is the response for the wallets summary endpoint.
 type walletsSummaryResponse struct {
-	TotalBots      int     `json:"total_bots"`
-	TotalAiCoin    float64 `json:"total_ai_coin"`
-	TotalUsdCents  int64   `json:"total_usd_cents"`
+	TotalBots     int     `json:"total_bots"`
+	TotalAiCoin   float64 `json:"total_ai_coin"`
+	TotalUsdCents int64   `json:"total_usd_cents"`
 }
 
 // GetWalletsSummary returns aggregate wallet statistics.
