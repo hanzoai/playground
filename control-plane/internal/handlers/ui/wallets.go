@@ -110,6 +110,45 @@ func (h *WalletHandler) commerceDeposit(ctx context.Context, serviceUser string,
 	return nil
 }
 
+// commerceServiceWithdraw calls Commerce's POST /api/v1/billing/withdraw
+// using the service token (admin). Used to debit the bot service account.
+func (h *WalletHandler) commerceServiceWithdraw(ctx context.Context, userID string, amountCents int64, notes string) error {
+	body, _ := json.Marshal(map[string]interface{}{
+		"user":     userID,
+		"currency": "usd",
+		"amount":   amountCents,
+		"notes":    notes,
+		"tags":     "bot-wallet-refund",
+	})
+
+	targetURL := fmt.Sprintf("%s/api/v1/billing/withdraw", h.billing.commerceURL)
+
+	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, "POST", targetURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	if h.billing.serviceToken != "" {
+		req.Header.Set("Authorization", "Bearer "+h.billing.serviceToken)
+	}
+
+	resp, err := h.billing.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("commerce unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("commerce withdraw failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	return nil
+}
+
 // botServiceAccount is the Commerce user ID for the shared bot LLM service
 // account. Cloud-api bills LLM usage against this account. When users fund
 // bot wallets, we deposit the amount here so the balance gate allows requests.
@@ -256,7 +295,7 @@ type walletWithdrawRequest struct {
 	Description    string  `json:"description"`
 }
 
-// WithdrawWallet withdraws funds from a bot wallet.
+// WithdrawWallet withdraws funds from a bot wallet and deposits back to user's Commerce balance.
 // POST /api/v1/:botId/wallet/withdraw
 func (h *WalletHandler) WithdrawWallet(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -268,10 +307,30 @@ func (h *WalletHandler) WithdrawWallet(c *gin.Context) {
 		return
 	}
 
+	// Withdraw from local bot wallet first.
 	tx, err := h.storage.WithdrawFromBotWallet(ctx, botID, req.AmountAiCoin, req.AmountUsdCents, req.Description)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to withdraw from wallet: " + err.Error()})
 		return
+	}
+
+	// Deposit the withdrawn USD back to the user's Commerce balance.
+	// Reverse of fund: service account → withdraw, user → deposit.
+	// Both use the service token (admin) since we're moving between accounts.
+	if req.AmountUsdCents > 0 {
+		userID, _ := jwtUserID(c.GetHeader("Authorization"))
+		if userID != "" {
+			// Withdraw from service account (uses service token via commerceDeposit's sibling pattern).
+			svcWithdrawNotes := fmt.Sprintf("Bot wallet withdraw refund: %s → %s", botID, userID)
+			if wErr := h.commerceServiceWithdraw(ctx, botServiceAccount, req.AmountUsdCents, svcWithdrawNotes); wErr != nil {
+				fmt.Printf("[WARN] bot wallet withdraw: service account debit failed: %v\n", wErr)
+			}
+			// Deposit back to user's balance.
+			depositNotes := fmt.Sprintf("Bot wallet withdraw refund from %s", botID)
+			if dErr := h.commerceDeposit(ctx, userID, req.AmountUsdCents, depositNotes); dErr != nil {
+				fmt.Printf("[WARN] bot wallet withdraw: user deposit failed: %v\n", dErr)
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, tx)
@@ -298,6 +357,48 @@ func (h *WalletHandler) GetTransactions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, transactions)
+}
+
+// GetUsage returns LLM usage (token costs) from the bot service account.
+// This shows what cloud-api has charged for bot chat completions.
+// GET /api/v1/:botId/wallet/usage?limit=50
+func (h *WalletHandler) GetUsage(c *gin.Context) {
+	limit := "50"
+	if l := c.Query("limit"); l != "" {
+		limit = l
+	}
+
+	targetURL := fmt.Sprintf("%s/api/v1/billing/transactions?user=%s&limit=%s",
+		h.billing.commerceURL, botServiceAccount, limit)
+
+	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, "GET", targetURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build request"})
+		return
+	}
+	if h.billing.serviceToken != "" {
+		req.Header.Set("Authorization", "Bearer "+h.billing.serviceToken)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := h.billing.client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, ErrorResponse{Error: "commerce unavailable"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Forward the response directly.
+	for k, v := range resp.Header {
+		for _, val := range v {
+			c.Writer.Header().Add(k, val)
+		}
+	}
+	c.Writer.WriteHeader(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
 }
 
 // ListAutoPurchaseRules returns all auto-purchase rules for a bot.

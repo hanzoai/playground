@@ -1325,6 +1325,7 @@ func (s *PlaygroundServer) setupRoutes() {
 			botWallets.POST("/:botId/wallet/fund", walletHandler.FundWallet)
 			botWallets.POST("/:botId/wallet/withdraw", walletHandler.WithdrawWallet)
 			botWallets.GET("/:botId/wallet/transactions", walletHandler.GetTransactions)
+			botWallets.GET("/:botId/wallet/usage", walletHandler.GetUsage)
 			botWallets.GET("/:botId/wallet/auto-purchase", walletHandler.ListAutoPurchaseRules)
 			botWallets.POST("/:botId/wallet/auto-purchase", walletHandler.SaveAutoPurchaseRule)
 			botWallets.PUT("/:botId/wallet/auto-purchase/:ruleId", walletHandler.SaveAutoPurchaseRule)
