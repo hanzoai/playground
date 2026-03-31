@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.339] - 2026-03-31
+
+
+### Fixed
+
+- Fix(iam): add config.Organization fallback + warn-level logging
+
+- Final fallback: if org still empty after owner+sub extraction,
+  use config.Organization (safe for single-tenant: IAM_ORGANIZATION=hanzo)
+- Downgrade log from Info to Warn so it's visible at default log level
+- Also log cache-hit org so we can diagnose stale empty-org entries
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (c3c7937)
+
 ## [0.1.41-rc.338] - 2026-03-31
 
 
