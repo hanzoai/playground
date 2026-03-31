@@ -69,6 +69,52 @@ func (h *WalletHandler) commerceWithdraw(ctx context.Context, userToken, userID 
 	return nil
 }
 
+// commerceDeposit calls Commerce's POST /api/v1/billing/deposit endpoint
+// using the service token. This credits the bot's service account so that
+// cloud-api's balance gate allows LLM requests.
+func (h *WalletHandler) commerceDeposit(ctx context.Context, serviceUser string, amountCents int64, notes string) error {
+	body, _ := json.Marshal(map[string]interface{}{
+		"user":     serviceUser,
+		"currency": "usd",
+		"amount":   amountCents,
+		"notes":    notes,
+		"tags":     "bot-wallet-fund",
+	})
+
+	targetURL := fmt.Sprintf("%s/api/v1/billing/deposit", h.billing.commerceURL)
+
+	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, "POST", targetURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build deposit request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	// Use service token (admin) for deposits — user tokens can't deposit.
+	if h.billing.serviceToken != "" {
+		req.Header.Set("Authorization", "Bearer "+h.billing.serviceToken)
+	}
+
+	resp, err := h.billing.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("commerce unreachable for deposit: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("commerce deposit failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	return nil
+}
+
+// botServiceAccount is the Commerce user ID for the shared bot LLM service
+// account. Cloud-api bills LLM usage against this account. When users fund
+// bot wallets, we deposit the amount here so the balance gate allows requests.
+const botServiceAccount = "hanzo/cloud-agent-v2"
+
 // jwtUserID extracts the "owner/name" Commerce user ID from a JWT Bearer header.
 // Returns ("", "") if the header is missing, malformed, or has no owner/name.
 func jwtUserID(authHeader string) (userID, rawToken string) {
@@ -179,6 +225,16 @@ func (h *WalletHandler) FundWallet(c *gin.Context) {
 			}
 			c.JSON(status, ErrorResponse{Error: "failed to deduct from USD balance: " + msg})
 			return
+		}
+
+		// Deposit the withdrawn amount to the bot service account so cloud-api's
+		// balance gate allows LLM requests. This makes the flow:
+		// user balance (hanzo/z) → withdraw → deposit → service account (hanzo/cloud-agent-v2)
+		depositNotes := fmt.Sprintf("Bot wallet fund from %s: %s", userID, botID)
+		if err := h.commerceDeposit(ctx, botServiceAccount, req.AmountUsdCents, depositNotes); err != nil {
+			// The user's withdraw already succeeded — log the deposit failure
+			// but don't fail the request. The funds are safe in the ledger.
+			fmt.Printf("[WARN] bot wallet fund: user withdraw succeeded but service account deposit failed: %v\n", err)
 		}
 	}
 
