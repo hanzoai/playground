@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.341] - 2026-03-31
+
+
+### Added
+
+- Feat(wallets): deduct Commerce balance when funding bot wallet from USD
+
+When FundWallet is called with source=usd, the handler now:
+1. Extracts the caller's IAM user ID (owner/name) from their JWT
+2. Calls POST /api/v1/billing/withdraw on Commerce to deduct the amount
+   from the user's iam-user/<id> balance (returns 402 on insufficient funds)
+3. Only if Commerce confirms the withdrawal, updates the local bot_wallets table
+
+This unifies the two ledgers: the $113.40 balance visible on the billing page
+will now decrease when the user funds a bot wallet from USD, instead of the
+wallet receiving a standalone deposit with no corresponding deduction.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (b464b40)
+
 ## [0.1.41-rc.340] - 2026-03-31
 
 
