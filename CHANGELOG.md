@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.346] - 2026-03-31
+
+
+### Fixed
+
+- Fix: increase HTTP client timeout to 30s in billing proxy
+
+The http.Client had a 15s timeout that fired before the 30s context
+timeout, causing 502s when commerce IAM validation was slow.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (5218cd8)
+
 ## [0.1.41-rc.345] - 2026-03-31
 
 
