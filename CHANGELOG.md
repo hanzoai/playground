@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.342] - 2026-03-31
+
+
+### Fixed
+
+- Fix: increase billing proxy timeout to 30s to prevent context cancel 502s
+
+Slow ClickHouse queries on billing endpoints (subscriptions, credit-grants,
+transactions) were taking longer than the previous 15s proxy timeout, causing
+the request context to be canceled in commerce and returning 502 to the client.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (2a6072b)
+
 ## [0.1.41-rc.341] - 2026-03-31
 
 
