@@ -32,6 +32,7 @@ type IAMUserInfo struct {
 	Name         string `json:"name"`
 	Email        string `json:"email"`
 	Organization string `json:"organization"`
+	Owner        string `json:"owner"` // Casdoor returns org as "owner"; used as fallback for Organization
 	IsAdmin      bool   `json:"isAdmin"`
 	Type         string `json:"type"` // "user" or "application"
 }
@@ -188,6 +189,12 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 				"message": "failed to parse user identity",
 			})
 			return
+		}
+
+		// Casdoor returns the org/tenant as "owner"; fall back to it when
+		// the "organization" field is absent from the userinfo response.
+		if user.Organization == "" && user.Owner != "" {
+			user.Organization = user.Owner
 		}
 
 		// Enforce organization match if configured
