@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.343] - 2026-03-31
+
+
+### Added
+
+- Feat: deduct LLM execution costs from bot wallet
+
+When a bot has an enabled wallet, execution costs are now deducted from
+the bot wallet instead of the shared cloud-api service account:
+
+- Add WalletDeductor interface for bot wallet balance checks and withdrawals
+- Parse LLM response for actual token usage (prompt + completion tokens)
+- Calculate cost using per-model pricing table (Claude, GPT-4o, etc.)
+- Deduct from bot wallet on execution completion with full audit trail
+- Pre-execution balance check: reject with 402 if wallet is empty
+- Bots without wallets are unaffected (no gating)
+
+This completes the billing unification: users fund bot wallets from their
+Commerce balance (hanzo/z), and LLM usage deducts from the bot wallet.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (fa91540)
+
 ## [0.1.41-rc.342] - 2026-03-31
 
 
