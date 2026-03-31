@@ -1123,8 +1123,12 @@ func (s *PlaygroundServer) setupRoutes() {
 		agentAPI.POST("/skills/:skill_id", handlers.ExecuteSkillHandler(s.storage))
 
 		// Unified execution endpoints (path-based)
-		agentAPI.POST("/execute/:target", handlers.ExecuteHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout, s.storage))
-		agentAPI.POST("/execute/async/:target", handlers.ExecuteAsyncHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout, s.storage))
+		execOpts := handlers.ExecutionOptions{
+			BudgetRecorder: s.storage,
+			WalletDeductor: s.storage,
+		}
+		agentAPI.POST("/execute/:target", handlers.ExecuteHandlerWithOpts(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout, execOpts))
+		agentAPI.POST("/execute/async/:target", handlers.ExecuteAsyncHandlerWithOpts(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout, execOpts))
 		agentAPI.GET("/executions/:execution_id", handlers.GetExecutionStatusHandler(s.storage))
 		agentAPI.POST("/executions/batch-status", handlers.BatchExecutionStatusHandler(s.storage))
 		agentAPI.POST("/executions/:execution_id/status", handlers.UpdateExecutionStatusHandler(s.storage, s.payloadStore, s.webhookDispatcher, s.config.Agents.ExecutionQueue.AgentCallTimeout))

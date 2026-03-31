@@ -119,14 +119,21 @@ type BudgetSpendRecorder interface {
 	GetBotBudget(ctx context.Context, botID string) (*storage.BotBudget, error)
 }
 
+// WalletDeductor deducts execution costs from bot wallets.
+type WalletDeductor interface {
+	WithdrawFromBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, description string) (*storage.WalletTransaction, error)
+	GetBotWallet(ctx context.Context, botID string) (*storage.BotWallet, error)
+}
+
 type executionController struct {
-	store         ExecutionStore
-	httpClient    *http.Client
-	payloads      services.PayloadStore
-	webhooks      services.WebhookDispatcher
-	eventBus      *events.ExecutionEventBus
-	timeout       time.Duration
+	store          ExecutionStore
+	httpClient     *http.Client
+	payloads       services.PayloadStore
+	webhooks       services.WebhookDispatcher
+	eventBus       *events.ExecutionEventBus
+	timeout        time.Duration
 	budgetRecorder BudgetSpendRecorder
+	walletDeductor WalletDeductor
 }
 
 type asyncExecutionJob struct {
@@ -161,6 +168,12 @@ const (
 	maxWebhookSecretLength = 4096
 )
 
+// ExecutionOptions configures optional execution controller features.
+type ExecutionOptions struct {
+	BudgetRecorder BudgetSpendRecorder
+	WalletDeductor WalletDeductor
+}
+
 // ExecuteHandler handles synchronous execution requests.
 func ExecuteHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, budgetRecorder ...BudgetSpendRecorder) gin.HandlerFunc {
 	controller := newExecutionController(store, payloads, webhooks, timeout)
@@ -170,12 +183,28 @@ func ExecuteHandler(store ExecutionStore, payloads services.PayloadStore, webhoo
 	return controller.handleSync
 }
 
+// ExecuteHandlerWithOpts handles synchronous execution requests with full options.
+func ExecuteHandlerWithOpts(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, opts ExecutionOptions) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	controller.budgetRecorder = opts.BudgetRecorder
+	controller.walletDeductor = opts.WalletDeductor
+	return controller.handleSync
+}
+
 // ExecuteAsyncHandler handles asynchronous execution requests.
 func ExecuteAsyncHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, budgetRecorder ...BudgetSpendRecorder) gin.HandlerFunc {
 	controller := newExecutionController(store, payloads, webhooks, timeout)
 	if len(budgetRecorder) > 0 {
 		controller.budgetRecorder = budgetRecorder[0]
 	}
+	return controller.handleAsync
+}
+
+// ExecuteAsyncHandlerWithOpts handles asynchronous execution requests with full options.
+func ExecuteAsyncHandlerWithOpts(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, opts ExecutionOptions) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	controller.budgetRecorder = opts.BudgetRecorder
+	controller.walletDeductor = opts.WalletDeductor
 	return controller.handleAsync
 }
 
@@ -845,6 +874,18 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 	}
 	target.TargetType = targetType
 
+	// Pre-execution wallet balance check: reject if bot wallet exists, is
+	// enabled, and has zero or negative balance. Bots without a wallet (or
+	// with wallet disabled) are not gated — this only applies when the user
+	// has explicitly set up a wallet for the bot.
+	if c.walletDeductor != nil {
+		if wallet, wErr := c.walletDeductor.GetBotWallet(ctx, target.TargetName); wErr == nil && wallet != nil && wallet.Enabled {
+			if wallet.UsdBalanceCents <= 0 {
+				return nil, fmt.Errorf("bot wallet has insufficient funds — fund your bot wallet to continue")
+			}
+		}
+	}
+
 	headers := readExecutionHeaders(ginCtx)
 	runID := headers.runID
 	if runID == "" {
@@ -1125,6 +1166,48 @@ func (c *executionController) completeExecution(ctx context.Context, plan *prepa
 								// TODO: call Commerce POST /api/v1/billing/topup with reload amount
 							}
 						}
+					}
+				}()
+			}
+
+			// Deduct execution cost from bot wallet (best-effort, non-blocking).
+			// Parses the LLM response for token usage and calculates actual cost.
+			if c.walletDeductor != nil && updated != nil {
+				go func() {
+					botID := updated.BotID
+					if botID == "" {
+						botID = plan.target.TargetName
+					}
+
+					// Try token-based cost from LLM response; fall back to time estimate.
+					var costCents int64
+					var desc string
+					if usage := extractLLMUsage(result); usage != nil {
+						costCents = llmCostCents(usage)
+						desc = fmt.Sprintf("LLM %s: %d input + %d output tokens (exec %s)",
+							usage.Model, usage.PromptTokens, usage.CompletionTokens, updated.ExecutionID)
+					} else {
+						costUSD := estimateExecutionCost(elapsed)
+						costCents = int64(costUSD * 100)
+						if costCents < 1 {
+							costCents = 1
+						}
+						desc = fmt.Sprintf("Execution %s (%dms)", updated.ExecutionID, elapsed.Milliseconds())
+					}
+
+					if _, err := c.walletDeductor.WithdrawFromBotWallet(
+						context.Background(), botID, 0, costCents, desc,
+					); err != nil {
+						logger.Logger.Warn().Err(err).
+							Str("bot_id", botID).
+							Int64("cost_cents", costCents).
+							Msg("failed to deduct execution cost from bot wallet")
+					} else {
+						logger.Logger.Info().
+							Str("bot_id", botID).
+							Int64("cost_cents", costCents).
+							Str("description", desc).
+							Msg("bot wallet debited for execution")
 					}
 				}()
 			}
@@ -1798,4 +1881,70 @@ func estimateExecutionCost(elapsed time.Duration) float64 {
 		return 0.001 // minimum cost
 	}
 	return seconds * 0.01
+}
+
+// llmUsage holds token usage extracted from an LLM response.
+type llmUsage struct {
+	PromptTokens     int    `json:"prompt_tokens"`
+	CompletionTokens int    `json:"completion_tokens"`
+	TotalTokens      int    `json:"total_tokens"`
+	Model            string `json:"-"`
+}
+
+// extractLLMUsage parses an OpenAI-compatible response body to extract token
+// usage and model name. Returns nil if the body is not a valid LLM response.
+func extractLLMUsage(body []byte) *llmUsage {
+	if len(body) == 0 || body[0] != '{' {
+		return nil
+	}
+	var resp struct {
+		Model string   `json:"model"`
+		Usage llmUsage `json:"usage"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil
+	}
+	if resp.Usage.TotalTokens == 0 && resp.Usage.PromptTokens == 0 {
+		return nil
+	}
+	resp.Usage.Model = resp.Model
+	return &resp.Usage
+}
+
+// llmCostCents calculates the cost in cents for a given model and token usage.
+// Pricing is per 1M tokens (input/output). Returns a minimum of 1 cent for
+// any non-zero usage.
+func llmCostCents(u *llmUsage) int64 {
+	if u == nil || (u.PromptTokens == 0 && u.CompletionTokens == 0) {
+		return 0
+	}
+
+	// Per-1M-token pricing in USD (input, output).
+	type pricing struct{ input, output float64 }
+	prices := map[string]pricing{
+		"claude-sonnet-4-6":   {3.0, 15.0},
+		"claude-sonnet-4-5":   {3.0, 15.0},
+		"claude-3-5-sonnet":   {3.0, 15.0},
+		"claude-3-7-sonnet":   {3.0, 15.0},
+		"claude-3-5-haiku":    {0.80, 4.0},
+		"claude-opus-4":       {15.0, 75.0},
+		"gpt-4o":              {2.50, 10.0},
+		"gpt-4o-mini":         {0.15, 0.60},
+		"gpt-4.1":             {2.0, 8.0},
+		"gpt-4.1-mini":        {0.40, 1.60},
+		"gpt-4.1-nano":        {0.10, 0.40},
+	}
+
+	p, ok := prices[u.Model]
+	if !ok {
+		// Default to Claude Sonnet pricing for unknown models.
+		p = pricing{3.0, 15.0}
+	}
+
+	costUSD := (float64(u.PromptTokens)*p.input + float64(u.CompletionTokens)*p.output) / 1_000_000.0
+	cents := int64(costUSD * 100)
+	if cents < 1 {
+		cents = 1 // minimum 1 cent
+	}
+	return cents
 }
