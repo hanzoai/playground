@@ -58,7 +58,7 @@ func (h *BillingProxyHandler) ProxyGet(c *gin.Context) {
 
 	// Use a background context with timeout so browser navigation / tab close
 	// does NOT cancel the in-flight commerce request (which would cause a 502).
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
@@ -97,7 +97,7 @@ func (h *BillingProxyHandler) ProxyPost(c *gin.Context) {
 
 	targetURL := fmt.Sprintf("%s/api/v1/billing%s", h.commerceURL, subPath)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, c.Request.Body)
 	if err != nil {
