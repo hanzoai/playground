@@ -139,6 +139,10 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 
 		// Check cache
 		if user, ok := cache.get(token); ok {
+			logger.Logger.Warn().
+				Str("sub", user.Sub).
+				Str("org", user.Organization).
+				Msg("IAM: cache hit")
 			c.Set(ContextKeyUser, user)
 			c.Set(ContextKeyOrg, user.Organization)
 			c.Next()
@@ -206,20 +210,25 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 		//   1. "organization" — standard OIDC claim (may be absent)
 		//   2. "owner"        — Casdoor full User object field
 		//   3. sub prefix     — Casdoor formats sub as "{owner}/{name}" (e.g. "hanzo/z")
+		//   4. config.Organization — single-tenant fallback: if IAM is configured for
+		//      a specific org and the token is valid, the user is in that org.
 		if user.Organization == "" && user.Owner != "" {
 			user.Organization = user.Owner
 		}
 		if user.Organization == "" && strings.Contains(user.Sub, "/") {
 			user.Organization = strings.SplitN(user.Sub, "/", 2)[0]
 		}
+		if user.Organization == "" && config.Organization != "" {
+			user.Organization = config.Organization
+		}
 
-		logger.Logger.Info().
+		logger.Logger.Warn().
 			Str("sub", user.Sub).
 			Str("email", user.Email).
 			Str("org", user.Organization).
 			Str("owner", user.Owner).
 			Str("raw", string(rawBody)).
-			Msg("IAM: userinfo response")
+			Msg("IAM: userinfo resolved")
 
 		// Enforce organization match if configured
 		if config.Organization != "" && user.Organization != "" && user.Organization != config.Organization {
