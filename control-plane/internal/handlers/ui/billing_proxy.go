@@ -35,7 +35,7 @@ func NewBillingProxyHandler() *BillingProxyHandler {
 		commerceURL:  url,
 		serviceToken: token,
 		client: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 	}
 }
