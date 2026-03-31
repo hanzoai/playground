@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.336] - 2026-03-31
+
+
+### Fixed
+
+- Fix(ui): reload on stale chunk 404 after deploy
+
+When the browser has cached an old JS bundle and navigates to a route
+that lazy-loads a chunk from a previous build, the dynamic import fails
+with "Failed to fetch dynamically imported module". This triggers a
+single hard reload so the browser fetches the latest HTML+assets.
+
+A sessionStorage flag prevents reload loops, and is cleared on each
+successful page load.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (d749248)
+
 ## [0.1.41-rc.335] - 2026-03-30
 
 
