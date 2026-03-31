@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.345] - 2026-03-31
+
+
+### Fixed
+
+- Fix: accept 'user_usd' source in FundWallet (frontend sends this)
+
+The frontend FundBotDialog sends source: "user_usd" but the backend
+only checked for "usd". Added "user_usd" as an accepted alias so
+the Commerce withdraw + deposit flow actually triggers when users
+fund bot wallets from their USD credit balance.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a59b2bd)
+
 ## [0.1.41-rc.344] - 2026-03-31
 
 
