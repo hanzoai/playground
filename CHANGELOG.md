@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.347] - 2026-03-31
+
+
+### Added
+
+- Feat: wallet withdraw refunds to user balance + usage endpoint
+
+1. WithdrawWallet now deposits withdrawn USD back to user's Commerce
+   balance (reverse of fund flow: service account → user).
+
+2. New GET /bots/:botId/wallet/usage endpoint shows LLM token usage
+   and costs from the bot service account's Commerce transactions.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (cc60644)
+
 ## [0.1.41-rc.346] - 2026-03-31
 
 
