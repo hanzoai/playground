@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.349] - 2026-04-01
+
+
+### Added
+
+- Feat: auto-create enabled wallet for every bot on first access
+
+GetBotWallet now auto-creates an enabled wallet with zero balance when
+a bot is queried for the first time. This means every bot starts with
+wallet billing enforced — users must fund the wallet before chatting.
+
+Previously wallets were created disabled, so the billing gate skipped
+them and chat worked without any balance.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (7eb2b49)
+
 ## [0.1.41-rc.348] - 2026-04-01
 
 
