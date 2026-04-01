@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.350] - 2026-04-01
+
+
+### Added
+
+- Feat(wallet): add DeductUsage endpoint for LLM cost deduction
+
+Adds POST /v1/bots/:botId/wallet/deduct-usage endpoint that deducts
+LLM usage costs from a bot wallet without refunding to Commerce.
+Unlike WithdrawWallet (which refunds to user), this is a genuine
+usage charge after each chat completion.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (b1834e4)
+
 ## [0.1.41-rc.349] - 2026-04-01
 
 
