@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.348] - 2026-04-01
+
+
+### Fixed
+
+- Fix: check io.Copy return value (lint errcheck)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (331830e)
+
 ## [0.1.41-rc.347] - 2026-03-31
 
 
