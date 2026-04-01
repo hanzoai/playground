@@ -398,7 +398,7 @@ func (h *WalletHandler) GetUsage(c *gin.Context) {
 		}
 	}
 	c.Writer.WriteHeader(resp.StatusCode)
-	io.Copy(c.Writer, resp.Body)
+	_, _ = io.Copy(c.Writer, resp.Body)
 }
 
 // ListAutoPurchaseRules returns all auto-purchase rules for a bot.
