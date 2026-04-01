@@ -401,6 +401,62 @@ func (h *WalletHandler) GetUsage(c *gin.Context) {
 	_, _ = io.Copy(c.Writer, resp.Body)
 }
 
+// usageDeductRequest is the JSON body for deducting LLM usage from a bot wallet.
+type usageDeductRequest struct {
+	AmountUsdCents   int64  `json:"amount_usd_cents"`
+	Model            string `json:"model"`
+	Provider         string `json:"provider"`
+	InputTokens      int    `json:"input_tokens"`
+	OutputTokens     int    `json:"output_tokens"`
+	CacheReadTokens  int    `json:"cache_read_tokens"`
+	CacheWriteTokens int    `json:"cache_write_tokens"`
+	Description      string `json:"description"`
+}
+
+// DeductUsage deducts LLM usage cost from a bot wallet.
+// Unlike WithdrawWallet, this does NOT refund to the user's Commerce balance —
+// it's a genuine usage charge.
+// POST /api/v1/:botId/wallet/deduct-usage
+func (h *WalletHandler) DeductUsage(c *gin.Context) {
+	ctx := c.Request.Context()
+	botID := c.Param("botId")
+
+	var req usageDeductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
+		return
+	}
+
+	if req.AmountUsdCents <= 0 {
+		// Nothing to deduct — return success silently.
+		c.JSON(http.StatusOK, gin.H{"deducted": false, "reason": "zero cost"})
+		return
+	}
+
+	// Build a descriptive transaction description.
+	desc := req.Description
+	if desc == "" {
+		desc = fmt.Sprintf("LLM usage: %s (%s) — %d in / %d out tokens",
+			req.Model, req.Provider, req.InputTokens, req.OutputTokens)
+	}
+
+	// Convert USD cents to AI coin equivalent (1:1 for now).
+	aiCoinAmount := float64(req.AmountUsdCents) / 100.0
+
+	tx, err := h.storage.WithdrawFromBotWallet(ctx, botID, aiCoinAmount, req.AmountUsdCents, desc)
+	if err != nil {
+		// If insufficient balance, return 402 but don't crash.
+		if strings.Contains(err.Error(), "insufficient") {
+			c.JSON(http.StatusPaymentRequired, ErrorResponse{Error: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to deduct usage: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, tx)
+}
+
 // ListAutoPurchaseRules returns all auto-purchase rules for a bot.
 // GET /api/v1/:botId/wallet/auto-purchase
 func (h *WalletHandler) ListAutoPurchaseRules(c *gin.Context) {
