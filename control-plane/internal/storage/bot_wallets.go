@@ -51,7 +51,9 @@ type AutoPurchaseRule struct {
 	UpdatedAt         string `json:"updated_at"`
 }
 
-// GetBotWallet returns the wallet for a bot, or nil if none exists.
+// GetBotWallet returns the wallet for a bot, auto-creating an enabled wallet
+// with zero balance if one doesn't exist yet. Every bot gets a wallet by
+// default so the billing gate can enforce balance checks from the start.
 func (ls *LocalStorage) GetBotWallet(ctx context.Context, botID string) (*BotWallet, error) {
 	ls.ensureWalletTables(ctx)
 	db := ls.requireSQLDB()
@@ -68,7 +70,18 @@ func (ls *LocalStorage) GetBotWallet(ctx context.Context, botID string) (*BotWal
 		&w.ChainID, &w.Enabled, &w.CreatedAt, &w.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows || strings.Contains(err.Error(), "no such table") {
-			return nil, nil
+			// Auto-create an enabled wallet with zero balance.
+			now := time.Now().UTC().Format(time.RFC3339)
+			_, _ = db.ExecContext(ctx, `
+				INSERT INTO bot_wallets (bot_id, enabled, created_at, updated_at)
+				VALUES (?, TRUE, ?, ?)
+				ON CONFLICT (bot_id) DO NOTHING`, botID, now, now)
+			return &BotWallet{
+				BotID:   botID,
+				Enabled: true,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}, nil
 		}
 		return nil, fmt.Errorf("get bot wallet: %w", err)
 	}
