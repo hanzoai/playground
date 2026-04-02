@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.370] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.3 — fix base64url JWT decoding
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (345eb50)
+
 ## [0.1.41-rc.369] - 2026-04-02
 
 
