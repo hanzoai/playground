@@ -368,31 +368,29 @@ func (h *OrgHandler) setAuthHeader(req *http.Request, c *gin.Context) {
 // setAdminAuth authenticates admin-level operations to IAM.
 //
 // Casdoor authorization model: the API checks if the calling user has
-// is_admin=true. Client credentials alone aren't sufficient. Strategy:
+// is_admin=true on their user record. Strategy:
 //
-//  1. If IAM_ADMIN_TOKEN is set, use it directly (pre-provisioned admin token)
-//  2. If admin client ID/secret are available, use HTTP Basic Auth
-//     (Casdoor resolves this to the application owner)
-//  3. Fall back to the user's own Bearer token (works if user is admin)
+//  1. Forward the user's own Bearer token (works when user is org admin/global admin)
+//  2. If IAM_ADMIN_TOKEN is set, use it as fallback (pre-provisioned admin token)
+//  3. Append app client credentials as query params for additional context
+//
+// The user's own token is preferred because Casdoor validates the user identity
+// from the JWT — admin app credentials alone don't confer admin rights.
 func (h *OrgHandler) setAdminAuth(req *http.Request, c *gin.Context) {
-	// Option 1: pre-provisioned admin token
-	adminToken := coalesceEnv("IAM_ADMIN_TOKEN", "HANZO_AGENTS_IAM_ADMIN_TOKEN")
-	if adminToken != "" {
-		req.Header.Set("Authorization", "Bearer "+adminToken)
-		req.Header.Set("Accept", "application/json")
-		return
+	// Primary: forward the user's Bearer token (Casdoor checks user.isAdmin)
+	if auth := c.GetHeader("Authorization"); auth != "" {
+		req.Header.Set("Authorization", auth)
 	}
 
-	// Option 2: admin app Basic Auth (built-in admin app)
-	adminID := coalesceEnv("IAM_ADMIN_CLIENT_ID", "HANZO_AGENTS_IAM_ADMIN_CLIENT_ID")
-	adminSecret := coalesceEnv("IAM_ADMIN_CLIENT_SECRET", "HANZO_AGENTS_IAM_ADMIN_CLIENT_SECRET")
-	if adminID != "" && adminSecret != "" {
-		req.SetBasicAuth(adminID, adminSecret)
-		req.Header.Set("Accept", "application/json")
-		return
+	// Fallback: pre-provisioned admin token (for service-to-service calls)
+	if req.Header.Get("Authorization") == "" {
+		adminToken := coalesceEnv("IAM_ADMIN_TOKEN", "HANZO_AGENTS_IAM_ADMIN_TOKEN")
+		if adminToken != "" {
+			req.Header.Set("Authorization", "Bearer "+adminToken)
+		}
 	}
 
-	// Option 3: use the app's own client credentials as query params
+	// Also append client credentials as query params for app-level context
 	if h.clientID != "" && h.clientSecret != "" {
 		q := req.URL.Query()
 		q.Set("clientId", h.clientID)
@@ -400,10 +398,6 @@ func (h *OrgHandler) setAdminAuth(req *http.Request, c *gin.Context) {
 		req.URL.RawQuery = q.Encode()
 	}
 
-	// Option 4: fall back to user's Bearer token
-	if auth := c.GetHeader("Authorization"); auth != "" {
-		req.Header.Set("Authorization", auth)
-	}
 	req.Header.Set("Accept", "application/json")
 }
 
