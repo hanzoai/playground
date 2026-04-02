@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.364] - 2026-04-02
+
+
+### Changed
+
+- Refactor: use shared UserOrgMenu from @hanzo/iam for org switcher
+
+Replace the playground-specific IamOrgSelector with the shared
+UserOrgMenu component from @hanzo/iam/react. The shared component
+handles org switching, creation, user menu, and logout.
+
+The playground wrapper syncs org changes to the local tenantStore
+and routes org creation through the backend /v1/orgs API.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (67f67a8)
+
 ## [0.1.41-rc.363] - 2026-04-02
 
 
