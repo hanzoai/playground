@@ -64,6 +64,20 @@ type IAMConfig struct {
 	ClientSecret   string `yaml:"client_secret" mapstructure:"client_secret"`
 	Organization   string `yaml:"organization" mapstructure:"organization"`
 	Application    string `yaml:"application" mapstructure:"application"`
+	// DefaultOrg is the fallback organization used when no org context is available.
+	// Replaces previously hardcoded "hanzo" references. Env: HANZO_DEFAULT_ORG.
+	DefaultOrg string `yaml:"default_org" mapstructure:"default_org"`
+}
+
+// GetDefaultOrg returns the configured default org, falling back to "hanzo".
+func (c *IAMConfig) GetDefaultOrg() string {
+	if c.DefaultOrg != "" {
+		return c.DefaultOrg
+	}
+	if c.Organization != "" {
+		return c.Organization
+	}
+	return "hanzo"
 }
 
 // DefaultCloudConfig returns sensible defaults for cloud provisioning.
@@ -229,5 +243,13 @@ func applyCloudEnvOverrides(cfg *Config) {
 	}
 	if v := hanzoEnvWithFallback("IAM_APPLICATION"); v != "" {
 		cfg.IAM.Application = v
+	}
+	// HANZO_DEFAULT_ORG sets the fallback org for all services.
+	// Also checks IAM_DEFAULT_ORG and HANZO_AGENTS_DEFAULT_ORG.
+	if v := os.Getenv("HANZO_DEFAULT_ORG"); v != "" {
+		cfg.IAM.DefaultOrg = v
+	}
+	if v := hanzoEnvWithFallback("DEFAULT_ORG"); v != "" {
+		cfg.IAM.DefaultOrg = v
 	}
 }

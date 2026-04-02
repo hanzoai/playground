@@ -32,10 +32,7 @@ type CreateSpaceRequest struct {
 // CreateSpace creates a new Space scoped to the user's IAM org.
 func (h *SpaceHandler) CreateSpace(c *gin.Context) {
 	user := middleware.GetIAMUser(c)
-	orgID := middleware.GetOrganization(c)
-	if orgID == "" {
-		orgID = "local"
-	}
+	orgID, _ := middleware.RequireOrg(c)
 	createdBy := "anonymous"
 	if user != nil {
 		createdBy = user.Sub
@@ -78,10 +75,7 @@ func (h *SpaceHandler) CreateSpace(c *gin.Context) {
 
 // ListSpaces returns all spaces for the user's org.
 func (h *SpaceHandler) ListSpaces(c *gin.Context) {
-	orgID := middleware.GetOrganization(c)
-	if orgID == "" {
-		orgID = "local"
-	}
+	orgID, _ := middleware.RequireOrg(c)
 
 	result, err := h.store.ListSpaces(c.Request.Context(), orgID)
 	if err != nil {
@@ -106,7 +100,7 @@ func (h *SpaceHandler) GetSpace(c *gin.Context) {
 
 	// Verify org access
 	orgID := middleware.GetOrganization(c)
-	if orgID != "" && orgID != "local" && space.OrgID != orgID {
+	if orgID != "" && middleware.GetIAMUser(c) != nil && space.OrgID != orgID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -116,10 +110,7 @@ func (h *SpaceHandler) GetSpace(c *gin.Context) {
 
 // UpdateSpace updates a space's name, slug, or description.
 func (h *SpaceHandler) UpdateSpace(c *gin.Context) {
-	orgID := middleware.GetOrganization(c)
-	if orgID == "" {
-		orgID = "local"
-	}
+	orgID, _ := middleware.RequireOrg(c)
 
 	id := c.Param("id")
 	space, err := h.store.GetSpace(c.Request.Context(), id)
@@ -129,7 +120,7 @@ func (h *SpaceHandler) UpdateSpace(c *gin.Context) {
 	}
 
 	// Verify org access
-	if orgID != "local" && space.OrgID != orgID {
+	if middleware.GetIAMUser(c) != nil && space.OrgID != orgID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -156,10 +147,7 @@ func (h *SpaceHandler) UpdateSpace(c *gin.Context) {
 
 // DeleteSpace removes a space and all its associated data.
 func (h *SpaceHandler) DeleteSpace(c *gin.Context) {
-	orgID := middleware.GetOrganization(c)
-	if orgID == "" {
-		orgID = "local"
-	}
+	orgID, _ := middleware.RequireOrg(c)
 
 	id := c.Param("id")
 
@@ -169,7 +157,7 @@ func (h *SpaceHandler) DeleteSpace(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	if orgID != "local" && space.OrgID != orgID {
+	if middleware.GetIAMUser(c) != nil && space.OrgID != orgID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}

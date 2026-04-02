@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -276,9 +277,13 @@ func RequireOrg(c *gin.Context) (string, bool) {
 	if org != "" {
 		return org, true
 	}
-	// For non-IAM auth (API key, internal), fall back to "local"
-	// This preserves backward compatibility while ensuring org is always set
-	return "local", true
+	// For non-IAM auth (API key, internal), fall back to HANZO_DEFAULT_ORG
+	// or "local" for backward compatibility. Set HANZO_DEFAULT_ORG to control this.
+	fallback := os.Getenv("HANZO_DEFAULT_ORG")
+	if fallback == "" {
+		fallback = "local"
+	}
+	return fallback, true
 }
 
 // RequireIAMOrg extracts the org from IAM context and aborts with 403 if no IAM user.

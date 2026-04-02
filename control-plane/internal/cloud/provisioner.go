@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +18,16 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/config"
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 )
+
+// defaultOrg returns the configured default organization, reading from
+// HANZO_DEFAULT_ORG env var with "hanzo" as the ultimate fallback.
+// This replaces previously hardcoded "hanzo" references.
+func defaultOrg() string {
+	if v := os.Getenv("HANZO_DEFAULT_ORG"); v != "" {
+		return v
+	}
+	return "hanzo"
+}
 
 // NodeType distinguishes between local bots and full cloud nodes.
 type NodeType string
@@ -619,7 +630,7 @@ func (p *Provisioner) provisionVM(ctx context.Context, req *ProvisionRequest) (*
 	protocol := ProtocolForOS(os)
 	org := req.Org
 	if org == "" {
-		org = "hanzo"
+		org = defaultOrg()
 	}
 
 	// Check org limits
@@ -767,7 +778,7 @@ func (p *Provisioner) provisionDroplet(ctx context.Context, req *ProvisionReques
 
 	org := req.Org
 	if org == "" {
-		org = "hanzo"
+		org = defaultOrg()
 	}
 
 	// Check org limits
@@ -883,7 +894,7 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 	if !ok {
 		namespace := p.config.Kubernetes.Namespace
 		if namespace == "" {
-			namespace = "hanzo"
+			namespace = defaultOrg()
 		}
 		selector := fmt.Sprintf("playground.hanzo.ai/node-id=%s", nodeID)
 		pods, err := p.k8s.ListAgentPods(ctx, namespace, selector)
@@ -921,7 +932,7 @@ func (p *Provisioner) Deprovision(ctx context.Context, nodeID string) error {
 		}
 		owner := node.Org
 		if owner == "" {
-			owner = "hanzo"
+			owner = defaultOrg()
 		}
 		if err := p.visor.DeleteMachine(ctx, owner, node.PodName); err != nil {
 			return fmt.Errorf("failed to delete machine via visor: %w", err)
@@ -950,7 +961,7 @@ func (p *Provisioner) GetNode(ctx context.Context, nodeID string) (*CloudNode, e
 	if !ok {
 		namespace := p.config.Kubernetes.Namespace
 		if namespace == "" {
-			namespace = "hanzo"
+			namespace = defaultOrg()
 		}
 		selector := fmt.Sprintf("playground.hanzo.ai/node-id=%s", nodeID)
 		pods, err := p.k8s.ListAgentPods(ctx, namespace, selector)

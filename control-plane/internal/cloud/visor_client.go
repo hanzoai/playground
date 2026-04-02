@@ -207,7 +207,7 @@ func (vc *VisorClient) CreateMachine(ctx context.Context, req *VMProvisionReques
 		owner = req.Org
 	}
 	if owner == "" {
-		owner = "hanzo"
+		owner = defaultOrg()
 	}
 
 	// Build the launch spec that Visor's /api/launch-machine expects
