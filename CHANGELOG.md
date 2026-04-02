@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.355] - 2026-04-02
+
+
+### Fixed
+
+- Fix: read IAM endpoint from HANZO_AGENTS_IAM_* env vars
+
+The K8s deployment sets HANZO_AGENTS_IAM_ENDPOINT but the org/app
+handlers only checked IAM_ENDPOINT, falling back to iam.hanzo.svc:8000
+which doesn't exist (IAM service is on port 80). This caused 502 on
+org creation from app.hanzo.bot.
+
+Now checks HANZO_AGENTS_IAM_*, PLAYGROUND_IAM_*, and IAM_* prefixes.
+Default changed from :8000 to :80 to match K8s service port.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ba5c65a)
+
 ## [0.1.41-rc.354] - 2026-04-02
 
 
