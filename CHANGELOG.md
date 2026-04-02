@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.362] - 2026-04-02
+
+
+### Fixed
+
+- Fix: remove unused middleware import from vector_memory.go
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (67c1a93)
+
 ## [0.1.41-rc.361] - 2026-04-02
 
 
