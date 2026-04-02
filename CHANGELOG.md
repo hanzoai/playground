@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.359] - 2026-04-02
+
+
+### Added
+
+- Feat: replace hardcoded "hanzo" org with HANZO_DEFAULT_ORG env var
+
+Phase 2 of multi-tenancy cleanup. Previously "hanzo" was hardcoded as
+the default org in 6+ places. Now reads from HANZO_DEFAULT_ORG env var
+(also HANZO_AGENTS_DEFAULT_ORG, PLAYGROUND_DEFAULT_ORG) with "hanzo" as
+the ultimate fallback for backward compatibility.
+
+Changes:
+- config/cloud.go: Add DefaultOrg field to IAMConfig with GetDefaultOrg() helper
+- cloud/provisioner.go: Replace 4 hardcoded "hanzo" with defaultOrg() helper
+- cloud/visor_client.go: Replace 1 hardcoded "hanzo" with defaultOrg()
+- middleware/iam.go: RequireOrg() reads HANZO_DEFAULT_ORG instead of "local"
+- handlers/spaces.go: Replace "local" fallbacks with RequireOrg(), use
+  IAM user presence check instead of "local" sentinel for org enforcement
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (fda1ec2)
+
+
+
+### Fixed
+
+- Fix: bust Docker cache for frontend build
+
+The GHA Docker BuildKit cache was reusing a stale frontend build layer
+even though CreateOrgDialog.tsx changed. Added CACHE_BUST ARG before
+pnpm build to force re-execution of the build step.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (d2caa8f)
+
 ## [0.1.41-rc.358] - 2026-04-02
 
 
