@@ -195,14 +195,31 @@ func (h *OrgHandler) CreateOrg(c *gin.Context) {
 	req.Header.Set("Content-Type", "application/json")
 	h.setAdminAuth(req, c)
 
+	hasAuth := req.Header.Get("Authorization") != ""
+	hasQueryCreds := req.URL.Query().Get("clientId") != ""
+	logger.Logger.Info().
+		Str("target_url", targetURL).
+		Str("org_name", input.Name).
+		Bool("has_bearer", hasAuth).
+		Bool("has_query_creds", hasQueryCreds).
+		Str("user_sub", user.Sub).
+		Str("user_email", user.Email).
+		Msg("org: creating organization via IAM")
+
 	resp, err := h.client.Do(req)
 	if err != nil {
+		logger.Logger.Error().Err(err).Str("target_url", targetURL).Msg("org: IAM request failed")
 		c.JSON(http.StatusBadGateway, ErrorResponse{Error: "IAM service unavailable"})
 		return
 	}
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+
+	logger.Logger.Info().
+		Int("iam_status", resp.StatusCode).
+		Str("iam_response", string(body[:min(len(body), 200)])).
+		Msg("org: IAM add-organization response")
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		// After successful org creation, add the user as a member
