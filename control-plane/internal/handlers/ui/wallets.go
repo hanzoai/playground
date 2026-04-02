@@ -440,10 +440,8 @@ func (h *WalletHandler) DeductUsage(c *gin.Context) {
 			req.Model, req.Provider, req.InputTokens, req.OutputTokens)
 	}
 
-	// Convert USD cents to AI coin equivalent (1:1 for now).
-	aiCoinAmount := float64(req.AmountUsdCents) / 100.0
-
-	tx, err := h.storage.WithdrawFromBotWallet(ctx, botID, aiCoinAmount, req.AmountUsdCents, desc)
+	// Usage deduction only reduces USD balance — AI coin is not involved.
+	tx, err := h.storage.WithdrawFromBotWallet(ctx, botID, 0, req.AmountUsdCents, desc)
 	if err != nil {
 		// If insufficient balance, return 402 but don't crash.
 		if strings.Contains(err.Error(), "insufficient") {
