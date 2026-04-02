@@ -31,7 +31,7 @@ interface CreateOrgDialogProps {
 }
 
 export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
-  const { config, accessToken } = useIam();
+  const { accessToken } = useIam();
   const orgState = useOrganizations();
   const setTenantOrg = useTenantStore((s) => s.setOrg);
   const addKnownOrg = useTenantStore((s) => s.addKnownOrg);
