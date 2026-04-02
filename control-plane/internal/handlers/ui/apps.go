@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -24,13 +23,17 @@ type AppHandler struct {
 }
 
 // NewAppHandler creates an AppHandler.
+// Checks both HANZO_AGENTS_IAM_* and IAM_* env var prefixes for compatibility.
 func NewAppHandler() *AppHandler {
-	iamURL := os.Getenv("IAM_ENDPOINT")
+	iamURL := coalesceEnv(
+		"IAM_ENDPOINT",
+		"HANZO_AGENTS_IAM_ENDPOINT",
+		"PLAYGROUND_IAM_ENDPOINT",
+		"IAM_PUBLIC_ENDPOINT",
+		"HANZO_AGENTS_IAM_PUBLIC_ENDPOINT",
+	)
 	if iamURL == "" {
-		iamURL = os.Getenv("IAM_PUBLIC_ENDPOINT")
-	}
-	if iamURL == "" {
-		iamURL = "http://iam.hanzo.svc:8000"
+		iamURL = "http://iam.hanzo.svc:80"
 	}
 	iamURL = strings.TrimRight(iamURL, "/")
 

@@ -29,18 +29,29 @@ type OrgHandler struct {
 }
 
 // NewOrgHandler creates an OrgHandler reading IAM config from env.
+// Checks both HANZO_AGENTS_IAM_* and IAM_* env var prefixes for compatibility
+// with the playground deployment which uses the HANZO_AGENTS_ prefix.
 func NewOrgHandler() *OrgHandler {
-	iamURL := os.Getenv("IAM_ENDPOINT")
+	iamURL := coalesceEnv(
+		"IAM_ENDPOINT",
+		"HANZO_AGENTS_IAM_ENDPOINT",
+		"PLAYGROUND_IAM_ENDPOINT",
+		"IAM_PUBLIC_ENDPOINT",
+		"HANZO_AGENTS_IAM_PUBLIC_ENDPOINT",
+	)
 	if iamURL == "" {
-		iamURL = os.Getenv("IAM_PUBLIC_ENDPOINT")
-	}
-	if iamURL == "" {
-		iamURL = "http://iam.hanzo.svc:8000"
+		iamURL = "http://iam.hanzo.svc:80"
 	}
 	iamURL = strings.TrimRight(iamURL, "/")
 
-	clientID := os.Getenv("IAM_CLIENT_ID")
-	clientSecret := os.Getenv("IAM_CLIENT_SECRET")
+	clientID := coalesceEnv("IAM_CLIENT_ID", "HANZO_AGENTS_IAM_CLIENT_ID", "PLAYGROUND_IAM_CLIENT_ID")
+	clientSecret := coalesceEnv("IAM_CLIENT_SECRET", "HANZO_AGENTS_IAM_CLIENT_SECRET", "PLAYGROUND_IAM_CLIENT_SECRET")
+
+	logger.Logger.Info().
+		Str("iam_url", iamURL).
+		Bool("has_client_id", clientID != "").
+		Bool("has_client_secret", clientSecret != "").
+		Msg("org: initialized IAM handler")
 
 	return &OrgHandler{
 		iamURL:       iamURL,
@@ -48,6 +59,16 @@ func NewOrgHandler() *OrgHandler {
 		clientSecret: clientSecret,
 		client:       &http.Client{Timeout: 15 * time.Second},
 	}
+}
+
+// coalesceEnv returns the first non-empty env var value from the given keys.
+func coalesceEnv(keys ...string) string {
+	for _, k := range keys {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // ListOrgs returns organizations the current user belongs to.
