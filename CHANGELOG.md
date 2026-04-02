@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.356] - 2026-04-02
+
+
+### Fixed
+
+- Fix: use IAM admin credentials for org write operations
+
+Casdoor requires is_admin=true on the calling user for org management.
+Regular user tokens and app client credentials both get "Unauthorized
+operation". Updated setAdminAuth to support:
+
+1. IAM_ADMIN_TOKEN env var (pre-provisioned admin bearer token)
+2. IAM_ADMIN_CLIENT_ID/SECRET (built-in admin app Basic Auth)
+3. App client credentials as query params (fallback)
+4. User's own Bearer token (works if user is admin)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (bf4d585)
+
 ## [0.1.41-rc.355] - 2026-04-02
 
 
