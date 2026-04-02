@@ -5,6 +5,7 @@ WORKDIR /app/web
 COPY control-plane/web/client/package.json control-plane/web/client/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY control-plane/web/client/ .
+ARG CACHE_BUST=1
 RUN pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.26.0-bookworm AS go-builder
