@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.354] - 2026-04-02
+
+
+### Fixed
+
+- Fix: remove unused config destructure from CreateOrgDialog
+
+TypeScript strict mode error: 'config' was destructured from useIam()
+but no longer used after switching from IamClient to fetch API.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (6630076)
+
 ## [0.1.41-rc.353] - 2026-04-02
 
 
