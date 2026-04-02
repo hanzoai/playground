@@ -1343,6 +1343,29 @@ func (s *PlaygroundServer) setupRoutes() {
 			billing.POST("/*path", billingProxy.ProxyPost)
 		}
 
+		// Organization management (proxy to IAM)
+		orgHandler := ui.NewOrgHandler()
+		orgs := agentAPI.Group("/orgs")
+		{
+			orgs.GET("", orgHandler.ListOrgs)
+			orgs.POST("", orgHandler.CreateOrg)
+			orgs.GET("/:orgId", orgHandler.GetOrg)
+			orgs.PUT("/:orgId", orgHandler.UpdateOrg)
+			orgs.DELETE("/:orgId", orgHandler.DeleteOrg)
+			orgs.GET("/:orgId/members", orgHandler.GetOrgMembers)
+		}
+
+		// Application management (proxy to IAM)
+		appHandler := ui.NewAppHandler()
+		apps := agentAPI.Group("/orgs/:orgId/apps")
+		{
+			apps.GET("", appHandler.ListApps)
+			apps.POST("", appHandler.CreateApp)
+			apps.GET("/:appId", appHandler.GetApp)
+			apps.PUT("/:appId", appHandler.UpdateApp)
+			apps.DELETE("/:appId", appHandler.DeleteApp)
+		}
+
 		// Cloud provisioning endpoints
 		if s.cloudProvisioner != nil {
 			s.registerCloudRoutes(agentAPI.Group("/cloud"))

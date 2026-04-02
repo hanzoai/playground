@@ -4,9 +4,24 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
+
+// execIDPattern matches execution IDs in wallet deduction descriptions.
+// Formats: "(exec abc-123)" or "Execution abc-123 ("
+var execIDPattern = regexp.MustCompile(`(?:exec |Execution )([a-zA-Z0-9_-]+)`)
+
+// extractExecutionIDFromDescription pulls the execution ID from a deduction description
+// to enable idempotent deduction (prevents double-charging for the same execution).
+func extractExecutionIDFromDescription(desc string) string {
+	m := execIDPattern.FindStringSubmatch(desc)
+	if len(m) >= 2 {
+		return m[1]
+	}
+	return ""
+}
 
 // BotWallet represents a per-bot wallet with AI coin and USD balances.
 type BotWallet struct {
@@ -248,6 +263,25 @@ func (ls *LocalStorage) WithdrawFromBotWallet(ctx context.Context, botID string,
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	// Idempotency: extract execution ID from description to prevent double-deduction.
+	// Description format: "LLM ...: ... (exec <execID>)" or "Execution <execID> (...)"
+	idempotencyKey := extractExecutionIDFromDescription(description)
+	if idempotencyKey != "" {
+		var existingCount int
+		_ = tx.QueryRowContext(ctx, `
+			SELECT COUNT(*) FROM wallet_transactions
+			WHERE bot_id = ? AND description LIKE ? AND type = 'withdraw'`,
+			botID, "%"+idempotencyKey+"%").Scan(&existingCount)
+		if existingCount > 0 {
+			// Already deducted for this execution — return the existing record
+			_ = tx.Rollback()
+			return &WalletTransaction{
+				BotID:       botID,
+				Description: description + " (duplicate, skipped)",
+			}, nil
+		}
+	}
+
 	// Check sufficient balance
 	var currentAiCoin float64
 	var currentUsdCents int64
@@ -280,8 +314,11 @@ func (ls *LocalStorage) WithdrawFromBotWallet(ctx context.Context, botID string,
 		return nil, fmt.Errorf("update wallet balance: %w", err)
 	}
 
-	// Create transaction record
+	// Create transaction record with execution-aware reference ID
 	txID := fmt.Sprintf("wal-tx-%d", time.Now().UnixNano())
+	if idempotencyKey != "" {
+		txID = fmt.Sprintf("wal-exec-%s", idempotencyKey)
+	}
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO wallet_transactions (
 			reference_id, bot_id, type, amount_ai_coin, amount_usd_cents,
