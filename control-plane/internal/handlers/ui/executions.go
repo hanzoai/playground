@@ -60,7 +60,7 @@ func (h *ExecutionHandler) StreamWorkflowNodeNotesHandler(c *gin.Context) {
 	c.Header("Connection", "keep-alive")
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Headers", "Cache-Control")
-	_ = middleware.GetOrganization(c) // org context for execution event isolation
+	// TODO(multi-tenant): filter SSE events by org when event bus supports org-scoped subscriptions
 
 	workflowID := c.Param("workflowId")
 	if workflowID == "" {
@@ -218,6 +218,7 @@ type EnhancedExecutionsResponse struct {
 // GET /api/v1/agents/:agentId/executions
 func (h *ExecutionHandler) ListExecutionsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
 	agentID := strings.TrimSpace(c.Param("agentId"))
 	if agentID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "agentId is required"})
@@ -232,11 +233,14 @@ func (h *ExecutionHandler) ListExecutionsHandler(c *gin.Context) {
 	sortDesc := strings.ToLower(c.DefaultQuery("sortOrder", "desc")) != "asc"
 
 	filter := types.ExecutionFilter{
-		NodeID:    &agentID,
+		NodeID:         &agentID,
 		Limit:          pageSize,
 		Offset:         (page - 1) * pageSize,
 		SortBy:         sortField,
 		SortDescending: sortDesc,
+	}
+	if org != "" {
+		filter.OrgID = &org
 	}
 	if status != "" {
 		filter.Status = &status
@@ -305,6 +309,7 @@ func (h *ExecutionHandler) GetExecutionDetailsHandler(c *gin.Context) {
 // GET /api/v1/executions/summary
 func (h *ExecutionHandler) GetExecutionsSummaryHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
 	page := parsePositiveIntOrDefault(c.Query("page"), 1)
 	pageSize := parseBoundedIntOrDefault(c.Query("page_size"), 20, 1, 100)
 	status := strings.TrimSpace(c.Query("status"))
@@ -330,6 +335,9 @@ func (h *ExecutionHandler) GetExecutionsSummaryHandler(c *gin.Context) {
 		SortDescending: true,
 		StartTime:      startTime,
 		EndTime:        endTime,
+	}
+	if org != "" {
+		filter.OrgID = &org
 	}
 	if status != "" {
 		filter.Status = &status

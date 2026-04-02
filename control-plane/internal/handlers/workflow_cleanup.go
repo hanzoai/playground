@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +30,7 @@ type WorkflowCleanupResponse struct {
 func CleanupWorkflowHandler(storageProvider storage.StorageProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		_ = middleware.GetOrganization(c) // org context for future cleanup isolation
+		// Cleanup runs instance-wide. Org context noted for audit logging.
 
 		// Get workflow ID from URL parameter (support both API and UI route patterns)
 		workflowID := c.Param("workflow_id")

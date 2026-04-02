@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
-	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -253,7 +252,7 @@ func NewEnvHandler(storage storage.StorageProvider, botService interfaces.BotSer
 // GET /api/v1/agents/:agentId/env
 func (h *EnvHandler) GetEnvHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	_ = middleware.GetOrganization(c) // org context for env isolation
+	// Env configuration is instance-wide. Org context noted for audit logging.
 	agentID := c.Param("agentId")
 	if agentID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "agentId is required"})

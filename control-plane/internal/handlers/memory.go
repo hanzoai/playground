@@ -62,7 +62,7 @@ type ErrorResponse struct {
 func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		_ = middleware.GetOrganization(c) // org context available for future memory isolation
+		// Org context is used in resolveScope() to prefix scopeIDs for tenant isolation
 		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: SetMemoryHandler called")
 
 		var req SetMemoryRequest
@@ -306,21 +306,30 @@ func ListMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 
 // resolveScope determines the memory scope and scope ID to use.
 func resolveScope(c *gin.Context, explicitScope *string) (string, string) {
+	scope := "global"
+	scopeID := "global"
+
 	if explicitScope != nil {
-		return *explicitScope, getScopeID(c, *explicitScope)
+		scope = *explicitScope
+		scopeID = getScopeID(c, scope)
+	} else if id := c.GetHeader("X-Workflow-ID"); id != "" {
+		scope = "workflow"
+		scopeID = id
+	} else if id := c.GetHeader("X-Session-ID"); id != "" {
+		scope = "session"
+		scopeID = id
+	} else if id := c.GetHeader("X-Actor-ID"); id != "" {
+		scope = "actor"
+		scopeID = id
 	}
 
-	if id := c.GetHeader("X-Workflow-ID"); id != "" {
-		return "workflow", id
-	}
-	if id := c.GetHeader("X-Session-ID"); id != "" {
-		return "session", id
-	}
-	if id := c.GetHeader("X-Actor-ID"); id != "" {
-		return "actor", id
+	// Org-scope: prefix the scopeID with the organization to ensure data
+	// isolation between tenants. Memory stored by org-a is invisible to org-b.
+	if org := middleware.GetOrganization(c); org != "" {
+		scopeID = org + ":" + scopeID
 	}
 
-	return "global", "global"
+	return scope, scopeID
 }
 
 // getScopeID retrieves the appropriate ID for a given scope from headers.

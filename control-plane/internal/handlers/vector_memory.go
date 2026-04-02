@@ -40,7 +40,7 @@ type VectorSearchRequest struct {
 // SetVectorHandler stores or updates a vector embedding.
 func SetVectorHandler(storage MemoryStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_ = middleware.GetOrganization(c) // org context available for future vector isolation
+		// Org context is used in resolveScope() to prefix scopeIDs for tenant isolation
 		var req SetVectorRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{

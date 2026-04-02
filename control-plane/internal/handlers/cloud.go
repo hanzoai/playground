@@ -114,14 +114,14 @@ func CloudDeprovisionHandler(provisioner *cloud.Provisioner, storageProvider sto
 	}
 }
 
-// CloudListNodesHandler lists all cloud agent nodes.
+// CloudListNodesHandler lists cloud agent nodes scoped to the caller's org.
 func CloudListNodesHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		org := c.Query("org")
-
-		// If IAM authenticated, scope to user's org
-		if user := middleware.GetIAMUser(c); user != nil && org == "" {
-			org = user.Organization
+		// Always scope to the caller's org. The query param is ignored when
+		// IAM auth is active to prevent cross-org listing.
+		org := middleware.GetOrganization(c)
+		if org == "" {
+			org = c.Query("org") // Fallback for non-IAM auth (API key mode)
 		}
 
 		nodes, err := provisioner.ListNodes(c.Request.Context(), org)

@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
@@ -31,7 +30,7 @@ func NewObservabilityWebhookHandler(storage storage.StorageProvider, forwarder s
 // GET /api/v1/settings/observability-webhook
 func (h *ObservabilityWebhookHandler) GetWebhookHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	_ = middleware.GetOrganization(c) // org context for webhook isolation
+	// Webhook configuration is instance-wide. Org context noted for audit logging.
 
 	config, err := h.storage.GetObservabilityWebhook(ctx)
 	if err != nil {

@@ -20,11 +20,12 @@ func NewBudgetHandler(s storage.StorageProvider) *BudgetHandler {
 	return &BudgetHandler{storage: s}
 }
 
-// ListBudgets returns all bot budgets.
+// ListBudgets returns bot budgets filtered by the caller's org.
+// Only returns budgets for bots that belong to the requesting user's org.
 // GET /api/v1/budgets
 func (h *BudgetHandler) ListBudgets(c *gin.Context) {
 	ctx := c.Request.Context()
-	_ = middleware.GetOrganization(c) // org context for future budget isolation
+	org := middleware.GetOrganization(c)
 
 	budgets, err := h.storage.ListBotBudgets(ctx)
 	if err != nil {
@@ -34,6 +35,25 @@ func (h *BudgetHandler) ListBudgets(c *gin.Context) {
 
 	if budgets == nil {
 		budgets = []*storage.BotBudget{}
+	}
+
+	// Filter budgets to only include bots in the caller's org.
+	// Bots are org-scoped via their OrgID field in the nodes table.
+	if org != "" {
+		var filtered []*storage.BotBudget
+		for _, b := range budgets {
+			node, err := h.storage.GetNode(ctx, b.BotID)
+			if err != nil || node == nil {
+				continue // Skip budgets for unknown bots
+			}
+			if node.OrgID == "" || node.OrgID == org {
+				filtered = append(filtered, b)
+			}
+		}
+		budgets = filtered
+		if budgets == nil {
+			budgets = []*storage.BotBudget{}
+		}
 	}
 
 	c.JSON(http.StatusOK, budgets)

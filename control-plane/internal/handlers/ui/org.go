@@ -115,12 +115,23 @@ func (h *OrgHandler) ListOrgs(c *gin.Context) {
 }
 
 // GetOrg returns details for a specific organization.
+// Restricted to the user's own org unless they are an admin.
 // GET /v1/orgs/:orgId
 func (h *OrgHandler) GetOrg(c *gin.Context) {
 	orgID := c.Param("orgId")
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "orgId is required"})
 		return
+	}
+
+	// Verify caller has access to this org
+	user := middleware.GetIAMUser(c)
+	if user != nil {
+		currentOrg := middleware.GetOrganization(c)
+		if currentOrg != orgID && !user.IsAdmin {
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied to this organization"})
+			return
+		}
 	}
 
 	targetURL := fmt.Sprintf("%s/api/get-organization?id=admin/%s", h.iamURL, url.PathEscape(orgID))

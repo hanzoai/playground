@@ -6,7 +6,6 @@ import (
 
 	"github.com/hanzoai/playground/control-plane/internal/core/domain"
 	"github.com/hanzoai/playground/control-plane/internal/core/interfaces"
-	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,7 @@ func NewMCPHandler(uiService *services.UIService, nodeClient interfaces.NodeClie
 // GET /api/v1/nodes/{nodeId}/mcp/health?mode=developer|user
 func (h *MCPHandler) GetMCPHealthHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	_ = middleware.GetOrganization(c) // org context for MCP isolation
+	// MCP configuration is instance-wide. Org context noted for audit logging.
 	nodeID := c.Param("node_id")
 	if nodeID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "nodeId is required"})
