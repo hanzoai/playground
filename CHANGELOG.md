@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.358] - 2026-04-02
+
+
+### Other
+
+- Debug: add logging to org creation for IAM troubleshooting
+
+Logs the IAM target URL, user identity, auth method used, and the
+full IAM response to diagnose why org creation appears to succeed
+(HTTP 200) but the org doesn't persist in IAM.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (f22b89b)
+
 ## [0.1.41-rc.357] - 2026-04-02
 
 
