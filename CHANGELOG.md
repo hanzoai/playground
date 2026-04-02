@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.353] - 2026-04-02
+
+
+### Fixed
+
+- Fix: use service credentials for IAM org creation
+
+The CreateOrgDialog was calling IAM directly with the user's JWT token,
+but Casdoor requires admin privileges for /api/add-organization. Regular
+users got a silent failure — the org appeared in localStorage but was
+never persisted to IAM.
+
+Changes:
+- Frontend: route org creation through /v1/orgs backend API instead of
+  calling IAM directly from the browser
+- Backend: use IAM client credentials (clientId/clientSecret) for write
+  operations (create, update, delete org, add user) so they succeed even
+  when the user is not an IAM admin
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a360a83)
+
 ## [0.1.41-rc.352] - 2026-04-02
 
 
