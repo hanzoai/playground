@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.361] - 2026-04-02
+
+
+### Added
+
+- Feat: complete org isolation enforcement across all handlers
+
+Phase 3 remaining — enforce org isolation in all handlers that had
+placeholder org extraction:
+
+Data isolation (actual enforcement):
+- memory.go: resolveScope() now prefixes scopeID with org, isolating
+  all memory data between tenants
+- vector_memory.go: uses same resolveScope(), automatically org-scoped
+- budgets.go: ListBudgets filters to only show budgets for bots in the
+  caller's org (queries node OrgID)
+- cloud.go: CloudListNodesHandler always scopes to caller's org from IAM,
+  ignores query param override when IAM auth is active
+- org.go: GetOrg now checks caller belongs to the requested org
+
+Instance-wide handlers (no org scoping needed, placeholders cleaned up):
+- config.go, did.go, env.go, mcp.go, lifecycle.go,
+  observability_webhook.go, workflow_cleanup.go — removed unused
+  middleware imports and replaced placeholders with documentation
+
+Deferred (needs event bus changes):
+- executions.go: SSE event stream needs org-scoped subscriptions
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a23358c)
+
 ## [0.1.41-rc.360] - 2026-04-02
 
 
