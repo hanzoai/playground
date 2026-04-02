@@ -397,6 +397,7 @@ type ExecutionsSummaryResponse struct {
 // GET /api/v1/executions/stats
 func (h *ExecutionHandler) GetExecutionStatsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
 	agentID := strings.TrimSpace(c.Query("node_id"))
 	sessionID := strings.TrimSpace(c.Query("session_id"))
 	runID := strings.TrimSpace(c.Query("workflow_id"))
@@ -405,6 +406,9 @@ func (h *ExecutionHandler) GetExecutionStatsHandler(c *gin.Context) {
 		Limit:          1000,
 		SortBy:         "started_at",
 		SortDescending: true,
+	}
+	if org != "" {
+		filter.OrgID = &org
 	}
 	if agentID != "" {
 		filter.NodeID = &agentID
@@ -459,6 +463,7 @@ func (h *ExecutionHandler) GetExecutionStatsHandler(c *gin.Context) {
 // GET /api/v1/executions/enhanced
 func (h *ExecutionHandler) GetEnhancedExecutionsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
+	org := middleware.GetOrganization(c)
 
 	page := parsePositiveIntOrDefault(c.Query("page"), 1)
 	limit := parseBoundedIntOrDefault(c.Query("limit"), 50, 1, 200)
@@ -469,6 +474,9 @@ func (h *ExecutionHandler) GetEnhancedExecutionsHandler(c *gin.Context) {
 		Offset:         offset,
 		SortBy:         sanitizeExecutionSortField(c.DefaultQuery("sort_by", "started_at")),
 		SortDescending: strings.ToLower(c.DefaultQuery("sort_order", "desc")) != "asc",
+	}
+	if org != "" {
+		filter.OrgID = &org
 	}
 
 	if status := strings.TrimSpace(c.Query("status")); status != "" {
