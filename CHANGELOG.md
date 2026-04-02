@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.351] - 2026-04-02
+
+
+### Chores
+
+- Chore: symlink AGENTS.md and CLAUDE.md to LLM.md (0a0058c)
+
+
+
+### Fixed
+
+- Fix: usage deduction should only deduct USD balance, not AI coin
+
+DeductUsage was converting USD cents to AI coin amount and requiring
+sufficient AI coin balance, but bot wallets only have USD balance
+funded. Pass 0 for AI coin to skip that check.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6cb5358)
+
 ## [0.1.41-rc.350] - 2026-04-01
 
 
