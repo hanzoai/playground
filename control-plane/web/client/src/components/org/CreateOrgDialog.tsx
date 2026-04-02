@@ -1,15 +1,18 @@
 /**
  * CreateOrgDialog -- modal for creating a new IAM organization.
  *
- * Uses the Casdoor POST /api/add-organization endpoint via IamClient.apiRequest.
+ * Uses the playground backend POST /v1/orgs endpoint which proxies to IAM
+ * with proper service-level credentials. This ensures org creation succeeds
+ * even when the user's token doesn't have IAM admin privileges.
+ *
  * On success refreshes the org list and switches to the newly created org.
  */
 
 import { useState } from "react";
 import { useIam, useOrganizations } from "@hanzo/iam/react";
-import { IamClient } from "@hanzo/iam";
 import { useTenantStore } from "@/stores/tenantStore";
 import type { KnownOrg } from "@/stores/tenantStore";
+import { getGlobalIamToken } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,22 +78,27 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
     setError(null);
 
     try {
-      const client = new IamClient({
-        serverUrl: config.serverUrl,
-        clientId: config.clientId,
-      });
+      // Use the playground backend API which proxies to IAM with service credentials.
+      // This avoids the issue where regular user tokens lack admin privileges on IAM.
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "/v1";
+      const token = getGlobalIamToken() || accessToken;
 
-      const orgPayload = {
-        owner: "admin",
-        name: trimmedName,
-        displayName: displayName.trim() || trimmedName,
-      };
-
-      await client.apiRequest("/api/add-organization", {
+      const res = await fetch(`${apiBase}/orgs`, {
         method: "POST",
-        body: orgPayload,
-        token: accessToken ?? undefined,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+          displayName: displayName.trim() || trimmedName,
+        }),
       });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || errBody.msg || `HTTP ${res.status}`);
+      }
 
       // Persist the new org locally so it shows in the switcher immediately,
       // even if the IAM API doesn't return it for non-admin users.

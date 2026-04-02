@@ -19,9 +19,13 @@ import (
 
 // OrgHandler proxies organization CRUD operations to the IAM (Casdoor) backend.
 // This avoids CORS issues and keeps IAM endpoints internal.
+// Uses IAM client credentials for admin-level operations (org create/delete)
+// since regular user tokens may not have admin privileges on the IAM server.
 type OrgHandler struct {
-	iamURL    string
-	client    *http.Client
+	iamURL       string
+	clientID     string
+	clientSecret string
+	client       *http.Client
 }
 
 // NewOrgHandler creates an OrgHandler reading IAM config from env.
@@ -35,9 +39,14 @@ func NewOrgHandler() *OrgHandler {
 	}
 	iamURL = strings.TrimRight(iamURL, "/")
 
+	clientID := os.Getenv("IAM_CLIENT_ID")
+	clientSecret := os.Getenv("IAM_CLIENT_SECRET")
+
 	return &OrgHandler{
-		iamURL: iamURL,
-		client: &http.Client{Timeout: 15 * time.Second},
+		iamURL:       iamURL,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		client:       &http.Client{Timeout: 15 * time.Second},
 	}
 }
 
@@ -163,7 +172,7 @@ func (h *OrgHandler) CreateOrg(c *gin.Context) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	h.setAuthHeader(req, c)
+	h.setAdminAuth(req, c)
 
 	resp, err := h.client.Do(req)
 	if err != nil {
@@ -225,7 +234,7 @@ func (h *OrgHandler) UpdateOrg(c *gin.Context) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	h.setAuthHeader(req, c)
+	h.setAdminAuth(req, c)
 
 	resp, doErr := h.client.Do(req)
 	if doErr != nil {
@@ -271,7 +280,7 @@ func (h *OrgHandler) DeleteOrg(c *gin.Context) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	h.setAuthHeader(req, c)
+	h.setAdminAuth(req, c)
 
 	resp, doErr := h.client.Do(req)
 	if doErr != nil {
@@ -335,6 +344,21 @@ func (h *OrgHandler) setAuthHeader(req *http.Request, c *gin.Context) {
 	req.Header.Set("Accept", "application/json")
 }
 
+// setAdminAuth sets IAM client credentials for admin-level operations.
+// Casdoor accepts ?clientId=X&clientSecret=Y query params for service auth.
+// Falls back to the user's token if no client credentials are configured.
+func (h *OrgHandler) setAdminAuth(req *http.Request, c *gin.Context) {
+	if h.clientID != "" && h.clientSecret != "" {
+		q := req.URL.Query()
+		q.Set("clientId", h.clientID)
+		q.Set("clientSecret", h.clientSecret)
+		req.URL.RawQuery = q.Encode()
+	} else if auth := c.GetHeader("Authorization"); auth != "" {
+		req.Header.Set("Authorization", auth)
+	}
+	req.Header.Set("Accept", "application/json")
+}
+
 // addUserToOrg adds the authenticated user to the given organization.
 // This is best-effort — we log failures but don't fail the org creation.
 func (h *OrgHandler) addUserToOrg(c *gin.Context, user *middleware.IAMUserInfo, orgName string) {
@@ -366,7 +390,7 @@ func (h *OrgHandler) addUserToOrg(c *gin.Context, user *middleware.IAMUserInfo, 
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	h.setAuthHeader(req, c)
+	h.setAdminAuth(req, c)
 
 	resp, err := h.client.Do(req)
 	if err != nil {
