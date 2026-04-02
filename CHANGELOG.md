@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.368] - 2026-04-02
+
+
+### Fixed
+
+- Fix: include package.json with @hanzo/iam ^0.5.1 specifier
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (1872bfe)
+
 ## [0.1.41-rc.367] - 2026-04-02
 
 
