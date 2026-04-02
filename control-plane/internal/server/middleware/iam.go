@@ -286,6 +286,22 @@ func RequireOrg(c *gin.Context) (string, bool) {
 	return fallback, true
 }
 
+// RequireOrgStrict extracts the org and aborts with 403 if no org context is available.
+// Unlike RequireOrg which falls back to a default, this function enforces that an actual
+// org is present (either from IAM auth or explicit context). Use this for endpoints that
+// must be org-scoped (e.g., resource creation, data queries).
+func RequireOrgStrict(c *gin.Context) (string, bool) {
+	org := GetOrganization(c)
+	if org != "" {
+		return org, true
+	}
+	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+		"error":   "org_required",
+		"message": "Organization context is required. Authenticate with IAM or set X-Org-ID header.",
+	})
+	return "", false
+}
+
 // RequireIAMOrg extracts the org from IAM context and aborts with 403 if no IAM user.
 // Use this for endpoints that strictly require IAM auth with org context.
 func RequireIAMOrg(c *gin.Context) (string, bool) {

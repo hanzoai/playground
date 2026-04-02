@@ -852,9 +852,16 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 	if agent == nil {
 		return nil, fmt.Errorf("agent '%s' not found", target.NodeID)
 	}
-	// Verify node belongs to requesting org
-	if org := middleware.GetOrganization(ginCtx); org != "" && agent.OrgID != "" && agent.OrgID != org {
-		return nil, fmt.Errorf("access denied")
+	// Verify node belongs to requesting org. When the caller has an org context
+	// (from IAM auth), enforce isolation. Untagged agents (OrgID="") are auto-tagged
+	// with the caller's org on first access.
+	if org := middleware.GetOrganization(ginCtx); org != "" {
+		if agent.OrgID != "" && agent.OrgID != org {
+			return nil, fmt.Errorf("access denied: agent belongs to a different organization")
+		}
+		if agent.OrgID == "" {
+			agent.OrgID = org // Auto-tag untagged agent with caller's org
+		}
 	}
 	if agent.DeploymentType == "" && agent.Metadata.Custom != nil {
 		if v, ok := agent.Metadata.Custom["serverless"]; ok && fmt.Sprint(v) == "true" {
