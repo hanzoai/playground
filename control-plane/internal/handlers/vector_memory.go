@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
-	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 	"github.com/gin-gonic/gin"
 )
