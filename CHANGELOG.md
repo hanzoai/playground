@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.365] - 2026-04-02
+
+
+### Other
+
+- Revert "refactor: use shared UserOrgMenu from @hanzo/iam for org switcher"
+
+This reverts commit 67f67a86a711fd8755824b596cfcc7d5229d57bd. (a23e8c9)
+
 ## [0.1.41-rc.364] - 2026-04-02
 
 
