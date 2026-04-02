@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.366] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.0 for multi-tenant fixes
+
+- getOrganizations falls back to public endpoint (fixes org list for non-admins)
+- UserOrgMenu shared component available
+- Cross-org user lookup support
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (7f875b0)
+
 ## [0.1.41-rc.365] - 2026-04-02
 
 
