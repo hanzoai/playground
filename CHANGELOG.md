@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.360] - 2026-04-02
+
+
+### Added
+
+- Feat: add RequireOrgStrict() and strengthen execute org check
+
+Phase 3 of multi-tenancy cleanup (partial):
+
+1. middleware/iam.go: Add RequireOrgStrict() that returns 403 when no org
+   context is available (unlike RequireOrg which falls back to a default).
+   Use for endpoints that must be org-scoped.
+
+2. execute.go: Strengthen org isolation check:
+   - Previously only checked if BOTH org and agent.OrgID were non-empty
+   - Now always enforces when caller has org context
+   - Auto-tags untagged agents with caller's org on first access
+   - Explicit error message for cross-org access attempts
+
+Remaining Phase 3 work (follow-up):
+- memory, vector_memory, budgets, config, did, lifecycle handlers
+  need org-scoped storage queries (requires storage interface changes)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (bbb5a7b)
+
 ## [0.1.41-rc.359] - 2026-04-02
 
 
