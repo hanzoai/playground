@@ -365,16 +365,43 @@ func (h *OrgHandler) setAuthHeader(req *http.Request, c *gin.Context) {
 	req.Header.Set("Accept", "application/json")
 }
 
-// setAdminAuth sets IAM client credentials for admin-level operations.
-// Casdoor accepts ?clientId=X&clientSecret=Y query params for service auth.
-// Falls back to the user's token if no client credentials are configured.
+// setAdminAuth authenticates admin-level operations to IAM.
+//
+// Casdoor authorization model: the API checks if the calling user has
+// is_admin=true. Client credentials alone aren't sufficient. Strategy:
+//
+//  1. If IAM_ADMIN_TOKEN is set, use it directly (pre-provisioned admin token)
+//  2. If admin client ID/secret are available, use HTTP Basic Auth
+//     (Casdoor resolves this to the application owner)
+//  3. Fall back to the user's own Bearer token (works if user is admin)
 func (h *OrgHandler) setAdminAuth(req *http.Request, c *gin.Context) {
+	// Option 1: pre-provisioned admin token
+	adminToken := coalesceEnv("IAM_ADMIN_TOKEN", "HANZO_AGENTS_IAM_ADMIN_TOKEN")
+	if adminToken != "" {
+		req.Header.Set("Authorization", "Bearer "+adminToken)
+		req.Header.Set("Accept", "application/json")
+		return
+	}
+
+	// Option 2: admin app Basic Auth (built-in admin app)
+	adminID := coalesceEnv("IAM_ADMIN_CLIENT_ID", "HANZO_AGENTS_IAM_ADMIN_CLIENT_ID")
+	adminSecret := coalesceEnv("IAM_ADMIN_CLIENT_SECRET", "HANZO_AGENTS_IAM_ADMIN_CLIENT_SECRET")
+	if adminID != "" && adminSecret != "" {
+		req.SetBasicAuth(adminID, adminSecret)
+		req.Header.Set("Accept", "application/json")
+		return
+	}
+
+	// Option 3: use the app's own client credentials as query params
 	if h.clientID != "" && h.clientSecret != "" {
 		q := req.URL.Query()
 		q.Set("clientId", h.clientID)
 		q.Set("clientSecret", h.clientSecret)
 		req.URL.RawQuery = q.Encode()
-	} else if auth := c.GetHeader("Authorization"); auth != "" {
+	}
+
+	// Option 4: fall back to user's Bearer token
+	if auth := c.GetHeader("Authorization"); auth != "" {
 		req.Header.Set("Authorization", auth)
 	}
 	req.Header.Set("Accept", "application/json")
