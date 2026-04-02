@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.363] - 2026-04-02
+
+
+### Added
+
+- Feat: add org filtering to execution stats and enhanced list handlers
+
+GetExecutionStatsHandler and GetEnhancedExecutionsHandler were missing
+org filtering. ListExecutionsHandler and GetSummaryHandler already had
+it. Now all 4 execution query handlers filter by OrgID when the caller
+has org context from IAM auth.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (42443e6)
+
 ## [0.1.41-rc.362] - 2026-04-02
 
 
