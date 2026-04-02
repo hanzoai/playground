@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.371] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.4 — fix hook JWT parsing for org list
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (6191b26)
+
 ## [0.1.41-rc.370] - 2026-04-02
 
 
