@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.357] - 2026-04-02
+
+
+### Fixed
+
+- Fix: forward user Bearer token for IAM org operations
+
+Casdoor checks user.isAdmin from the JWT — client credentials and Basic
+Auth don't confer admin rights. The previous setAdminAuth used Basic Auth
+first, which always got "Unauthorized operation" even when the actual
+user (z@hanzo.ai) IS a global admin.
+
+Reordered: user's own Bearer token first (since admin users already have
+the right permissions), then fall back to IAM_ADMIN_TOKEN for service
+calls, plus app client credentials as query params for context.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (5294a9b)
+
 ## [0.1.41-rc.356] - 2026-04-02
 
 
