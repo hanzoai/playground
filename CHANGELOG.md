@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.352] - 2026-04-02
+
+
+### Added
+
+- Feat: add org/app CRUD API and idempotent wallet deduction
+
+- Add org management proxy to IAM (list, get, create, update, delete, members)
+- Add app management proxy to IAM scoped to orgs (list, get, create, update, delete)
+- Make wallet deduction idempotent by checking execution ID before deducting
+- Register /v1/orgs/* and /v1/orgs/:orgId/apps/* routes
+- Add URL parameter escaping for security
+- Add auth and org access checks on all endpoints
+- Add tests for org handler (8), app handler (7), and wallet idempotency (5)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (3af4a2e)
+
 ## [0.1.41-rc.351] - 2026-04-02
 
 
