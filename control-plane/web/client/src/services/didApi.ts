@@ -5,7 +5,7 @@ import type {
   DIDFilters,
   DIDStatusSummary
 } from '../types/did';
-import { getGlobalApiKey , getCurrentOrgId } from './api';
+import { getGlobalApiKey } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 

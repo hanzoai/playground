@@ -7,7 +7,7 @@
  */
 
 import type { SoundName } from './audioService';
-import { getGlobalApiKey, getGlobalIamToken , getCurrentOrgId } from './api';
+import { getGlobalApiKey, getGlobalIamToken } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 

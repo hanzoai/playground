@@ -1,4 +1,4 @@
-import { getGlobalApiKey, getGlobalIamToken , getCurrentOrgId } from './api';
+import { getGlobalApiKey, getGlobalIamToken } from './api';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 const SPACE_ID = 'default';

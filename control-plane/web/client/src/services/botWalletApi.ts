@@ -8,7 +8,7 @@
  * all calls return realistic mock data.
  */
 
-import { getGlobalIamToken, getGlobalApiKey , getCurrentOrgId } from './api';
+import { getGlobalIamToken, getGlobalApiKey } from './api';
 import type {
   BotWallet,
   BotWalletDTO,

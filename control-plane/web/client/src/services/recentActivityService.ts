@@ -1,5 +1,5 @@
 import type { RecentActivityResponse } from '../types/recentActivity';
-import { getGlobalApiKey , getCurrentOrgId } from './api';
+import { getGlobalApiKey } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 

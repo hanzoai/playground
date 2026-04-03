@@ -6,7 +6,7 @@ import type {
   WorkflowDAGLightweightResponse,
 } from '../types/workflows';
 import { normalizeExecutionStatus } from '../utils/status';
-import { getGlobalApiKey , getCurrentOrgId } from './api';
+import { getGlobalApiKey } from './api';
 
 const API_V1_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 
