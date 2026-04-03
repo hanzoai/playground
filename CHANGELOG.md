@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.383] - 2026-04-03
+
+
+### Fixed
+
+- Fix: filter canvas gateway nodes by org using backend node list
+
+The Playground canvas showed all gateway-connected nodes regardless of
+org. Now fetches the org-filtered /nodes/summary from the backend and
+uses it to filter gateway nodes — only nodes in the user's org appear
+on the canvas.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (4d88a92)
+
 ## [0.1.41-rc.382] - 2026-04-03
 
 
