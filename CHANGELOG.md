@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.374] - 2026-04-03
+
+
+### Added
+
+- Feat: pass selected org via X-Org-ID header for per-org bot management
+
+The JWT's owner claim is the signup org (e.g., "hanzo"), not the user's
+active workspace (personal org). The frontend org switcher selects the
+workspace but API calls used the JWT's org — so bots always got tagged
+with the signup org instead of the personal org.
+
+Backend (iam.go):
+- Read X-Org-ID header as override for org context after JWT parsing
+- User's selected org takes precedence over JWT owner claim
+
+Frontend:
+- api.ts: Add makeAuthHeaders() with auth + X-Org-ID from localStorage
+- api.ts: fetchWrapper adds X-Org-ID to all API calls
+- spaceApi.ts: Add X-Org-ID to space API headers
+- gatewayApi.ts: cloudProvision/Deprovision use makeAuthHeaders()
+
+Result: When user selects "hanzowoo" in org dropdown and creates a bot,
+it gets tagged with org_id=hanzowoo (not hanzo).
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (edd19ea)
+
 ## [0.1.41-rc.373] - 2026-04-03
 
 
