@@ -240,13 +240,16 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 		c.Set(ContextKeyUser, &user)
 		c.Set(ContextKeyOrg, user.Organization)
 
-		// Allow frontend to override org via X-Org-ID header.
+		// Allow frontend to override org via X-Org-ID header or org_id query param.
 		// This enables the org switcher — user selects their personal org
 		// in the UI, and API calls use that org instead of the JWT's owner.
-		// The JWT owner is the signup org (for auth), not necessarily the
-		// active workspace.
-		if headerOrg := c.GetHeader("X-Org-ID"); headerOrg != "" && headerOrg != user.Organization {
-			c.Set(ContextKeyOrg, headerOrg)
+		// Query param fallback is needed for SSE/EventSource which can't send headers.
+		orgOverride := c.GetHeader("X-Org-ID")
+		if orgOverride == "" {
+			orgOverride = c.Query("org_id")
+		}
+		if orgOverride != "" && orgOverride != user.Organization {
+			c.Set(ContextKeyOrg, orgOverride)
 		}
 
 		logger.Logger.Debug().

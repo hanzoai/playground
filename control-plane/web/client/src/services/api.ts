@@ -105,11 +105,15 @@ export function getCurrentOrgId(): string | null {
   }
 }
 
-/** Returns the current auth credential for SSE/EventSource query params */
+/** Returns the current auth credential + org for SSE/EventSource query params.
+ * SSE/EventSource can't send custom headers, so org_id is passed as query param. */
 export function getAuthQueryParam(): string {
-  if (globalIamToken) return `access_token=${encodeURIComponent(globalIamToken)}`;
-  if (globalApiKey) return `api_key=${encodeURIComponent(globalApiKey)}`;
-  return '';
+  const parts: string[] = [];
+  if (globalIamToken) parts.push(`access_token=${encodeURIComponent(globalIamToken)}`);
+  else if (globalApiKey) parts.push(`api_key=${encodeURIComponent(globalApiKey)}`);
+  const org = getCurrentOrgId();
+  if (org) parts.push(`org_id=${encodeURIComponent(org)}`);
+  return parts.join('&');
 }
 
 /**
