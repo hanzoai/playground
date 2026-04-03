@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.381] - 2026-04-03
+
+
+### Fixed
+
+- Fix: extract JWT from api_key/access_token query params for SSE
+
+SSE/EventSource passes the JWT as api_key query param, not as
+Authorization header. The IAM middleware only checked the header,
+so SSE requests were never IAM-authenticated — they fell through
+to API key auth with no org context.
+
+Now checks: Authorization header > access_token query > api_key query.
+This ensures SSE requests get proper org context from the JWT,
+which enables org filtering on nodes/events and other SSE streams.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (cf21704)
+
 ## [0.1.41-rc.380] - 2026-04-03
 
 
