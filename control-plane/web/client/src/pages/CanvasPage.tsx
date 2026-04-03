@@ -136,16 +136,24 @@ export function CanvasPage() {
         let dirty = false;
 
         // Remove canvas bots that don't belong to the user's current org.
-        // This auto-cleans stale cross-org bots from localStorage without
-        // requiring manual cache clearing.
+        // Collect IDs first, then remove in a deferred batch to avoid
+        // mutating the nodes array during React Flow's render cycle
+        // (React error #185: update on unmounted component).
         if (orgNodeIds) {
+          const toRemove: string[] = [];
           for (const node of nodes) {
             if (node.type !== NODE_TYPES.bot) continue;
             const botData = node.data as unknown as Bot;
             if (botData.source === 'cloud' && !orgNodeIds.has(botData.agentId)) {
-              removeBot(botData.agentId);
-              dirty = true;
+              toRemove.push(botData.agentId);
             }
+          }
+          if (toRemove.length > 0) {
+            setTimeout(() => {
+              toRemove.forEach((id) => removeBot(id));
+              persistCanvas();
+            }, 0);
+            return; // Skip rest of reconciliation this cycle
           }
         }
 
