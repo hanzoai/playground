@@ -27,8 +27,8 @@ importers:
         specifier: ^9.2.11
         version: 9.2.11(@deck.gl/core@9.2.11)(@deck.gl/widgets@9.2.8(@deck.gl/core@9.2.11)(@luma.gl/core@9.2.6))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@hanzo/iam':
-        specifier: ^0.6.0
-        version: 0.6.0(react@19.2.4)
+        specifier: ^0.6.1
+        version: 0.6.1(react@19.2.4)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -710,8 +710,8 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
-  '@hanzo/iam@0.6.0':
-    resolution: {integrity: sha512-zbVIJhPhBOngo0a1ybzQBJspXCV/dW68hs++m1fIVzSxTNzulPci8y1LdGHe4s2d1kUiJgwGmwpr40UnmM6lsg==}
+  '@hanzo/iam@0.6.1':
+    resolution: {integrity: sha512-mWQMi7JvnGrbkOYl4cqnOQwDVrK2X30oHL+XNiDsbtrOOUScu7pzeWzGv4ntPbkAiHdz6XBTfdh9K9hk3ksmig==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=17'
@@ -3900,7 +3900,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@hanzo/iam@0.6.0(react@19.2.4)':
+  '@hanzo/iam@0.6.1(react@19.2.4)':
     dependencies:
       jose: 6.2.2
     optionalDependencies:
