@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.389] - 2026-04-03
+
+
+### Fixed
+
+- Fix: guard xterm.open() against unmounted container ref
+
+Terminal.open() throws 'requires parent element' when the container
+ref is null (component unmounted during async initialization).
+Added null check before calling open().
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ad083b7)
+
 ## [0.1.41-rc.388] - 2026-04-03
 
 
