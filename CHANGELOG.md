@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.378] - 2026-04-03
+
+
+### Fixed
+
+- Fix: support org_id query param for SSE/EventSource org context
+
+SSE/EventSource can't send custom headers (X-Org-ID). Added:
+- Backend: read org_id query param as fallback for X-Org-ID header
+- Frontend: getAuthQueryParam() includes org_id for SSE URLs
+
+This ensures node events, execution events, and other SSE streams
+respect the user's selected org.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (9487f78)
+
 ## [0.1.41-rc.377] - 2026-04-03
 
 
