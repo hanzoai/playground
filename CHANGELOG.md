@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.390] - 2026-04-03
+
+
+### Added
+
+- Feat: org-scoped SSE node events + UIService.GetStorage()
+
+StreamNodeEventsHandler now filters SSE events by the caller's org.
+Maintains an in-memory set of org node IDs (refreshed every 60s)
+and skips events for nodes not in the user's workspace.
+
+Also:
+- Added UIService.GetStorage() for direct storage access
+- Removed unused orgFromContext function
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (031129d)
+
 ## [0.1.41-rc.389] - 2026-04-03
 
 
