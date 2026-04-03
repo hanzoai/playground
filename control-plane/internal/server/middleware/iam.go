@@ -153,6 +153,14 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 		if user, ok := cache.get(token); ok {
 			c.Set(ContextKeyUser, user)
 			c.Set(ContextKeyOrg, user.Organization)
+			// Apply X-Org-ID / org_id override (same logic as non-cached path)
+			orgOverride := c.GetHeader("X-Org-ID")
+			if orgOverride == "" {
+				orgOverride = c.Query("org_id")
+			}
+			if orgOverride != "" && orgOverride != user.Organization {
+				c.Set(ContextKeyOrg, orgOverride)
+			}
 			c.Next()
 			return
 		}
