@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.382] - 2026-04-03
+
+
+### Fixed
+
+- Fix: filter nodes by team_id (where org data lives), not just org_id
+
+Nodes store organization in team_id field (set during heartbeat
+registration), but org_id is empty. The ListNodes query filtered
+by org_id which was always empty, so no org filtering happened.
+
+Now checks both: (org_id = ? OR team_id = ?)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ce1ba30)
+
 ## [0.1.41-rc.381] - 2026-04-03
 
 
