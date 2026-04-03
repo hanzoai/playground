@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.373] - 2026-04-03
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.6.0 — personal org as workspace
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (81cee1f)
+
 ## [0.1.41-rc.372] - 2026-04-03
 
 
