@@ -197,9 +197,9 @@ export function TerminalPanel({ agentId, sessionKey: _sessionKey, className, nod
         // WebGL not supported
       }
 
-      if (disposed) return;
+      if (disposed || !containerRef.current) return;
 
-      terminal.open(containerRef.current!);
+      terminal.open(containerRef.current);
       fitAddon.fit();
       termRef.current = terminal;
       fitAddonRef.current = fitAddon;
