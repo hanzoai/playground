@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.385] - 2026-04-03
+
+
+### Fixed
+
+- Fix: auto-remove cross-org bots from canvas + clear on org switch
+
+Two fixes for canvas showing bots from other orgs:
+
+1. CanvasPage reconciliation: when org-filtered backend returns node
+   list, remove any canvas bots that aren't in that list. This
+   auto-cleans stale cross-org bots without manual localStorage clearing.
+
+2. IamOrgSelector: clear all canvas localStorage data (playground:*)
+   when switching orgs, so the new org starts with a clean canvas.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (09d0029)
+
 ## [0.1.41-rc.384] - 2026-04-03
 
 
