@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.380] - 2026-04-03
+
+
+### Chores
+
+- Chore: force frontend rebuild for org_id query param fix
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (b5c1973)
+
 ## [0.1.41-rc.379] - 2026-04-03
 
 
