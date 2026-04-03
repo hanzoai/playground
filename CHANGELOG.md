@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.376] - 2026-04-03
+
+
+### Fixed
+
+- Fix: remove leftover sed code from preferencesApi.ts
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a86bcf9)
+
 ## [0.1.41-rc.375] - 2026-04-03
 
 
