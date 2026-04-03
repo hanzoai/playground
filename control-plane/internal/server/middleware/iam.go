@@ -122,14 +122,24 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Extract bearer token
+		// Extract bearer token from header, or from query params (SSE/EventSource)
 		authHeader := c.GetHeader("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			// No bearer token — fall through to API key auth
+		token := ""
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+		// SSE/EventSource can't set headers — check query params as fallback
+		if token == "" {
+			token = c.Query("access_token")
+		}
+		if token == "" {
+			token = c.Query("api_key")
+		}
+		if token == "" {
+			// No token found — fall through to API key auth
 			c.Next()
 			return
 		}
-		token := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// Check if this looks like an API key (short, no dots) vs IAM token (JWT-like)
 		// API keys are typically short hex strings; IAM tokens are JWTs with dots
