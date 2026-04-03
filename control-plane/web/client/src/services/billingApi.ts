@@ -5,7 +5,7 @@ import { getGlobalIamToken, getGlobalApiKey } from './api';
 // Route billing calls through our backend proxy to avoid CORS issues and centralize auth.
 // VITE_API_BASE_URL is already '/v1', so just append '/billing'.
 const BILLING_API = `${import.meta.env.VITE_API_BASE_URL || '/v1'}/billing`;
-const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_TIMEOUT_MS = 5_000;
 
 export interface BalanceResult {
   user: string;
@@ -18,8 +18,11 @@ export interface BalanceResult {
 /** Extract user identifier from a JWT token in owner/name format for Commerce. */
 function getUserFromToken(token: string): string | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    // Commerce stores balances under owner/name format (e.g. "hanzo/a"),
+    // JWT uses base64url encoding — convert to standard base64 for atob()
+    let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const payload = JSON.parse(atob(b64));
+    // Commerce stores balances under owner/name format (e.g. "hanzo/z"),
     // not UUID. IAM JWTs include both owner and name claims.
     if (payload.owner && payload.name) {
       return `${payload.owner}/${payload.name}`;

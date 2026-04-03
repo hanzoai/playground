@@ -21,7 +21,10 @@ function getUserId(): string | null {
   const token = getGlobalIamToken() || getGlobalApiKey();
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    // JWT uses base64url encoding — convert to standard base64 for atob()
+    let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const payload = JSON.parse(atob(b64));
     if (payload.owner && payload.name) return `${payload.owner}/${payload.name}`;
     return payload.sub || payload.email || null;
   } catch {
