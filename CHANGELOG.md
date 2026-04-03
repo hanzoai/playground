@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.379] - 2026-04-03
+
+
+### Fixed
+
+- Fix: filter nodes/summary by org and skip cross-org gateway nodes
+
+The My Bots page showed all nodes from all orgs because:
+1. GetNodesSummaryHandler didn't pass org to the service
+2. Gateway node.list RPC returns all connected nodes, and
+   unmatched gateway nodes were added to the merge list
+
+Fixes:
+- nodes.go: Pass org from middleware to GetNodesSummary
+- ui_service.go: Accept optional org param, filter ListNodes by OrgID
+- NodesPage.tsx: Only add gateway-only nodes when backend returns
+  empty (fallback mode), preventing cross-org leakage
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (4f988b6)
+
 ## [0.1.41-rc.378] - 2026-04-03
 
 
