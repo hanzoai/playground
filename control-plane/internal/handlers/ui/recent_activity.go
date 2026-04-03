@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/playground/control-plane/internal/logger"
+	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/storage"
 	"github.com/hanzoai/playground/control-plane/pkg/types"
 
@@ -88,7 +89,7 @@ func (c *RecentActivityCache) Set(data *RecentActivityResponse) {
 // GET /api/v1/executions/recent
 func (h *RecentActivityHandler) GetRecentActivityHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	org, _ := orgFromContext(c)
+	org, _ := middleware.RequireOrg(c)
 
 	// Check cache first
 	if cachedData, found := h.cache.Get(); found {
