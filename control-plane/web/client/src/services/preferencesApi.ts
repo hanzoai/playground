@@ -31,8 +31,6 @@ function authHeaders(): Headers {
   } else if (apiKey) {
     headers.set('X-API-Key', apiKey);
   }
-  const org = getCurrentOrgId();
-  if (org) (h as Record<string, string>)["X-Org-ID"] = org;
   return headers;
 }
 
