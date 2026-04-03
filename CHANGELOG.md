@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.391] - 2026-04-03
+
+
+### Fixed
+
+- Fix: replace removed orgFromContext with middleware.RequireOrg
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (3a8331d)
+
 ## [0.1.41-rc.390] - 2026-04-03
 
 
