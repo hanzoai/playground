@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.384] - 2026-04-03
+
+
+### Fixed
+
+- Fix: apply X-Org-ID override in cached token path
+
+The IAM middleware's token cache path (line 153) set ContextKeyOrg
+and returned immediately, skipping the X-Org-ID header override.
+So cached requests always used the JWT's org, ignoring the user's
+selected workspace.
+
+Now applies the same X-Org-ID/org_id override in both cached and
+non-cached paths.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (b49fd28)
+
 ## [0.1.41-rc.383] - 2026-04-03
 
 
