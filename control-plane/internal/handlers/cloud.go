@@ -29,15 +29,15 @@ func CloudProvisionHandler(provisioner *cloud.Provisioner) gin.HandlerFunc {
 			return
 		}
 
-		// Inject IAM user info if available
+		// Inject IAM user info if available.
+		// Org priority: request body > X-Org-ID header (selected workspace) > JWT owner claim
 		if user := middleware.GetIAMUser(c); user != nil {
 			req.Owner = user.Sub
-			if req.Org == "" {
-				req.Org = user.Organization
-			}
 		}
-		if org := middleware.GetOrganization(c); org != "" && req.Org == "" {
-			req.Org = org
+		if req.Org == "" {
+			// GetOrganization returns X-Org-ID header (user's selected workspace)
+			// or falls back to JWT owner claim
+			req.Org = middleware.GetOrganization(c)
 		}
 
 		// Pass the user's bearer token for per-user billing.

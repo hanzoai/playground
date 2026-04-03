@@ -43,8 +43,15 @@ export function IamOrgSelector() {
   }, [orgState.organizations, knownOrgs, orgState.currentOrgId]);
 
   const handleSwitch = (orgName: string) => {
+    const previousOrg = orgState.currentOrgId;
     orgState.switchOrg(orgName);
     setTenantOrg(orgName);
+    // When switching orgs, clear the active space (it belongs to the old org)
+    // and reload to fetch resources for the new org.
+    if (previousOrg && previousOrg !== orgName) {
+      localStorage.removeItem('hanzo_playground_active_space');
+      window.location.reload();
+    }
   };
 
   const currentLabel =
