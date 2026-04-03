@@ -98,6 +98,7 @@ export function CanvasPage() {
   // SSE events from the backend never fire for them.  This effect bridges
   // the gap by checking the gateway's connected-node list periodically.
   const upsertBot = useCanvasStore((s) => s.upsertBot);
+  const removeBot = useCanvasStore((s) => s.removeBot);
   const persistCanvas = useCanvasStore((s) => s.persist);
   useEffect(() => {
     if (!isConnected) return;
@@ -133,6 +134,20 @@ export function CanvasPage() {
         const connectedIds = new Set(filteredGwNodes.map((n) => n.nodeId));
 
         let dirty = false;
+
+        // Remove canvas bots that don't belong to the user's current org.
+        // This auto-cleans stale cross-org bots from localStorage without
+        // requiring manual cache clearing.
+        if (orgNodeIds) {
+          for (const node of nodes) {
+            if (node.type !== NODE_TYPES.bot) continue;
+            const botData = node.data as unknown as Bot;
+            if (botData.source === 'cloud' && !orgNodeIds.has(botData.agentId)) {
+              removeBot(botData.agentId);
+              dirty = true;
+            }
+          }
+        }
 
         // Mark canvas cloud bots that are NOT connected to the gateway as offline.
         // This catches stale bots whose K8s pods have been terminated.
@@ -194,7 +209,7 @@ export function CanvasPage() {
     reconcileNodes();
     const timer = setInterval(reconcileNodes, 10_000);
     return () => clearInterval(timer);
-  }, [isConnected, nodes, setBotStatus, upsertBot, persistCanvas]);
+  }, [isConnected, nodes, setBotStatus, upsertBot, removeBot, persistCanvas]);
 
   // Bootstrap spaces on direct navigation (e.g. /playground)
   useEffect(() => {

@@ -49,7 +49,14 @@ export function IamOrgSelector() {
     // When switching orgs, clear the active space (it belongs to the old org)
     // and reload to fetch resources for the new org.
     if (previousOrg && previousOrg !== orgName) {
+      // Clear org-scoped data from localStorage so the new org starts fresh
       localStorage.removeItem('hanzo_playground_active_space');
+      // Clear canvas bots (they belong to the previous org)
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith('playground'))
+          .forEach((k) => localStorage.removeItem(k));
+      } catch { /* ok */ }
       window.location.reload();
     }
   };
