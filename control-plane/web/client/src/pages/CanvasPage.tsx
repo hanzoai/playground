@@ -106,7 +106,31 @@ export function CanvasPage() {
       try {
         const resp = await nodeList(true);
         const gwNodes = (resp.nodes ?? []).filter((n) => n.connected);
-        const connectedIds = new Set(gwNodes.map((n) => n.nodeId));
+
+        // Fetch org-filtered node list from backend to determine which
+        // gateway nodes belong to the user's org. Gateway returns ALL
+        // connected nodes regardless of org.
+        let orgNodeIds: Set<string> | null = null;
+        try {
+          const { makeAuthHeaders } = await import('@/services/api');
+          const summaryResp = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL || '/v1'}/nodes/summary`,
+            { headers: makeAuthHeaders() },
+          );
+          if (summaryResp.ok) {
+            const summary = await summaryResp.json();
+            const backendNodes = summary.nodes ?? [];
+            orgNodeIds = new Set(backendNodes.map((n: { id: string }) => n.id));
+          }
+        } catch {
+          // Backend unavailable — skip org filtering
+        }
+
+        // Filter gateway nodes to only include those in the user's org
+        const filteredGwNodes = orgNodeIds
+          ? gwNodes.filter((n) => orgNodeIds!.has(n.nodeId))
+          : gwNodes;
+        const connectedIds = new Set(filteredGwNodes.map((n) => n.nodeId));
 
         let dirty = false;
 
@@ -126,7 +150,7 @@ export function CanvasPage() {
           }
         }
 
-        for (const gw of gwNodes) {
+        for (const gw of filteredGwNodes) {
           // Check if this gateway node is already on the canvas
           const canvasBot = nodes.find(
             (n) => n.type === NODE_TYPES.bot && (n.data as unknown as Bot).agentId === gw.nodeId
