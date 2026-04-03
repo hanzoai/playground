@@ -1,6 +1,6 @@
 // Billing API — calls Commerce REST API for user balance and billing operations.
 
-import { getGlobalIamToken, getGlobalApiKey } from './api';
+import { getGlobalIamToken, getGlobalApiKey , getCurrentOrgId } from './api';
 
 // Route billing calls through our backend proxy to avoid CORS issues and centralize auth.
 // VITE_API_BASE_URL is already '/v1', so just append '/billing'.

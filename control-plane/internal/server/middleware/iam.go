@@ -240,10 +240,19 @@ func IAMAuth(config IAMConfig) gin.HandlerFunc {
 		c.Set(ContextKeyUser, &user)
 		c.Set(ContextKeyOrg, user.Organization)
 
+		// Allow frontend to override org via X-Org-ID header.
+		// This enables the org switcher — user selects their personal org
+		// in the UI, and API calls use that org instead of the JWT's owner.
+		// The JWT owner is the signup org (for auth), not necessarily the
+		// active workspace.
+		if headerOrg := c.GetHeader("X-Org-ID"); headerOrg != "" && headerOrg != user.Organization {
+			c.Set(ContextKeyOrg, headerOrg)
+		}
+
 		logger.Logger.Debug().
 			Str("sub", user.Sub).
 			Str("email", user.Email).
-			Str("org", user.Organization).
+			Str("org", GetOrganization(c)).
 			Msg("IAM: token validated")
 
 		c.Next()

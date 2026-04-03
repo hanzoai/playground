@@ -1,5 +1,5 @@
 import type { ConfigurationSchema, BotConfiguration, BotPackage, BotLifecycleInfo } from '../types/playground';
-import { getGlobalApiKey } from './api';
+import { getGlobalApiKey , getCurrentOrgId } from './api';
 import { nodeInvoke } from './gatewayApi';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/v1';

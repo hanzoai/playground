@@ -8,7 +8,7 @@
  * all calls return realistic mock data so the UI is fully functional.
  */
 
-import { getGlobalIamToken, getGlobalApiKey } from './api';
+import { getGlobalIamToken, getGlobalApiKey , getCurrentOrgId } from './api';
 import type {
   SharingConfig,
   SharingConfigDTO,

@@ -1,11 +1,11 @@
 // Space API client — typed REST calls to /api/v1/spaces/*
 
-import { getGlobalIamToken, getGlobalApiKey } from './api';
+import { getGlobalIamToken, getGlobalApiKey, getCurrentOrgId } from './api';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '/v1';
 
 function headers(): HeadersInit {
-  const h: HeadersInit = { 'Content-Type': 'application/json' };
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
   const iamToken = getGlobalIamToken();
   if (iamToken) {
     h['Authorization'] = `Bearer ${iamToken}`;
@@ -13,6 +13,8 @@ function headers(): HeadersInit {
     const apiKey = getGlobalApiKey() || localStorage.getItem('playground-api-key');
     if (apiKey) h['X-API-Key'] = apiKey;
   }
+  const org = getCurrentOrgId();
+  if (org) h['X-Org-ID'] = org;
   return h;
 }
 

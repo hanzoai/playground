@@ -121,9 +121,10 @@ export interface CloudNode {
 
 /** Provision a full cloud hanzo node on DOKS. */
 export async function cloudProvision(params: CloudProvisionParams): Promise<CloudProvisionResult> {
+  const { makeAuthHeaders } = await import('./api');
   const resp = await fetch(`${API_BASE_URL}/cloud/nodes/provision`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: makeAuthHeaders(),
     body: JSON.stringify(params),
   });
   if (!resp.ok) throw new Error(`cloud provision failed: ${resp.status}`);
@@ -132,7 +133,11 @@ export async function cloudProvision(params: CloudProvisionParams): Promise<Clou
 
 /** Deprovision a cloud hanzo node. */
 export async function cloudDeprovision(nodeId: string): Promise<void> {
-  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}`, { method: 'DELETE' });
+  const { makeAuthHeaders } = await import('./api');
+  const resp = await fetch(`${API_BASE_URL}/cloud/nodes/${nodeId}`, {
+    method: 'DELETE',
+    headers: makeAuthHeaders(),
+  });
   if (!resp.ok) throw new Error(`cloud deprovision failed: ${resp.status}`);
 }
 

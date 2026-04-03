@@ -79,6 +79,32 @@ export function getGlobalApiKey(): string | null {
   return globalApiKey;
 }
 
+/**
+ * Build standard auth + org headers for API calls.
+ * Includes: Authorization (IAM token or API key) + X-Org-ID (selected org).
+ * Use this in service files instead of building headers manually.
+ */
+export function makeAuthHeaders(extra?: Record<string, string>): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', ...extra };
+  if (globalIamToken) {
+    h['Authorization'] = `Bearer ${globalIamToken}`;
+  } else if (globalApiKey) {
+    h['X-API-Key'] = globalApiKey;
+  }
+  const org = getCurrentOrgId();
+  if (org) h['X-Org-ID'] = org;
+  return h;
+}
+
+/** Returns the current org ID from the org switcher (for X-Org-ID header). */
+export function getCurrentOrgId(): string | null {
+  try {
+    return localStorage.getItem('hanzo_iam_current_org');
+  } catch {
+    return null;
+  }
+}
+
 /** Returns the current auth credential for SSE/EventSource query params */
 export function getAuthQueryParam(): string {
   if (globalIamToken) return `access_token=${encodeURIComponent(globalIamToken)}`;
@@ -97,6 +123,17 @@ async function fetchWrapper<T>(url: string, options?: RequestInit & { timeout?: 
     headers.set('Authorization', `Bearer ${globalIamToken}`);
   } else if (globalApiKey) {
     headers.set('X-API-Key', globalApiKey);
+  }
+
+  // Send the selected org to the backend so API calls use the user's
+  // active workspace (personal org), not the JWT's signup org.
+  try {
+    const currentOrg = localStorage.getItem('hanzo_iam_current_org');
+    if (currentOrg) {
+      headers.set('X-Org-ID', currentOrg);
+    }
+  } catch {
+    // localStorage not available
   }
 
   // Create AbortController for timeout

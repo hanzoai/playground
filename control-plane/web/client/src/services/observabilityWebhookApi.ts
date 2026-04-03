@@ -1,4 +1,4 @@
-import { getGlobalApiKey } from './api';
+import { getGlobalApiKey , getCurrentOrgId } from './api';
 
 const API_BASE = '/api/v1';
 

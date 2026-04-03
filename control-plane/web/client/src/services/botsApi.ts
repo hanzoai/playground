@@ -8,7 +8,7 @@ import type {
   AsyncExecuteResponse,
   ExecutionStatusResponse
 } from '../types/execution';
-import { getGlobalApiKey } from './api';
+import { getGlobalApiKey , getCurrentOrgId } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 const withAuthHeaders = (headers?: HeadersInit) => {

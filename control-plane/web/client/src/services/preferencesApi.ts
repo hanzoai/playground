@@ -7,7 +7,7 @@
  */
 
 import type { SoundName } from './audioService';
-import { getGlobalApiKey, getGlobalIamToken } from './api';
+import { getGlobalApiKey, getGlobalIamToken , getCurrentOrgId } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1';
 
@@ -31,6 +31,8 @@ function authHeaders(): Headers {
   } else if (apiKey) {
     headers.set('X-API-Key', apiKey);
   }
+  const org = getCurrentOrgId();
+  if (org) (h as Record<string, string>)["X-Org-ID"] = org;
   return headers;
 }
 
