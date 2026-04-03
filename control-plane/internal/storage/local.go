@@ -4463,10 +4463,11 @@ func (ls *LocalStorage) ListNodes(ctx context.Context, filters types.BotFilters)
 	var conditions []string
 	var args []interface{}
 
-	// Add org ID filter
+	// Add org ID filter. Nodes store org in team_id field (from heartbeat registration).
+	// Check both org_id and team_id for compatibility.
 	if filters.OrgID != nil {
-		conditions = append(conditions, "org_id = ?")
-		args = append(args, *filters.OrgID)
+		conditions = append(conditions, "(org_id = ? OR team_id = ?)")
+		args = append(args, *filters.OrgID, *filters.OrgID)
 	}
 
 	// Add health status filter
