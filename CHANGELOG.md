@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.387] - 2026-04-03
+
+
+### Fixed
+
+- Fix: defer cross-org bot removal to avoid React #185 crash
+
+removeBot() called synchronously during canvas reconciliation mutated
+the nodes array while React Flow was rendering, causing 'update on
+unmounted component' error (React #185).
+
+Fix: collect bot IDs to remove, then execute removals in a deferred
+setTimeout(0) callback outside the render cycle.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (1e502fb)
+
 ## [0.1.41-rc.386] - 2026-04-03
 
 
