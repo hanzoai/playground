@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.377] - 2026-04-03
+
+
+### Fixed
+
+- Fix: use selected org (X-Org-ID) for bot provisioning, not JWT owner
+
+Two fixes:
+
+1. cloud.go: Read org from middleware.GetOrganization() (which respects
+   X-Org-ID header) instead of user.Organization (JWT owner claim).
+   Previously bots always got tagged with signup org even when user
+   selected their personal org.
+
+2. IamOrgSelector: Clear active space and reload when switching orgs.
+   The old space belongs to the previous org and causes 403 errors.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (42c1f6b)
+
 ## [0.1.41-rc.376] - 2026-04-03
 
 
