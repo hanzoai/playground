@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.386] - 2026-04-03
+
+
+### Fixed
+
+- Fix: base64url JWT decoding in billing page + reduce timeout
+
+BillingPage and billingApi used atob() on JWT payloads without
+converting base64url to standard base64. JWTs with '-' or '_' in
+the payload caused atob() to throw, getUserId() returned null,
+and the API call silently failed — showing empty balance.
+
+Fixes:
+- billingApi.ts: Convert base64url to base64 before atob()
+- BillingPage.tsx: Same fix for getUserId()
+- billingApi.ts: Reduce timeout from 10s to 5s
+
+Z has $110.00 balance confirmed via API — this is purely a frontend
+JWT decoding bug (same as @hanzo/iam SDK v0.5.3 fix).
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (08790c2)
+
 ## [0.1.41-rc.385] - 2026-04-03
 
 
