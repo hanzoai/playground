@@ -93,9 +93,14 @@ function mergeGatewayNodes(backendNodes: NodeSummary[], gatewayNodes: GatewayNod
     // Skip backend-only nodes not connected to gateway — they are stale
   }
 
-  // Add gateway-only nodes (not tracked by backend)
+  // Add gateway-only nodes (not tracked by backend).
+  // Skip nodes that aren't in the backend response — they may belong to a
+  // different org. The backend /nodes/summary is org-filtered, so only
+  // nodes in the user's org appear there.
   for (const gw of gatewayNodes) {
-    if (!seen.has(gw.nodeId) && gw.connected) {
+    if (!seen.has(gw.nodeId) && gw.connected && backendNodes.length === 0) {
+      // Only show gateway-only nodes when backend returned nothing
+      // (fallback for when backend API is unavailable)
       merged.push({
         id: gw.nodeId,
         base_url: '',

@@ -76,8 +76,12 @@ type NodeSummaryForUI struct {
 
 // GetNodesSummary retrieves a list of node summaries with robust status checking.
 // This method ensures consistency by using the same reconciliation logic as the detailed status endpoint.
-func (s *UIService) GetNodesSummary(ctx context.Context) ([]NodeSummaryForUI, int, error) {
-	nodes, err := s.storage.ListNodes(ctx, types.BotFilters{})
+func (s *UIService) GetNodesSummary(ctx context.Context, org ...string) ([]NodeSummaryForUI, int, error) {
+	filters := types.BotFilters{}
+	if len(org) > 0 && org[0] != "" {
+		filters.OrgID = &org[0]
+	}
+	nodes, err := s.storage.ListNodes(ctx, filters)
 	if err != nil {
 		logger.Logger.Error().Err(err).Msg("Error listing agents")
 		return nil, 0, err

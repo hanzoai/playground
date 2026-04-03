@@ -30,9 +30,11 @@ func NewNodesHandler(uiService *services.UIService) *NodesHandler {
 }
 
 // GetNodesSummaryHandler handles requests for a summary list of nodes.
+// Filters by the caller's org so users only see their own nodes.
 func (h *NodesHandler) GetNodesSummaryHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	summaries, count, err := h.service.GetNodesSummary(ctx)
+	org := middleware.GetOrganization(c)
+	summaries, count, err := h.service.GetNodesSummary(ctx, org)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get nodes summary"})
 		return
