@@ -59,6 +59,11 @@ func NewUIService(storageProvider storage.StorageProvider, nodeClient interfaces
 	return service
 }
 
+// GetStorage returns the underlying storage provider for direct queries.
+func (s *UIService) GetStorage() storage.StorageProvider {
+	return s.storage
+}
+
 // NodeSummaryForUI is a subset of types.Node for summary display.
 type NodeSummaryForUI struct {
 	ID              string                     `json:"id"`

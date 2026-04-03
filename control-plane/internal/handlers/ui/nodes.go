@@ -10,14 +10,10 @@ import (
 	"github.com/hanzoai/playground/control-plane/internal/logger"
 	"github.com/hanzoai/playground/control-plane/internal/server/middleware"
 	"github.com/hanzoai/playground/control-plane/internal/services"
+	"github.com/hanzoai/playground/control-plane/pkg/types"
 
 	"github.com/gin-gonic/gin"
 )
-
-// orgFromContext extracts org from gin context for org-scoped queries.
-func orgFromContext(c *gin.Context) (string, bool) {
-	return middleware.RequireOrg(c)
-}
 
 // NodesHandler provides handlers for UI-related node operations.
 type NodesHandler struct {
@@ -63,6 +59,8 @@ func (h *NodesHandler) GetNodeDetailsHandler(c *gin.Context) {
 }
 
 // StreamNodeEventsHandler handles SSE connections for real-time node events.
+// Events are filtered by the caller's org so users only receive updates for
+// nodes in their workspace.
 func (h *NodesHandler) StreamNodeEventsHandler(c *gin.Context) {
 	// Set headers for SSE
 	c.Header("Content-Type", "text/event-stream")
@@ -71,6 +69,9 @@ func (h *NodesHandler) StreamNodeEventsHandler(c *gin.Context) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Headers", "Cache-Control")
 	c.Header("X-Accel-Buffering", "no") // Disable buffering for Nginx
+
+	// Capture org context for filtering events
+	orgFilter := middleware.GetOrganization(c)
 
 	// Generate unique subscriber ID
 	subscriberID := fmt.Sprintf("node_sse_%d_%s", time.Now().UnixNano(), c.ClientIP())
@@ -101,10 +102,38 @@ func (h *NodesHandler) StreamNodeEventsHandler(c *gin.Context) {
 
 	logger.Logger.Debug().Msgf("🔄 Node SSE client connected: %s", subscriberID)
 
+	// Build set of node IDs in the user's org for event filtering.
+	// Refreshed every 60s to pick up new nodes.
+	orgNodeIDs := make(map[string]bool)
+	refreshOrgNodes := func() {
+		if orgFilter == "" {
+			return
+		}
+		filters := types.BotFilters{OrgID: &orgFilter}
+		nodes, err := h.service.GetStorage().ListNodes(c.Request.Context(), filters)
+		if err == nil {
+			newSet := make(map[string]bool, len(nodes))
+			for _, n := range nodes {
+				newSet[n.ID] = true
+			}
+			orgNodeIDs = newSet
+		}
+	}
+	refreshOrgNodes()
+	orgRefreshTicker := time.NewTicker(60 * time.Second)
+	defer orgRefreshTicker.Stop()
+
 	// Keep the connection open
 	for {
 		select {
+		case <-orgRefreshTicker.C:
+			refreshOrgNodes()
 		case event := <-eventChan:
+			// Filter events by org — skip nodes not in user's org
+			if orgFilter != "" && event.NodeID != "" && !orgNodeIDs[event.NodeID] {
+				continue
+			}
+
 			// Marshal event to JSON
 			eventData, err := json.Marshal(event)
 			if err != nil {
