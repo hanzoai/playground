@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.372] - 2026-04-03
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.5 — merge JWT orgs with API orgs
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (68c46e0)
+
 ## [0.1.41-rc.371] - 2026-04-02
 
 
