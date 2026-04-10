@@ -286,8 +286,11 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 	// Initialize execution cleanup service
 	cleanupService := handlers.NewExecutionCleanupService(storageProvider, cfg.Agents.ExecutionCleanup)
 
-	adminPort := cfg.Agents.Port + 100
-	envPort := os.Getenv("PLAYGROUND_ADMIN_GRPC_PORT")
+	adminPort := 9300 // Default ZAP port for playground inter-service transport
+	envPort := os.Getenv("PLAYGROUND_ZAP_PORT")
+	if envPort == "" {
+		envPort = os.Getenv("PLAYGROUND_ADMIN_GRPC_PORT") // Legacy fallback
+	}
 	if envPort == "" {
 		envPort = os.Getenv("AGENTS_ADMIN_GRPC_PORT") // Legacy fallback
 	}
@@ -295,7 +298,7 @@ func NewPlaygroundServer(cfg *config.Config) (*PlaygroundServer, error) {
 		if parsedPort, parseErr := strconv.Atoi(envPort); parseErr == nil {
 			adminPort = parsedPort
 		} else {
-			logger.Logger.Warn().Err(parseErr).Str("value", envPort).Msg("invalid PLAYGROUND_ADMIN_GRPC_PORT, using default offset")
+			logger.Logger.Warn().Err(parseErr).Str("value", envPort).Msg("invalid PLAYGROUND_ZAP_PORT, using default")
 		}
 	}
 
@@ -859,6 +862,21 @@ func (s *PlaygroundServer) setupRoutes() {
 	}
 
 	s.Router.Use(cors.New(corsConfig))
+
+	// Rewrite /v1/playground/* -> /v1/* so the public-facing URL pattern
+	// /<version>/<service>/<path> maps to internal routes without duplicating
+	// every route registration.
+	s.Router.Use(func(c *gin.Context) {
+		const prefix = "/v1/playground/"
+		if strings.HasPrefix(c.Request.URL.Path, prefix) {
+			c.Request.URL.Path = "/v1/" + strings.TrimPrefix(c.Request.URL.Path, prefix)
+			c.Request.RequestURI = c.Request.URL.RequestURI()
+		} else if c.Request.URL.Path == "/v1/playground" {
+			c.Request.URL.Path = "/v1/"
+			c.Request.RequestURI = c.Request.URL.RequestURI()
+		}
+		c.Next()
+	})
 
 	// Per-IP rate limiting: 100 req/s with burst of 200
 	rateLimiter := middleware.NewRateLimiter(100, 200)
