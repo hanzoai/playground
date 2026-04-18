@@ -6,6 +6,673 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41-rc.392] - 2026-04-18
+
+
+### Added
+
+- Feat: /v1/playground/* canonical path rewrite (5895fcb)
+
+
+## [0.1.41-rc.391] - 2026-04-03
+
+
+### Fixed
+
+- Fix: replace removed orgFromContext with middleware.RequireOrg
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (3a8331d)
+
+
+## [0.1.41-rc.390] - 2026-04-03
+
+
+### Added
+
+- Feat: org-scoped SSE node events + UIService.GetStorage()
+
+StreamNodeEventsHandler now filters SSE events by the caller's org.
+Maintains an in-memory set of org node IDs (refreshed every 60s)
+and skips events for nodes not in the user's workspace.
+
+Also:
+- Added UIService.GetStorage() for direct storage access
+- Removed unused orgFromContext function
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (031129d)
+
+
+## [0.1.41-rc.389] - 2026-04-03
+
+
+### Fixed
+
+- Fix: guard xterm.open() against unmounted container ref
+
+Terminal.open() throws 'requires parent element' when the container
+ref is null (component unmounted during async initialization).
+Added null check before calling open().
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ad083b7)
+
+
+## [0.1.41-rc.388] - 2026-04-03
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.6.1 — admin users see signup org
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (c53583d)
+
+
+## [0.1.41-rc.387] - 2026-04-03
+
+
+### Fixed
+
+- Fix: defer cross-org bot removal to avoid React #185 crash
+
+removeBot() called synchronously during canvas reconciliation mutated
+the nodes array while React Flow was rendering, causing 'update on
+unmounted component' error (React #185).
+
+Fix: collect bot IDs to remove, then execute removals in a deferred
+setTimeout(0) callback outside the render cycle.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (1e502fb)
+
+
+## [0.1.41-rc.386] - 2026-04-03
+
+
+### Fixed
+
+- Fix: base64url JWT decoding in billing page + reduce timeout
+
+BillingPage and billingApi used atob() on JWT payloads without
+converting base64url to standard base64. JWTs with '-' or '_' in
+the payload caused atob() to throw, getUserId() returned null,
+and the API call silently failed — showing empty balance.
+
+Fixes:
+- billingApi.ts: Convert base64url to base64 before atob()
+- BillingPage.tsx: Same fix for getUserId()
+- billingApi.ts: Reduce timeout from 10s to 5s
+
+Z has $110.00 balance confirmed via API — this is purely a frontend
+JWT decoding bug (same as @hanzo/iam SDK v0.5.3 fix).
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (08790c2)
+
+
+## [0.1.41-rc.385] - 2026-04-03
+
+
+### Fixed
+
+- Fix: auto-remove cross-org bots from canvas + clear on org switch
+
+Two fixes for canvas showing bots from other orgs:
+
+1. CanvasPage reconciliation: when org-filtered backend returns node
+   list, remove any canvas bots that aren't in that list. This
+   auto-cleans stale cross-org bots without manual localStorage clearing.
+
+2. IamOrgSelector: clear all canvas localStorage data (playground:*)
+   when switching orgs, so the new org starts with a clean canvas.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (09d0029)
+
+
+## [0.1.41-rc.384] - 2026-04-03
+
+
+### Fixed
+
+- Fix: apply X-Org-ID override in cached token path
+
+The IAM middleware's token cache path (line 153) set ContextKeyOrg
+and returned immediately, skipping the X-Org-ID header override.
+So cached requests always used the JWT's org, ignoring the user's
+selected workspace.
+
+Now applies the same X-Org-ID/org_id override in both cached and
+non-cached paths.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (b49fd28)
+
+
+## [0.1.41-rc.383] - 2026-04-03
+
+
+### Fixed
+
+- Fix: filter canvas gateway nodes by org using backend node list
+
+The Playground canvas showed all gateway-connected nodes regardless of
+org. Now fetches the org-filtered /nodes/summary from the backend and
+uses it to filter gateway nodes — only nodes in the user's org appear
+on the canvas.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (4d88a92)
+
+
+## [0.1.41-rc.382] - 2026-04-03
+
+
+### Fixed
+
+- Fix: filter nodes by team_id (where org data lives), not just org_id
+
+Nodes store organization in team_id field (set during heartbeat
+registration), but org_id is empty. The ListNodes query filtered
+by org_id which was always empty, so no org filtering happened.
+
+Now checks both: (org_id = ? OR team_id = ?)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ce1ba30)
+
+
+## [0.1.41-rc.381] - 2026-04-03
+
+
+### Fixed
+
+- Fix: extract JWT from api_key/access_token query params for SSE
+
+SSE/EventSource passes the JWT as api_key query param, not as
+Authorization header. The IAM middleware only checked the header,
+so SSE requests were never IAM-authenticated — they fell through
+to API key auth with no org context.
+
+Now checks: Authorization header > access_token query > api_key query.
+This ensures SSE requests get proper org context from the JWT,
+which enables org filtering on nodes/events and other SSE streams.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (cf21704)
+
+
+## [0.1.41-rc.380] - 2026-04-03
+
+
+### Chores
+
+- Chore: force frontend rebuild for org_id query param fix
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (b5c1973)
+
+
+## [0.1.41-rc.379] - 2026-04-03
+
+
+### Fixed
+
+- Fix: filter nodes/summary by org and skip cross-org gateway nodes
+
+The My Bots page showed all nodes from all orgs because:
+1. GetNodesSummaryHandler didn't pass org to the service
+2. Gateway node.list RPC returns all connected nodes, and
+   unmatched gateway nodes were added to the merge list
+
+Fixes:
+- nodes.go: Pass org from middleware to GetNodesSummary
+- ui_service.go: Accept optional org param, filter ListNodes by OrgID
+- NodesPage.tsx: Only add gateway-only nodes when backend returns
+  empty (fallback mode), preventing cross-org leakage
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (4f988b6)
+
+
+## [0.1.41-rc.378] - 2026-04-03
+
+
+### Fixed
+
+- Fix: support org_id query param for SSE/EventSource org context
+
+SSE/EventSource can't send custom headers (X-Org-ID). Added:
+- Backend: read org_id query param as fallback for X-Org-ID header
+- Frontend: getAuthQueryParam() includes org_id for SSE URLs
+
+This ensures node events, execution events, and other SSE streams
+respect the user's selected org.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (9487f78)
+
+
+## [0.1.41-rc.377] - 2026-04-03
+
+
+### Fixed
+
+- Fix: use selected org (X-Org-ID) for bot provisioning, not JWT owner
+
+Two fixes:
+
+1. cloud.go: Read org from middleware.GetOrganization() (which respects
+   X-Org-ID header) instead of user.Organization (JWT owner claim).
+   Previously bots always got tagged with signup org even when user
+   selected their personal org.
+
+2. IamOrgSelector: Clear active space and reload when switching orgs.
+   The old space belongs to the previous org and causes 403 errors.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (42c1f6b)
+
+
+## [0.1.41-rc.376] - 2026-04-03
+
+
+### Fixed
+
+- Fix: remove leftover sed code from preferencesApi.ts
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a86bcf9)
+
+
+## [0.1.41-rc.375] - 2026-04-03
+
+
+### Fixed
+
+- Fix: remove unused getCurrentOrgId imports from service files
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (40ddeb9)
+
+
+## [0.1.41-rc.374] - 2026-04-03
+
+
+### Added
+
+- Feat: pass selected org via X-Org-ID header for per-org bot management
+
+The JWT's owner claim is the signup org (e.g., "hanzo"), not the user's
+active workspace (personal org). The frontend org switcher selects the
+workspace but API calls used the JWT's org — so bots always got tagged
+with the signup org instead of the personal org.
+
+Backend (iam.go):
+- Read X-Org-ID header as override for org context after JWT parsing
+- User's selected org takes precedence over JWT owner claim
+
+Frontend:
+- api.ts: Add makeAuthHeaders() with auth + X-Org-ID from localStorage
+- api.ts: fetchWrapper adds X-Org-ID to all API calls
+- spaceApi.ts: Add X-Org-ID to space API headers
+- gatewayApi.ts: cloudProvision/Deprovision use makeAuthHeaders()
+
+Result: When user selects "hanzowoo" in org dropdown and creates a bot,
+it gets tagged with org_id=hanzowoo (not hanzo).
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (edd19ea)
+
+
+## [0.1.41-rc.373] - 2026-04-03
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.6.0 — personal org as workspace
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (81cee1f)
+
+
+## [0.1.41-rc.372] - 2026-04-03
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.5 — merge JWT orgs with API orgs
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (68c46e0)
+
+
+## [0.1.41-rc.371] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.4 — fix hook JWT parsing for org list
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (6191b26)
+
+
+## [0.1.41-rc.370] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.3 — fix base64url JWT decoding
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (345eb50)
+
+
+## [0.1.41-rc.369] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.2 — optimistic personal org in dropdown
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (13ea174)
+
+
+## [0.1.41-rc.368] - 2026-04-02
+
+
+### Fixed
+
+- Fix: include package.json with @hanzo/iam ^0.5.1 specifier
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (1872bfe)
+
+
+## [0.1.41-rc.367] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.1 — show only user's own orgs
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (b74029d)
+
+
+## [0.1.41-rc.366] - 2026-04-02
+
+
+### Chores
+
+- Chore: update @hanzo/iam to 0.5.0 for multi-tenant fixes
+
+- getOrganizations falls back to public endpoint (fixes org list for non-admins)
+- UserOrgMenu shared component available
+- Cross-org user lookup support
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (7f875b0)
+
+
+## [0.1.41-rc.365] - 2026-04-02
+
+
+### Other
+
+- Revert "refactor: use shared UserOrgMenu from @hanzo/iam for org switcher"
+
+This reverts commit 67f67a86a711fd8755824b596cfcc7d5229d57bd. (a23e8c9)
+
+
+## [0.1.41-rc.364] - 2026-04-02
+
+
+### Changed
+
+- Refactor: use shared UserOrgMenu from @hanzo/iam for org switcher
+
+Replace the playground-specific IamOrgSelector with the shared
+UserOrgMenu component from @hanzo/iam/react. The shared component
+handles org switching, creation, user menu, and logout.
+
+The playground wrapper syncs org changes to the local tenantStore
+and routes org creation through the backend /v1/orgs API.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (67f67a8)
+
+
+## [0.1.41-rc.363] - 2026-04-02
+
+
+### Added
+
+- Feat: add org filtering to execution stats and enhanced list handlers
+
+GetExecutionStatsHandler and GetEnhancedExecutionsHandler were missing
+org filtering. ListExecutionsHandler and GetSummaryHandler already had
+it. Now all 4 execution query handlers filter by OrgID when the caller
+has org context from IAM auth.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (42443e6)
+
+
+## [0.1.41-rc.362] - 2026-04-02
+
+
+### Fixed
+
+- Fix: remove unused middleware import from vector_memory.go
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (67c1a93)
+
+
+## [0.1.41-rc.361] - 2026-04-02
+
+
+### Added
+
+- Feat: complete org isolation enforcement across all handlers
+
+Phase 3 remaining — enforce org isolation in all handlers that had
+placeholder org extraction:
+
+Data isolation (actual enforcement):
+- memory.go: resolveScope() now prefixes scopeID with org, isolating
+  all memory data between tenants
+- vector_memory.go: uses same resolveScope(), automatically org-scoped
+- budgets.go: ListBudgets filters to only show budgets for bots in the
+  caller's org (queries node OrgID)
+- cloud.go: CloudListNodesHandler always scopes to caller's org from IAM,
+  ignores query param override when IAM auth is active
+- org.go: GetOrg now checks caller belongs to the requested org
+
+Instance-wide handlers (no org scoping needed, placeholders cleaned up):
+- config.go, did.go, env.go, mcp.go, lifecycle.go,
+  observability_webhook.go, workflow_cleanup.go — removed unused
+  middleware imports and replaced placeholders with documentation
+
+Deferred (needs event bus changes):
+- executions.go: SSE event stream needs org-scoped subscriptions
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a23358c)
+
+
+## [0.1.41-rc.360] - 2026-04-02
+
+
+### Added
+
+- Feat: add RequireOrgStrict() and strengthen execute org check
+
+Phase 3 of multi-tenancy cleanup (partial):
+
+1. middleware/iam.go: Add RequireOrgStrict() that returns 403 when no org
+   context is available (unlike RequireOrg which falls back to a default).
+   Use for endpoints that must be org-scoped.
+
+2. execute.go: Strengthen org isolation check:
+   - Previously only checked if BOTH org and agent.OrgID were non-empty
+   - Now always enforces when caller has org context
+   - Auto-tags untagged agents with caller's org on first access
+   - Explicit error message for cross-org access attempts
+
+Remaining Phase 3 work (follow-up):
+- memory, vector_memory, budgets, config, did, lifecycle handlers
+  need org-scoped storage queries (requires storage interface changes)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (bbb5a7b)
+
+
+## [0.1.41-rc.359] - 2026-04-02
+
+
+### Added
+
+- Feat: replace hardcoded "hanzo" org with HANZO_DEFAULT_ORG env var
+
+Phase 2 of multi-tenancy cleanup. Previously "hanzo" was hardcoded as
+the default org in 6+ places. Now reads from HANZO_DEFAULT_ORG env var
+(also HANZO_AGENTS_DEFAULT_ORG, PLAYGROUND_DEFAULT_ORG) with "hanzo" as
+the ultimate fallback for backward compatibility.
+
+Changes:
+- config/cloud.go: Add DefaultOrg field to IAMConfig with GetDefaultOrg() helper
+- cloud/provisioner.go: Replace 4 hardcoded "hanzo" with defaultOrg() helper
+- cloud/visor_client.go: Replace 1 hardcoded "hanzo" with defaultOrg()
+- middleware/iam.go: RequireOrg() reads HANZO_DEFAULT_ORG instead of "local"
+- handlers/spaces.go: Replace "local" fallbacks with RequireOrg(), use
+  IAM user presence check instead of "local" sentinel for org enforcement
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (fda1ec2)
+
+
+
+### Fixed
+
+- Fix: bust Docker cache for frontend build
+
+The GHA Docker BuildKit cache was reusing a stale frontend build layer
+even though CreateOrgDialog.tsx changed. Added CACHE_BUST ARG before
+pnpm build to force re-execution of the build step.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (d2caa8f)
+
+
+## [0.1.41-rc.358] - 2026-04-02
+
+
+### Other
+
+- Debug: add logging to org creation for IAM troubleshooting
+
+Logs the IAM target URL, user identity, auth method used, and the
+full IAM response to diagnose why org creation appears to succeed
+(HTTP 200) but the org doesn't persist in IAM.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (f22b89b)
+
+
+## [0.1.41-rc.357] - 2026-04-02
+
+
+### Fixed
+
+- Fix: forward user Bearer token for IAM org operations
+
+Casdoor checks user.isAdmin from the JWT — client credentials and Basic
+Auth don't confer admin rights. The previous setAdminAuth used Basic Auth
+first, which always got "Unauthorized operation" even when the actual
+user (z@hanzo.ai) IS a global admin.
+
+Reordered: user's own Bearer token first (since admin users already have
+the right permissions), then fall back to IAM_ADMIN_TOKEN for service
+calls, plus app client credentials as query params for context.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (5294a9b)
+
+
+## [0.1.41-rc.356] - 2026-04-02
+
+
+### Fixed
+
+- Fix: use IAM admin credentials for org write operations
+
+Casdoor requires is_admin=true on the calling user for org management.
+Regular user tokens and app client credentials both get "Unauthorized
+operation". Updated setAdminAuth to support:
+
+1. IAM_ADMIN_TOKEN env var (pre-provisioned admin bearer token)
+2. IAM_ADMIN_CLIENT_ID/SECRET (built-in admin app Basic Auth)
+3. App client credentials as query params (fallback)
+4. User's own Bearer token (works if user is admin)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (bf4d585)
+
+
+## [0.1.41-rc.355] - 2026-04-02
+
+
+### Fixed
+
+- Fix: read IAM endpoint from HANZO_AGENTS_IAM_* env vars
+
+The K8s deployment sets HANZO_AGENTS_IAM_ENDPOINT but the org/app
+handlers only checked IAM_ENDPOINT, falling back to iam.hanzo.svc:8000
+which doesn't exist (IAM service is on port 80). This caused 502 on
+org creation from app.hanzo.bot.
+
+Now checks HANZO_AGENTS_IAM_*, PLAYGROUND_IAM_*, and IAM_* prefixes.
+Default changed from :8000 to :80 to match K8s service port.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (ba5c65a)
+
+
+## [0.1.41-rc.354] - 2026-04-02
+
+
+### Fixed
+
+- Fix: remove unused config destructure from CreateOrgDialog
+
+TypeScript strict mode error: 'config' was destructured from useIam()
+but no longer used after switching from IamClient to fetch API.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (6630076)
+
+
+## [0.1.41-rc.353] - 2026-04-02
+
+
+### Fixed
+
+- Fix: use service credentials for IAM org creation
+
+The CreateOrgDialog was calling IAM directly with the user's JWT token,
+but Casdoor requires admin privileges for /api/add-organization. Regular
+users got a silent failure — the org appeared in localStorage but was
+never persisted to IAM.
+
+Changes:
+- Frontend: route org creation through /v1/orgs backend API instead of
+  calling IAM directly from the browser
+- Backend: use IAM client credentials (clientId/clientSecret) for write
+  operations (create, update, delete org, add user) so they succeed even
+  when the user is not an IAM admin
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (a360a83)
+
+
+## [0.1.41-rc.352] - 2026-04-02
+
+
+### Added
+
+- Feat: add org/app CRUD API and idempotent wallet deduction
+
+- Add org management proxy to IAM (list, get, create, update, delete, members)
+- Add app management proxy to IAM scoped to orgs (list, get, create, update, delete)
+- Make wallet deduction idempotent by checking execution ID before deducting
+- Register /v1/orgs/* and /v1/orgs/:orgId/apps/* routes
+- Add URL parameter escaping for security
+- Add auth and org access checks on all endpoints
+- Add tests for org handler (8), app handler (7), and wallet idempotency (5)
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (3af4a2e)
+
+
+## [0.1.41-rc.351] - 2026-04-02
+
+
+### Fixed
+
+- Fix: usage deduction should only deduct USD balance, not AI coin
+
+DeductUsage was converting USD cents to AI coin amount and requiring
+sufficient AI coin balance, but bot wallets only have USD balance
+funded. Pass 0 for AI coin to skip that check.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (6cb5358)
+
 ## [0.1.41-rc.391] - 2026-04-03
 
 
