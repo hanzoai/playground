@@ -1,136 +1,35 @@
-name: Deploy
-
+name: Docker
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, dev, test]
+    tags: ['v*']
     paths:
       - 'deployments/docker/**'
       - 'control-plane/**'
       - '.github/workflows/deploy.yml'
-    tags:
-      - 'v*'
-  workflow_dispatch:
-
 permissions:
   contents: read
   packages: write
-
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.26.0'
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build control plane UI
-        working-directory: control-plane/web/client
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm build
-
       - name: Build control plane
         working-directory: control-plane
         run: GOFLAGS=-buildvcs=false go build ./...
-
       - name: Run tests
         working-directory: control-plane
         run: go test ./...
 
-  build-and-push:
+  docker:
     needs: test
-    runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.image_tag }}
-      image: ${{ steps.meta.outputs.image }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Compute image tag
-        id: meta
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-          else
-            TAG="${GITHUB_SHA}"
-          fi
-          IMAGE="ghcr.io/${{ github.repository_owner }}/playground"
-          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "image=${IMAGE}:${TAG}" >> "$GITHUB_OUTPUT"
-          echo "tags<<EOF" >> "$GITHUB_OUTPUT"
-          echo "${IMAGE}:${TAG}" >> "$GITHUB_OUTPUT"
-          echo "${IMAGE}:latest" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push control plane image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: deployments/docker/Dockerfile.control-plane
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # Dispatch to universe for staging → E2E → production promotion.
-  # No direct kubectl here — universe owns all cluster deployments.
-  dispatch-to-universe:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dispatch image update to universe
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.UNIVERSE_DISPATCH_TOKEN }}
-          repository: hanzoai/universe
-          event-type: image-update
-          client-payload: |
-            {
-              "service": "hanzo-playground",
-              "image": "${{ needs.build-and-push.outputs.image }}",
-              "sha": "${{ github.sha }}",
-              "repo": "${{ github.repository }}"
-            }
-
-      - name: Summary
-        run: |
-          echo "### Deploy dispatched to universe" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Image:** ${{ needs.build-and-push.outputs.image }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Flow:** image-receiver → dev branch → staging deploy → E2E → PR to main → production" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Track progress: https://github.com/hanzoai/universe/actions" >> "$GITHUB_STEP_SUMMARY"
+    uses: hanzoai/.github/.github/workflows/docker-build.yml@main
+    with:
+      image: ghcr.io/hanzoai/playground
+      dockerfile: deployments/docker/Dockerfile
+    secrets: inherit
