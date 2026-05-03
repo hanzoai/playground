@@ -118,7 +118,7 @@ Shared helpers such as the `run_agent_server` async context manager and `unique_
 - Make (optional, for convenience)
 
 > **Note:** The functional test Docker Compose files build the complete control plane image
-> via `deployments/docker/Dockerfile.control-plane`. You do **not** need to run `go build`
+> via `deployments/docker/Dockerfile`. You do **not** need to run `go build`
 > or run separate `npm run build` steps beforehand—the Dockerfile takes care of compiling both the UI
 > and the Go binary in the correct order.
 
@@ -400,7 +400,7 @@ Reports include:
 ```bash
 # Control plane logs
 cd tests/functional
-docker compose -f docker/docker compose.local.yml logs control-plane
+docker compose -f docker/docker compose.local.yml logs playground
 
 # Test runner logs
 docker compose -f docker/docker compose.local.yml logs test-runner
@@ -417,7 +417,7 @@ Start services without running tests:
 cd tests/functional
 
 # Start just the control plane
-docker compose -f docker/docker compose.local.yml up control-plane
+docker compose -f docker/docker compose.local.yml up playground
 
 # In another terminal, run tests with debugging
 docker compose -f docker/docker compose.local.yml run test-runner bash
@@ -536,7 +536,7 @@ Make sure you've either:
 
 Check logs:
 ```bash
-docker compose -f docker/docker compose.local.yml logs control-plane
+docker compose -f docker/docker compose.local.yml logs playground
 ```
 
 Common issues:

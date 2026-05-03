@@ -34,6 +34,6 @@ EXPOSE 8001
 
 # Set default environment variables
 ENV PORT=8001
-ENV PLAYGROUND_URL=http://control-plane:8080
+ENV PLAYGROUND_URL=http://playground:8080
 
 CMD ["python", "main.py"]

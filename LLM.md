@@ -35,7 +35,7 @@ make build
 
 **Local mode** (uses SQLite + BoltDB, no external dependencies):
 ```bash
-cd control-plane
+cd .
 go run ./cmd/playground dev
 # Or: go run ./cmd/playground-server
 ```
@@ -43,7 +43,7 @@ go run ./cmd/playground dev
 **Cloud mode** (requires PostgreSQL):
 ```bash
 # Run migrations first
-cd control-plane
+cd .
 export PLAYGROUND_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
 goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" up
 
@@ -77,7 +77,7 @@ make sdk-python           # Build Python SDK
 make test                 # Run all tests
 
 # Component-specific tests:
-cd control-plane && go test ./...
+go test ./...
 cd sdk/go && go test ./...
 cd sdk/python && pytest
 
@@ -85,7 +85,7 @@ cd sdk/python && pytest
 cd sdk/python && pytest --cov=playground --cov-report=term-missing
 
 # Web UI linting:
-cd control-plane/web/client && npm run lint
+cd ./web/client && npm run lint
 ```
 
 ### Linting & Formatting
@@ -95,14 +95,14 @@ make fmt                  # Format all code
 make tidy                 # Tidy Go modules
 
 # Component-specific:
-cd control-plane && golangci-lint run
+golangci-lint run
 cd sdk/python && ruff check
 cd sdk/python && ruff format .
 ```
 
 ### Database Migrations
 ```bash
-cd control-plane
+cd .
 export PLAYGROUND_DATABASE_URL="postgres://playground:playground@localhost:5432/playground?sslmode=disable"
 
 # Check migration status
@@ -117,12 +117,12 @@ goose -dir ./migrations create <migration_name> sql
 
 ### Web UI Development
 ```bash
-cd control-plane/web/client
+cd ./web/client
 npm install
 npm run dev    # Runs on http://localhost:5173
 
 # In parallel, run the control plane server to handle API calls
-cd control-plane
+cd .
 go run ./cmd/playground-server
 ```
 
@@ -130,7 +130,7 @@ The UI dev server proxies API requests to the control plane. In production, the 
 
 ## Architecture Deep Dive
 
-### Control Plane Structure (`control-plane/`)
+### Control Plane Structure (`./`)
 
 **Entry Points:**
 - `cmd/playground/` - Unified CLI with server + dev/init commands
@@ -157,7 +157,7 @@ The UI dev server proxies API requests to the control plane. In production, the 
 
 **Configuration:**
 - Environment variables take precedence over `config/playground.yaml`
-- See `control-plane/.env.example` for all options
+- See `./.env.example` for all options
 - Key modes: `PLAYGROUND_MODE=local` (SQLite/BoltDB) vs `PLAYGROUND_STORAGE_MODE=postgresql` (cloud)
 
 **Database Schema:**
@@ -178,7 +178,7 @@ The UI dev server proxies API requests to the control plane. In production, the 
 - Bots register "skills" (functions) similar to Python SDK
 - Test with: `go test ./...`
 
-### Web UI (`control-plane/web/client/`)
+### Web UI (`./web/client/`)
 - React + TypeScript + Vite
 - Tailwind CSS + Radix UI components
 - Build: `npm run build` → outputs to `dist/` → embedded in Go binary
@@ -212,10 +212,10 @@ bot.Run(context.Background())
 ```
 
 ### Adding a New Control Plane Endpoint
-1. Define handler in `control-plane/internal/handlers/<domain>/`
-2. Add route in `control-plane/internal/server/routes.go`
-3. Add business logic in `control-plane/internal/services/<domain>/`
-4. Add storage methods in `control-plane/internal/storage/<domain>/`
+1. Define handler in `./internal/handlers/<domain>/`
+2. Add route in `./internal/server/routes.go`
+3. Add business logic in `./internal/services/<domain>/`
+4. Add storage methods in `./internal/storage/<domain>/`
 5. If adding new DB tables, create migration: `goose -dir ./migrations create <name> sql`
 
 ### Storage Modes
@@ -275,7 +275,7 @@ Automatically synced by control plane. Bots access via SDK methods: `bot.memory.
 
 **Control Plane (Go):**
 - Use `github.com/hanzoai/playground/control-plane` as module path
-- Internal packages: `github.com/hanzoai/playground/control-plane/internal/<package>`
+- Internal packages: `github.com/hanzoai/playground/./internal/<package>`
 
 **SDKs:**
 - Python: `playground` (PyPI package)
@@ -286,7 +286,7 @@ Automatically synced by control plane. Bots access via SDK methods: `bot.memory.
 Releases are automated via `.github/workflows/release.yml` and `.goreleaser.yml`:
 - Tag a commit: `git tag v0.1.0 && git push origin v0.1.0`
 - GitHub Actions builds binaries for multiple platforms
-- `control-plane/build-single-binary.sh` creates unified binary (embeds web UI)
+- `./build-single-binary.sh` creates unified binary (embeds web UI)
 
 ## Debugging Tips
 
@@ -299,7 +299,7 @@ Releases are automated via `.github/workflows/release.yml` and `.goreleaser.yml`
 
 ## Environment Variables Reference
 
-See `control-plane/.env.example` for comprehensive list. Key vars:
+See `./.env.example` for comprehensive list. Key vars:
 - `PLAYGROUND_PORT` - HTTP server port (default: 8080)
 - `PLAYGROUND_MODE` - `local` or `cloud`
 - `PLAYGROUND_STORAGE_MODE` - `local`, `postgresql`, or `cloud`
@@ -359,7 +359,7 @@ All secrets managed via KMS (kms.hanzo.ai) using KMSSecret CRD:
 - Domain: `hanzo.bot` (alias: `playground.hanzo.bot`)
 - Image: `ghcr.io/hanzoai/playground:latest`
 - K8s: 2 replicas, hanzo namespace
-- Dockerfile: `deployments/docker/Dockerfile.control-plane`
+- Dockerfile: `deployments/docker/Dockerfile`
 - Manifest: `universe/infra/k8s/bot/agents-control-plane.yaml`
 
 ## Cloud Agent Debugging History (2026-03-14)
@@ -472,7 +472,7 @@ Both must match the IAM DB. All three were reverted to `62484ae37fb49bc602f204c0
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Provisioner | `playground/control-plane/internal/cloud/provisioner.go` | `nodeArgs()` builds agent pod args |
+| Provisioner | `playground/./internal/cloud/provisioner.go` | `nodeArgs()` builds agent pod args |
 | Exec Policy | `bot/src/node-host/exec-policy.ts` | `evaluateSystemRunPolicy()` |
 | Exec Approvals | `bot/src/infra/exec-approvals.ts` | Config file read/write, defaults |
 | Agent Registry | `bot/src/gateway/server-methods/agents.ts` | Config-based agent lookup |
@@ -495,6 +495,6 @@ Both must match the IAM DB. All three were reverted to `62484ae37fb49bc602f204c0
 - Follow PEP 8
 
 **TypeScript/React:**
-- Use ESLint config in `control-plane/web/client/.eslintrc.json`
+- Use ESLint config in `./web/client/.eslintrc.json`
 - Functional components with hooks
 - Tailwind for styling (no CSS-in-JS)

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground-playground
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: playground
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: playground
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: playground
+          # Pin to a specific SHA or semver tag for production deployments.
+          # Override via kustomize patch or use the Helm chart with values.yaml.
+          image: ghcr.io/hanzoai/playground:latest
+          args: ["server", "--open=false"]
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 8180
+          env:
+            - name: PLAYGROUND_PORT
+              value: "8080"
+            - name: PLAYGROUND_HOME
+              value: "/data"
+            - name: PLAYGROUND_CONFIG_FILE
+              value: "/dev/null"
+            - name: PLAYGROUND_STORAGE_MODE
+              value: "local"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: playground-playground-data

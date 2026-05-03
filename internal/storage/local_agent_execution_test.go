@@ -1,0 +1,146 @@
+package storage
+
+import (
+	"context"
+	"encoding/json"
+	"testing"
+	"time"
+
+	"github.com/hanzoai/playground/pkg/types"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestLocalStorageStoreExecutionRoundTrip(t *testing.T) {
+	ls, ctx := setupLocalStorage(t)
+
+	now := time.Now().UTC().Truncate(time.Millisecond)
+	sessionID := "session-1"
+	userID := "user-1"
+	errMsg := "example failure"
+	usd := 1.23
+
+	exec := &types.BotExecution{
+		WorkflowID:   "workflow-alpha",
+		SessionID:    &sessionID,
+		NodeID:       "agent-1",
+		BotID:   "bot.alpha",
+		InputData:    json.RawMessage(`{"prompt":"hello"}`),
+		OutputData:   json.RawMessage(`{"result":"world"}`),
+		InputSize:    6,
+		OutputSize:   5,
+		DurationMS:   1234,
+		Status:       "succeeded",
+		ErrorMessage: &errMsg,
+		UserID:       &userID,
+		Metadata: types.ExecutionMetadata{
+			Cost: &types.CostMetadata{USD: &usd, Currency: "USD"},
+			Custom: map[string]interface{}{
+				"invocation": float64(1),
+			},
+		},
+		CreatedAt: now,
+	}
+
+	require.NoError(t, ls.StoreExecution(ctx, exec))
+	require.Greater(t, exec.ID, int64(0))
+
+	stored, err := ls.GetExecution(ctx, exec.ID)
+	require.NoError(t, err)
+	require.Equal(t, exec.ID, stored.ID)
+	require.Equal(t, exec.WorkflowID, stored.WorkflowID)
+	require.Equal(t, exec.NodeID, stored.NodeID)
+	require.Equal(t, exec.BotID, stored.BotID)
+	require.Equal(t, exec.Status, stored.Status)
+	require.Equal(t, exec.InputSize, stored.InputSize)
+	require.Equal(t, exec.OutputSize, stored.OutputSize)
+	require.Equal(t, exec.DurationMS, stored.DurationMS)
+	require.NotNil(t, stored.SessionID)
+	require.Equal(t, sessionID, *stored.SessionID)
+	require.NotNil(t, stored.ErrorMessage)
+	require.Equal(t, errMsg, *stored.ErrorMessage)
+	require.NotNil(t, stored.UserID)
+	require.Equal(t, userID, *stored.UserID)
+	require.Equal(t, "agent-1", stored.NodeID)
+	require.WithinDuration(t, exec.CreatedAt, stored.CreatedAt, time.Second)
+
+	require.NotNil(t, stored.Metadata.Cost)
+	require.NotNil(t, stored.Metadata.Cost.USD)
+	require.InDelta(t, usd, *stored.Metadata.Cost.USD, 1e-9)
+	require.Contains(t, stored.Metadata.Custom, "invocation")
+}
+
+func TestLocalStorageQueryExecutionsAppliesFilters(t *testing.T) {
+	ls, ctx := setupLocalStorage(t)
+
+	baseTime := time.Now().UTC().Add(-time.Minute)
+	statusRunning := "running"
+	statusFailed := "failed"
+	sessionA := "session-a"
+	sessionB := "session-b"
+
+	executions := []*types.BotExecution{
+		{
+			WorkflowID:  "workflow-shared",
+			SessionID:   &sessionA,
+			NodeID: "agent-A",
+			BotID:  "bot.alpha",
+			InputData:   json.RawMessage(`{"seed":1}`),
+			OutputData:  json.RawMessage(`{"out":1}`),
+			InputSize:   10,
+			OutputSize:  4,
+			DurationMS:  200,
+			Status:      statusRunning,
+			CreatedAt:   baseTime,
+		},
+		{
+			WorkflowID:  "workflow-shared",
+			SessionID:   &sessionB,
+			NodeID: "agent-B",
+			BotID:  "bot.beta",
+			InputData:   json.RawMessage(`{"seed":2}`),
+			OutputData:  json.RawMessage(`{"out":2}`),
+			InputSize:   11,
+			OutputSize:  5,
+			DurationMS:  400,
+			Status:      statusFailed,
+			CreatedAt:   baseTime.Add(30 * time.Second),
+		},
+	}
+
+	for _, exec := range executions {
+		require.NoError(t, ls.StoreExecution(ctx, exec))
+	}
+
+	all, err := ls.QueryExecutions(ctx, types.ExecutionFilters{})
+	require.NoError(t, err)
+	require.Len(t, all, 2)
+	require.True(t, all[0].CreatedAt.After(all[1].CreatedAt) || all[0].CreatedAt.Equal(all[1].CreatedAt))
+
+	filtered, err := ls.QueryExecutions(ctx, types.ExecutionFilters{Status: &statusRunning})
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	require.Equal(t, statusRunning, filtered[0].Status)
+
+	node := "agent-B"
+	filtered, err = ls.QueryExecutions(ctx, types.ExecutionFilters{NodeID: &node})
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	require.Equal(t, "agent-B", filtered[0].NodeID)
+
+	limitResults, err := ls.QueryExecutions(ctx, types.ExecutionFilters{Limit: 1, Offset: 1})
+	require.NoError(t, err)
+	require.Len(t, limitResults, 1)
+	require.NotEqual(t, all[0].ID, limitResults[0].ID)
+}
+
+func TestLocalStorageStoreExecutionHonoursContextCancellation(t *testing.T) {
+	ls, ctx := setupLocalStorage(t)
+
+	cancelledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+
+	err := ls.StoreExecution(cancelledCtx, &types.BotExecution{WorkflowID: "wf", NodeID: "agent", BotID: "r", CreatedAt: time.Now()})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "context cancelled")
+}
