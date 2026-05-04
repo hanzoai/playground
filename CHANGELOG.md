@@ -6,6 +6,90 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.41] - 2026-05-04
+
+
+### CI
+
+- Ci: migrate to canonical hanzoai/.github/docker-build.yml reusable (#64) (3eb360f)
+
+
+
+### Changed
+
+- Refactor: flatten control-plane → repo root; ship /agents + IAM (#65)
+
+* refactor: flatten control-plane → repo root; ship /agents + IAM build args
+
+Before: github.com/hanzoai/playground/control-plane (awkward double-name)
+After:  github.com/hanzoai/playground (clean, idiomatic Go layout)
+
+Layout changes
+- control-plane/{cmd,internal,pkg,migrations,tools,web,config} → repo root
+- control-plane/.air.toml → /.air.toml (and .env.dev, .env.example, .golangci.yml)
+- control-plane/scripts/* merged into /scripts/
+- control-plane/README.md → /README.server.md
+- control-plane/build-single-binary{,.sh}, dev.sh → repo root
+
+Build / CI
+- deployments/docker/Dockerfile.control-plane → deployments/docker/Dockerfile
+- Dockerfile copies adjusted: /web/client/, /go.mod, /config (no /control-plane/ prefix)
+- Dockerfile bakes VITE_IAM_SERVER_URL=https://hanzo.id and VITE_IAM_CLIENT_ID
+  into the static bundle so AuthGuard auto-redirects to IAM in production.
+- .github/workflows/control-plane.yml → playground-ci.yml (paths updated)
+- .github/workflows/deploy.yml: dockerfile path corrected, build-args
+  pass IAM env, fixes broken pipeline that targeted a non-existent file.
+- .goreleaser.yml dir: control-plane → dir: .
+- Makefile target `control-plane` → `server`
+
+Compose / K8s
+- compose.local.yml + compose.postgres.yml: service `control-plane` → `playground`
+- container names playground-control-plane-{local,postgres} → playground-{*}
+- volume control-plane-data → playground-data
+- deployments/kubernetes/base/control-plane-* → playground-*
+- deployments/helm/playground/templates/control-plane-* → playground-*
+
+Source changes
+- 359 .go files: import path rewritten github.com/hanzoai/playground/control-plane
+  → github.com/hanzoai/playground
+- web/client/src/{types,hooks,pages}/*: new AgentsListPage with /agents route,
+  IAM-aware via existing AuthGuard; sidebar gains "Agents" entry above "Bots".
+
+Validation
+- go build ./... clean
+- go vet ./... clean
+- tsc -p web/client/tsconfig.app.json --noEmit clean
+
+External impact: zero. The image stays ghcr.io/hanzoai/playground; the binary
+stays playground-server; consumer-facing API surface unchanged.
+
+* feat(client): FundingGate — auto-grant welcome credit + balance gate
+
+After IAM auth resolves, the SPA calls (in order):
+  POST /v1/billing/me/welcome   — idempotent, server-deduped by tag
+  GET  /v1/billing/me/balance   — returns user's USD balance
+
+If balance > 0 → renders children (the SPA).
+If balance == 0 → redirects to pay.hanzo.ai/onboard?return=<current url>.
+If commerce is unreachable → fails open (don't wedge the SPA).
+
+Mounted between AuthGuard and PreferencesGate in App.tsx so it only
+runs once per authed session. (558254b)
+
+
+
+### Fixed
+
+- Fix(ci): add id-token + attestations perms for shared docker-build (3705ef1)
+
+- Fix(release): update GO_TEMPLATE_FILE path after flatten (a2b3807)
+
+- Fix(ci): drop standalone test job; rely on Playground CI for tests (c34bd90)
+
+- Fix(ci): replace invalid './**' paths filter with explicit per-dir list (cf59f43)
+
+- Fix(ci): working-directory '.' after flatten (was 'playground' from sed mishap) (3f2b682)
+
 ## [0.1.41-rc.392] - 2026-04-18
 
 
