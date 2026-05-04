@@ -20,10 +20,10 @@ jobs:
         with:
           go-version: '1.26.0'
       - name: Build control plane
-        working-directory: playground
+        working-directory: .
         run: GOFLAGS=-buildvcs=false go build ./...
       - name: Run tests
-        working-directory: playground
+        working-directory: .
         run: go test ./...
 
   docker:
