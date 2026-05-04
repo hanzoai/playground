@@ -6,7 +6,12 @@ on:
     tags: ['v*']
     paths:
       - 'deployments/docker/**'
-      - './**'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'web/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/deploy.yml'
 permissions:
   contents: read
