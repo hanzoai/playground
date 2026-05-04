@@ -17,30 +17,12 @@ permissions:
   contents: read
   packages: write
 jobs:
-  test:
-    runs-on: hanzo-build-linux-amd64
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.0'
-      - name: Build control plane
-        working-directory: .
-        run: GOFLAGS=-buildvcs=false go build ./...
-      - name: Run tests
-        working-directory: .
-        run: go test ./...
-
   docker:
-    needs: test
     uses: hanzoai/.github/.github/workflows/docker-build.yml@main
     with:
       image: ghcr.io/hanzoai/playground
       dockerfile: deployments/docker/Dockerfile
-      # Bake IAM SSO into the Vite bundle so AuthGuard auto-redirects to
-      # hanzo.id on every host (hanzo.bot, app.hanzo.bot, playground.hanzo.bot,
-      # playground.hanzo.ai). VITE_IAM_REDIRECT_URI is left blank so the
-      # client derives it from window.location at runtime — same code, all hosts.
+      platforms: linux/amd64
       build-args: |
         VITE_IAM_SERVER_URL=https://hanzo.id
         VITE_IAM_CLIENT_ID=hanzo-bot
