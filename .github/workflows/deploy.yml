@@ -16,8 +16,15 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write
+  attestations: write
 jobs:
   docker:
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     uses: hanzoai/.github/.github/workflows/docker-build.yml@main
     with:
       image: ghcr.io/hanzoai/playground
