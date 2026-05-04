@@ -29,6 +29,7 @@ import { SpaceSettingsPage } from "./pages/SpaceSettingsPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { AuthCallbackPage } from "./components/AuthCallbackPage";
+import { FundingGate } from "./components/FundingGate";
 import { GatewaySettings } from "./components/settings/GatewaySettings";
 import { PreferencesSettings } from "./components/settings/PreferencesSettings";
 import { NetworkSettings } from "./components/settings/NetworkSettings";
@@ -153,11 +154,13 @@ function AppRoutes() {
         path="/*"
         element={
           <AuthGuard>
-            <PreferencesGate>
-              <NotificationSoundProvider>
-                <AppContent />
-              </NotificationSoundProvider>
-            </PreferencesGate>
+            <FundingGate>
+              <PreferencesGate>
+                <NotificationSoundProvider>
+                  <AppContent />
+                </NotificationSoundProvider>
+              </PreferencesGate>
+            </FundingGate>
           </AuthGuard>
         }
       />
