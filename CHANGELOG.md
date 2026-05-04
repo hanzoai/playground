@@ -6171,7 +6171,7 @@ cluster pulls the new :latest image. Uses doctl for kubeconfig auth. (b3c8dfd)
 
 - Feat(deploy): auto-deploy to Hanzo PaaS on push and tagged releases
 
-- Add control-plane/hanzo.toml deployment manifest for Hanzo PaaS
+- Add ./hanzo.toml deployment manifest for Hanzo PaaS
 - deploy.yml: trigger on version tags (v*), compute proper image tags,
   deploy to PaaS via hanzo CLI after GHCR push
 - release.yml: deploy production releases to PaaS after Docker push
@@ -7839,7 +7839,7 @@ Features:
 - Runs control-plane benchmarks
 - Posts consolidated metrics table as PR comment
 - Updates existing comment on subsequent runs
-- Triggered on PRs affecting sdk/ or control-plane/
+- Triggered on PRs affecting sdk/ or ./
 
 Metrics tracked:
 - Heap allocation and per-iteration memory
@@ -8584,7 +8584,7 @@ Key changes include:
 - Enhancing the README for Docker deployments with more detailed instructions for running agents in Docker, distinguishing between agents on the host and agents within the same Docker Compose network.
 - Adding specific guidance on using `host.docker.internal` for host-based agents and service names for agents within the same network.
 - Introducing new Docker Compose services for a demo Go agent and a demo Python agent, enabling them to be run with Docker Compose profiles.
-- Updating configuration options in `control-plane/internal/config/config.go` to include `mapstructure` tags, improving the flexibility of configuration loading.
+- Updating configuration options in `./internal/config/config.go` to include `mapstructure` tags, improving the flexibility of configuration loading.
 - Adding a new test case `TestLoadConfig_VCRequirementsFromConfigFile` to verify loading VC requirements from a configuration file.
 - Modifying the Python hello world example to use an environment variable for the AgentField server URL, making it more adaptable to different deployment scenarios.
 - Updating the Dockerized README to include validation steps for execution paths and Verifiable Credentials (VCs).

@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: all install build test lint fmt tidy clean control-plane sdk-go sdk-python
+.PHONY: all install build test lint fmt tidy clean server sdk-go sdk-python
 .PHONY: test-functional test-functional-local test-functional-postgres test-functional-cleanup test-functional-ci
 
 all: build
@@ -8,10 +8,10 @@ all: build
 install:
 	./scripts/install-dev-deps.sh
 
-build: control-plane sdk-go sdk-python
+build: server sdk-go sdk-python
 
-control-plane:
-	( cd control-plane && go build ./... )
+server:
+	go build -o bin/playground-server ./cmd/playground-server
 
 sdk-go:
 	( cd sdk/go && go build ./... )
@@ -23,21 +23,21 @@ test:
 	./scripts/test-all.sh
 
 lint:
-	( cd control-plane && golangci-lint run || true )
+	( golangci-lint run || true )
 	( cd sdk/go && golangci-lint run || true )
 	( cd sdk/python && ruff check || true )
 
 fmt:
-	( cd control-plane && gofmt -w $$(go list -f '{{.Dir}}' ./...) )
+	( gofmt -w $$(go list -f '{{.Dir}}' ./...) )
 	( cd sdk/go && gofmt -w $$(go list -f '{{.Dir}}' ./...) )
 	( cd sdk/python && ruff format . )
 
 tidy:
-	( cd control-plane && go mod tidy )
+	( go mod tidy )
 	( cd sdk/go && go mod tidy )
 
 clean:
-	rm -rf control-plane/bin control-plane/dist
+	rm -rf ./bin ./dist
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 
 # ============================================================================

@@ -13,13 +13,13 @@ spec:
         app.kubernetes.io/component: demo-python-bot
     spec:
       initContainers:
-        - name: wait-control-plane
+        - name: wait-playground
           image: curlimages/curl:8.12.1
           command:
             - sh
             - -c
             - >
-              until curl -sf "http://playground-control-plane:8080/api/v1/health" >/dev/null;
+              until curl -sf "http://playground-playground:8080/api/v1/health" >/dev/null;
               do echo "waiting for control plane"; sleep 2; done
       containers:
         - name: demo-python-bot
@@ -36,7 +36,7 @@ spec:
               containerPort: 8001
           env:
             - name: PLAYGROUND_URL
-              value: http://playground-control-plane:8080
+              value: http://playground-playground:8080
             - name: HANZO_NODE_ID
               value: demo-python-bot
             - name: PORT

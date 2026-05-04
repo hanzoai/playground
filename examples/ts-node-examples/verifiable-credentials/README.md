@@ -279,4 +279,4 @@ Each generated VC follows W3C Verifiable Credentials format:
 
 - Review the [Plan.md](../../../Plan.md) for comprehensive testing guide
 - Check [SDK DID documentation](../../sdk/typescript/src/did/)
-- Explore [control plane VC service](../../control-plane/internal/services/vc_service.go)
+- Explore [control plane VC service](../.././internal/services/vc_service.go)

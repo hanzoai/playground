@@ -1,0 +1,776 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/hanzoai/playground/internal/core/interfaces"
+	"github.com/hanzoai/playground/internal/events"
+	"github.com/hanzoai/playground/internal/logger"
+	"github.com/hanzoai/playground/internal/storage"
+	"github.com/hanzoai/playground/pkg/types"
+)
+
+// StatusManagerConfig holds configuration for the status manager
+type StatusManagerConfig struct {
+	ReconcileInterval       time.Duration // How often to reconcile status
+	StatusCacheTTL          time.Duration // How long to cache status
+	MaxTransitionTime       time.Duration // Max time for state transitions
+	HeartbeatStaleThreshold time.Duration // How old a heartbeat must be before marking inactive (default 60s)
+}
+
+// StatusManager provides a single source of truth for agent status
+// It reconciles between different status sources and manages status persistence
+type StatusManager struct {
+	storage     storage.StorageProvider
+	config      StatusManagerConfig
+	uiService   *UIService
+	nodeClient interfaces.NodeClient
+
+	// Status cache for fast access (short-term, 5-second TTL)
+	statusCache map[string]*cachedBotStatus
+	cacheMutex  sync.RWMutex
+
+	// Transition tracking
+	activeTransitions map[string]*types.StateTransition
+	transitionMutex   sync.RWMutex
+
+	// Control channels
+	stopCh chan struct{}
+
+	// Event handlers
+	eventHandlers []StatusEventHandler
+}
+
+// cachedBotStatus represents a cached status with timestamp
+type cachedBotStatus struct {
+	Status    *types.BotStatus
+	Timestamp time.Time
+}
+
+func cloneBotStatus(status *types.BotStatus) *types.BotStatus {
+	if status == nil {
+		return nil
+	}
+
+	clone := *status
+
+	if status.MCPStatus != nil {
+		mcpCopy := *status.MCPStatus
+		clone.MCPStatus = &mcpCopy
+	}
+
+	if status.StateTransition != nil {
+		transitionCopy := *status.StateTransition
+		clone.StateTransition = &transitionCopy
+	}
+
+	if status.LastVerified != nil {
+		lastVerifiedCopy := *status.LastVerified
+		clone.LastVerified = &lastVerifiedCopy
+	}
+
+	return &clone
+}
+
+// StatusEventHandler defines the interface for status event handlers
+type StatusEventHandler interface {
+	OnStatusChanged(nodeID string, oldStatus, newStatus *types.BotStatus)
+}
+
+// NewStatusManager creates a new status reconciliation service
+func NewStatusManager(storage storage.StorageProvider, config StatusManagerConfig, uiService *UIService, nodeClient interfaces.NodeClient) *StatusManager {
+	// Set default values
+	if config.ReconcileInterval == 0 {
+		config.ReconcileInterval = 30 * time.Second
+	}
+	if config.StatusCacheTTL == 0 {
+		config.StatusCacheTTL = 5 * time.Minute
+	}
+	if config.MaxTransitionTime == 0 {
+		config.MaxTransitionTime = 2 * time.Minute
+	}
+	if config.HeartbeatStaleThreshold == 0 {
+		config.HeartbeatStaleThreshold = 60 * time.Second
+	}
+
+	return &StatusManager{
+		storage:           storage,
+		config:            config,
+		uiService:         uiService,
+		nodeClient:       nodeClient,
+		statusCache:       make(map[string]*cachedBotStatus),
+		activeTransitions: make(map[string]*types.StateTransition),
+		stopCh:            make(chan struct{}),
+		eventHandlers:     make([]StatusEventHandler, 0),
+	}
+}
+
+// Start begins the status manager background processes
+func (sm *StatusManager) Start() {
+	logger.Logger.Debug().Msg("🔄 Starting status manager")
+
+	// Start reconciliation loop
+	go sm.reconcileLoop()
+
+	// Start transition timeout checker
+	go sm.transitionTimeoutLoop()
+}
+
+// Stop gracefully shuts down the status manager
+func (sm *StatusManager) Stop() {
+	logger.Logger.Debug().Msg("🔄 Stopping status manager")
+	close(sm.stopCh)
+}
+
+// GetBotStatus retrieves the current unified status for an agent using live health checks
+func (sm *StatusManager) GetBotStatus(ctx context.Context, nodeID string) (*types.BotStatus, error) {
+	// Check short-term cache with intelligent logic
+	sm.cacheMutex.RLock()
+	if cached, exists := sm.statusCache[nodeID]; exists {
+		cacheAge := time.Since(cached.Timestamp)
+
+		// For agents marked as inactive/offline, use cache for up to 5 seconds
+		if cached.Status.State == types.BotStateInactive && cacheAge < 5*time.Second {
+			sm.cacheMutex.RUnlock()
+			// Return cached status with preserved source attribution
+			return cached.Status, nil
+		}
+
+		// For agents marked as active, only use very fresh cache (1 second) to ensure responsiveness
+		// This prevents serving stale heartbeat data when agents go offline
+		if cached.Status.State == types.BotStateActive && cacheAge < 1*time.Second {
+			sm.cacheMutex.RUnlock()
+			// Return cached status with preserved source attribution
+			return cached.Status, nil
+		}
+
+		// For all other cases or expired cache, proceed with live health check
+	}
+	sm.cacheMutex.RUnlock()
+
+	// Perform live health check via HTTP — but only for nodes that expose a
+	// reachable base URL.  Local bots (base_url == "") and NAT-ed nodes have
+	// no HTTP endpoint the control plane can reach, so attempting a health
+	// check would always fail and incorrectly mark them as inactive.  For
+	// those nodes we rely on heartbeats as the liveness signal and fall back
+	// to the persisted storage status.
+	var status *types.BotStatus
+	var healthCheckSuccessful bool
+	var healthCheckAttempted bool
+
+	// Look up the node to decide whether an HTTP probe is feasible.
+	agent, agentErr := sm.storage.GetNode(ctx, nodeID)
+
+	if sm.nodeClient != nil && agentErr == nil && agent != nil && agent.BaseURL != "" {
+		healthCheckAttempted = true
+
+		// Create a timeout context for the health check (2-3 seconds)
+		healthCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+
+		agentStatusResp, err := sm.nodeClient.GetBotStatus(healthCtx, nodeID)
+		if err != nil {
+			logger.Logger.Debug().Err(err).Str("node_id", nodeID).Msg("🏥 Live health check failed, marking agent as inactive")
+			// Health check failed - agent is offline/inactive
+			healthCheckSuccessful = false
+
+			// Invalidate cache when health check fails to ensure fresh checks on subsequent requests
+			sm.cacheMutex.Lock()
+			delete(sm.statusCache, nodeID)
+			sm.cacheMutex.Unlock()
+		} else {
+			logger.Logger.Debug().Str("node_id", nodeID).Str("status", agentStatusResp.Status).Msg("🏥 Live health check successful")
+			healthCheckSuccessful = true
+		}
+
+		// Create status based on health check result
+		now := time.Now()
+		if healthCheckSuccessful && agentStatusResp.Status == "running" {
+			// Agent is active and running
+			status = &types.BotStatus{
+				State:           types.BotStateActive,
+				HealthScore:     85, // Good health from live verification
+				LastSeen:        now,
+				LifecycleStatus: types.BotStatusReady,
+				HealthStatus:    types.HealthStatusActive,
+				LastUpdated:     now,
+				LastVerified:    &now, // Set when live health check was performed
+				Source:          types.StatusSourceHealthCheck,
+			}
+		} else {
+			// Agent is inactive or not responding
+			status = &types.BotStatus{
+				State:           types.BotStateInactive,
+				HealthScore:     0, // No health
+				LastSeen:        now,
+				LifecycleStatus: types.BotStatusOffline,
+				HealthStatus:    types.HealthStatusInactive,
+				LastUpdated:     now,
+				LastVerified:    &now, // Set when live health check was performed
+				Source:          types.StatusSourceHealthCheck,
+			}
+		}
+	} else {
+		// No HTTP endpoint to probe (local bot, NAT-ed node, or no nodeClient).
+		// Build status from whatever is persisted in storage.
+		if agentErr != nil || agent == nil {
+			if agentErr != nil {
+				return nil, fmt.Errorf("failed to get agent: %w", agentErr)
+			}
+			return nil, fmt.Errorf("agent %s not found", nodeID)
+		}
+		status = types.FromLegacyStatus(agent.HealthStatus, agent.LifecycleStatus, agent.LastHeartbeat)
+		logger.Logger.Debug().Str("node_id", nodeID).Msg("🏥 Skipping HTTP health check (no base URL), using storage status")
+	}
+
+	// Update storage with live verification result — only when we actually
+	// performed an HTTP probe.  Nodes that rely on heartbeat-only liveness
+	// must not be overwritten here.
+	if healthCheckAttempted {
+		if healthCheckSuccessful {
+			if err := sm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusActive); err != nil {
+				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to update agent health status in storage")
+			}
+		} else {
+			if err := sm.storage.UpdateNodeHealth(ctx, nodeID, types.HealthStatusInactive); err != nil {
+				logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to update agent health status in storage")
+			}
+		}
+	}
+
+	// Cache the status with timestamp
+	sm.cacheMutex.Lock()
+	sm.statusCache[nodeID] = &cachedBotStatus{
+		Status:    status,
+		Timestamp: time.Now(),
+	}
+	sm.cacheMutex.Unlock()
+
+	// Emit SSE events if status changed
+	if sm.uiService != nil {
+		// Get the agent for event emission
+		if agent, err := sm.storage.GetNode(ctx, nodeID); err == nil {
+			sm.uiService.OnNodeStatusChanged(agent)
+		}
+	}
+
+	return status, nil
+}
+
+// GetBotStatusSnapshot returns the best-known status without performing live health checks.
+// This is optimized for UI summaries where fast responses are preferred over live verification.
+func (sm *StatusManager) GetBotStatusSnapshot(ctx context.Context, nodeID string, cachedNode *types.Node) (*types.BotStatus, error) {
+	// Prefer cached status if available
+	sm.cacheMutex.RLock()
+	if cached, exists := sm.statusCache[nodeID]; exists && cached.Status != nil {
+		statusCopy := cloneBotStatus(cached.Status)
+		sm.cacheMutex.RUnlock()
+		return statusCopy, nil
+	}
+	sm.cacheMutex.RUnlock()
+
+	// Use provided node data or pull from storage without hitting agent HTTP endpoints
+	var agent *types.Node
+	var err error
+	if cachedNode != nil {
+		agent = cachedNode
+	} else {
+		agent, err = sm.storage.GetNode(ctx, nodeID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get agent: %w", err)
+		}
+	}
+
+	status := types.FromLegacyStatus(agent.HealthStatus, agent.LifecycleStatus, agent.LastHeartbeat)
+	status.LastSeen = agent.LastHeartbeat
+	status.LastUpdated = agent.LastHeartbeat
+	status.HealthStatus = agent.HealthStatus
+	status.LifecycleStatus = agent.LifecycleStatus
+	status.Source = types.StatusSourceReconcile
+
+	sm.cacheMutex.Lock()
+	sm.statusCache[nodeID] = &cachedBotStatus{
+		Status:    status,
+		Timestamp: time.Now(),
+	}
+	sm.cacheMutex.Unlock()
+
+	return cloneBotStatus(status), nil
+}
+
+// UpdateBotStatus updates the agent status with reconciliation
+func (sm *StatusManager) UpdateBotStatus(ctx context.Context, nodeID string, update *types.BotStatusUpdate) error {
+	// Get current status using snapshot (no live health check) to preserve the true "old" state
+	// for event broadcasting. Using GetBotStatus here would perform a live health check,
+	// which could return the same state as the update, causing oldStatus == newStatus
+	// and preventing status change events from being broadcast.
+	currentStatus, err := sm.GetBotStatusSnapshot(ctx, nodeID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get current status: %w", err)
+	}
+
+	// Create a copy for the new status
+	newStatus := *currentStatus
+	oldStatus := *currentStatus
+
+	// Apply updates
+	if update.State != nil {
+		if newStatus.State != *update.State {
+			// Handle state transition
+			if err := sm.handleStateTransition(nodeID, &newStatus, *update.State, update.Reason); err != nil {
+				return fmt.Errorf("failed to handle state transition: %w", err)
+			}
+
+			// Auto-sync lifecycle status with state changes to ensure consistency
+			// This prevents lifecycle_status from remaining "ready" when the agent goes offline
+			switch *update.State {
+			case types.BotStateInactive, types.BotStateStopping:
+				// Agent is going offline - set lifecycle to offline
+				if newStatus.LifecycleStatus != types.BotStatusOffline {
+					newStatus.LifecycleStatus = types.BotStatusOffline
+				}
+			case types.BotStateActive:
+				// Agent is coming online - set lifecycle to ready if it was offline
+				if newStatus.LifecycleStatus == types.BotStatusOffline || newStatus.LifecycleStatus == "" {
+					newStatus.LifecycleStatus = types.BotStatusReady
+				}
+			case types.BotStateStarting:
+				// Agent is starting - set lifecycle to starting
+				if newStatus.LifecycleStatus == types.BotStatusOffline || newStatus.LifecycleStatus == "" {
+					newStatus.LifecycleStatus = types.BotStatusStarting
+				}
+			}
+		}
+	}
+
+	if update.HealthScore != nil {
+		newStatus.HealthScore = *update.HealthScore
+	}
+
+	// Apply explicit lifecycle status update (can override the auto-sync above)
+	if update.LifecycleStatus != nil {
+		newStatus.LifecycleStatus = *update.LifecycleStatus
+	}
+
+	if update.MCPStatus != nil {
+		newStatus.MCPStatus = update.MCPStatus
+	}
+
+	// Update metadata
+	newStatus.LastUpdated = time.Now()
+	newStatus.Source = update.Source
+
+	// Update backward compatibility fields
+	newStatus.HealthStatus = newStatus.ToLegacyHealthStatus()
+	if newStatus.LifecycleStatus == "" {
+		newStatus.LifecycleStatus = newStatus.ToLegacyLifecycleStatus()
+	}
+
+	// Persist to storage
+	if err := sm.persistStatus(ctx, nodeID, &newStatus); err != nil {
+		return fmt.Errorf("failed to persist status: %w", err)
+	}
+
+	// Update cache
+	sm.cacheMutex.Lock()
+	sm.statusCache[nodeID] = &cachedBotStatus{
+		Status:    &newStatus,
+		Timestamp: time.Now(),
+	}
+	sm.cacheMutex.Unlock()
+
+	// Notify event handlers
+	sm.notifyStatusChanged(nodeID, &oldStatus, &newStatus)
+
+	// Broadcast events
+	sm.broadcastStatusEvents(nodeID, &oldStatus, &newStatus)
+
+	logger.Logger.Debug().
+		Str("node_id", nodeID).
+		Str("old_state", string(oldStatus.State)).
+		Str("new_state", string(newStatus.State)).
+		Int("health_score", newStatus.HealthScore).
+		Str("source", string(update.Source)).
+		Msg("🔄 Agent status updated")
+
+	return nil
+}
+
+// UpdateFromHeartbeat updates status based on heartbeat data
+func (sm *StatusManager) UpdateFromHeartbeat(ctx context.Context, nodeID string, lifecycleStatus *types.BotLifecycleStatus, mcpStatus *types.MCPStatusInfo) error {
+	currentStatus, err := sm.GetBotStatus(ctx, nodeID)
+	if err != nil {
+		// If agent doesn't exist, create new status
+		currentStatus = types.NewBotStatus(types.BotStateStarting, types.StatusSourceHeartbeat)
+	}
+
+	// HEARTBEAT PRIORITY: Heartbeats are the primary signal of agent liveness.
+	// If an agent is sending heartbeats, it is alive regardless of what HTTP
+	// health checks report. Health checks may fail due to transient network
+	// issues, but a heartbeat is direct proof of life from the agent itself.
+	// The health monitor requires consecutive failures before marking inactive,
+	// so there is no need to suppress heartbeats here.
+
+	// Update from heartbeat
+	currentStatus.UpdateFromHeartbeat(lifecycleStatus, mcpStatus)
+
+	// Persist changes
+	update := &types.BotStatusUpdate{
+		LifecycleStatus: lifecycleStatus,
+		MCPStatus:       mcpStatus,
+		Source:          types.StatusSourceHeartbeat,
+		Reason:          "heartbeat update",
+	}
+
+	return sm.UpdateBotStatus(ctx, nodeID, update)
+}
+
+// RefreshBotStatus manually refreshes an agent's status
+func (sm *StatusManager) RefreshBotStatus(ctx context.Context, nodeID string) error {
+	// Clear cache to force reload
+	sm.cacheMutex.Lock()
+	delete(sm.statusCache, nodeID)
+	sm.cacheMutex.Unlock()
+
+	// Reload status
+	refreshedStatus, err := sm.GetBotStatus(ctx, nodeID)
+	if err != nil {
+		return fmt.Errorf("failed to refresh status: %w", err)
+	}
+
+	// Broadcast refresh event
+	events.PublishNodeStatusRefreshed(nodeID, refreshedStatus)
+
+	logger.Logger.Debug().Str("node_id", nodeID).Msg("🔄 Agent status refreshed")
+	return nil
+}
+
+// AddEventHandler adds a status event handler
+func (sm *StatusManager) AddEventHandler(handler StatusEventHandler) {
+	sm.eventHandlers = append(sm.eventHandlers, handler)
+}
+
+// handleStateTransition manages state transitions
+func (sm *StatusManager) handleStateTransition(nodeID string, status *types.BotStatus, newState types.BotState, reason string) error {
+	// Check if transition is valid
+	if !sm.isValidTransition(status.State, newState) {
+		return fmt.Errorf("invalid state transition from %s to %s", status.State, newState)
+	}
+
+	// Start transition
+	status.StartTransition(newState, reason)
+
+	// Track active transition
+	sm.transitionMutex.Lock()
+	sm.activeTransitions[nodeID] = status.StateTransition
+	sm.transitionMutex.Unlock()
+
+	// For immediate transitions, complete right away
+	if sm.isImmediateTransition(status.State, newState) {
+		status.CompleteTransition()
+
+		// Remove from active transitions
+		sm.transitionMutex.Lock()
+		delete(sm.activeTransitions, nodeID)
+		sm.transitionMutex.Unlock()
+	}
+
+	return nil
+}
+
+// isValidTransition checks if a state transition is valid
+func (sm *StatusManager) isValidTransition(from, to types.BotState) bool {
+	validTransitions := map[types.BotState][]types.BotState{
+		types.BotStateInactive: {types.BotStateStarting, types.BotStateActive},
+		types.BotStateStarting: {types.BotStateActive, types.BotStateInactive, types.BotStateStopping},
+		types.BotStateActive:   {types.BotStateInactive, types.BotStateStopping},
+		types.BotStateStopping: {types.BotStateInactive},
+	}
+
+	allowed, exists := validTransitions[from]
+	if !exists {
+		return false
+	}
+
+	for _, allowedState := range allowed {
+		if allowedState == to {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isImmediateTransition checks if a transition should complete immediately
+func (sm *StatusManager) isImmediateTransition(from, to types.BotState) bool {
+	// Most transitions are immediate except starting->active which may take time
+	return !(from == types.BotStateStarting && to == types.BotStateActive)
+}
+
+// persistStatus persists the status to storage
+func (sm *StatusManager) persistStatus(ctx context.Context, nodeID string, status *types.BotStatus) error {
+	// DEFENSIVE: Enforce lifecycle_status consistency with state before persisting.
+	// This ensures that even if the auto-sync logic didn't run (e.g., state wasn't changing),
+	// the lifecycle_status will be correct in storage. This fixes the bug where offline nodes
+	// were incorrectly showing lifecycle_status: "ready" in events and snapshots.
+	switch status.State {
+	case types.BotStateInactive, types.BotStateStopping:
+		if status.LifecycleStatus != types.BotStatusOffline {
+			logger.Logger.Debug().
+				Str("node_id", nodeID).
+				Str("state", string(status.State)).
+				Str("old_lifecycle", string(status.LifecycleStatus)).
+				Msg("🔧 Enforcing lifecycle_status=offline for inactive/stopping agent")
+			status.LifecycleStatus = types.BotStatusOffline
+		}
+	case types.BotStateActive:
+		if status.LifecycleStatus == types.BotStatusOffline {
+			logger.Logger.Debug().
+				Str("node_id", nodeID).
+				Str("state", string(status.State)).
+				Str("old_lifecycle", string(status.LifecycleStatus)).
+				Msg("🔧 Enforcing lifecycle_status=ready for active agent")
+			status.LifecycleStatus = types.BotStatusReady
+		}
+	case types.BotStateStarting:
+		if status.LifecycleStatus == types.BotStatusOffline {
+			logger.Logger.Debug().
+				Str("node_id", nodeID).
+				Str("state", string(status.State)).
+				Str("old_lifecycle", string(status.LifecycleStatus)).
+				Msg("🔧 Enforcing lifecycle_status=starting for starting agent")
+			status.LifecycleStatus = types.BotStatusStarting
+		}
+	}
+
+	// Update health status
+	if err := sm.storage.UpdateNodeHealth(ctx, nodeID, status.HealthStatus); err != nil {
+		return fmt.Errorf("failed to update health status: %w", err)
+	}
+
+	// Update lifecycle status
+	if err := sm.storage.UpdateBotLifecycleStatus(ctx, nodeID, status.LifecycleStatus); err != nil {
+		return fmt.Errorf("failed to update lifecycle status: %w", err)
+	}
+
+	// Update heartbeat timestamp
+	if err := sm.storage.UpdateNodeHeartbeat(ctx, nodeID, status.LastSeen); err != nil {
+		return fmt.Errorf("failed to update heartbeat: %w", err)
+	}
+
+	return nil
+}
+
+// notifyStatusChanged notifies all event handlers of status changes
+func (sm *StatusManager) notifyStatusChanged(nodeID string, oldStatus, newStatus *types.BotStatus) {
+	for _, handler := range sm.eventHandlers {
+		go func(h StatusEventHandler) {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Logger.Error().
+						Interface("panic", r).
+						Str("node_id", nodeID).
+						Msg("❌ Panic in status event handler")
+				}
+			}()
+			h.OnStatusChanged(nodeID, oldStatus, newStatus)
+		}(handler)
+	}
+}
+
+// broadcastStatusEvents broadcasts status change events using enhanced event system
+func (sm *StatusManager) broadcastStatusEvents(nodeID string, oldStatus, newStatus *types.BotStatus) {
+	// Get updated agent for events
+	ctx := context.Background()
+	agent, err := sm.storage.GetNode(ctx, nodeID)
+	if err != nil {
+		logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to get agent for event broadcasting")
+		return
+	}
+
+	// FIXED: Only broadcast unified status event when there's a MEANINGFUL change
+	// Skip events for minor health score fluctuations - only emit when:
+	// - State changed (active/inactive/starting/stopping)
+	// - LifecycleStatus changed (ready/not_ready/etc)
+	// - HealthStatus changed (active/degraded/unhealthy)
+	hasMeaningfulChange := oldStatus.State != newStatus.State ||
+		oldStatus.LifecycleStatus != newStatus.LifecycleStatus ||
+		oldStatus.HealthStatus != newStatus.HealthStatus
+
+	if hasMeaningfulChange {
+		events.PublishNodeUnifiedStatusChanged(nodeID, oldStatus, newStatus, string(newStatus.Source), "status update")
+	}
+
+	// FIXED: Only broadcast legacy events if specifically needed for backward compatibility
+	// and only if state actually changed to prevent duplicate events
+	if oldStatus.State != newStatus.State {
+		switch newStatus.State {
+		case types.BotStateActive:
+			events.PublishNodeOnline(nodeID, agent)
+		case types.BotStateInactive:
+			events.PublishNodeOffline(nodeID, agent)
+		}
+	}
+
+	// FIXED: Removed duplicate event publishing:
+	// - Removed PublishNodeStateTransition (redundant with unified event)
+	// - Removed PublishNodeHealthChangedEnhanced (redundant with unified event)
+	// - Removed PublishNodeStatusUpdatedEnhanced (was calling PublishNodeUnifiedStatusChanged again!)
+
+	// Notify UI service for SSE broadcasting (this goes through deduplication)
+	if sm.uiService != nil {
+		sm.uiService.OnNodeStatusChanged(agent)
+	}
+}
+
+// reconcileLoop periodically reconciles status across all agents
+func (sm *StatusManager) reconcileLoop() {
+	ticker := time.NewTicker(sm.config.ReconcileInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			sm.performReconciliation()
+		case <-sm.stopCh:
+			return
+		}
+	}
+}
+
+// performReconciliation reconciles status for all agents
+func (sm *StatusManager) performReconciliation() {
+	ctx := context.Background()
+
+	// Get all agents
+	agents, err := sm.storage.ListNodes(ctx, types.BotFilters{})
+	if err != nil {
+		logger.Logger.Error().Err(err).Msg("❌ Failed to list agents for reconciliation")
+		return
+	}
+
+	logger.Logger.Debug().Int("agent_count", len(agents)).Msg("🔄 Starting status reconciliation")
+
+	for _, agent := range agents {
+		// Check if status needs reconciliation
+		if sm.needsReconciliation(agent) {
+			if err := sm.reconcileBotStatus(ctx, agent); err != nil {
+				logger.Logger.Error().
+					Err(err).
+					Str("node_id", agent.ID).
+					Msg("❌ Failed to reconcile agent status")
+			}
+		}
+	}
+}
+
+// needsReconciliation checks if an agent needs status reconciliation
+func (sm *StatusManager) needsReconciliation(agent *types.Node) bool {
+	// Check if last heartbeat is too old (uses configurable threshold, default 60s)
+	timeSinceHeartbeat := time.Since(agent.LastHeartbeat)
+	if timeSinceHeartbeat > sm.config.HeartbeatStaleThreshold && agent.HealthStatus == types.HealthStatusActive {
+		return true
+	}
+
+	// Check for inconsistent status
+	if agent.HealthStatus == types.HealthStatusActive && agent.LifecycleStatus == types.BotStatusOffline {
+		return true
+	}
+
+	return false
+}
+
+// reconcileBotStatus reconciles status for a specific agent
+func (sm *StatusManager) reconcileBotStatus(ctx context.Context, agent *types.Node) error {
+	// Determine correct status based on heartbeat age
+	timeSinceHeartbeat := time.Since(agent.LastHeartbeat)
+
+	var newHealthStatus types.HealthStatus
+	var newLifecycleStatus types.BotLifecycleStatus
+
+	if timeSinceHeartbeat > sm.config.HeartbeatStaleThreshold {
+		newHealthStatus = types.HealthStatusInactive
+		newLifecycleStatus = types.BotStatusOffline
+	} else {
+		newHealthStatus = types.HealthStatusActive
+		if agent.LifecycleStatus == "" || agent.LifecycleStatus == types.BotStatusOffline {
+			newLifecycleStatus = types.BotStatusReady
+		} else {
+			newLifecycleStatus = agent.LifecycleStatus
+		}
+	}
+
+	// Update if changed
+	if agent.HealthStatus != newHealthStatus || agent.LifecycleStatus != newLifecycleStatus {
+		update := &types.BotStatusUpdate{
+			Source: types.StatusSourceReconcile,
+			Reason: "periodic reconciliation",
+		}
+
+		if agent.HealthStatus != newHealthStatus {
+			newState := types.BotStateInactive
+			if newHealthStatus == types.HealthStatusActive {
+				newState = types.BotStateActive
+			}
+			update.State = &newState
+		}
+
+		if agent.LifecycleStatus != newLifecycleStatus {
+			update.LifecycleStatus = &newLifecycleStatus
+		}
+
+		return sm.UpdateBotStatus(ctx, agent.ID, update)
+	}
+
+	return nil
+}
+
+// transitionTimeoutLoop checks for stuck transitions
+func (sm *StatusManager) transitionTimeoutLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			sm.checkTransitionTimeouts()
+		case <-sm.stopCh:
+			return
+		}
+	}
+}
+
+// checkTransitionTimeouts checks for and handles stuck transitions
+func (sm *StatusManager) checkTransitionTimeouts() {
+	sm.transitionMutex.Lock()
+	defer sm.transitionMutex.Unlock()
+
+	now := time.Now()
+	for nodeID, transition := range sm.activeTransitions {
+		if now.Sub(transition.StartedAt) > sm.config.MaxTransitionTime {
+			logger.Logger.Warn().
+				Str("node_id", nodeID).
+				Str("from", string(transition.From)).
+				Str("to", string(transition.To)).
+				Dur("duration", now.Sub(transition.StartedAt)).
+				Msg("🔄 Transition timeout, forcing completion")
+
+			// Force complete the transition
+			ctx := context.Background()
+			if status, err := sm.GetBotStatus(ctx, nodeID); err == nil {
+				status.CompleteTransition()
+				if err := sm.persistStatus(ctx, nodeID, status); err != nil {
+					logger.Logger.Warn().
+						Err(err).
+						Str("node_id", nodeID).
+						Msg("failed to persist status during transition timeout")
+				}
+			}
+
+			delete(sm.activeTransitions, nodeID)
+		}
+	}
+}

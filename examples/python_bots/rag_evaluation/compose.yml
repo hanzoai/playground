@@ -1,5 +1,5 @@
 services:
-  control-plane:
+  playground:
     image: hanzoai/playground:latest
     environment:
       PLAYGROUND_STORAGE_MODE: local
@@ -18,14 +18,14 @@ services:
         # Set to false for faster builds without ML dependencies
         INSTALL_ML_DEPS: ${INSTALL_ML_DEPS:-true}
     environment:
-      PLAYGROUND_URL: http://control-plane:8080
+      PLAYGROUND_URL: http://playground:8080
       HANZO_CALLBACK_URL: http://rag-agent:8001
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       PORT: 8001
     ports:
       - "8001:8001"
     depends_on:
-      - control-plane
+      - playground
     restart: on-failure
 
   ui:

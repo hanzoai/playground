@@ -44,7 +44,7 @@ generate_artwork (entry point)
 
 1. **Playground Control Plane** running at `http://localhost:8080`
    ```bash
-   cd control-plane
+   cd .
    go run ./cmd/playground dev
    ```
 
@@ -349,7 +349,7 @@ export OPENAI_API_KEY="sk-..."
 ### "Control plane not reachable"
 Start the control plane:
 ```bash
-cd control-plane
+cd .
 go run ./cmd/playground dev
 ```
 

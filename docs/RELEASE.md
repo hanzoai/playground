@@ -67,7 +67,7 @@ Staging releases are **automatically triggered** when code is pushed to `main`. 
 - Merged pull requests
 
 **Trigger paths** (changes to these files trigger a staging release):
-- `control-plane/**` - Control plane changes
+- `./**` - Control plane changes
 - `sdk/**` - SDK changes (Python, TypeScript, Go)
 - `VERSION` - Version file changes
 - `.github/workflows/release.yml` - Release workflow changes

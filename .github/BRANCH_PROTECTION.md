@@ -36,7 +36,7 @@ If any required check fails, you **cannot merge** your PR until:
 ### Linting Failures
 ```bash
 # Run linting locally before pushing
-cd control-plane
+cd .
 golangci-lint run
 
 # For Python SDK
@@ -48,7 +48,7 @@ ruff format --check .
 ### Test Failures
 ```bash
 # Run tests locally
-cd control-plane
+cd .
 go test ./...
 
 cd sdk/go
@@ -61,7 +61,7 @@ pytest
 ### Build Failures
 ```bash
 # Test compilation locally
-cd control-plane
+cd .
 go build ./...
 
 # Test cross-compilation
@@ -73,7 +73,7 @@ GOOS=windows GOARCH=amd64 go build ./cmd/playground-server
 ### Docker Build Failures
 ```bash
 # Test Docker build locally
-docker build -f deployments/docker/Dockerfile.control-plane -t playground-control-plane:test .
+docker build -f deployments/docker/Dockerfile -t playground-control-plane:test .
 docker run --rm playground-control-plane:test --help
 ```
 
@@ -135,10 +135,10 @@ Workflows run automatically when:
 - Someone manually triggers them via GitHub Actions UI
 
 Workflows only run if you changed relevant files:
-- `control-plane/**` → Control Plane CI
+- `./**` → Control Plane CI
 - `sdk/go/**` → Go SDK CI
 - `sdk/python/**` → Python SDK CI
-- `deployments/docker/**` or `control-plane/**` → Docker Build
+- `deployments/docker/**` or `./**` → Docker Build
 
 ## Troubleshooting
 

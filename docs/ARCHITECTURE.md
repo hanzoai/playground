@@ -7,7 +7,7 @@ Playground provides a modular platform for orchestrating AI bots. The system is 
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │                           Clients                             │
-│   - Web UI (`control-plane/web`)                              │
+│   - Web UI (`./web`)                              │
 │   - Python SDK (`sdk/python`)                                 │
 │   - Go SDK (`sdk/go`)                                         │
 └───────────────────────────────────────────────────────────────┘
@@ -68,7 +68,7 @@ The control plane orchestrates bot workflows, provides API endpoints, manages cr
 
 ## Deployment
 
-- `deployments/docker/Dockerfile.control-plane` builds the Go binary and bundles the web UI.
+- `deployments/docker/Dockerfile` builds the Go binary and bundles the web UI.
 - `deployments/docker/Dockerfile.python-bot` and `Dockerfile.go-bot` provide reference runtime images.
 - `deployments/docker/docker-compose.yml` orchestrates a local stack (control plane + dependencies).
 

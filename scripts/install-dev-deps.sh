@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "==> Installing Go tools"
 if command -v go >/dev/null 2>&1; then
-  (cd "$ROOT_DIR/control-plane" && go mod download)
+  (cd "$ROOT_DIR/playground" && go mod download)
   (cd "$ROOT_DIR/sdk/go" && go mod download)
   go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
   go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -25,12 +25,12 @@ else
   echo "Python 3 not found. Install Python 3.10+ and rerun this script."
 fi
 
-echo "==> Installing Node.js dependencies for control-plane UI"
+echo "==> Installing Node.js dependencies for playground UI"
 if command -v corepack >/dev/null 2>&1; then
   corepack enable
 fi
 if command -v npm >/dev/null 2>&1; then
-  (cd "$ROOT_DIR/control-plane/web/client" && npm install)
+  (cd "$ROOT_DIR/./web/client" && npm install)
 else
   echo "npm not found. Install Node.js 20+ to work on the web UI."
 fi

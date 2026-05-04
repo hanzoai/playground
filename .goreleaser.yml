@@ -5,12 +5,12 @@ project_name: playground
 
 before:
   hooks:
-    - npm --prefix control-plane/web/client install --silent
-    - npm --prefix control-plane/web/client run build --silent
+    - npm --prefix ./web/client install --silent
+    - npm --prefix ./web/client run build --silent
 
 builds:
   - id: playground-linux-amd64
-    dir: control-plane
+    dir: .
     main: ./cmd/playground
     binary: playground-linux-amd64
     env:
@@ -29,7 +29,7 @@ builds:
       - sqlite_fts5
 
   - id: playground-linux-arm64
-    dir: control-plane
+    dir: .
     main: ./cmd/playground
     binary: playground-linux-arm64
     env:
@@ -49,7 +49,7 @@ builds:
       - sqlite_fts5
 
   - id: playground-darwin-amd64
-    dir: control-plane
+    dir: .
     main: ./cmd/playground
     binary: playground-darwin-amd64
     env:
@@ -68,7 +68,7 @@ builds:
       - sqlite_fts5
 
   - id: playground-darwin-arm64
-    dir: control-plane
+    dir: .
     main: ./cmd/playground
     binary: playground-darwin-arm64
     env:
@@ -88,7 +88,7 @@ builds:
 
   # Windows build disabled - focus on Linux and macOS for now
   # - id: playground-windows-amd64
-  #   dir: control-plane
+  #   dir: .
   #   main: ./cmd/playground
   #   binary: playground
   #   env:

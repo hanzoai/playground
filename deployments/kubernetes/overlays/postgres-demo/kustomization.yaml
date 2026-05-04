@@ -10,4 +10,4 @@ resources:
   - demo-agent-service.yaml
 
 patches:
-  - path: patch-control-plane-postgres.yaml
+  - path: patch-playground-postgres.yaml

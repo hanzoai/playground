@@ -21,11 +21,11 @@ The install script performs:
 
 - `go install` of required tooling (e.g., `golangci-lint`, `goose`).
 - `pip install -e .` for the Python SDK and development dependencies.
-- `npm install` inside `control-plane/web`.
+- `npm install` inside `./web`.
 
 ## Directory Conventions
 
-- `control-plane/` — Go services, migrations, and web UI.
+- `./` — Go services, migrations, and web UI.
 - `sdk/go/` — Distributed as its own Go module (`go get` friendly).
 - `sdk/python/` — Packaged with `pyproject.toml` for PyPI.
 - `deployments/docker/` — Container builds to orchestrate the stack.
@@ -39,13 +39,13 @@ The install script performs:
 | Run tests             | `./scripts/test-all.sh`                                      |
 | Format Go code        | `make fmt`                                                   |
 | Tidy Go modules       | `make tidy`                                                  |
-| Run the control plane | `cd control-plane && go run cmd/server/main.go`              |
-| Run UI in development | `cd control-plane/web && npm run dev`                        |
+| Run the control plane | `go run cmd/server/main.go`              |
+| Run UI in development | `cd ./web && npm run dev`                        |
 | Start local stack     | `docker compose -f deployments/docker/docker-compose.yml up` |
 
 ## Environment Variables
 
-Copy `control-plane/config/.env.example` to `.env` (if available) and adjust:
+Copy `./config/.env.example` to `.env` (if available) and adjust:
 
 - `PLAYGROUND_DATABASE_URL` — PostgreSQL connection string.
 - `PLAYGROUND_JWT_SECRET` — Authentication secret (development only).
@@ -53,17 +53,17 @@ Copy `control-plane/config/.env.example` to `.env` (if available) and adjust:
 ## Database Migrations
 
 ```bash
-cd control-plane
+cd .
 goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" status
 goose -dir ./migrations postgres "$PLAYGROUND_DATABASE_URL" up
 ```
 
 ## Frontend Development
 
-The UI lives in `control-plane/web`. It is built with React + TypeScript.
+The UI lives in `./web`. It is built with React + TypeScript.
 
 ```bash
-cd control-plane/web
+cd ./web
 npm install
 npm run dev
 ```
@@ -74,7 +74,7 @@ During development, run the Go server (`go run cmd/server/main.go`) for API endp
 
 ```bash
 # Control plane
-cd control-plane
+cd .
 go test ./...
 
 # Go SDK
@@ -91,7 +91,7 @@ pytest
 - Ensure Docker resources are sufficient (4 CPU, 8 GB RAM recommended).
 - Run `make tidy` if Go modules drift.
 - Delete `.venv` and rerun `./scripts/install.sh` if Python deps conflict.
-- Clear `control-plane/web/node_modules` if UI builds fail after dependency upgrades.
+- Clear `./web/node_modules` if UI builds fail after dependency upgrades.
 
 ## Conventions
 

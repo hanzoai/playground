@@ -1,0 +1,1957 @@
+package handlers
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/hanzoai/playground/internal/events"
+	"github.com/hanzoai/playground/internal/logger"
+	"github.com/hanzoai/playground/internal/server/middleware"
+	"github.com/hanzoai/playground/internal/services"
+	"github.com/hanzoai/playground/internal/storage"
+	"github.com/hanzoai/playground/internal/utils"
+	"github.com/hanzoai/playground/pkg/types"
+
+	"github.com/gin-gonic/gin"
+)
+
+// ExecutionStore captures the storage operations required by the simplified execution handlers.
+type ExecutionStore interface {
+	GetNode(ctx context.Context, id string) (*types.Node, error)
+	CreateExecutionRecord(ctx context.Context, execution *types.Execution) error
+	GetExecutionRecord(ctx context.Context, executionID string) (*types.Execution, error)
+	UpdateExecutionRecord(ctx context.Context, executionID string, update func(*types.Execution) (*types.Execution, error)) (*types.Execution, error)
+	QueryExecutionRecords(ctx context.Context, filter types.ExecutionFilter) ([]*types.Execution, error)
+	RegisterExecutionWebhook(ctx context.Context, webhook *types.ExecutionWebhook) error
+	StoreWorkflowExecution(ctx context.Context, execution *types.WorkflowExecution) error
+	UpdateWorkflowExecution(ctx context.Context, executionID string, updateFunc func(*types.WorkflowExecution) (*types.WorkflowExecution, error)) error
+	GetWorkflowExecution(ctx context.Context, executionID string) (*types.WorkflowExecution, error)
+	GetExecutionEventBus() *events.ExecutionEventBus
+}
+
+// ExecuteRequest represents an execution request from an agent client.
+// Input can be a map, string, or any JSON value — cloud bots accept plain text prompts.
+type ExecuteRequest struct {
+	Input   interface{}            `json:"input"`
+	Context map[string]interface{} `json:"context,omitempty"`
+	Webhook *WebhookRequest        `json:"webhook,omitempty"`
+}
+
+// WebhookRequest represents webhook registration parameters supplied by the client.
+type WebhookRequest struct {
+	URL     string            `json:"url"`
+	Secret  string            `json:"secret,omitempty"`
+	Headers map[string]string `json:"headers,omitempty"`
+}
+
+// ExecuteResponse is returned for synchronous executions.
+type ExecuteResponse struct {
+	ExecutionID       string      `json:"execution_id"`
+	RunID             string      `json:"run_id"`
+	Status            string      `json:"status"`
+	Result            interface{} `json:"result,omitempty"`
+	ErrorMessage      *string     `json:"error_message,omitempty"`
+	DurationMS        int64       `json:"duration_ms"`
+	FinishedAt        string      `json:"finished_at"`
+	WebhookRegistered bool        `json:"webhook_registered,omitempty"`
+}
+
+// AsyncExecuteResponse is returned when callers request asynchronous execution.
+type AsyncExecuteResponse struct {
+	ExecutionID       string  `json:"execution_id"`
+	RunID             string  `json:"run_id"`
+	WorkflowID        string  `json:"workflow_id"`
+	Status            string  `json:"status"`
+	Target            string  `json:"target"`
+	Type              string  `json:"type"`
+	CreatedAt         string  `json:"created_at"`
+	EnqueuedAt        string  `json:"enqueued_at,omitempty"`
+	WebhookRegistered bool    `json:"webhook_registered"`
+	WebhookError      *string `json:"webhook_error,omitempty"`
+}
+
+// ExecutionStatusResponse mirrors the data required by the UI to render execution state.
+type ExecutionStatusResponse struct {
+	ExecutionID       string                         `json:"execution_id"`
+	RunID             string                         `json:"run_id"`
+	Status            string                         `json:"status"`
+	Result            interface{}                    `json:"result,omitempty"`
+	Error             *string                        `json:"error,omitempty"`
+	StartedAt         string                         `json:"started_at"`
+	CompletedAt       *string                        `json:"completed_at,omitempty"`
+	DurationMS        *int64                         `json:"duration_ms,omitempty"`
+	WebhookRegistered bool                           `json:"webhook_registered"`
+	WebhookEvents     []*types.ExecutionWebhookEvent `json:"webhook_events,omitempty"`
+}
+
+// BatchStatusRequest allows the UI to fetch multiple execution statuses at once.
+type BatchStatusRequest struct {
+	ExecutionIDs []string `json:"execution_ids" binding:"required"`
+}
+
+// BatchStatusResponse is the batched counterpart to ExecutionStatusResponse.
+type BatchStatusResponse map[string]ExecutionStatusResponse
+
+type executionStatusUpdateRequest struct {
+	Status      string                 `json:"status" binding:"required"`
+	Result      map[string]interface{} `json:"result,omitempty"`
+	Error       string                 `json:"error,omitempty"`
+	DurationMS  *int64                 `json:"duration_ms,omitempty"`
+	CompletedAt *time.Time             `json:"completed_at,omitempty"`
+	Progress    *int                   `json:"progress,omitempty"`
+}
+
+// BudgetSpendRecorder records spend events for budget tracking.
+type BudgetSpendRecorder interface {
+	RecordBotSpend(ctx context.Context, record *storage.BotSpendRecord) error
+	GetBotBudget(ctx context.Context, botID string) (*storage.BotBudget, error)
+}
+
+// WalletDeductor deducts execution costs from bot wallets.
+type WalletDeductor interface {
+	WithdrawFromBotWallet(ctx context.Context, botID string, amountAiCoin float64, amountUsdCents int64, description string) (*storage.WalletTransaction, error)
+	GetBotWallet(ctx context.Context, botID string) (*storage.BotWallet, error)
+}
+
+type executionController struct {
+	store          ExecutionStore
+	httpClient     *http.Client
+	payloads       services.PayloadStore
+	webhooks       services.WebhookDispatcher
+	eventBus       *events.ExecutionEventBus
+	timeout        time.Duration
+	budgetRecorder BudgetSpendRecorder
+	walletDeductor WalletDeductor
+}
+
+type asyncExecutionJob struct {
+	controller *executionController
+	plan       preparedExecution
+}
+
+type asyncWorkerPool struct {
+	queue chan asyncExecutionJob
+}
+
+type completionJob struct {
+	controller *executionController
+	plan       *preparedExecution
+	result     []byte
+	elapsed    time.Duration
+	callErr    error
+	done       chan error
+}
+
+var (
+	asyncPoolOnce sync.Once
+	asyncPool     *asyncWorkerPool
+
+	completionOnce  sync.Once
+	completionQueue chan completionJob
+)
+
+const (
+	maxWebhookHeaders      = 20
+	maxWebhookHeaderLength = 512
+	maxWebhookSecretLength = 4096
+)
+
+// ExecutionOptions configures optional execution controller features.
+type ExecutionOptions struct {
+	BudgetRecorder BudgetSpendRecorder
+	WalletDeductor WalletDeductor
+}
+
+// ExecuteHandler handles synchronous execution requests.
+func ExecuteHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, budgetRecorder ...BudgetSpendRecorder) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	if len(budgetRecorder) > 0 {
+		controller.budgetRecorder = budgetRecorder[0]
+	}
+	return controller.handleSync
+}
+
+// ExecuteHandlerWithOpts handles synchronous execution requests with full options.
+func ExecuteHandlerWithOpts(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, opts ExecutionOptions) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	controller.budgetRecorder = opts.BudgetRecorder
+	controller.walletDeductor = opts.WalletDeductor
+	return controller.handleSync
+}
+
+// ExecuteAsyncHandler handles asynchronous execution requests.
+func ExecuteAsyncHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, budgetRecorder ...BudgetSpendRecorder) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	if len(budgetRecorder) > 0 {
+		controller.budgetRecorder = budgetRecorder[0]
+	}
+	return controller.handleAsync
+}
+
+// ExecuteAsyncHandlerWithOpts handles asynchronous execution requests with full options.
+func ExecuteAsyncHandlerWithOpts(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration, opts ExecutionOptions) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	controller.budgetRecorder = opts.BudgetRecorder
+	controller.walletDeductor = opts.WalletDeductor
+	return controller.handleAsync
+}
+
+// GetExecutionStatusHandler resolves a single execution record.
+func GetExecutionStatusHandler(store ExecutionStore) gin.HandlerFunc {
+	controller := newExecutionController(store, nil, nil, 0)
+	return controller.handleStatus
+}
+
+// BatchExecutionStatusHandler resolves multiple execution records.
+func BatchExecutionStatusHandler(store ExecutionStore) gin.HandlerFunc {
+	controller := newExecutionController(store, nil, nil, 0)
+	return controller.handleBatchStatus
+}
+
+// UpdateExecutionStatusHandler ingests status callbacks from agent nodes.
+func UpdateExecutionStatusHandler(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration) gin.HandlerFunc {
+	controller := newExecutionController(store, payloads, webhooks, timeout)
+	return controller.handleStatusUpdate
+}
+
+func newExecutionController(store ExecutionStore, payloads services.PayloadStore, webhooks services.WebhookDispatcher, timeout time.Duration) *executionController {
+	// Use default timeout if not provided (0 or negative)
+	if timeout <= 0 {
+		timeout = 90 * time.Second
+	}
+	return &executionController{
+		store: store,
+		httpClient: &http.Client{
+			Timeout: timeout,
+		},
+		payloads: payloads,
+		webhooks: webhooks,
+		eventBus: store.GetExecutionEventBus(),
+		timeout:  timeout,
+	}
+}
+
+func (c *executionController) handleSync(ctx *gin.Context) {
+	reqCtx := ctx.Request.Context()
+	plan, err := c.prepareExecution(reqCtx, ctx)
+	if err != nil {
+		writeExecutionError(ctx, err)
+		return
+	}
+
+	// Emit execution started event with full bot context
+	c.publishExecutionStartedEvent(plan)
+
+	resultBody, elapsed, asyncAccepted, callErr := c.callAgent(reqCtx, plan)
+
+	// If agent returned HTTP 202 (async acknowledgment), wait for callback completion
+	if callErr == nil && asyncAccepted {
+		logger.Logger.Info().
+			Str("execution_id", plan.exec.ExecutionID).
+			Str("agent", plan.target.NodeID).
+			Str("bot", plan.target.TargetName).
+			Msg("agent returned async acknowledgment, waiting for completion")
+
+		// Wait for agent to call back and complete the execution
+		// Use configured timeout to match the HTTP client timeout
+		exec, waitErr := c.waitForExecutionCompletion(reqCtx, plan.exec.ExecutionID, c.timeout)
+		if waitErr != nil {
+			logger.Logger.Error().
+				Err(waitErr).
+				Str("execution_id", plan.exec.ExecutionID).
+				Msg("failed to wait for async execution completion")
+			writeExecutionError(ctx, waitErr)
+			return
+		}
+
+		// Build response from completed execution
+		var result interface{}
+		if exec.ResultPayload != nil {
+			result = decodeJSON(exec.ResultPayload)
+		}
+
+		var durationMS int64
+		if exec.DurationMS != nil {
+			durationMS = *exec.DurationMS
+		}
+
+		var finishedAt string
+		if exec.CompletedAt != nil {
+			finishedAt = exec.CompletedAt.UTC().Format(time.RFC3339)
+		} else {
+			finishedAt = time.Now().UTC().Format(time.RFC3339)
+		}
+
+		// Check if execution failed
+		if exec.Status == types.ExecutionStatusFailed {
+			errMsg := "execution failed"
+			if exec.ErrorMessage != nil {
+				errMsg = *exec.ErrorMessage
+			}
+			response := ExecuteResponse{
+				ExecutionID:       exec.ExecutionID,
+				RunID:             exec.RunID,
+				Status:            string(exec.Status),
+				ErrorMessage:      &errMsg,
+				DurationMS:        durationMS,
+				FinishedAt:        finishedAt,
+				WebhookRegistered: exec.WebhookRegistered,
+			}
+			ctx.Header("X-Execution-ID", exec.ExecutionID)
+			ctx.Header("X-Run-ID", exec.RunID)
+			ctx.JSON(http.StatusOK, response)
+			return
+		}
+
+		// Return successful execution result
+		response := ExecuteResponse{
+			ExecutionID:       exec.ExecutionID,
+			RunID:             exec.RunID,
+			Status:            string(exec.Status),
+			Result:            result,
+			DurationMS:        durationMS,
+			FinishedAt:        finishedAt,
+			WebhookRegistered: exec.WebhookRegistered,
+		}
+		ctx.Header("X-Execution-ID", exec.ExecutionID)
+		ctx.Header("X-Run-ID", exec.RunID)
+		ctx.JSON(http.StatusOK, response)
+		return
+	}
+
+	// Agent returned HTTP 200 (synchronous result), process completion normally
+	job := completionJob{
+		controller: c,
+		plan:       plan,
+		result:     resultBody,
+		elapsed:    elapsed,
+		callErr:    callErr,
+		done:       make(chan error, 1),
+	}
+	if err := enqueueCompletion(job); err != nil {
+		logger.Logger.Error().Err(err).Str("execution_id", plan.exec.ExecutionID).Msg("failed to enqueue completion job")
+		writeExecutionError(ctx, err)
+		return
+	}
+	if err := <-job.done; err != nil {
+		logger.Logger.Error().Err(err).Str("execution_id", plan.exec.ExecutionID).Msg("completion processing failed")
+		writeExecutionError(ctx, err)
+		return
+	}
+	if callErr != nil {
+		writeExecutionError(ctx, callErr)
+		return
+	}
+
+	response := ExecuteResponse{
+		ExecutionID:       plan.exec.ExecutionID,
+		RunID:             plan.exec.RunID,
+		Status:            types.ExecutionStatusSucceeded,
+		Result:            decodeJSON(resultBody),
+		DurationMS:        elapsed.Milliseconds(),
+		FinishedAt:        time.Now().UTC().Format(time.RFC3339),
+		WebhookRegistered: plan.webhookRegistered,
+	}
+
+	ctx.Header("X-Execution-ID", plan.exec.ExecutionID)
+	ctx.Header("X-Run-ID", plan.exec.RunID)
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *executionController) handleAsync(ctx *gin.Context) {
+	reqCtx := ctx.Request.Context()
+	plan, err := c.prepareExecution(reqCtx, ctx)
+	if err != nil {
+		writeExecutionError(ctx, err)
+		return
+	}
+
+	// Emit execution started event with full bot context
+	c.publishExecutionStartedEvent(plan)
+
+	pool := getAsyncWorkerPool()
+	job := asyncExecutionJob{
+		controller: c,
+		plan:       *plan,
+	}
+
+	if ok := pool.submit(job); !ok {
+		queueErr := errors.New("async execution queue is full; retry later")
+		if updateErr := c.failExecution(reqCtx, plan, queueErr, 0, nil); updateErr != nil {
+			logger.Logger.Error().
+				Err(updateErr).
+				Str("execution_id", plan.exec.ExecutionID).
+				Msg("failed to persist execution failure after queue saturation")
+		}
+		logger.Logger.Warn().
+			Str("execution_id", plan.exec.ExecutionID).
+			Msg("async execution rejected due to queue saturation")
+		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": queueErr.Error()})
+		return
+	}
+
+	createdAt := plan.exec.CreatedAt.UTC().Format(time.RFC3339)
+	targetLabel := fmt.Sprintf("%s.%s", plan.target.NodeID, plan.target.TargetName)
+	response := AsyncExecuteResponse{
+		ExecutionID:       plan.exec.ExecutionID,
+		RunID:             plan.exec.RunID,
+		WorkflowID:        plan.exec.RunID,
+		Status:            string(types.ExecutionStatusQueued),
+		Target:            targetLabel,
+		Type:              plan.targetType,
+		CreatedAt:         createdAt,
+		EnqueuedAt:        createdAt,
+		WebhookRegistered: plan.webhookRegistered,
+	}
+	if plan.webhookError != nil {
+		response.WebhookError = plan.webhookError
+	}
+
+	ctx.Header("X-Execution-ID", plan.exec.ExecutionID)
+	ctx.Header("X-Run-ID", plan.exec.RunID)
+	ctx.JSON(http.StatusAccepted, response)
+}
+
+func (c *executionController) handleStatus(ctx *gin.Context) {
+	reqCtx := ctx.Request.Context()
+	executionID := ctx.Param("execution_id")
+	if executionID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "execution_id is required"})
+		return
+	}
+
+	exec, err := c.store.GetExecutionRecord(reqCtx, executionID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to load execution: %v", err)})
+		return
+	}
+	if exec == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "execution not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, renderStatus(exec))
+}
+
+func (c *executionController) handleBatchStatus(ctx *gin.Context) {
+	reqCtx := ctx.Request.Context()
+	var request BatchStatusRequest
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := make(BatchStatusResponse, len(request.ExecutionIDs))
+	for _, id := range request.ExecutionIDs {
+		exec, err := c.store.GetExecutionRecord(reqCtx, id)
+		if err != nil {
+			response[id] = ExecutionStatusResponse{
+				ExecutionID: id,
+				Status:      "error",
+				Error:       pointerString(fmt.Sprintf("load execution: %v", err)),
+			}
+			continue
+		}
+		if exec == nil {
+			response[id] = ExecutionStatusResponse{
+				ExecutionID: id,
+				Status:      "not_found",
+			}
+			continue
+		}
+		response[id] = renderStatus(exec)
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *executionController) handleStatusUpdate(ctx *gin.Context) {
+	reqCtx := ctx.Request.Context()
+	executionID := ctx.Param("execution_id")
+	if executionID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "execution_id is required"})
+		return
+	}
+
+	var req executionStatusUpdateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request body: %v", err)})
+		return
+	}
+
+	normalizedStatus := types.NormalizeExecutionStatus(req.Status)
+	if normalizedStatus == "" || normalizedStatus == string(types.ExecutionStatusUnknown) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("unsupported status '%s'", req.Status)})
+		return
+	}
+
+	var (
+		resultBytes []byte
+		err         error
+	)
+	if len(req.Result) > 0 {
+		resultBytes, err = json.Marshal(req.Result)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("failed to encode result: %v", err)})
+			return
+		}
+	}
+
+	resultURI := c.savePayload(reqCtx, resultBytes)
+	isTerminal := types.IsTerminalExecutionStatus(normalizedStatus)
+	var elapsed time.Duration
+	var errorMsg *string
+
+	updated, err := c.store.UpdateExecutionRecord(reqCtx, executionID, func(current *types.Execution) (*types.Execution, error) {
+		if current == nil {
+			return nil, fmt.Errorf("execution %s not found", executionID)
+		}
+
+		current.Status = normalizedStatus
+		if len(resultBytes) > 0 {
+			current.ResultPayload = json.RawMessage(resultBytes)
+			current.ResultURI = resultURI
+		}
+
+		if req.Error != "" {
+			errCopy := req.Error
+			current.ErrorMessage = &errCopy
+			errorMsg = &errCopy
+		} else if normalizedStatus == string(types.ExecutionStatusSucceeded) {
+			current.ErrorMessage = nil
+			errorMsg = nil
+		}
+
+		if req.DurationMS != nil {
+			current.DurationMS = req.DurationMS
+			elapsed = time.Duration(*req.DurationMS) * time.Millisecond
+		} else if isTerminal && !current.StartedAt.IsZero() {
+			var completed time.Time
+			if req.CompletedAt != nil && !req.CompletedAt.IsZero() {
+				completed = req.CompletedAt.UTC()
+			} else {
+				completed = time.Now().UTC()
+			}
+			elapsed = completed.Sub(current.StartedAt)
+			duration := elapsed.Milliseconds()
+			current.DurationMS = pointerInt64(duration)
+		}
+
+		if normalizedStatus == string(types.ExecutionStatusSucceeded) || normalizedStatus == string(types.ExecutionStatusFailed) || normalizedStatus == string(types.ExecutionStatusCancelled) || normalizedStatus == string(types.ExecutionStatusTimeout) {
+			if req.CompletedAt != nil && !req.CompletedAt.IsZero() {
+				completed := req.CompletedAt.UTC()
+				current.CompletedAt = &completed
+			} else {
+				now := time.Now().UTC()
+				current.CompletedAt = &now
+			}
+		} else if req.CompletedAt != nil && !req.CompletedAt.IsZero() {
+			completed := req.CompletedAt.UTC()
+			current.CompletedAt = &completed
+		} else {
+			current.CompletedAt = nil
+		}
+
+		return current, nil
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to update execution: %v", err)})
+		return
+	}
+	if updated == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "execution not found"})
+		return
+	}
+	if elapsed == 0 && updated.DurationMS != nil {
+		elapsed = time.Duration(*updated.DurationMS) * time.Millisecond
+	}
+
+	if isTerminal {
+		c.updateWorkflowExecutionFinalState(reqCtx, executionID, types.ExecutionStatus(normalizedStatus), updated.ResultPayload, elapsed, errorMsg)
+		if updated.WebhookRegistered {
+			c.triggerWebhook(executionID)
+		}
+	}
+
+	eventData := map[string]interface{}{
+		"result":   req.Result,
+		"error":    req.Error,
+		"progress": req.Progress,
+	}
+	if inputPayload := decodeJSON(updated.InputPayload); inputPayload != nil {
+		eventData["input"] = inputPayload
+	}
+	c.publishExecutionEvent(updated, normalizedStatus, eventData)
+
+	ctx.JSON(http.StatusOK, renderStatus(updated))
+}
+
+func (c *executionController) publishExecutionEvent(exec *types.Execution, status string, data map[string]interface{}) {
+	c.publishExecutionEventWithBotInfo(exec, status, data, nil, nil)
+}
+
+func (c *executionController) publishExecutionEventWithBotInfo(exec *types.Execution, status string, data map[string]interface{}, agent *types.Node, botID *string) {
+	if exec == nil {
+		return
+	}
+
+	eventType := events.ExecutionUpdated
+	switch status {
+	case string(types.ExecutionStatusSucceeded):
+		eventType = events.ExecutionCompleted
+	case string(types.ExecutionStatusFailed):
+		eventType = events.ExecutionFailed
+	case string(types.ExecutionStatusRunning):
+		eventType = events.ExecutionStarted
+	case "created":
+		eventType = events.ExecutionCreated
+	}
+
+	// Ensure data map exists
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+
+	// Add bot_id to the event data
+	rID := exec.BotID
+	if botID != nil && *botID != "" {
+		rID = *botID
+	}
+	if rID != "" {
+		data["bot_id"] = rID
+	}
+
+	// Add node_id to the event data
+	if exec.NodeID != "" {
+		data["node_id"] = exec.NodeID
+	}
+
+	// Add bot definitions if agent info is available
+	if agent != nil {
+		// Find the specific bot being executed
+		for _, r := range agent.Bots {
+			if r.ID == rID {
+				data["bot"] = map[string]interface{}{
+					"id":            r.ID,
+					"input_schema":  r.InputSchema,
+					"output_schema": r.OutputSchema,
+				}
+				break
+			}
+		}
+
+		// Find the specific skill being executed
+		for _, s := range agent.Skills {
+			if s.ID == rID {
+				data["skill"] = map[string]interface{}{
+					"id":           s.ID,
+					"input_schema": s.InputSchema,
+					"tags":         s.Tags,
+				}
+				data["skill_id"] = s.ID
+				break
+			}
+		}
+
+		// Include all bots on this agent node for back-population
+		if len(agent.Bots) > 0 {
+			botList := make([]map[string]interface{}, 0, len(agent.Bots))
+			for _, r := range agent.Bots {
+				botList = append(botList, map[string]interface{}{
+					"id":            r.ID,
+					"input_schema":  r.InputSchema,
+					"output_schema": r.OutputSchema,
+				})
+			}
+			data["agent_bots"] = botList
+		}
+
+		// Include all skills on this agent node for back-population
+		if len(agent.Skills) > 0 {
+			skillList := make([]map[string]interface{}, 0, len(agent.Skills))
+			for _, s := range agent.Skills {
+				skillList = append(skillList, map[string]interface{}{
+					"id":           s.ID,
+					"input_schema": s.InputSchema,
+					"tags":         s.Tags,
+				})
+			}
+			data["agent_skills"] = skillList
+		}
+
+		// Include agent node info
+		data["agent_node"] = map[string]interface{}{
+			"id":              agent.ID,
+			"base_url":        agent.BaseURL,
+			"version":         agent.Version,
+			"deployment_type": agent.DeploymentType,
+		}
+	}
+
+	event := events.ExecutionEvent{
+		Type:        eventType,
+		ExecutionID: exec.ExecutionID,
+		WorkflowID:  exec.RunID,
+		NodeID: exec.NodeID,
+		Status:      status,
+		Timestamp:   time.Now(),
+		Data:        data,
+	}
+	if c.eventBus != nil {
+		c.eventBus.Publish(event)
+	}
+	events.GlobalExecutionEventBus.Publish(event)
+}
+
+// publishExecutionStartedEvent emits the ExecutionStarted event with full bot context
+func (c *executionController) publishExecutionStartedEvent(plan *preparedExecution) {
+	if plan == nil || plan.exec == nil {
+		return
+	}
+
+	data := map[string]interface{}{
+		"target_type": plan.targetType,
+	}
+
+	// Include input payload info (not the full payload, just metadata)
+	if len(plan.exec.InputPayload) > 0 {
+		data["input_size"] = len(plan.exec.InputPayload)
+	}
+
+	c.publishExecutionEventWithBotInfo(
+		plan.exec,
+		string(types.ExecutionStatusRunning),
+		data,
+		plan.agent,
+		&plan.target.TargetName,
+	)
+}
+
+// waitForExecutionCompletion waits for an execution to complete by subscribing to the event bus.
+// It returns the completed execution record or an error if the execution fails or times out.
+// This is used when agents return HTTP 202 (async acknowledgment) but the sync endpoint needs to wait for completion.
+func (c *executionController) waitForExecutionCompletion(ctx context.Context, executionID string, timeout time.Duration) (*types.Execution, error) {
+	if c.eventBus == nil {
+		return nil, fmt.Errorf("event bus not available")
+	}
+
+	// Create unique subscriber ID for this wait operation
+	subscriberID := fmt.Sprintf("sync-wait-%s", executionID)
+
+	// Subscribe to events
+	eventChan := c.eventBus.Subscribe(subscriberID)
+	defer c.eventBus.Unsubscribe(subscriberID)
+
+	// Create timeout timer
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	logger.Logger.Debug().
+		Str("execution_id", executionID).
+		Dur("timeout", timeout).
+		Msg("waiting for execution completion via event bus")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+
+		case <-timer.C:
+			logger.Logger.Warn().
+				Str("execution_id", executionID).
+				Dur("timeout", timeout).
+				Msg("execution completion timeout")
+			return nil, fmt.Errorf("execution timeout after %v", timeout)
+
+		case event := <-eventChan:
+			// Only process events for this specific execution
+			if event.ExecutionID != executionID {
+				continue
+			}
+
+			// Check if this is a terminal event
+			if event.Type == events.ExecutionCompleted || event.Type == events.ExecutionFailed {
+				logger.Logger.Debug().
+					Str("execution_id", executionID).
+					Str("event_type", string(event.Type)).
+					Msg("received terminal execution event")
+
+				// Fetch the updated execution record
+				exec, err := c.store.GetExecutionRecord(ctx, executionID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch execution after completion: %w", err)
+				}
+				if exec == nil {
+					return nil, fmt.Errorf("execution %s not found after completion event", executionID)
+				}
+
+				return exec, nil
+			}
+
+			// Continue waiting for other event types (ExecutionUpdated, etc.)
+		}
+	}
+}
+
+type preparedExecution struct {
+	exec              *types.Execution
+	requestBody       []byte
+	agent             *types.Node
+	target            *parsedTarget
+	targetType        string
+	webhookRegistered bool
+	webhookError      *string
+}
+
+func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.Context) (*preparedExecution, error) {
+	targetParam := ginCtx.Param("target")
+	target, err := parseTarget(targetParam)
+	if err != nil {
+		return nil, fmt.Errorf("invalid target: %w", err)
+	}
+
+	var req ExecuteRequest
+	if err := ginCtx.ShouldBindJSON(&req); err != nil {
+		return nil, fmt.Errorf("invalid request body: %w", err)
+	}
+	if req.Input == nil {
+		req.Input = map[string]interface{}{}
+	}
+
+	var (
+		sanitizedWebhook *normalizedWebhookConfig
+		webhookError     *string
+	)
+
+	if req.Webhook != nil {
+		cfg, err := normalizeWebhookRequest(req.Webhook)
+		if err != nil {
+			errMsg := err.Error()
+			webhookError = &errMsg
+		} else if cfg != nil {
+			sanitizedWebhook = cfg
+		}
+	}
+
+	agent, err := c.store.GetNode(ctx, target.NodeID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load agent '%s': %w", target.NodeID, err)
+	}
+	if agent == nil {
+		return nil, fmt.Errorf("agent '%s' not found", target.NodeID)
+	}
+	// Verify node belongs to requesting org. When the caller has an org context
+	// (from IAM auth), enforce isolation. Untagged agents (OrgID="") are auto-tagged
+	// with the caller's org on first access.
+	if org := middleware.GetOrganization(ginCtx); org != "" {
+		if agent.OrgID != "" && agent.OrgID != org {
+			return nil, fmt.Errorf("access denied: agent belongs to a different organization")
+		}
+		if agent.OrgID == "" {
+			agent.OrgID = org // Auto-tag untagged agent with caller's org
+		}
+	}
+	if agent.DeploymentType == "" && agent.Metadata.Custom != nil {
+		if v, ok := agent.Metadata.Custom["serverless"]; ok && fmt.Sprint(v) == "true" {
+			agent.DeploymentType = "serverless"
+		}
+	}
+	if agent.DeploymentType == "serverless" && (agent.InvocationURL == nil || strings.TrimSpace(*agent.InvocationURL) == "") {
+		if trimmed := strings.TrimSpace(agent.BaseURL); trimmed != "" {
+			execURL := strings.TrimSuffix(trimmed, "/") + "/execute"
+			agent.InvocationURL = &execURL
+		}
+	}
+
+	targetType, err := determineTargetType(agent, target.TargetName)
+	if err != nil {
+		return nil, err
+	}
+	target.TargetType = targetType
+
+	// Pre-execution wallet balance check: reject if bot wallet exists, is
+	// enabled, and has zero or negative balance. Bots without a wallet (or
+	// with wallet disabled) are not gated — this only applies when the user
+	// has explicitly set up a wallet for the bot.
+	if c.walletDeductor != nil {
+		if wallet, wErr := c.walletDeductor.GetBotWallet(ctx, target.TargetName); wErr == nil && wallet != nil && wallet.Enabled {
+			if wallet.UsdBalanceCents <= 0 {
+				return nil, fmt.Errorf("bot wallet has insufficient funds — fund your bot wallet to continue")
+			}
+		}
+	}
+
+	headers := readExecutionHeaders(ginCtx)
+	runID := headers.runID
+	if runID == "" {
+		runID = utils.GenerateRunID()
+	}
+
+	executionID := utils.GenerateExecutionID()
+	now := time.Now().UTC()
+
+	clientPayload := map[string]interface{}{
+		"input": req.Input,
+	}
+	if len(req.Context) > 0 {
+		clientPayload["context"] = req.Context
+	}
+
+	storedPayload, err := json.Marshal(clientPayload)
+	if err != nil {
+		return nil, fmt.Errorf("encode execution payload: %w", err)
+	}
+
+	org := middleware.GetOrganization(ginCtx)
+	exec := &types.Execution{
+		ExecutionID:       executionID,
+		RunID:             runID,
+		ParentExecutionID: headers.parentExecutionID,
+		NodeID:     agent.ID,
+		BotID: target.TargetName,
+		OrgID:            org,
+		Status:            types.ExecutionStatusRunning,
+		InputPayload:      json.RawMessage(storedPayload),
+		StartedAt:         now,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+
+	// Build agent payload — Input can be a map or a scalar (string, number, etc.)
+	agentPayload := map[string]interface{}{}
+	if inputMap, ok := req.Input.(map[string]interface{}); ok {
+		for key, value := range inputMap {
+			agentPayload[key] = value
+		}
+	} else {
+		// Scalar input (e.g. plain text prompt) — wrap as {"input": value}
+		agentPayload["input"] = req.Input
+	}
+
+	var agentPayloadBytes []byte
+	if agent.DeploymentType == "serverless" {
+		agentPayloadBytes, err = json.Marshal(buildServerlessPayload(target, exec, headers, agentPayload))
+	} else {
+		agentPayloadBytes, err = json.Marshal(agentPayload)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("encode agent payload: %w", err)
+	}
+
+	inputURI := c.savePayload(ctx, storedPayload)
+	exec.InputURI = inputURI
+
+	if headers.sessionID != nil {
+		exec.SessionID = headers.sessionID
+	}
+	if headers.actorID != nil {
+		exec.ActorID = headers.actorID
+	}
+
+	if err := c.store.CreateExecutionRecord(ctx, exec); err != nil {
+		return nil, fmt.Errorf("create execution record: %w", err)
+	}
+
+	var webhookRegistered bool
+	if sanitizedWebhook != nil && webhookError == nil {
+		registration := &types.ExecutionWebhook{
+			ExecutionID:   executionID,
+			URL:           sanitizedWebhook.URL,
+			Headers:       sanitizedWebhook.Headers,
+			Status:        types.ExecutionWebhookStatusPending,
+			AttemptCount:  0,
+			NextAttemptAt: pointerTime(now),
+		}
+		if sanitizedWebhook.Secret != nil {
+			registration.Secret = sanitizedWebhook.Secret
+		}
+		if err := c.store.RegisterExecutionWebhook(ctx, registration); err != nil {
+			logger.Logger.Error().Err(err).Str("execution_id", executionID).Msg("failed to register execution webhook")
+			errMsg := err.Error()
+			webhookError = &errMsg
+		} else {
+			webhookRegistered = true
+			exec.WebhookRegistered = true
+		}
+	}
+
+	if !webhookRegistered {
+		exec.WebhookRegistered = false
+	}
+
+	c.ensureWorkflowExecutionRecord(ctx, exec, target, storedPayload)
+
+	return &preparedExecution{
+		exec:              exec,
+		requestBody:       agentPayloadBytes,
+		agent:             agent,
+		target:            target,
+		targetType:        targetType,
+		webhookRegistered: webhookRegistered,
+		webhookError:      webhookError,
+	}, nil
+}
+
+func (c *executionController) callAgent(ctx context.Context, plan *preparedExecution) ([]byte, time.Duration, bool, error) {
+	start := time.Now()
+	url := buildAgentURL(plan.agent, plan.target)
+
+	// Cloud bot chat bridge: reformat payload for /api/v1/chat endpoint
+	requestBody := plan.requestBody
+	if strings.HasSuffix(url, "/api/v1/chat") {
+		// Extract prompt from the execution input
+		var input map[string]interface{}
+		if err := json.Unmarshal(plan.requestBody, &input); err == nil {
+			message := ""
+			if prompt, ok := input["prompt"].(string); ok {
+				message = prompt
+			} else if inp, ok := input["input"].(string); ok {
+				message = inp
+			} else if inp, ok := input["input"]; ok {
+				b, _ := json.Marshal(inp)
+				message = string(b)
+			}
+			model, _ := input["model"].(string)
+			sessionKey := plan.agent.ID + ":main"
+			chatPayload := map[string]interface{}{
+				"sessionKey": sessionKey,
+				"nodeId":     plan.agent.ID,
+				"message":    message,
+				"timeoutMs":  120000,
+			}
+			if model != "" {
+				chatPayload["model"] = model
+			}
+			requestBody, _ = json.Marshal(chatPayload)
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(requestBody))
+	if err != nil {
+		return nil, 0, false, fmt.Errorf("create agent request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	// Add gateway auth token for chat bridge calls
+	if strings.HasSuffix(url, "/api/v1/chat") {
+		if gwToken := os.Getenv("HANZO_AGENTS_CLOUD_GATEWAY_TOKEN"); gwToken != "" {
+			req.Header.Set("Authorization", "Bearer "+gwToken)
+		}
+	}
+	req.Header.Set("X-Run-ID", plan.exec.RunID)
+	req.Header.Set("X-Execution-ID", plan.exec.ExecutionID)
+	req.Header.Set("X-Workflow-ID", plan.exec.RunID)
+	if plan.exec.ParentExecutionID != nil {
+		req.Header.Set("X-Parent-Execution-ID", *plan.exec.ParentExecutionID)
+	}
+	if plan.exec.SessionID != nil {
+		req.Header.Set("X-Session-ID", *plan.exec.SessionID)
+	}
+	if plan.exec.ActorID != nil {
+		req.Header.Set("X-Actor-ID", *plan.exec.ActorID)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, time.Since(start), false, fmt.Errorf("agent call failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusAccepted {
+		logger.Logger.Info().
+			Str("execution_id", plan.exec.ExecutionID).
+			Str("agent", plan.target.NodeID).
+			Str("bot", plan.target.TargetName).
+			Msg("agent acknowledged async execution")
+		return nil, time.Since(start), true, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, time.Since(start), false, fmt.Errorf("read agent response: %w", err)
+	}
+
+	if plan.agent.DeploymentType == "serverless" {
+		logger.Logger.Debug().
+			Str("agent", plan.target.NodeID).
+			Str("bot", plan.target.TargetName).
+			Str("url", url).
+			Int("status", resp.StatusCode).
+			Msgf("serverless response: %s", truncateForLog(body))
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return body, time.Since(start), false, fmt.Errorf("agent error (%d): %s", resp.StatusCode, truncateForLog(body))
+	}
+
+	return body, time.Since(start), false, nil
+}
+
+func (c *executionController) completeExecution(ctx context.Context, plan *preparedExecution, result []byte, elapsed time.Duration) error {
+	resultURI := c.savePayload(ctx, result)
+
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		updated, err := c.store.UpdateExecutionRecord(ctx, plan.exec.ExecutionID, func(current *types.Execution) (*types.Execution, error) {
+			if current == nil {
+				return nil, fmt.Errorf("execution %s not found", plan.exec.ExecutionID)
+			}
+			now := time.Now().UTC()
+			current.Status = types.ExecutionStatusSucceeded
+			current.ResultPayload = json.RawMessage(result)
+			current.ErrorMessage = nil
+			current.CompletedAt = pointerTime(now)
+			duration := elapsed.Milliseconds()
+			current.DurationMS = &duration
+			current.UpdatedAt = now
+			current.ResultURI = resultURI
+			return current, nil
+		})
+		if err == nil {
+			c.updateWorkflowExecutionFinalState(
+				ctx,
+				plan.exec.ExecutionID,
+				types.ExecutionStatusSucceeded,
+				result,
+				elapsed,
+				nil,
+			)
+			if plan.webhookRegistered || (updated != nil && updated.WebhookRegistered) {
+				c.triggerWebhook(plan.exec.ExecutionID)
+			}
+			eventData := map[string]interface{}{}
+			if payload := decodeJSON(result); payload != nil {
+				eventData["result"] = payload
+			}
+			if inputPayload := decodeJSON(plan.exec.InputPayload); inputPayload != nil {
+				eventData["input"] = inputPayload
+			}
+			c.publishExecutionEventWithBotInfo(updated, string(types.ExecutionStatusSucceeded), eventData, plan.agent, &plan.target.TargetName)
+
+			// Record spend for budget tracking (best-effort, non-blocking)
+			if c.budgetRecorder != nil && updated != nil {
+				go func() {
+					costUSD := estimateExecutionCost(elapsed)
+					botID := updated.BotID
+					if botID == "" {
+						botID = plan.target.TargetName
+					}
+					spendRecord := &storage.BotSpendRecord{
+						BotID:       botID,
+						ExecutionID: updated.ExecutionID,
+						AmountUSD:   costUSD,
+						Description: fmt.Sprintf("execution %s (%dms)", updated.ExecutionID, elapsed.Milliseconds()),
+					}
+					if err := c.budgetRecorder.RecordBotSpend(context.Background(), spendRecord); err != nil {
+						logger.Logger.Warn().Err(err).Str("bot_id", botID).Msg("failed to record execution spend")
+					}
+
+					// Auto-reload check: if budget has auto-reload enabled and
+					// current spend exceeds the threshold, log a reload trigger.
+					// Actual top-up goes through Commerce API (best-effort).
+					if budget, err := c.budgetRecorder.GetBotBudget(context.Background(), botID); err == nil && budget != nil {
+						if budget.AutoReloadEnabled && budget.AutoReloadThresholdUSD > 0 {
+							remaining := budget.MonthlyLimitUSD - budget.CurrentMonthUSD
+							if remaining <= budget.AutoReloadThresholdUSD {
+								logger.Logger.Info().
+									Str("bot_id", botID).
+									Float64("remaining_usd", remaining).
+									Float64("threshold_usd", budget.AutoReloadThresholdUSD).
+									Float64("reload_amount_usd", budget.AutoReloadAmountUSD).
+									Msg("auto-reload threshold reached — top-up needed")
+								// TODO: call Commerce POST /api/v1/billing/topup with reload amount
+							}
+						}
+					}
+				}()
+			}
+
+			// Deduct execution cost from bot wallet (best-effort, non-blocking).
+			// Parses the LLM response for token usage and calculates actual cost.
+			if c.walletDeductor != nil && updated != nil {
+				go func() {
+					botID := updated.BotID
+					if botID == "" {
+						botID = plan.target.TargetName
+					}
+
+					// Try token-based cost from LLM response; fall back to time estimate.
+					var costCents int64
+					var desc string
+					if usage := extractLLMUsage(result); usage != nil {
+						costCents = llmCostCents(usage)
+						desc = fmt.Sprintf("LLM %s: %d input + %d output tokens (exec %s)",
+							usage.Model, usage.PromptTokens, usage.CompletionTokens, updated.ExecutionID)
+					} else {
+						costUSD := estimateExecutionCost(elapsed)
+						costCents = int64(costUSD * 100)
+						if costCents < 1 {
+							costCents = 1
+						}
+						desc = fmt.Sprintf("Execution %s (%dms)", updated.ExecutionID, elapsed.Milliseconds())
+					}
+
+					if _, err := c.walletDeductor.WithdrawFromBotWallet(
+						context.Background(), botID, 0, costCents, desc,
+					); err != nil {
+						logger.Logger.Warn().Err(err).
+							Str("bot_id", botID).
+							Int64("cost_cents", costCents).
+							Msg("failed to deduct execution cost from bot wallet")
+					} else {
+						logger.Logger.Info().
+							Str("bot_id", botID).
+							Int64("cost_cents", costCents).
+							Str("description", desc).
+							Msg("bot wallet debited for execution")
+					}
+				}()
+			}
+
+			return nil
+		}
+		lastErr = err
+		if isRetryableDBError(err) {
+			time.Sleep(backoffDelay(attempt))
+			continue
+		}
+		return err
+	}
+	return lastErr
+}
+
+func (c *executionController) failExecution(ctx context.Context, plan *preparedExecution, callErr error, elapsed time.Duration, result []byte) error {
+	errMsg := callErr.Error()
+	resultURI := c.savePayload(ctx, result)
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		updated, err := c.store.UpdateExecutionRecord(ctx, plan.exec.ExecutionID, func(current *types.Execution) (*types.Execution, error) {
+			if current == nil {
+				return nil, fmt.Errorf("execution %s not found", plan.exec.ExecutionID)
+			}
+			now := time.Now().UTC()
+			current.Status = types.ExecutionStatusFailed
+			current.ErrorMessage = &errMsg
+			current.CompletedAt = pointerTime(now)
+			duration := elapsed.Milliseconds()
+			current.DurationMS = &duration
+			current.UpdatedAt = now
+			if len(result) > 0 {
+				current.ResultPayload = json.RawMessage(result)
+			}
+			current.ResultURI = resultURI
+			return current, nil
+		})
+		if err == nil {
+			c.updateWorkflowExecutionFinalState(
+				ctx,
+				plan.exec.ExecutionID,
+				types.ExecutionStatusFailed,
+				result,
+				elapsed,
+				&errMsg,
+			)
+			if plan.webhookRegistered || (updated != nil && updated.WebhookRegistered) {
+				c.triggerWebhook(plan.exec.ExecutionID)
+			}
+			eventData := map[string]interface{}{
+				"error": errMsg,
+			}
+			if payload := decodeJSON(result); payload != nil {
+				eventData["result"] = payload
+			}
+			if inputPayload := decodeJSON(plan.exec.InputPayload); inputPayload != nil {
+				eventData["input"] = inputPayload
+			}
+			c.publishExecutionEventWithBotInfo(updated, string(types.ExecutionStatusFailed), eventData, plan.agent, &plan.target.TargetName)
+			return nil
+		}
+		lastErr = err
+		if isRetryableDBError(err) {
+			time.Sleep(backoffDelay(attempt))
+			continue
+		}
+		return err
+	}
+	return lastErr
+}
+
+func (c *executionController) triggerWebhook(executionID string) {
+	if c.webhooks == nil || executionID == "" {
+		return
+	}
+	if err := c.webhooks.Notify(context.Background(), executionID); err != nil {
+		logger.Logger.Warn().Err(err).Str("execution_id", executionID).Msg("failed to enqueue webhook delivery")
+	}
+}
+
+type executionHeaders struct {
+	runID             string
+	parentExecutionID *string
+	sessionID         *string
+	actorID           *string
+}
+
+func readExecutionHeaders(ctx *gin.Context) executionHeaders {
+	runID := strings.TrimSpace(ctx.GetHeader("X-Run-ID"))
+	parent := strings.TrimSpace(ctx.GetHeader("X-Parent-Execution-ID"))
+	session := strings.TrimSpace(ctx.GetHeader("X-Session-ID"))
+	actor := strings.TrimSpace(ctx.GetHeader("X-Actor-ID"))
+
+	var parentPtr *string
+	if parent != "" {
+		parentPtr = &parent
+	}
+
+	var sessionPtr *string
+	if session != "" {
+		sessionPtr = &session
+	}
+
+	var actorPtr *string
+	if actor != "" {
+		actorPtr = &actor
+	}
+
+	return executionHeaders{
+		runID:             runID,
+		parentExecutionID: parentPtr,
+		sessionID:         sessionPtr,
+		actorID:           actorPtr,
+	}
+}
+
+type parsedTarget struct {
+	NodeID     string
+	TargetName string
+	TargetType string
+}
+
+func parseTarget(value string) (*parsedTarget, error) {
+	if value == "" {
+		return nil, errors.New("target is required")
+	}
+	parts := strings.Split(value, ".")
+	if len(parts) >= 2 {
+		return &parsedTarget{
+			NodeID:     parts[0],
+			TargetName: parts[1],
+		}, nil
+	}
+	// Cloud bots may not have a separate bot name — default to "main"
+	return &parsedTarget{
+		NodeID:     value,
+		TargetName: "main",
+	}, nil
+}
+
+func determineTargetType(agent *types.Node, name string) (string, error) {
+	for _, bot := range agent.Bots {
+		if bot.ID == name {
+			return "bot", nil
+		}
+	}
+	for _, skill := range agent.Skills {
+		if skill.ID == name {
+			return "skill", nil
+		}
+	}
+	return "", fmt.Errorf("target '%s' not found on agent '%s'", name, agent.ID)
+}
+
+func buildAgentURL(agent *types.Node, target *parsedTarget) string {
+	if agent == nil {
+		return ""
+	}
+	if agent.InvocationURL != nil && *agent.InvocationURL != "" {
+		return *agent.InvocationURL
+	}
+	if agent.DeploymentType == "serverless" {
+		base := strings.TrimSuffix(agent.BaseURL, "/")
+		if base == "" {
+			return ""
+		}
+		return fmt.Sprintf("%s/execute", base)
+	}
+
+	base := strings.TrimSuffix(agent.BaseURL, "/")
+
+	// Cloud bots without a base_url use the gateway's HTTP chat bridge.
+	// The gateway URL comes from HANZO_AGENTS_CLOUD_GATEWAY_URL env var.
+	if base == "" && strings.HasPrefix(agent.ID, "cloud-") {
+		gatewayURL := os.Getenv("HANZO_AGENTS_CLOUD_GATEWAY_URL")
+		if gatewayURL == "" {
+			gatewayURL = "http://bot-gateway.hanzo.svc:80"
+		}
+		// Convert ws:// to http:// for the HTTP bridge
+		gatewayURL = strings.Replace(gatewayURL, "ws://", "http://", 1)
+		gatewayURL = strings.Replace(gatewayURL, "wss://", "https://", 1)
+		return strings.TrimSuffix(gatewayURL, "/") + "/api/v1/chat"
+	}
+
+	if target.TargetType == "skill" {
+		return fmt.Sprintf("%s/skills/%s", base, target.TargetName)
+	}
+	return fmt.Sprintf("%s/bots/%s", base, target.TargetName)
+}
+
+func buildServerlessPayload(target *parsedTarget, exec *types.Execution, headers executionHeaders, input map[string]interface{}) map[string]interface{} {
+	if target == nil || exec == nil {
+		return map[string]interface{}{
+			"input": input,
+		}
+	}
+
+	execCtx := map[string]interface{}{
+		"execution_id": exec.ExecutionID,
+		"run_id":       exec.RunID,
+		"workflow_id":  exec.RunID,
+	}
+
+	if headers.parentExecutionID != nil && *headers.parentExecutionID != "" {
+		execCtx["parent_execution_id"] = *headers.parentExecutionID
+	}
+	if headers.sessionID != nil && *headers.sessionID != "" {
+		execCtx["session_id"] = *headers.sessionID
+	}
+	if headers.actorID != nil && *headers.actorID != "" {
+		execCtx["actor_id"] = *headers.actorID
+	}
+
+	payload := map[string]interface{}{
+		"path":              fmt.Sprintf("/execute/%s", target.TargetName),
+		"target":            target.TargetName,
+		"bot":          target.TargetName,
+		"input":             input,
+		"execution_context": execCtx,
+	}
+
+	if target.TargetType != "" {
+		payload["type"] = target.TargetType
+		if target.TargetType == "skill" {
+			payload["skill"] = target.TargetName
+		}
+	}
+
+	return payload
+}
+
+type normalizedWebhookConfig struct {
+	URL     string
+	Secret  *string
+	Headers map[string]string
+}
+
+func normalizeWebhookRequest(req *WebhookRequest) (*normalizedWebhookConfig, error) {
+	if req == nil {
+		return nil, nil
+	}
+
+	trimmedURL := strings.TrimSpace(req.URL)
+	if trimmedURL == "" {
+		return nil, fmt.Errorf("webhook.url is required")
+	}
+
+	parsed, err := url.Parse(trimmedURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid webhook url: %w", err)
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return nil, fmt.Errorf("webhook url must include scheme and host")
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "https", "http":
+	default:
+		return nil, fmt.Errorf("webhook url must use http or https")
+	}
+	if parsed.User != nil {
+		return nil, fmt.Errorf("webhook url must not contain embedded credentials")
+	}
+	parsed.Fragment = ""
+
+	normalizedHeaders := make(map[string]string)
+	if len(req.Headers) > 0 {
+		for key, value := range req.Headers {
+			trimmedKey := strings.TrimSpace(key)
+			trimmedValue := strings.TrimSpace(value)
+			if trimmedKey == "" {
+				continue
+			}
+			if len(normalizedHeaders) >= maxWebhookHeaders {
+				return nil, fmt.Errorf("webhook.headers supports at most %d entries", maxWebhookHeaders)
+			}
+			if len(trimmedKey) > maxWebhookHeaderLength {
+				return nil, fmt.Errorf("webhook header name '%s' is too long", trimmedKey)
+			}
+			if len(trimmedValue) > maxWebhookHeaderLength {
+				return nil, fmt.Errorf("webhook header '%s' value is too long", trimmedKey)
+			}
+			normalizedHeaders[trimmedKey] = trimmedValue
+		}
+	}
+
+	var secretPtr *string
+	if trimmedSecret := strings.TrimSpace(req.Secret); trimmedSecret != "" {
+		if len(trimmedSecret) > maxWebhookSecretLength {
+			return nil, fmt.Errorf("webhook secret exceeds %d characters", maxWebhookSecretLength)
+		}
+		secretCopy := trimmedSecret
+		secretPtr = &secretCopy
+	}
+
+	return &normalizedWebhookConfig{
+		URL:     parsed.String(),
+		Secret:  secretPtr,
+		Headers: normalizedHeaders,
+	}, nil
+}
+
+func decodeJSON(payload []byte) interface{} {
+	if len(payload) == 0 {
+		return nil
+	}
+	var v interface{}
+	if err := json.Unmarshal(payload, &v); err == nil {
+		return v
+	}
+	return string(payload)
+}
+
+func renderStatus(exec *types.Execution) ExecutionStatusResponse {
+	var completedAt *string
+	if exec.CompletedAt != nil {
+		formatted := exec.CompletedAt.UTC().Format(time.RFC3339)
+		completedAt = &formatted
+	}
+
+	return ExecutionStatusResponse{
+		ExecutionID:       exec.ExecutionID,
+		RunID:             exec.RunID,
+		Status:            exec.Status,
+		Result:            decodeJSON(exec.ResultPayload),
+		Error:             exec.ErrorMessage,
+		StartedAt:         exec.StartedAt.UTC().Format(time.RFC3339),
+		CompletedAt:       completedAt,
+		DurationMS:        exec.DurationMS,
+		WebhookRegistered: exec.WebhookRegistered,
+		WebhookEvents:     exec.WebhookEvents,
+	}
+}
+
+func (c *executionController) ensureWorkflowExecutionRecord(ctx context.Context, exec *types.Execution, target *parsedTarget, payload []byte) {
+	workflowExec := c.buildWorkflowExecutionRecord(ctx, exec, target, payload)
+	if workflowExec == nil {
+		return
+	}
+
+	if err := c.store.StoreWorkflowExecution(ctx, workflowExec); err != nil {
+		logger.Logger.Error().
+			Err(err).
+			Str("execution_id", exec.ExecutionID).
+			Msg("failed to persist workflow execution state")
+	}
+}
+
+func (c *executionController) buildWorkflowExecutionRecord(ctx context.Context, exec *types.Execution, target *parsedTarget, payload []byte) *types.WorkflowExecution {
+	if exec == nil || target == nil {
+		return nil
+	}
+
+	runID := exec.RunID
+	if runID == "" {
+		runID = utils.GenerateRunID()
+	}
+
+	rootWorkflowID, parentWorkflowID, depth := c.deriveWorkflowHierarchy(ctx, exec)
+
+	startTime := exec.StartedAt
+	if startTime.IsZero() {
+		startTime = time.Now().UTC()
+	}
+
+	workflowName := fmt.Sprintf("%s.%s", exec.NodeID, exec.BotID)
+	runIDCopy := runID
+	workflowExec := &types.WorkflowExecution{
+		WorkflowID:          runID,
+		ExecutionID:         exec.ExecutionID,
+		AgentsRequestID: utils.GenerateAgentsRequestID(),
+		RunID:               &runIDCopy,
+		SessionID:           exec.SessionID,
+		ActorID:             exec.ActorID,
+		NodeID:         exec.NodeID,
+		ParentWorkflowID:    parentWorkflowID,
+		ParentExecutionID:   exec.ParentExecutionID,
+		RootWorkflowID:      rootWorkflowID,
+		WorkflowDepth:       depth,
+		BotID:          exec.BotID,
+		Status:              string(exec.Status),
+		WorkflowName:        &workflowName,
+		StartedAt:           startTime,
+		CreatedAt:           startTime,
+		UpdatedAt:           startTime,
+		Notes:               []types.ExecutionNote{},
+	}
+
+	if len(payload) > 0 {
+		cloned := cloneBytes(payload)
+		workflowExec.InputData = json.RawMessage(cloned)
+		workflowExec.InputSize = len(cloned)
+	}
+
+	if target.TargetType != "" {
+		workflowExec.WorkflowTags = []string{target.TargetType}
+	} else {
+		workflowExec.WorkflowTags = []string{}
+	}
+
+	return workflowExec
+}
+
+func (c *executionController) deriveWorkflowHierarchy(ctx context.Context, exec *types.Execution) (*string, *string, int) {
+	runID := exec.RunID
+	rootWorkflowID := pointerString(runID)
+	var parentWorkflowID *string
+	depth := 0
+
+	if exec.ParentExecutionID != nil {
+		parentExecution, err := c.store.GetWorkflowExecution(ctx, *exec.ParentExecutionID)
+		if err != nil {
+			logger.Logger.Debug().
+				Err(err).
+				Str("execution_id", exec.ExecutionID).
+				Str("parent_execution_id", *exec.ParentExecutionID).
+				Msg("failed to load parent workflow execution")
+		}
+		if parentExecution != nil {
+			parentWorkflowID = pointerString(parentExecution.WorkflowID)
+			if parentExecution.RootWorkflowID != nil {
+				rootWorkflowID = parentExecution.RootWorkflowID
+			} else {
+				rootWorkflowID = pointerString(parentExecution.WorkflowID)
+			}
+			depth = parentExecution.WorkflowDepth + 1
+		} else {
+			depth = 1
+		}
+	}
+
+	return rootWorkflowID, parentWorkflowID, depth
+}
+
+func (c *executionController) updateWorkflowExecutionFinalState(
+	ctx context.Context,
+	executionID string,
+	status types.ExecutionStatus,
+	result []byte,
+	elapsed time.Duration,
+	errorMessage *string,
+) {
+	err := c.store.UpdateWorkflowExecution(ctx, executionID, func(current *types.WorkflowExecution) (*types.WorkflowExecution, error) {
+		if current == nil {
+			return nil, fmt.Errorf("execution with ID %s not found", executionID)
+		}
+		now := time.Now().UTC()
+		current.Status = string(status)
+		current.UpdatedAt = now
+		completedAt := now
+		current.CompletedAt = &completedAt
+		duration := elapsed.Milliseconds()
+		current.DurationMS = &duration
+		if len(result) > 0 {
+			cloned := cloneBytes(result)
+			current.OutputData = json.RawMessage(cloned)
+			current.OutputSize = len(cloned)
+		} else {
+			current.OutputData = nil
+			current.OutputSize = 0
+		}
+		current.ErrorMessage = errorMessage
+		return current, nil
+	})
+	if err != nil {
+		logger.Logger.Error().
+			Err(err).
+			Str("execution_id", executionID).
+			Msg("failed to update workflow execution state")
+	}
+}
+
+func cloneBytes(src []byte) []byte {
+	if src == nil {
+		return nil
+	}
+	dst := make([]byte, len(src))
+	copy(dst, src)
+	return dst
+}
+
+func writeExecutionError(ctx *gin.Context, err error) {
+	if err == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unknown error"})
+		return
+	}
+	ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+}
+
+func pointerTime(t time.Time) *time.Time {
+	return &t
+}
+
+func pointerString(v string) *string {
+	return &v
+}
+
+func pointerInt64(v int64) *int64 {
+	return &v
+}
+
+func truncateForLog(body []byte) string {
+	const limit = 1024
+	if len(body) <= limit {
+		return string(body)
+	}
+	return string(body[:limit]) + "..."
+}
+
+func (c *executionController) savePayload(ctx context.Context, data []byte) *string {
+	if c.payloads == nil || len(data) == 0 {
+		return nil
+	}
+	record, err := c.payloads.SaveBytes(ctx, data)
+	if err != nil {
+		logger.Logger.Warn().Err(err).Int("bytes", len(data)).Msg("failed to persist payload; proceeding without URI")
+		return nil
+	}
+	uri := record.URI
+	return &uri
+}
+
+func (j asyncExecutionJob) process() {
+	bgCtx := context.Background()
+	resultBody, elapsed, asyncAccepted, callErr := j.controller.callAgent(bgCtx, &j.plan)
+	if callErr == nil && asyncAccepted {
+		logger.Logger.Info().
+			Str("execution_id", j.plan.exec.ExecutionID).
+			Msg("agent accepted execution for async processing")
+		return
+	}
+	job := completionJob{
+		controller: j.controller,
+		plan:       &j.plan,
+		result:     resultBody,
+		elapsed:    elapsed,
+		callErr:    callErr,
+	}
+	if err := enqueueCompletion(job); err != nil {
+		logger.Logger.Error().
+			Err(err).
+			Str("execution_id", j.plan.exec.ExecutionID).
+			Msg("failed to enqueue completion job for async execution")
+		if callErr != nil {
+			if updateErr := j.controller.failExecution(bgCtx, &j.plan, callErr, elapsed, resultBody); updateErr != nil {
+				logger.Logger.Error().
+					Err(updateErr).
+					Str("execution_id", j.plan.exec.ExecutionID).
+					Msg("fallback async failure persistence failed")
+			}
+		} else {
+			if updateErr := j.controller.completeExecution(bgCtx, &j.plan, resultBody, elapsed); updateErr != nil {
+				logger.Logger.Error().
+					Err(updateErr).
+					Str("execution_id", j.plan.exec.ExecutionID).
+					Msg("fallback async completion persistence failed")
+			}
+		}
+	}
+}
+
+func newAsyncWorkerPool(workerCount, queueCapacity int) *asyncWorkerPool {
+	pool := &asyncWorkerPool{
+		queue: make(chan asyncExecutionJob, queueCapacity),
+	}
+
+	for i := 0; i < workerCount; i++ {
+		go func(workerID int) {
+			for job := range pool.queue {
+				job.process()
+			}
+		}(i)
+	}
+
+	logger.Logger.Info().
+		Int("workers", workerCount).
+		Int("queue_capacity", queueCapacity).
+		Msg("async execution worker pool initialized")
+
+	return pool
+}
+
+func (p *asyncWorkerPool) submit(job asyncExecutionJob) bool {
+	select {
+	case p.queue <- job:
+		return true
+	default:
+		return false
+	}
+}
+
+func getAsyncWorkerPool() *asyncWorkerPool {
+	asyncPoolOnce.Do(func() {
+		workerCount := resolveIntFromEnv("PLAYGROUND_EXEC_ASYNC_WORKERS", "AGENTS_EXEC_ASYNC_WORKERS", runtime.NumCPU())
+		if workerCount <= 0 {
+			workerCount = runtime.NumCPU()
+		}
+
+		queueCapacity := resolveIntFromEnv("PLAYGROUND_EXEC_ASYNC_QUEUE_CAPACITY", "AGENTS_EXEC_ASYNC_QUEUE_CAPACITY", 1024)
+		if queueCapacity <= 0 {
+			queueCapacity = 1024
+		}
+
+		asyncPool = newAsyncWorkerPool(workerCount, queueCapacity)
+	})
+	return asyncPool
+}
+
+func resolveIntFromEnv(primaryKey, fallbackKey string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(primaryKey))
+	if raw == "" && fallbackKey != "" {
+		raw = strings.TrimSpace(os.Getenv(fallbackKey))
+	}
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		logger.Logger.Warn().
+			Str("key", primaryKey).
+			Str("value", raw).
+			Msg("invalid integer environment override; using fallback")
+		return fallback
+	}
+	return value
+}
+
+func ensureCompletionWorker() {
+	completionOnce.Do(func() {
+		size := resolveIntFromEnv("PLAYGROUND_EXEC_COMPLETION_QUEUE", "AGENTS_EXEC_COMPLETION_QUEUE", 2048)
+		if size <= 0 {
+			size = 2048
+		}
+		completionQueue = make(chan completionJob, size)
+		go func() {
+			for job := range completionQueue {
+				err := processCompletionJob(job)
+				if job.done != nil {
+					job.done <- err
+					close(job.done)
+				}
+			}
+		}()
+	})
+}
+
+func processCompletionJob(job completionJob) error {
+	ctx := context.Background()
+	if job.callErr != nil {
+		return job.controller.failExecution(ctx, job.plan, job.callErr, job.elapsed, job.result)
+	}
+	return job.controller.completeExecution(ctx, job.plan, job.result, job.elapsed)
+}
+
+func enqueueCompletion(job completionJob) error {
+	ensureCompletionWorker()
+	select {
+	case completionQueue <- job:
+		return nil
+	default:
+		return fmt.Errorf("completion queue is full")
+	}
+}
+
+// estimateExecutionCost returns a rough cost estimate in USD based on duration.
+// This is a placeholder — in production, the actual cost comes from the LLM
+// provider's token usage. For now, estimate ~$0.01 per second of execution.
+func estimateExecutionCost(elapsed time.Duration) float64 {
+	seconds := elapsed.Seconds()
+	if seconds < 0.1 {
+		return 0.001 // minimum cost
+	}
+	return seconds * 0.01
+}
+
+// llmUsage holds token usage extracted from an LLM response.
+type llmUsage struct {
+	PromptTokens     int    `json:"prompt_tokens"`
+	CompletionTokens int    `json:"completion_tokens"`
+	TotalTokens      int    `json:"total_tokens"`
+	Model            string `json:"-"`
+}
+
+// extractLLMUsage parses an OpenAI-compatible response body to extract token
+// usage and model name. Returns nil if the body is not a valid LLM response.
+func extractLLMUsage(body []byte) *llmUsage {
+	if len(body) == 0 || body[0] != '{' {
+		return nil
+	}
+	var resp struct {
+		Model string   `json:"model"`
+		Usage llmUsage `json:"usage"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil
+	}
+	if resp.Usage.TotalTokens == 0 && resp.Usage.PromptTokens == 0 {
+		return nil
+	}
+	resp.Usage.Model = resp.Model
+	return &resp.Usage
+}
+
+// llmCostCents calculates the cost in cents for a given model and token usage.
+// Pricing is per 1M tokens (input/output). Returns a minimum of 1 cent for
+// any non-zero usage.
+func llmCostCents(u *llmUsage) int64 {
+	if u == nil || (u.PromptTokens == 0 && u.CompletionTokens == 0) {
+		return 0
+	}
+
+	// Per-1M-token pricing in USD (input, output).
+	type pricing struct{ input, output float64 }
+	prices := map[string]pricing{
+		"claude-sonnet-4-6":   {3.0, 15.0},
+		"claude-sonnet-4-5":   {3.0, 15.0},
+		"claude-3-5-sonnet":   {3.0, 15.0},
+		"claude-3-7-sonnet":   {3.0, 15.0},
+		"claude-3-5-haiku":    {0.80, 4.0},
+		"claude-opus-4":       {15.0, 75.0},
+		"gpt-4o":              {2.50, 10.0},
+		"gpt-4o-mini":         {0.15, 0.60},
+		"gpt-4.1":             {2.0, 8.0},
+		"gpt-4.1-mini":        {0.40, 1.60},
+		"gpt-4.1-nano":        {0.10, 0.40},
+	}
+
+	p, ok := prices[u.Model]
+	if !ok {
+		// Default to Claude Sonnet pricing for unknown models.
+		p = pricing{3.0, 15.0}
+	}
+
+	costUSD := (float64(u.PromptTokens)*p.input + float64(u.CompletionTokens)*p.output) / 1_000_000.0
+	cents := int64(costUSD * 100)
+	if cents < 1 {
+		cents = 1 // minimum 1 cent
+	}
+	return cents
+}
