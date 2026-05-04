@@ -18,7 +18,7 @@ PYPROJECT_FILE = REPO_ROOT / "sdk/python/pyproject.toml"
 PY_INIT_FILE = REPO_ROOT / "sdk/python/playground/__init__.py"
 PKG_INFO_FILE = REPO_ROOT / "sdk/python/playground.egg-info/PKG-INFO"
 TS_PACKAGE_JSON = REPO_ROOT / "sdk/typescript/package.json"
-GO_TEMPLATE_FILE = REPO_ROOT / "control-plane/internal/templates/go/go.mod.tmpl"
+GO_TEMPLATE_FILE = REPO_ROOT / "internal/templates/go/go.mod.tmpl"
 REQUIREMENT_FILES = [
     REPO_ROOT / "examples/python_bots/hello_world_rag/requirements.txt",
     REPO_ROOT / "examples/python_bots/agentic_rag/requirements.txt",
