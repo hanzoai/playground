@@ -1,6 +1,6 @@
 module github.com/hanzoai/playground/examples/benchmarks/100k-scale/go-bench
 
-go 1.21
+go 1.26.3
 
 require github.com/hanzoai/playground/sdk/go v0.0.0
 

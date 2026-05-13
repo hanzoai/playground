@@ -1,6 +1,6 @@
 module github.com/hanzoai/playground/tests/functional/go_bots
 
-go 1.21
+go 1.26.3
 
 replace github.com/hanzoai/playground/sdk/go => ../../../sdk/go
 
