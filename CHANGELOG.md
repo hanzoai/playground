@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.42-rc.1] - 2026-05-13
+
+
+### Other
+
+- Go.mod: bump go directive to 1.26.3 (security advisory) (b4868c6)
+
+- Deploy: pin :latest → semver across image refs
+
+Replaces all ghcr.io/hanzoai/<svc>:latest pins with the latest published
+semver tag for each service. Per CLAUDE.md auto-bump policy: mutable
+branch tags (:latest, :main, :dev) are deprecated for cluster pins —
+only immutable semver permitted.
+
+Bulk update across services with published v* tags. Services without a
+published semver remain on :latest until their release pipeline cuts a
+v* tag. (ad8a9d5)
+
 ## [0.1.41] - 2026-05-04
 
 
