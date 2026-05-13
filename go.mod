@@ -1,6 +1,6 @@
 module github.com/hanzoai/playground
 
-go 1.26
+go 1.26.3
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/luxfi/zap v0.2.0
+	github.com/zap-proto/go v0.2.0
 	github.com/luxfi/zapdb/v4 v4.9.3
 	github.com/mattn/go-sqlite3 v1.14.37
 	github.com/prometheus/client_golang v1.23.2
